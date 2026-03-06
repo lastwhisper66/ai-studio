@@ -1,0 +1,9 @@
+{
+  "outputStyle": "Explanatory",
+  "prefersReducedMotion": true,
+  "permissions": {
+    "allow": [
+      "WebSearch"
+    ]
+  }
+}
