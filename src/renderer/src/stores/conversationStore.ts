@@ -7,6 +7,8 @@ interface ConversationState {
   messages: Message[]
   isLoading: boolean
   error: string | null
+  isStreaming: boolean
+  streamingContent: string
 
   loadConversations: () => Promise<void>
   createConversation: (title?: string) => Promise<boolean>
@@ -14,6 +16,8 @@ interface ConversationState {
   renameConversation: (id: string, title: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
   addMessage: (role: MessageRole, content: string) => Promise<void>
+  sendMessage: (content: string) => Promise<void>
+  stopGeneration: () => void
   clearError: () => void
 }
 
@@ -23,6 +27,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   messages: [],
   isLoading: false,
   error: null,
+  isStreaming: false,
+  streamingContent: '',
 
   clearError: () => set({ error: null }),
 
@@ -102,27 +108,94 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
     const result = await window.api.createMessage(activeConversationId, role, content)
     if (result.success && result.data) {
-      const newMessage = result.data
-
-      // Use updater form to avoid stale state after await
-      const isFirstMessage = get().messages.length === 0
-      set((state) => ({ messages: [...state.messages, newMessage] }))
-
-      // Auto-set conversation title from first user message
-      if (role === 'user' && isFirstMessage) {
-        const title = content.length > 30 ? content.slice(0, 30) + '...' : content
-        const updateResult = await window.api.updateConversation(activeConversationId, { title })
-        if (updateResult.success && updateResult.data) {
-          const updatedTitle = updateResult.data.title
-          set((state) => ({
-            conversations: state.conversations.map((c) =>
-              c.id === activeConversationId ? { ...c, title: updatedTitle } : c,
-            ),
-          }))
-        }
-      }
+      set((state) => ({ messages: [...state.messages, result.data!] }))
     } else {
       set({ error: result.error ?? 'Failed to send message' })
+    }
+  },
+
+  sendMessage: async (content: string) => {
+    if (get().isStreaming) return
+
+    let conversationId = get().activeConversationId
+
+    // Auto-create conversation if none is active
+    if (!conversationId) {
+      const ok = await get().createConversation()
+      if (!ok) return
+      conversationId = get().activeConversationId
+      if (!conversationId) return
+    }
+
+    // Save user message to DB and update local state
+    await get().addMessage('user', content)
+
+    // Clean up any leftover listeners before registering new ones
+    window.api.removeAllStreamListeners()
+
+    set({ isStreaming: true, streamingContent: '' })
+
+    // Register listeners BEFORE invoke to prevent race condition
+    const cleanups: (() => void)[] = []
+    const cleanup = (): void => {
+      for (const fn of cleanups) fn()
+      cleanups.length = 0
+    }
+
+    cleanups.push(
+      window.api.onStreamChunk((data) => {
+        if (data.conversationId !== conversationId) return
+        set((state) => ({ streamingContent: state.streamingContent + data.delta }))
+      }),
+    )
+
+    cleanups.push(
+      window.api.onStreamEnd((data) => {
+        if (data.conversationId !== conversationId) return
+        if (data.message) {
+          set((state) => ({
+            messages: [...state.messages, data.message!],
+            isStreaming: false,
+            streamingContent: '',
+          }))
+        } else {
+          set({ isStreaming: false, streamingContent: '' })
+        }
+        cleanup()
+      }),
+    )
+
+    cleanups.push(
+      window.api.onStreamError((data) => {
+        if (data.conversationId !== conversationId) return
+        set({ isStreaming: false, streamingContent: '', error: data.error })
+        cleanup()
+      }),
+    )
+
+    cleanups.push(
+      window.api.onTitleUpdated((data) => {
+        if (data.conversationId !== conversationId) return
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === data.conversationId ? { ...c, title: data.title } : c,
+          ),
+        }))
+      }),
+    )
+
+    // Invoke the streaming request
+    const result = await window.api.sendMessage({ conversationId })
+    if (!result.success) {
+      set({ isStreaming: false, streamingContent: '', error: result.error })
+      cleanup()
+    }
+  },
+
+  stopGeneration: () => {
+    const conversationId = get().activeConversationId
+    if (conversationId) {
+      window.api.stopGeneration(conversationId)
     }
   },
 }))

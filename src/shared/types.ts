@@ -38,3 +38,32 @@ export interface IpcResult<T> {
   data?: T
   error?: string
 }
+
+/** chat:send-message request payload */
+export interface SendMessagePayload {
+  conversationId: string
+}
+
+/** chat:stream-chunk push data */
+export interface StreamChunkData {
+  conversationId: string
+  delta: string
+}
+
+/** chat:stream-end push data */
+export interface StreamEndData {
+  conversationId: string
+  message: Message | null
+}
+
+/** chat:stream-error push data */
+export interface StreamErrorData {
+  conversationId: string
+  error: string
+}
+
+/** chat:title-updated push data */
+export interface TitleUpdatedData {
+  conversationId: string
+  title: string
+}

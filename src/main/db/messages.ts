@@ -37,7 +37,7 @@ export function createMessage(conversationId: string, role: MessageRole, content
 
   db.prepare(
     `INSERT INTO messages (id, conversation_id, role, content, created_at)
-     VALUES (?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?)`,
   ).run(id, conversationId, role, content, now)
 
   // Update conversation's updated_at timestamp

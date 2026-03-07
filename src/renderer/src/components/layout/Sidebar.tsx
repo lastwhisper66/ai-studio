@@ -183,8 +183,8 @@ export function Sidebar(): React.JSX.Element {
           <DialogHeader>
             <DialogTitle>Delete Conversation</DialogTitle>
             <DialogDescription>
-              This will permanently delete this conversation and all its messages. This action cannot
-              be undone.
+              This will permanently delete this conversation and all its messages. This action
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

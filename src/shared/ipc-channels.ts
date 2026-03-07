@@ -13,4 +13,11 @@ export const IpcChannels = {
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_GET_ALL: 'settings:get-all',
+  // Chat (streaming)
+  CHAT_SEND_MESSAGE: 'chat:send-message',
+  CHAT_STREAM_CHUNK: 'chat:stream-chunk',
+  CHAT_STREAM_END: 'chat:stream-end',
+  CHAT_STREAM_ERROR: 'chat:stream-error',
+  CHAT_STOP_GENERATION: 'chat:stop-generation',
+  CHAT_TITLE_UPDATED: 'chat:title-updated',
 } as const

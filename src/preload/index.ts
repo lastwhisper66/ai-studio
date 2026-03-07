@@ -1,7 +1,17 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { Conversation, Message, MessageRole, IpcResult } from '@shared/types'
+import type {
+  Conversation,
+  Message,
+  MessageRole,
+  IpcResult,
+  SendMessagePayload,
+  StreamChunkData,
+  StreamEndData,
+  StreamErrorData,
+  TitleUpdatedData,
+} from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
 const api = {
@@ -47,6 +57,44 @@ const api = {
 
   getAllSettings: (): Promise<IpcResult<Record<string, string>>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_GET_ALL),
+
+  // Chat (streaming)
+  sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.CHAT_SEND_MESSAGE, payload),
+
+  stopGeneration: (conversationId: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.CHAT_STOP_GENERATION, conversationId),
+
+  onStreamChunk: (callback: (data: StreamChunkData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: StreamChunkData): void => callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_STREAM_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_STREAM_CHUNK, handler)
+  },
+
+  onStreamEnd: (callback: (data: StreamEndData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: StreamEndData): void => callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_STREAM_END, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_STREAM_END, handler)
+  },
+
+  onStreamError: (callback: (data: StreamErrorData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: StreamErrorData): void => callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_STREAM_ERROR, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_STREAM_ERROR, handler)
+  },
+
+  onTitleUpdated: (callback: (data: TitleUpdatedData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TitleUpdatedData): void => callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_TITLE_UPDATED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_TITLE_UPDATED, handler)
+  },
+
+  removeAllStreamListeners: (): void => {
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_CHUNK)
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_END)
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_ERROR)
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_TITLE_UPDATED)
+  },
 }
 
 export type ApiType = typeof api
