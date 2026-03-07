@@ -1,6 +1,8 @@
 import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { initDatabase, closeDatabase } from './db'
+import { registerAllIpcHandlers } from './ipc'
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
@@ -12,8 +14,8 @@ function createWindow(): void {
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
+      sandbox: false,
+    },
   })
 
   mainWindow.on('ready-to-show', () => {
@@ -35,6 +37,9 @@ function createWindow(): void {
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.ai-studio.app')
 
+  initDatabase()
+  registerAllIpcHandlers()
+
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
@@ -47,6 +52,7 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
+  closeDatabase()
   if (process.platform !== 'darwin') {
     app.quit()
   }

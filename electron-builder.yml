@@ -11,6 +11,7 @@ files:
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
+  - node_modules/better-sqlite3/**
 win:
   executableName: ai-studio
 nsis:
@@ -18,4 +19,4 @@ nsis:
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
-npmRebuild: false
+npmRebuild: true
