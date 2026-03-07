@@ -123,3 +123,21 @@ body {
   font-family: var(--font-family-sans);
   overflow: hidden;
 }
+
+/* ── Shiki code block overrides ── */
+.shiki {
+  background-color: transparent !important;
+}
+
+.shiki code {
+  background-color: transparent !important;
+}
+
+/* ── Markdown prose spacing ── */
+.markdown-body > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}

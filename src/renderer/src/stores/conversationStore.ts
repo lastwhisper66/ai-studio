@@ -16,6 +16,7 @@ interface ConversationState {
   renameConversation: (id: string, title: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
   addMessage: (role: MessageRole, content: string) => Promise<void>
+  deleteMessage: (id: string) => Promise<void>
   sendMessage: (content: string) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
@@ -111,6 +112,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       set((state) => ({ messages: [...state.messages, result.data!] }))
     } else {
       set({ error: result.error ?? 'Failed to send message' })
+    }
+  },
+
+  deleteMessage: async (id: string) => {
+    const result = await window.api.deleteMessage(id)
+    if (result.success) {
+      set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
+    } else {
+      set({ error: result.error ?? 'Failed to delete message' })
     }
   },
 

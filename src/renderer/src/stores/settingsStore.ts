@@ -5,10 +5,12 @@ interface SettingsState {
   isLoaded: boolean
   isSaving: boolean
   error: string | null
+  dialogOpen: boolean
 
   loadSettings: () => Promise<void>
   saveSettings: (values: Record<string, string>) => Promise<boolean>
   clearError: () => void
+  setDialogOpen: (open: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -16,8 +18,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   isLoaded: false,
   isSaving: false,
   error: null,
+  dialogOpen: false,
 
   clearError: () => set({ error: null }),
+  setDialogOpen: (open: boolean) => set({ dialogOpen: open }),
 
   loadSettings: async () => {
     const result = await window.api.getAllSettings()

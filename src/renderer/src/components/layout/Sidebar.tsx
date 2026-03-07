@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { Plus, Settings, Sun, Moon, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import {
+  Plus,
+  Settings,
+  Sun,
+  Moon,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  PanelLeftClose,
+} from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Separator } from '@renderer/components/ui/separator'
@@ -21,9 +30,15 @@ import {
 import { Input } from '@renderer/components/ui/input'
 import { useTheme } from '@renderer/hooks/useTheme'
 import { useConversationStore } from '@renderer/stores/conversationStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { SettingsDialog } from '@renderer/components/settings'
 
-export function Sidebar(): React.JSX.Element {
+interface SidebarProps {
+  collapsed: boolean
+  onToggle: () => void
+}
+
+export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Element {
   const { theme, setTheme } = useTheme()
   const {
     conversations,
@@ -34,12 +49,14 @@ export function Sidebar(): React.JSX.Element {
     setActiveConversation,
   } = useConversationStore()
 
+  const dialogOpen = useSettingsStore((s) => s.dialogOpen)
+  const setDialogOpen = useSettingsStore((s) => s.setDialogOpen)
+
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const toggleTheme = (): void => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -77,18 +94,31 @@ export function Sidebar(): React.JSX.Element {
   }
 
   return (
-    <aside className="flex h-full w-70 flex-col border-r border-sidebar-border bg-sidebar-background text-sidebar-foreground">
+    <aside
+      className={`flex h-full flex-col border-r border-sidebar-border bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
+        collapsed ? 'w-0 overflow-hidden' : 'w-70'
+      }`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <h1 className="text-lg font-semibold">AI Studio</h1>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">New Chat</TooltipContent>
-        </Tooltip>
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">New Chat</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle}>
+                <PanelLeftClose className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Collapse sidebar</TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       <Separator />
@@ -152,7 +182,7 @@ export function Sidebar(): React.JSX.Element {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setSettingsOpen(true)}>
+              onClick={() => setDialogOpen(true)}>
               <Settings className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -205,7 +235,7 @@ export function Sidebar(): React.JSX.Element {
       </Dialog>
 
       {/* Settings Dialog */}
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </aside>
   )
 }
