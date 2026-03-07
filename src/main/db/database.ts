@@ -1,11 +1,17 @@
 import Database from 'better-sqlite3'
 import { app } from 'electron'
-import { join } from 'path'
+import { existsSync, mkdirSync } from 'fs'
+import { dirname, join } from 'path'
 
 let db: Database.Database | null = null
 
 export function initDatabase(): void {
-  const dbPath = join(app.getPath('userData'), 'ai-studio.db')
+  const appDir = app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()
+  const dataDir = join(appDir, 'data')
+  if (!existsSync(dataDir)) {
+    mkdirSync(dataDir, { recursive: true })
+  }
+  const dbPath = join(dataDir, 'ai-studio.db')
   db = new Database(dbPath)
 
   // Enable WAL mode for better concurrent read/write performance
