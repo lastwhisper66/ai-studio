@@ -5,7 +5,11 @@
       "mcp__plugin_context7_context7__resolve-library-id",
       "mcp__ide__getDiagnostics",
       "mcp__plugin_serena_serena__list_dir",
-      "mcp__plugin_serena_serena__activate_project"
+      "mcp__plugin_serena_serena__activate_project",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebFetch(domain:github.com)"
     ]
   },
   "outputStyle": "Explanatory",
