@@ -67,3 +67,13 @@ export interface TitleUpdatedData {
   conversationId: string
   title: string
 }
+
+export interface TestConnectionPayload {
+  provider: ApiProvider
+  apiKey: string
+  baseUrl?: string
+  endpoint?: string
+  apiVersion?: string
+  deploymentName?: string
+  model: string
+}

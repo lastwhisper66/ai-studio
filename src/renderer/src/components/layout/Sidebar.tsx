@@ -21,6 +21,7 @@ import {
 import { Input } from '@renderer/components/ui/input'
 import { useTheme } from '@renderer/hooks/useTheme'
 import { useConversationStore } from '@renderer/stores/conversationStore'
+import { SettingsDialog } from '@renderer/components/settings'
 
 export function Sidebar(): React.JSX.Element {
   const { theme, setTheme } = useTheme()
@@ -38,6 +39,7 @@ export function Sidebar(): React.JSX.Element {
   const [renameValue, setRenameValue] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const toggleTheme = (): void => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
@@ -146,7 +148,11 @@ export function Sidebar(): React.JSX.Element {
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setSettingsOpen(true)}>
               <Settings className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -197,6 +203,9 @@ export function Sidebar(): React.JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Settings Dialog */}
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </aside>
   )
 }

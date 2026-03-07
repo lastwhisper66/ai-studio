@@ -11,7 +11,11 @@
       "WebFetch(domain:ui.shadcn.com)",
       "WebFetch(domain:github.com)",
       "mcp__plugin_serena_serena__read_file",
-      "mcp__plugin_context7_context7__query-docs"
+      "mcp__plugin_context7_context7__query-docs",
+      "mcp__plugin_serena_serena__initial_instructions",
+      "mcp__plugin_serena_serena__list_memories",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)"
     ]
   },
   "outputStyle": "Explanatory",

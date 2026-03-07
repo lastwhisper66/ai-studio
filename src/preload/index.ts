@@ -11,6 +11,7 @@ import type {
   StreamEndData,
   StreamErrorData,
   TitleUpdatedData,
+  TestConnectionPayload,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -57,6 +58,12 @@ const api = {
 
   getAllSettings: (): Promise<IpcResult<Record<string, string>>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_GET_ALL),
+
+  setSettingsBatch: (entries: Record<string, string>): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SETTINGS_SET_BATCH, entries),
+
+  testConnection: (payload: TestConnectionPayload): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.SETTINGS_TEST_CONNECTION, payload),
 
   // Chat (streaming)
   sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>
