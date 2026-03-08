@@ -11,7 +11,7 @@ AI Studio - A Windows desktop AI chat application built with Electron + React. S
 - **Runtime**: Electron (desktop) + React 19 (UI)
 - **Language**: TypeScript (strict mode)
 - **Build**: electron-vite (Vite-based, manages main/preload/renderer builds)
-- **Package Manager**: pnpm
+- **Package Manager**: npm
 - **UI**: Shadcn/UI (radix-ui unified package) + Tailwind CSS v4 + Lucide React icons
 - **State Management**: Zustand
 - **Database**: better-sqlite3 (main process, chat history persistence)
@@ -40,12 +40,12 @@ Tailwind v4 uses CSS-first configuration — no `tailwind.config.js`. Key differ
 ## Common Commands
 
 ```bash
-pnpm install              # Install dependencies
-pnpm dev                  # Start dev server with hot reload
-pnpm build                # Build for production
-pnpm build:win            # Build Windows installer (.exe)
-pnpm lint                 # Run ESLint
-pnpm typecheck            # Run TypeScript type checking (all three processes)
+npm install               # Install dependencies
+npm run dev               # Start dev server with hot reload
+npm run build             # Build for production
+npm run build:win         # Build Windows installer (.exe)
+npm run lint              # Run ESLint
+npm run typecheck         # Run TypeScript type checking (all three processes)
 ```
 
 ## Key Conventions
