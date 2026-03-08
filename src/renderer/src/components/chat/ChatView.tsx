@@ -16,12 +16,14 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
     activeConversationId,
     conversations,
     messages,
+    hasMoreMessages,
     error,
     isLoading,
     isStreaming,
     streamingContent,
     sendMessage,
     stopGeneration,
+    loadMoreMessages,
     clearError,
   } = useConversationStore()
 
@@ -67,7 +69,9 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
         isStreaming={isStreaming}
         isLoading={isLoading}
         hasActiveConversation={!!activeConversationId}
+        hasMoreMessages={hasMoreMessages}
         onSend={sendMessage}
+        onLoadMore={loadMoreMessages}
       />
 
       {/* Error banner */}

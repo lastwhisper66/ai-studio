@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import {
   Plus,
   Settings,
@@ -31,7 +31,9 @@ import { Input } from '@renderer/components/ui/input'
 import { useTheme } from '@renderer/hooks/useTheme'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
-import { SettingsDialog } from '@renderer/components/settings'
+const SettingsDialog = lazy(() =>
+  import('@renderer/components/settings').then((m) => ({ default: m.SettingsDialog })),
+)
 
 interface SidebarProps {
   collapsed: boolean
@@ -235,7 +237,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Elemen
       </Dialog>
 
       {/* Settings Dialog */}
-      <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <Suspense fallback={null}>
+        <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      </Suspense>
     </aside>
   )
 }

@@ -15,7 +15,9 @@ interface MessageListProps {
   isStreaming: boolean
   isLoading: boolean
   hasActiveConversation: boolean
+  hasMoreMessages: boolean
   onSend: (content: string) => void
+  onLoadMore: () => void
 }
 
 export function MessageList({
@@ -24,7 +26,9 @@ export function MessageList({
   isStreaming,
   isLoading,
   hasActiveConversation,
+  hasMoreMessages,
   onSend,
+  onLoadMore,
 }: MessageListProps): React.JSX.Element {
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
@@ -52,6 +56,13 @@ export function MessageList({
           </div>
         ) : (
           <>
+            {hasMoreMessages && (
+              <div className="flex justify-center py-2">
+                <Button variant="ghost" size="sm" onClick={onLoadMore}>
+                  Load earlier messages
+                </Button>
+              </div>
+            )}
             {messages.map((msg) => (
               <MessageBubble
                 key={msg.id}

@@ -39,6 +39,13 @@ const api = {
   listMessages: (conversationId: string): Promise<IpcResult<Message[]>> =>
     ipcRenderer.invoke(IpcChannels.MESSAGE_LIST, conversationId),
 
+  listMessagesPaginated: (
+    conversationId: string,
+    limit?: number,
+    beforeCreatedAt?: string,
+  ): Promise<IpcResult<{ messages: Message[]; hasMore: boolean }>> =>
+    ipcRenderer.invoke(IpcChannels.MESSAGE_LIST_PAGINATED, conversationId, limit, beforeCreatedAt),
+
   createMessage: (
     conversationId: string,
     role: MessageRole,

@@ -5,6 +5,7 @@ interface ConversationState {
   conversations: Conversation[]
   activeConversationId: string | null
   messages: Message[]
+  hasMoreMessages: boolean
   isLoading: boolean
   error: string | null
   isStreaming: boolean
@@ -15,6 +16,7 @@ interface ConversationState {
   deleteConversation: (id: string) => Promise<void>
   renameConversation: (id: string, title: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
+  loadMoreMessages: () => Promise<void>
   addMessage: (role: MessageRole, content: string) => Promise<void>
   deleteMessage: (id: string) => Promise<void>
   sendMessage: (content: string) => Promise<void>
@@ -26,6 +28,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   conversations: [],
   activeConversationId: null,
   messages: [],
+  hasMoreMessages: false,
   isLoading: false,
   error: null,
   isStreaming: false,
@@ -65,11 +68,11 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
       if (activeConversationId === id) {
         const nextId = remaining.length > 0 ? remaining[0].id : null
-        set({ conversations: remaining, activeConversationId: nextId, messages: [] })
+        set({ conversations: remaining, activeConversationId: nextId, messages: [], hasMoreMessages: false })
         if (nextId) {
-          const msgResult = await window.api.listMessages(nextId)
+          const msgResult = await window.api.listMessagesPaginated(nextId)
           if (msgResult.success && msgResult.data) {
-            set({ messages: msgResult.data })
+            set({ messages: msgResult.data.messages, hasMoreMessages: msgResult.data.hasMore })
           }
         }
       } else {
@@ -95,11 +98,34 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
   setActiveConversation: async (id: string) => {
     set({ activeConversationId: id, isLoading: true })
-    const result = await window.api.listMessages(id)
+    const result = await window.api.listMessagesPaginated(id)
     if (result.success && result.data) {
-      set({ messages: result.data, isLoading: false })
+      set({
+        messages: result.data.messages,
+        hasMoreMessages: result.data.hasMore,
+        isLoading: false,
+      })
     } else {
       set({ isLoading: false, error: result.error ?? 'Failed to load messages' })
+    }
+  },
+
+  loadMoreMessages: async () => {
+    const { activeConversationId, messages, hasMoreMessages } = get()
+    if (!activeConversationId || !hasMoreMessages || messages.length === 0) return
+
+    const oldest = messages[0].createdAt
+    const result = await window.api.listMessagesPaginated(
+      activeConversationId,
+      undefined,
+      oldest,
+    )
+    if (result.success && result.data) {
+      const loaded = result.data
+      set((state) => ({
+        messages: [...loaded.messages, ...state.messages],
+        hasMoreMessages: loaded.hasMore,
+      }))
     }
   },
 

@@ -30,6 +30,35 @@ export function listMessages(conversationId: string): Message[] {
   return rows.map(rowToMessage)
 }
 
+export function listMessagesPaginated(
+  conversationId: string,
+  limit: number = 50,
+  beforeCreatedAt?: string,
+): { messages: Message[]; hasMore: boolean } {
+  const db = getDb()
+  let rows: MessageRow[]
+
+  if (beforeCreatedAt) {
+    rows = db
+      .prepare(
+        'SELECT * FROM messages WHERE conversation_id = ? AND created_at < ? ORDER BY created_at DESC LIMIT ?',
+      )
+      .all(conversationId, beforeCreatedAt, limit + 1) as MessageRow[]
+  } else {
+    rows = db
+      .prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?')
+      .all(conversationId, limit + 1) as MessageRow[]
+  }
+
+  const hasMore = rows.length > limit
+  if (hasMore) rows.pop()
+
+  return {
+    messages: rows.reverse().map(rowToMessage),
+    hasMore,
+  }
+}
+
 export function createMessage(conversationId: string, role: MessageRole, content: string): Message {
   const id = uuidv4()
   const now = new Date().toISOString()
