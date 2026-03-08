@@ -13,6 +13,9 @@ export default defineConfig({
     resolve: {
       alias: { '@shared': resolve('src/shared') },
     },
+    build: {
+      externalizeDeps: false,
+    },
   },
   renderer: {
     resolve: {
