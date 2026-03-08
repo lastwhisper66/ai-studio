@@ -15,7 +15,8 @@
       "mcp__plugin_serena_serena__initial_instructions",
       "mcp__plugin_serena_serena__list_memories",
       "Bash(npm run:*)",
-      "WebFetch(domain:electron-vite.org)"
+      "WebFetch(domain:electron-vite.org)",
+      "mcp__plugin_serena_serena__find_file"
     ]
   },
   "outputStyle": "Explanatory",
