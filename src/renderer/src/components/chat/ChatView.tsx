@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
+import { InputToolbar } from './InputToolbar'
 
 interface ChatViewProps {
   sidebarCollapsed: boolean
@@ -85,7 +86,10 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
       )}
 
       {/* Input area */}
-      <MessageInput onSend={sendMessage} onStop={stopGeneration} isStreaming={isStreaming} />
+      <div className="border-t">
+        <InputToolbar />
+        <MessageInput onSend={sendMessage} onStop={stopGeneration} isStreaming={isStreaming} />
+      </div>
     </div>
   )
 }

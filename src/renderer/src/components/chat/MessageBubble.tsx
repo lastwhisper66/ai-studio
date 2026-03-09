@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, memo } from 'react'
-import { Copy, Check, Trash2 } from 'lucide-react'
+import { Copy, Check, Trash2, User, Bot } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import type { MessageRole } from '@shared/types'
 
@@ -43,12 +44,21 @@ export const MessageBubble = memo(function MessageBubble({
   const showActions = !isStreaming && messageId
 
   return (
-    <div className={`group flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+      <Avatar className="h-8 w-8 shrink-0">
+        <AvatarFallback
+          className={
+            isUser ? 'bg-chat-user text-chat-user-foreground' : 'bg-muted text-muted-foreground'
+          }>
+          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+        </AvatarFallback>
+      </Avatar>
+
       <div className="relative max-w-[80%]">
         <div
-          className={`rounded-lg px-4 py-2.5 text-sm ${
+          className={`rounded-2xl px-4 py-3 text-sm ${
             isUser
-              ? 'whitespace-pre-wrap bg-primary text-primary-foreground'
+              ? 'whitespace-pre-wrap bg-chat-user text-chat-user-foreground'
               : 'bg-muted text-muted-foreground'
           }`}>
           {isUser ? content : <MarkdownRenderer content={content} />}

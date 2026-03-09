@@ -36,7 +36,7 @@ export function WelcomeScreen({ onSend }: WelcomeScreenProps): React.JSX.Element
             <Button
               key={s.label}
               variant="outline"
-              className="h-auto justify-start gap-3 px-4 py-3 text-left"
+              className="h-auto justify-start gap-3 rounded-xl px-4 py-3 text-left"
               onClick={() => onSend(s.prompt)}>
               <s.icon className="h-5 w-5 shrink-0 text-muted-foreground" />
               <span>{s.label}</span>

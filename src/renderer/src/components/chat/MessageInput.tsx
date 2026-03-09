@@ -31,7 +31,7 @@ export function MessageInput({
   }
 
   return (
-    <div className="border-t p-4">
+    <div className="p-4">
       <div className="mx-auto flex max-w-3xl items-end gap-2">
         <Textarea
           placeholder={isStreaming ? 'AI is generating...' : 'Type a message...'}

@@ -1,17 +1,8 @@
-import { lazy, Suspense, useState } from 'react'
-import {
-  Plus,
-  Settings,
-  Sun,
-  Moon,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  PanelLeftClose,
-} from 'lucide-react'
+import { useState } from 'react'
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, PanelLeftClose } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
-import { Separator } from '@renderer/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
   DropdownMenu,
@@ -27,21 +18,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@renderer/components/ui/dialog'
-import { Input } from '@renderer/components/ui/input'
-import { useTheme } from '@renderer/hooks/useTheme'
 import { useConversationStore } from '@renderer/stores/conversationStore'
-import { useSettingsStore } from '@renderer/stores/settingsStore'
-const SettingsDialog = lazy(() =>
-  import('@renderer/components/settings').then((m) => ({ default: m.SettingsDialog })),
-)
 
-interface SidebarProps {
+interface ConversationPanelProps {
   collapsed: boolean
   onToggle: () => void
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Element {
-  const { theme, setTheme } = useTheme()
+export function ConversationPanel({
+  collapsed,
+  onToggle,
+}: ConversationPanelProps): React.JSX.Element {
   const {
     conversations,
     activeConversationId,
@@ -51,20 +38,19 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Elemen
     setActiveConversation,
   } = useConversationStore()
 
-  const dialogOpen = useSettingsStore((s) => s.dialogOpen)
-  const setDialogOpen = useSettingsStore((s) => s.setDialogOpen)
-
+  const [searchQuery, setSearchQuery] = useState('')
   const [renameDialogOpen, setRenameDialogOpen] = useState(false)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  const toggleTheme = (): void => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
-  }
+  const filteredConversations = searchQuery
+    ? conversations.filter((c) => c.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : conversations
 
   const handleNewChat = (): void => {
+    setSearchQuery('')
     createConversation()
   }
 
@@ -97,44 +83,55 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Elemen
 
   return (
     <aside
-      className={`flex h-full flex-col border-r border-sidebar-border bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
+      className={`flex h-full flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
         collapsed ? 'w-0 overflow-hidden' : 'w-70'
       }`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-lg font-semibold">AI Studio</h1>
+        <span className="text-sm font-semibold">Conversations</span>
         <div className="flex items-center gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNewChat}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNewChat}>
                 <Plus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">New Chat</TooltipContent>
+            <TooltipContent side="bottom">New Chat</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggle}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
                 <PanelLeftClose className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right">Collapse sidebar</TooltipContent>
+            <TooltipContent side="bottom">Collapse</TooltipContent>
           </Tooltip>
         </div>
       </div>
 
-      <Separator />
+      {/* Search */}
+      <div className="px-3 pb-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search..."
+            className="h-8 pl-8 text-xs"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
 
       {/* Conversation list */}
-      <ScrollArea className="flex-1 px-2 py-2">
+      <ScrollArea className="flex-1 px-2">
         <div className="space-y-1">
-          {conversations.map((conv) => (
+          {filteredConversations.map((conv) => (
             <div
               key={conv.id}
-              className={`group flex cursor-pointer items-center justify-between rounded-md px-3 py-2 text-sm ${
+              className={`group flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm ${
                 activeConversationId === conv.id
                   ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                  : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
               }`}
               onClick={() => setActiveConversation(conv.id)}>
               <span className="truncate">{conv.title}</span>
@@ -165,32 +162,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Elemen
           ))}
         </div>
       </ScrollArea>
-
-      <Separator />
-
-      {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
-              {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Toggle theme</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setDialogOpen(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">Settings</TooltipContent>
-        </Tooltip>
-      </div>
 
       {/* Rename Dialog */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
@@ -235,11 +206,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps): React.JSX.Elemen
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Settings Dialog */}
-      <Suspense fallback={null}>
-        <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-      </Suspense>
     </aside>
   )
 }
