@@ -1,4 +1,5 @@
-import { Sparkles, MessageSquare, Settings, Sun, Moon } from 'lucide-react'
+import { Sparkles, MessageSquare, Settings, Sun, Moon, Monitor } from 'lucide-react'
+import { type Theme } from '@renderer/components/theme/ThemeContext'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useTheme } from '@renderer/hooks/useTheme'
@@ -8,8 +9,20 @@ export function PrimaryNav(): React.JSX.Element {
   const { theme, setTheme } = useTheme()
   const setDialogOpen = useSettingsStore((s) => s.setDialogOpen)
 
-  const toggleTheme = (): void => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
+  const cycleTheme = (): void => {
+    const nextTheme: Record<Theme, Theme> = {
+      light: 'dark',
+      dark: 'system',
+      system: 'light',
+    }
+    setTheme(nextTheme[theme])
+  }
+
+  const themeLabel = theme === 'light' ? 'Light' : theme === 'dark' ? 'Dark' : 'System'
+  const themeIconByMode: Record<Theme, React.JSX.Element> = {
+    light: <Sun className="h-5 w-5" />,
+    dark: <Moon className="h-5 w-5" />,
+    system: <Monitor className="h-5 w-5" />,
   }
 
   return (
@@ -34,11 +47,16 @@ export function PrimaryNav(): React.JSX.Element {
       <div className="flex flex-col items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
-              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              aria-label={`Theme: ${themeLabel}`}
+              onClick={cycleTheme}>
+              {themeIconByMode[theme]}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Toggle theme</TooltipContent>
+          <TooltipContent side="right">Theme: {themeLabel}</TooltipContent>
         </Tooltip>
 
         <Tooltip>

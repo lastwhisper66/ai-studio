@@ -56,7 +56,9 @@ function createWindow(): void {
     restored.y !== undefined &&
     screen.getAllDisplays().some((display) => {
       const { x, y, width, height } = display.bounds
-      return restored.x! >= x && restored.x! < x + width && restored.y! >= y && restored.y! < y + height
+      return (
+        restored.x! >= x && restored.x! < x + width && restored.y! >= y && restored.y! < y + height
+      )
     })
 
   const mainWindow = new BrowserWindow({
