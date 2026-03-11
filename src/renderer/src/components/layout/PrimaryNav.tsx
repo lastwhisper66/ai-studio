@@ -29,6 +29,17 @@ export function PrimaryNav(): React.JSX.Element {
           </TooltipTrigger>
           <TooltipContent side="right">Chat</TooltipContent>
         </Tooltip>
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
+              {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Toggle theme</TooltipContent>
+        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -43,16 +54,6 @@ export function PrimaryNav(): React.JSX.Element {
           <TooltipContent side="right">Settings</TooltipContent>
         </Tooltip>
       </div>
-
-      {/* Bottom: theme toggle */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="right">Toggle theme</TooltipContent>
-      </Tooltip>
     </nav>
   )
 }
