@@ -9,10 +9,10 @@ interface SettingsSidebarProps {
 }
 
 const sections: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
-  { id: 'provider', label: 'Provider', icon: Cloud },
-  { id: 'model', label: 'Model', icon: SlidersHorizontal },
-  { id: 'general', label: 'General', icon: Settings2 },
-  { id: 'display', label: 'Display', icon: Monitor },
+  { id: 'provider', label: '模型服务', icon: Cloud },
+  { id: 'model', label: '默认模型', icon: SlidersHorizontal },
+  { id: 'general', label: '通用设置', icon: Settings2 },
+  { id: 'display', label: '显示设置', icon: Monitor },
 ]
 
 export function SettingsSidebar({

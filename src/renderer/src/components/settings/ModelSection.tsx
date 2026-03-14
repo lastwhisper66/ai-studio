@@ -19,15 +19,15 @@ export function ModelSection({ formState, onChange }: ModelSectionProps): React.
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Model</h2>
-        <p className="text-muted-foreground text-sm">Adjust model parameters and system prompt.</p>
+        <h2 className="text-lg font-semibold">默认模型</h2>
+        <p className="text-muted-foreground text-sm">调整模型参数和系统提示词。</p>
       </div>
 
       <ModelSettings formState={formState} onChange={onChange} />
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save'}
+        <Button onClick={handleSave} disabled={isSaving} size="sm">
+          {isSaving ? '保存中...' : '保存'}
         </Button>
       </div>
     </div>

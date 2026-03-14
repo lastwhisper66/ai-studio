@@ -34,7 +34,7 @@ export function SettingsPage(): React.JSX.Element {
     <div className="flex h-full min-w-0 flex-1 flex-col">
       {/* Header */}
       <div className="flex h-12 shrink-0 items-center border-b px-6">
-        <h1 className="text-base font-semibold">Settings</h1>
+        <h1 className="text-base font-semibold">设置</h1>
       </div>
 
       {/* Two-column layout */}
