@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Send, Square } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Textarea } from '@renderer/components/ui/textarea'
+import { InputToolbar } from './InputToolbar'
 
 interface MessageInputProps {
   onSend: (content: string) => void
@@ -32,29 +33,36 @@ export function MessageInput({
 
   return (
     <div className="p-4">
-      <div className="mx-auto flex max-w-3xl items-end gap-2">
-        <Textarea
-          placeholder={isStreaming ? 'AI is generating...' : 'Type a message...'}
-          className="min-h-11 flex-1 resize-none"
-          rows={1}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isStreaming}
-        />
-        {isStreaming ? (
-          <Button size="icon" variant="destructive" className="h-11 w-11 shrink-0" onClick={onStop}>
-            <Square className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button
-            size="icon"
-            className="h-11 w-11 shrink-0"
-            onClick={handleSend}
-            disabled={!input.trim()}>
-            <Send className="h-4 w-4" />
-          </Button>
-        )}
+      <div className="mx-auto flex max-w-3xl flex-col gap-2">
+        <div className="flex items-end gap-2">
+          <Textarea
+            placeholder={isStreaming ? 'AI is generating...' : 'Type a message...'}
+            className="min-h-11 flex-1 resize-none"
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isStreaming}
+          />
+          {isStreaming ? (
+            <Button
+              size="icon"
+              variant="destructive"
+              className="h-11 w-11 shrink-0"
+              onClick={onStop}>
+              <Square className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              onClick={handleSend}
+              disabled={!input.trim()}>
+              <Send className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+        <InputToolbar />
       </div>
     </div>
   )
