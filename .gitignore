@@ -8,4 +8,5 @@ out
 *.tsbuildinfo
 .env
 .env.*
-data/
+data
+plans
