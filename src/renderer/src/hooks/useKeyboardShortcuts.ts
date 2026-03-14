@@ -6,7 +6,7 @@ export function useKeyboardShortcuts(): void {
   const createConversation = useConversationStore((s) => s.createConversation)
   const stopGeneration = useConversationStore((s) => s.stopGeneration)
   const isStreaming = useConversationStore((s) => s.isStreaming)
-  const setDialogOpen = useSettingsStore((s) => s.setDialogOpen)
+  const setActiveView = useSettingsStore((s) => s.setActiveView)
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
@@ -17,10 +17,11 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      // Ctrl+, → Open settings
+      // Ctrl+, → Toggle settings
       if (e.ctrlKey && e.key === ',') {
         e.preventDefault()
-        setDialogOpen(true)
+        const current = useSettingsStore.getState().activeView
+        setActiveView(current === 'settings' ? 'chat' : 'settings')
         return
       }
 
@@ -34,5 +35,5 @@ export function useKeyboardShortcuts(): void {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [createConversation, stopGeneration, isStreaming, setDialogOpen])
+  }, [createConversation, stopGeneration, isStreaming, setActiveView])
 }

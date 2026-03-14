@@ -4,10 +4,12 @@ import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useTheme } from '@renderer/hooks/useTheme'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { cn } from '@renderer/lib/utils'
 
 export function PrimaryNav(): React.JSX.Element {
   const { theme, setTheme } = useTheme()
-  const setDialogOpen = useSettingsStore((s) => s.setDialogOpen)
+  const activeView = useSettingsStore((s) => s.activeView)
+  const setActiveView = useSettingsStore((s) => s.setActiveView)
 
   const cycleTheme = (): void => {
     const nextTheme: Record<Theme, Theme> = {
@@ -36,7 +38,11 @@ export function PrimaryNav(): React.JSX.Element {
       <div className="flex flex-1 flex-col items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-nav-active">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('h-9 w-9', activeView === 'chat' && 'text-nav-active')}
+              onClick={() => setActiveView('chat')}>
               <MessageSquare className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
@@ -64,8 +70,8 @@ export function PrimaryNav(): React.JSX.Element {
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9"
-              onClick={() => setDialogOpen(true)}>
+              className={cn('h-9 w-9', activeView === 'settings' && 'text-nav-active')}
+              onClick={() => setActiveView('settings')}>
               <Settings className="h-5 w-5" />
             </Button>
           </TooltipTrigger>

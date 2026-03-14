@@ -4,8 +4,8 @@ import { ConversationPanel } from './ConversationPanel'
 import { ChatPanel } from './ChatPanel'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 
-const SettingsDialog = lazy(() =>
-  import('@renderer/components/settings').then((m) => ({ default: m.SettingsDialog })),
+const SettingsPage = lazy(() =>
+  import('@renderer/components/settings').then((m) => ({ default: m.SettingsPage })),
 )
 
 const STORAGE_KEY = 'ai-studio-sidebar-collapsed'
@@ -15,8 +15,7 @@ export function AppLayout(): React.JSX.Element {
     return localStorage.getItem(STORAGE_KEY) === 'true'
   })
 
-  const dialogOpen = useSettingsStore((s) => s.dialogOpen)
-  const setDialogOpen = useSettingsStore((s) => s.setDialogOpen)
+  const activeView = useSettingsStore((s) => s.activeView)
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => {
@@ -39,16 +38,18 @@ export function AppLayout(): React.JSX.Element {
   }, [toggleSidebar])
 
   return (
-    <>
-      <div className="flex h-screen w-screen overflow-hidden">
-        <PrimaryNav />
-        <ConversationPanel collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-        <ChatPanel sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
-      </div>
-
-      <Suspense fallback={null}>
-        {dialogOpen && <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />}
-      </Suspense>
-    </>
+    <div className="flex h-screen w-screen overflow-hidden">
+      <PrimaryNav />
+      {activeView === 'chat' ? (
+        <>
+          <ConversationPanel collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+          <ChatPanel sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
+        </>
+      ) : (
+        <Suspense fallback={null}>
+          <SettingsPage />
+        </Suspense>
+      )}
+    </div>
   )
 }
