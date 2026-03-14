@@ -5,6 +5,7 @@
 AI Studio 阶段 1-4 已完成（脚手架、UI、数据层、AI 流式聊天）。用户可以对话，但 API 配置（Key、模型、Provider 等）目前只能直接写数据库。阶段 5 的目标是构建完整的设置 UI，让用户通过图形界面配置 API、测试连接、并加密存储敏感信息。
 
 **已有基础设施**（不需重建）：
+
 - Settings DB 层（`src/main/db/settings.ts`）：`getSetting`、`setSetting`、`getAllSettings`
 - Settings IPC handlers（`src/main/ipc/settings-handlers.ts`）：三个 handler 已注册
 - Preload API（`src/preload/index.ts`）：`window.api.getSetting/setSetting/getAllSettings` 已暴露
@@ -25,11 +26,13 @@ npx shadcn@latest add tabs select slider label
 ### Step 2: 添加 IPC 通道和类型
 
 **`src/shared/ipc-channels.ts`** — 在 Settings 区块末尾添加：
+
 ```ts
 SETTINGS_TEST_CONNECTION: 'settings:test-connection',
 ```
 
 **`src/shared/types.ts`** — 添加连接测试 payload 类型：
+
 ```ts
 export interface TestConnectionPayload {
   provider: ApiProvider
@@ -71,6 +74,7 @@ ipcMain.handle(IpcChannels.SETTINGS_TEST_CONNECTION, async (_, payload: TestConn
 ### Step 5: Preload 暴露 testConnection
 
 **`src/preload/index.ts`** — 在 `api` 对象 Settings 区块添加：
+
 ```ts
 testConnection: (payload: TestConnectionPayload): Promise<IpcResult<string>> =>
   ipcRenderer.invoke(IpcChannels.SETTINGS_TEST_CONNECTION, payload),
@@ -84,7 +88,7 @@ testConnection: (payload: TestConnectionPayload): Promise<IpcResult<string>> =>
 
 ```ts
 interface SettingsState {
-  settings: Record<string, string>  // 扁平 key-value，与 DB 同构
+  settings: Record<string, string> // 扁平 key-value，与 DB 同构
   isLoaded: boolean
   isSaving: boolean
   error: string | null
@@ -103,6 +107,7 @@ interface SettingsState {
 4 个组件放在 `src/renderer/src/components/settings/`：
 
 #### `SettingsDialog.tsx`（主容器）
+
 - Props: `open: boolean`, `onOpenChange: (open: boolean) => void`
 - 使用 Shadcn `Dialog` + `Tabs`（两个 tab：Provider / Model）
 - **本地表单状态** `SettingsFormState`，打开时从 store 初始化，保存时写回
@@ -118,7 +123,7 @@ interface SettingsFormState {
   apiVersion: string
   deploymentName: string
   model: string
-  temperature: string   // 字符串绑定 input，保存时 parseFloat
+  temperature: string // 字符串绑定 input，保存时 parseFloat
   maxTokens: string
   systemPrompt: string
 }
@@ -127,6 +132,7 @@ interface SettingsFormState {
 默认值：provider=`openai`, model=`gpt-4o`, temperature=`0.7`, maxTokens=`4096`
 
 #### `ProviderSettings.tsx`（Provider 配置）
+
 - Props: `formState` + `onChange(field, value)`
 - 顶部：`<Select>` 切换 OpenAI / Azure
 - 条件渲染：
@@ -135,18 +141,21 @@ interface SettingsFormState {
 - 使用 `<Label>` + `<Input>` 组合，API Key 用 `type="password"` + Eye/EyeOff 切换
 
 #### `ModelSettings.tsx`（模型参数）
+
 - Props: `formState` + `onChange(field, value)`
 - Temperature：`<Slider>` min=0 max=2 step=0.1 + 数值显示
 - Max Tokens：`<Input type="number">` min=1 max=128000
 - System Prompt：`<Textarea>` rows=4
 
 #### `ConnectionTest.tsx`（连接测试）
+
 - Props: `formState`
 - 内部状态：`isTesting` + `result`
 - 从 formState 构建 `TestConnectionPayload`，调用 `window.api.testConnection()`
 - 显示：按钮 + spinner + 成功/失败 badge
 
 #### `index.ts`（barrel export）
+
 ```ts
 export { SettingsDialog } from './SettingsDialog'
 ```
@@ -154,11 +163,13 @@ export { SettingsDialog } from './SettingsDialog'
 ### Step 8: 接线 Sidebar + App
 
 **`src/renderer/src/components/layout/Sidebar.tsx`**：
+
 - 添加 `const [settingsOpen, setSettingsOpen] = useState(false)`
 - Settings 按钮添加 `onClick={() => setSettingsOpen(true)}`
 - 底部渲染 `<SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />`
 
 **`src/renderer/src/App.tsx`**：
+
 - 导入 `useSettingsStore`，在 `useEffect` 中调用 `loadSettings()`
 
 ### Step 9: 更新 PLAN.md 进度
@@ -169,22 +180,22 @@ export { SettingsDialog } from './SettingsDialog'
 
 ## Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `src/shared/ipc-channels.ts` | Modify — add `SETTINGS_TEST_CONNECTION` |
-| `src/shared/types.ts` | Modify — add `TestConnectionPayload` |
-| `src/main/db/settings.ts` | Modify — add safeStorage encryption |
-| `src/main/ipc/settings-handlers.ts` | Modify — add connection test handler |
-| `src/preload/index.ts` | Modify — add `testConnection` method |
-| `src/renderer/src/stores/settingsStore.ts` | **Create** |
-| `src/renderer/src/components/settings/SettingsDialog.tsx` | **Create** |
-| `src/renderer/src/components/settings/ProviderSettings.tsx` | **Create** |
-| `src/renderer/src/components/settings/ModelSettings.tsx` | **Create** |
-| `src/renderer/src/components/settings/ConnectionTest.tsx` | **Create** |
-| `src/renderer/src/components/settings/index.ts` | **Create** |
-| `src/renderer/src/components/layout/Sidebar.tsx` | Modify — wire settings button |
-| `src/renderer/src/App.tsx` | Modify — load settings on startup |
-| `plans/PLAN.md` | Modify — update progress |
+| File                                                        | Action                                  |
+| ----------------------------------------------------------- | --------------------------------------- |
+| `src/shared/ipc-channels.ts`                                | Modify — add `SETTINGS_TEST_CONNECTION` |
+| `src/shared/types.ts`                                       | Modify — add `TestConnectionPayload`    |
+| `src/main/db/settings.ts`                                   | Modify — add safeStorage encryption     |
+| `src/main/ipc/settings-handlers.ts`                         | Modify — add connection test handler    |
+| `src/preload/index.ts`                                      | Modify — add `testConnection` method    |
+| `src/renderer/src/stores/settingsStore.ts`                  | **Create**                              |
+| `src/renderer/src/components/settings/SettingsDialog.tsx`   | **Create**                              |
+| `src/renderer/src/components/settings/ProviderSettings.tsx` | **Create**                              |
+| `src/renderer/src/components/settings/ModelSettings.tsx`    | **Create**                              |
+| `src/renderer/src/components/settings/ConnectionTest.tsx`   | **Create**                              |
+| `src/renderer/src/components/settings/index.ts`             | **Create**                              |
+| `src/renderer/src/components/layout/Sidebar.tsx`            | Modify — wire settings button           |
+| `src/renderer/src/App.tsx`                                  | Modify — load settings on startup       |
+| `plans/PLAN.md`                                             | Modify — update progress                |
 
 ---
 

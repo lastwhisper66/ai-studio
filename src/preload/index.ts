@@ -11,7 +11,7 @@ import type {
   StreamEndData,
   StreamErrorData,
   TitleUpdatedData,
-  TestConnectionPayload,
+  Provider,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -69,8 +69,25 @@ const api = {
   setSettingsBatch: (entries: Record<string, string>): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_SET_BATCH, entries),
 
-  testConnection: (payload: TestConnectionPayload): Promise<IpcResult<string>> =>
-    ipcRenderer.invoke(IpcChannels.SETTINGS_TEST_CONNECTION, payload),
+  // Providers
+  listProviders: (): Promise<IpcResult<Provider[]>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_LIST),
+
+  getProvider: (id: string): Promise<IpcResult<Provider | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_GET, id),
+
+  createProvider: (
+    data: Partial<Provider> & { type: Provider['type']; name: string },
+  ): Promise<IpcResult<Provider>> => ipcRenderer.invoke(IpcChannels.PROVIDER_CREATE, data),
+
+  updateProvider: (id: string, data: Partial<Provider>): Promise<IpcResult<Provider | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_UPDATE, id, data),
+
+  deleteProvider: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_DELETE, id),
+
+  testProviderConnection: (provider: Provider): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, provider),
 
   // Chat (streaming)
   sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>

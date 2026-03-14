@@ -16,13 +16,13 @@
 pnpm add class-variance-authority clsx tailwind-merge lucide-react tw-animate-css
 ```
 
-| 包名 | 用途 |
-|------|------|
-| `class-variance-authority` | 组件变体管理（Button、Badge 等 Shadcn 组件内部使用） |
-| `clsx` | 条件拼接 className |
-| `tailwind-merge` | 智能合并 Tailwind 类名，避免冲突 |
-| `lucide-react` | Shadcn 默认图标库 |
-| `tw-animate-css` | Tailwind v4 动画工具（替代 v3 的 `tailwindcss-animate`） |
+| 包名                       | 用途                                                     |
+| -------------------------- | -------------------------------------------------------- |
+| `class-variance-authority` | 组件变体管理（Button、Badge 等 Shadcn 组件内部使用）     |
+| `clsx`                     | 条件拼接 className                                       |
+| `tailwind-merge`           | 智能合并 Tailwind 类名，避免冲突                         |
+| `lucide-react`             | Shadcn 默认图标库                                        |
+| `tw-animate-css`           | Tailwind v4 动画工具（替代 v3 的 `tailwindcss-animate`） |
 
 > **不安装 `shadcn` npm 包**：该包主要提供 CLI + `shadcn/tailwind.css` base layer。在 Tailwind v4 中，我们直接在 CSS 中手写等效的 base layer 样式（设置 `border-color` 默认值等），避免额外依赖。
 
@@ -57,6 +57,7 @@ pnpm add class-variance-authority clsx tailwind-merge lucide-react tw-animate-cs
 ```
 
 关键配置说明：
+
 - `"config": ""` — Tailwind v4 无配置文件，必须留空
 - `"rsc": false` — Electron 无 React Server Components
 - `"style": "new-york"` — 更紧凑的视觉风格，适合桌面应用
@@ -168,8 +169,8 @@ export function cn(...inputs: ClassValue[]): string {
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    sans-serif;
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
 }
 
 /* ── Dark theme ── */
@@ -238,9 +239,9 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@renderer': resolve(__dirname, 'src/renderer/src')
-    }
-  }
+      '@renderer': resolve(__dirname, 'src/renderer/src'),
+    },
+  },
 })
 ```
 
@@ -248,15 +249,15 @@ export default defineConfig({
 
 **安装的组件列表**（本阶段需要）：
 
-| 组件 | 用途 |
-|------|------|
-| `button` | 新建对话、主题切换等交互按钮 |
-| `input` | 搜索框占位 |
-| `scroll-area` | 对话列表和消息列表滚动容器 |
-| `separator` | 侧边栏分隔线 |
-| `tooltip` | 按钮悬停提示 |
-| `avatar` | 用户/AI 头像占位 |
-| `textarea` | 消息输入框占位 |
+| 组件          | 用途                         |
+| ------------- | ---------------------------- |
+| `button`      | 新建对话、主题切换等交互按钮 |
+| `input`       | 搜索框占位                   |
+| `scroll-area` | 对话列表和消息列表滚动容器   |
+| `separator`   | 侧边栏分隔线                 |
+| `tooltip`     | 按钮悬停提示                 |
+| `avatar`      | 用户/AI 头像占位             |
+| `textarea`    | 消息输入框占位               |
 
 > **注意**: `dialog` 和 `dropdown-menu` 推迟到阶段三/五再安装（按需引入）。
 
@@ -298,11 +299,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('theme', theme)
   }, [theme])
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  )
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>
 }
 ```
 
@@ -330,6 +327,7 @@ export function useTheme() {
 **文件**: `src/renderer/src/components/layout/AppLayout.tsx`
 
 顶层 flex 容器，包含 Sidebar + ChatPanel，占满整个窗口。
+
 - 使用 `h-screen` 占满视窗高度
 - 水平 `flex` 布局
 
@@ -358,6 +356,7 @@ export function useTheme() {
 ### 步骤 8：更新 App.tsx 和 main.tsx
 
 #### App.tsx
+
 替换当前内容，渲染 `AppLayout`：
 
 ```tsx
@@ -371,6 +370,7 @@ export default App
 ```
 
 #### main.tsx
+
 包裹 `ThemeProvider`：
 
 ```tsx
@@ -385,7 +385,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <App />
     </ThemeProvider>
-  </StrictMode>
+  </StrictMode>,
 )
 ```
 
@@ -393,20 +393,20 @@ createRoot(document.getElementById('root')!).render(
 
 ## 需要创建/修改的文件清单
 
-| 操作 | 文件路径 | 说明 |
-|------|---------|------|
-| **新建** | `components.json` | Shadcn 配置 |
-| **新建** | `src/renderer/src/lib/utils.ts` | `cn()` 工具函数 |
-| **新建** | `src/renderer/src/components/theme/ThemeProvider.tsx` | 主题上下文 |
-| **新建** | `src/renderer/src/hooks/useTheme.ts` | 主题 Hook |
-| **新建** | `src/renderer/src/components/layout/AppLayout.tsx` | 根布局 |
-| **新建** | `src/renderer/src/components/layout/Sidebar.tsx` | 侧边栏 |
-| **新建** | `src/renderer/src/components/layout/ChatPanel.tsx` | 聊天面板 |
-| **修改** | `src/renderer/src/assets/main.css` | 完整主题系统 |
-| **修改** | `src/renderer/src/App.tsx` | 渲染 AppLayout |
-| **修改** | `src/renderer/src/main.tsx` | 包裹 ThemeProvider |
-| **自动生成** | `src/renderer/src/components/ui/*.tsx` | Shadcn 组件（CLI 生成） |
-| **临时** | `vite.config.ts` | Shadcn CLI 用，安装后删除 |
+| 操作         | 文件路径                                              | 说明                      |
+| ------------ | ----------------------------------------------------- | ------------------------- |
+| **新建**     | `components.json`                                     | Shadcn 配置               |
+| **新建**     | `src/renderer/src/lib/utils.ts`                       | `cn()` 工具函数           |
+| **新建**     | `src/renderer/src/components/theme/ThemeProvider.tsx` | 主题上下文                |
+| **新建**     | `src/renderer/src/hooks/useTheme.ts`                  | 主题 Hook                 |
+| **新建**     | `src/renderer/src/components/layout/AppLayout.tsx`    | 根布局                    |
+| **新建**     | `src/renderer/src/components/layout/Sidebar.tsx`      | 侧边栏                    |
+| **新建**     | `src/renderer/src/components/layout/ChatPanel.tsx`    | 聊天面板                  |
+| **修改**     | `src/renderer/src/assets/main.css`                    | 完整主题系统              |
+| **修改**     | `src/renderer/src/App.tsx`                            | 渲染 AppLayout            |
+| **修改**     | `src/renderer/src/main.tsx`                           | 包裹 ThemeProvider        |
+| **自动生成** | `src/renderer/src/components/ui/*.tsx`                | Shadcn 组件（CLI 生成）   |
+| **临时**     | `vite.config.ts`                                      | Shadcn CLI 用，安装后删除 |
 
 ---
 

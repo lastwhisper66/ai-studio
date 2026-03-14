@@ -13,27 +13,27 @@ export default defineConfig(
   {
     settings: {
       react: {
-        version: 'detect'
-      }
-    }
+        version: 'detect',
+      },
+    },
   },
   {
     files: ['**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': eslintPluginReactHooks,
-      'react-refresh': eslintPluginReactRefresh
+      'react-refresh': eslintPluginReactRefresh,
     },
     rules: {
       ...eslintPluginReactHooks.configs.recommended.rules,
-      ...eslintPluginReactRefresh.configs.vite.rules
-    }
+      ...eslintPluginReactRefresh.configs.vite.rules,
+    },
   },
   {
     files: ['src/renderer/src/components/ui/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/explicit-function-return-type': 'off',
-      'react-refresh/only-export-components': 'off'
-    }
+      'react-refresh/only-export-components': 'off',
+    },
   },
-  eslintConfigPrettier
+  eslintConfigPrettier,
 )

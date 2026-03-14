@@ -9,9 +9,9 @@ const DEFAULT_HEADERS = {
 export function createAzureClient(settings: ApiSettings): AzureOpenAI {
   return new AzureOpenAI({
     apiKey: settings.apiKey,
-    endpoint: settings.endpoint,
+    endpoint: settings.endpoint || undefined,
     apiVersion: settings.apiVersion || '2024-10-01-preview',
-    deployment: settings.deploymentName,
+    deployment: settings.deploymentName || undefined,
     defaultHeaders: DEFAULT_HEADERS,
   })
 }

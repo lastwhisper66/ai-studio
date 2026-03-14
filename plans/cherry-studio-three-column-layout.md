@@ -24,6 +24,7 @@
 ## Implementation Steps
 
 ### Step 1: CSS Theme Variables
+
 **File**: `src/renderer/src/assets/main.css`
 
 在 `:root` 和 `.dark` 中添加新的 CSS 变量：
@@ -49,6 +50,7 @@
 ---
 
 ### Step 2: Create `chat-config.ts`
+
 **File (新建)**: `src/renderer/src/lib/chat-config.ts`
 
 静态模型预设列表，供 InputToolbar 的 Select 下拉使用：
@@ -65,6 +67,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 3: Create `PrimaryNav.tsx`
+
 **File (新建)**: `src/renderer/src/components/layout/PrimaryNav.tsx`
 
 48px 宽的垂直图标导航栏，始终可见，不可折叠：
@@ -78,6 +81,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 4: Create `ConversationPanel.tsx`
+
 **File (新建)**: `src/renderer/src/components/layout/ConversationPanel.tsx`
 
 从 `Sidebar.tsx` 提取而来，280px 宽可折叠面板：
@@ -85,18 +89,21 @@ export const MODEL_PRESETS = [
 **Props**: `collapsed: boolean`, `onToggle: () => void`
 
 **内部结构**:
+
 1. **Header**: "对话" 标题 + `Plus` 新建按钮 + `PanelLeftClose` 折叠按钮
 2. **搜索框**: `Input` 组件 + `Search` 图标前缀，本地 state `searchQuery` 过滤 `conversations`
 3. **会话列表**: `ScrollArea` 渲染过滤后的对话列表，每项含 `DropdownMenu`（重命名/删除）
 4. **底部**: 新建对话按钮（备选位置）
 
 **迁移内容**（来自 Sidebar.tsx）:
+
 - 会话列表渲染逻辑 + 活跃项高亮
 - 重命名对话 Dialog + 状态
 - 删除确认 Dialog + 状态
 - `useConversationStore` 的 conversations/activeId/CRUD 调用
 
 **不迁移**:
+
 - 主题切换 → 移到 PrimaryNav
 - Settings 按钮 → 移到 PrimaryNav
 - SettingsDialog 渲染 → 移到 AppLayout
@@ -104,18 +111,21 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 5: Rewire `AppLayout.tsx`
+
 **File**: `src/renderer/src/components/layout/AppLayout.tsx`
 
 核心切换步骤 — 从两栏变三栏：
 
 ```tsx
-<div className="flex h-screen w-screen overflow-hidden">
+;<div className="flex h-screen w-screen overflow-hidden">
   <PrimaryNav />
   <ConversationPanel collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
   <ChatPanel sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
 </div>
-{/* SettingsDialog 从 Sidebar 移至此处 (lazy-loaded) */}
-<Suspense fallback={null}>
+{
+  /* SettingsDialog 从 Sidebar 移至此处 (lazy-loaded) */
+}
+;<Suspense fallback={null}>
   {dialogOpen && <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />}
 </Suspense>
 ```
@@ -125,6 +135,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 6: Create `InputToolbar.tsx`
+
 **File (新建)**: `src/renderer/src/components/chat/InputToolbar.tsx`
 
 输入区域上方的工具栏，包含模型切换下拉：
@@ -138,6 +149,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 7: Update `ChatView.tsx`
+
 **File**: `src/renderer/src/components/chat/ChatView.tsx`
 
 调整输入区域结构，将 InputToolbar 和 MessageInput 包裹在一个 `border-t` 容器中：
@@ -154,6 +166,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 8: Update `MessageBubble.tsx`
+
 **File**: `src/renderer/src/components/chat/MessageBubble.tsx`
 
 视觉增强:
@@ -169,6 +182,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 9: Minor Polish
+
 - **`MessageList.tsx`**: `space-y-4` → `space-y-6`（更多呼吸空间）
 - **`MessageInput.tsx`**: 移除 `border-t`（已移至 ChatView 父容器）
 - **`WelcomeScreen.tsx`**: 建议卡片 `rounded-lg` → `rounded-xl`
@@ -176,6 +190,7 @@ export const MODEL_PRESETS = [
 ---
 
 ### Step 10: Keyboard Shortcut
+
 **File**: `src/renderer/src/hooks/useKeyboardShortcuts.ts` 或 `AppLayout.tsx`
 
 添加 `Ctrl+B` 快捷键切换 ConversationPanel 显示/隐藏。
@@ -184,23 +199,24 @@ export const MODEL_PRESETS = [
 
 ## Files Summary
 
-| Action | File |
-|--------|------|
-| **NEW** | `src/renderer/src/components/layout/PrimaryNav.tsx` |
-| **NEW** | `src/renderer/src/components/layout/ConversationPanel.tsx` |
-| **NEW** | `src/renderer/src/components/chat/InputToolbar.tsx` |
-| **NEW** | `src/renderer/src/lib/chat-config.ts` |
-| **MODIFY** | `src/renderer/src/assets/main.css` |
-| **MODIFY** | `src/renderer/src/components/layout/AppLayout.tsx` |
-| **MODIFY** | `src/renderer/src/components/chat/ChatView.tsx` |
-| **MODIFY** | `src/renderer/src/components/chat/MessageBubble.tsx` |
-| **MODIFY** | `src/renderer/src/components/chat/MessageInput.tsx` |
-| **MODIFY** | `src/renderer/src/components/chat/MessageList.tsx` |
-| **MODIFY** | `src/renderer/src/components/chat/WelcomeScreen.tsx` |
-| **MODIFY** | `src/renderer/src/hooks/useKeyboardShortcuts.ts` |
-| **DELETE** | `src/renderer/src/components/layout/Sidebar.tsx` |
+| Action     | File                                                       |
+| ---------- | ---------------------------------------------------------- |
+| **NEW**    | `src/renderer/src/components/layout/PrimaryNav.tsx`        |
+| **NEW**    | `src/renderer/src/components/layout/ConversationPanel.tsx` |
+| **NEW**    | `src/renderer/src/components/chat/InputToolbar.tsx`        |
+| **NEW**    | `src/renderer/src/lib/chat-config.ts`                      |
+| **MODIFY** | `src/renderer/src/assets/main.css`                         |
+| **MODIFY** | `src/renderer/src/components/layout/AppLayout.tsx`         |
+| **MODIFY** | `src/renderer/src/components/chat/ChatView.tsx`            |
+| **MODIFY** | `src/renderer/src/components/chat/MessageBubble.tsx`       |
+| **MODIFY** | `src/renderer/src/components/chat/MessageInput.tsx`        |
+| **MODIFY** | `src/renderer/src/components/chat/MessageList.tsx`         |
+| **MODIFY** | `src/renderer/src/components/chat/WelcomeScreen.tsx`       |
+| **MODIFY** | `src/renderer/src/hooks/useKeyboardShortcuts.ts`           |
+| **DELETE** | `src/renderer/src/components/layout/Sidebar.tsx`           |
 
 **不需要的文件** (git status 中的 untracked):
+
 - `RightPanel.tsx` — 本方案不需要右侧面板
 - `chatWorkspaceStore.ts` — 模型切换直接用 settingsStore，无需新 store
 

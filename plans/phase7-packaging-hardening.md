@@ -18,6 +18,7 @@ AI Studio 已完成阶段 1-6 的开发（Electron 骨架、UI、数据层、AI 
 **文件**: `src/main/index.ts` (第 15-18 行 webPreferences)
 
 将 `webPreferences` 改为：
+
 ```typescript
 webPreferences: {
   preload: join(__dirname, '../preload/index.js'),
@@ -32,6 +33,7 @@ webPreferences: {
 **文件**: `src/renderer/index.html` (第 9 行 CSP)
 
 补充 `frame-ancestors`、`base-uri`、`form-action`、`object-src` 指令：
+
 ```
 default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
 ```
@@ -95,6 +97,7 @@ if (!is.dev) {
 使用简单 JSON 文件存储窗口位置/大小（与数据库同目录 `data/`），无需额外依赖。
 
 需要添加：
+
 1. 导入 `readFileSync`、`writeFileSync` from `fs`，`dirname` from `path`
 2. `WindowState` 接口 + `getWindowStatePath()` + `loadWindowState()` + `saveWindowState()` 辅助函数
 3. 修改 `createWindow()` 使用持久化状态初始化窗口
@@ -102,6 +105,7 @@ if (!is.dev) {
 5. 支持 `isMaximized` 状态（最大化时用 `getNormalBounds()` 获取正常尺寸）
 
 数据路径逻辑复用 `src/main/db/database.ts` 中已有的模式：
+
 ```typescript
 const appDir = app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()
 const statePath = join(appDir, 'data', 'window-state.json')
@@ -114,19 +118,22 @@ const statePath = join(appDir, 'data', 'window-state.json')
 **文件**: `src/renderer/src/components/layout/Sidebar.tsx`
 
 将第 34 行的静态导入：
+
 ```typescript
 import { SettingsDialog } from '@renderer/components/settings'
 ```
 
 替换为：
+
 ```typescript
 import { lazy, Suspense } from 'react'
 const SettingsDialog = lazy(() =>
-  import('@renderer/components/settings').then((m) => ({ default: m.SettingsDialog }))
+  import('@renderer/components/settings').then((m) => ({ default: m.SettingsDialog })),
 )
 ```
 
 在第 238 行的使用处包裹 `Suspense`：
+
 ```tsx
 <Suspense fallback={null}>
   <SettingsDialog open={dialogOpen} onOpenChange={setDialogOpen} />
@@ -151,7 +158,7 @@ const SettingsDialog = lazy(() =>
 export function listMessagesPaginated(
   conversationId: string,
   limit: number = 50,
-  beforeCreatedAt?: string
+  beforeCreatedAt?: string,
 ): { messages: Message[]; hasMore: boolean } {
   const db = getDb()
   let rows: MessageRow[]
@@ -159,14 +166,12 @@ export function listMessagesPaginated(
   if (beforeCreatedAt) {
     rows = db
       .prepare(
-        'SELECT * FROM messages WHERE conversation_id = ? AND created_at < ? ORDER BY created_at DESC LIMIT ?'
+        'SELECT * FROM messages WHERE conversation_id = ? AND created_at < ? ORDER BY created_at DESC LIMIT ?',
       )
       .all(conversationId, beforeCreatedAt, limit + 1) as MessageRow[]
   } else {
     rows = db
-      .prepare(
-        'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?'
-      )
+      .prepare('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at DESC LIMIT ?')
       .all(conversationId, limit + 1) as MessageRow[]
   }
 
@@ -187,6 +192,7 @@ export function listMessagesPaginated(
 **文件**: `src/shared/ipc-channels.ts`
 
 在 Message 区块添加：
+
 ```typescript
 MESSAGE_LIST_PAGINATED: 'message:list-paginated',
 ```
@@ -196,6 +202,7 @@ MESSAGE_LIST_PAGINATED: 'message:list-paginated',
 **文件**: `src/main/ipc/message-handlers.ts`
 
 导入 `listMessagesPaginated` 并注册 handler：
+
 ```typescript
 ipcMain.handle(
   IpcChannels.MESSAGE_LIST_PAGINATED,
@@ -215,6 +222,7 @@ ipcMain.handle(
 **文件**: `src/preload/index.ts`
 
 在 Messages 区块添加：
+
 ```typescript
 listMessagesPaginated: (
   conversationId: string,
@@ -241,14 +249,17 @@ listMessagesPaginated: (
 **文件**: `src/renderer/src/components/chat/MessageList.tsx`
 
 在消息列表顶部（`messages.map` 之前）添加"加载更多"按钮：
+
 ```tsx
-{hasMoreMessages && (
-  <div className="flex justify-center py-2">
-    <Button variant="ghost" size="sm" onClick={loadMoreMessages}>
-      Load earlier messages
-    </Button>
-  </div>
-)}
+{
+  hasMoreMessages && (
+    <div className="flex justify-center py-2">
+      <Button variant="ghost" size="sm" onClick={loadMoreMessages}>
+        Load earlier messages
+      </Button>
+    </div>
+  )
+}
 ```
 
 从 store 获取 `hasMoreMessages` 和 `loadMoreMessages`。
@@ -260,15 +271,16 @@ listMessagesPaginated: (
 **文件**: `electron-builder.yml`
 
 添加：
+
 ```yaml
 win:
   executableName: ai-studio
-  icon: build/icon.ico       # 显式指定图标路径
+  icon: build/icon.ico # 显式指定图标路径
 nsis:
   # ... 保留现有配置 ...
-  oneClick: false             # 引导式安装器
+  oneClick: false # 引导式安装器
   allowToChangeInstallationDirectory: true
-publish: null                 # 防止意外自动更新
+publish: null # 防止意外自动更新
 ```
 
 ---
@@ -292,27 +304,27 @@ publish: null                 # 防止意外自动更新
 
 ## 刻意排除的内容
 
-| 排除项 | 原因 |
-|--------|------|
-| 虚拟滚动 (react-window) | 分页加载后 DOM 中最多 50 条消息，`React.memo` 已防止重渲染，复杂度收益比低 |
-| Shiki 预编译 | 当前懒单例模式已足够高效（初始化一次后缓存），预编译需构建步骤维护成本高 |
-| IPC 输入验证 | `contextIsolation + sandbox` 已阻止外部访问，属于纵深防御范畴，可后续添加 |
-| 自动更新 (electron-updater) | 需要更新服务器/GitHub Releases 配置，超出当前阶段范围 |
-| 代码签名 | 需要购买证书，属于发布流程而非代码变更 |
+| 排除项                      | 原因                                                                       |
+| --------------------------- | -------------------------------------------------------------------------- |
+| 虚拟滚动 (react-window)     | 分页加载后 DOM 中最多 50 条消息，`React.memo` 已防止重渲染，复杂度收益比低 |
+| Shiki 预编译                | 当前懒单例模式已足够高效（初始化一次后缓存），预编译需构建步骤维护成本高   |
+| IPC 输入验证                | `contextIsolation + sandbox` 已阻止外部访问，属于纵深防御范畴，可后续添加  |
+| 自动更新 (electron-updater) | 需要更新服务器/GitHub Releases 配置，超出当前阶段范围                      |
+| 代码签名                    | 需要购买证书，属于发布流程而非代码变更                                     |
 
 ---
 
 ## 变更文件清单
 
-| 文件 | 变更 |
-|------|------|
-| `src/main/index.ts` | 安全加固 + 单实例锁 + DevTools 控制 + 窗口状态持久化 |
-| `src/renderer/index.html` | CSP 增强 |
-| `src/main/db/messages.ts` | 新增 `listMessagesPaginated` |
-| `src/shared/ipc-channels.ts` | 新增 `MESSAGE_LIST_PAGINATED` |
-| `src/main/ipc/message-handlers.ts` | 新增分页 handler |
-| `src/preload/index.ts` | 暴露 `listMessagesPaginated` |
-| `src/renderer/src/stores/conversationStore.ts` | 分页加载 + `loadMoreMessages` |
-| `src/renderer/src/components/chat/MessageList.tsx` | "Load earlier messages" 按钮 |
-| `src/renderer/src/components/layout/Sidebar.tsx` | 懒加载 SettingsDialog |
-| `electron-builder.yml` | 完善打包配置 |
+| 文件                                               | 变更                                                 |
+| -------------------------------------------------- | ---------------------------------------------------- |
+| `src/main/index.ts`                                | 安全加固 + 单实例锁 + DevTools 控制 + 窗口状态持久化 |
+| `src/renderer/index.html`                          | CSP 增强                                             |
+| `src/main/db/messages.ts`                          | 新增 `listMessagesPaginated`                         |
+| `src/shared/ipc-channels.ts`                       | 新增 `MESSAGE_LIST_PAGINATED`                        |
+| `src/main/ipc/message-handlers.ts`                 | 新增分页 handler                                     |
+| `src/preload/index.ts`                             | 暴露 `listMessagesPaginated`                         |
+| `src/renderer/src/stores/conversationStore.ts`     | 分页加载 + `loadMoreMessages`                        |
+| `src/renderer/src/components/chat/MessageList.tsx` | "Load earlier messages" 按钮                         |
+| `src/renderer/src/components/layout/Sidebar.tsx`   | 懒加载 SettingsDialog                                |
+| `electron-builder.yml`                             | 完善打包配置                                         |

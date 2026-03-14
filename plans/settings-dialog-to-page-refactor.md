@@ -12,30 +12,30 @@
 
 ### 新建文件（7 个）
 
-| 文件 | 用途 |
-|------|------|
-| `settings/SettingsPage.tsx` | 设置主页面，管理表单状态，两栏布局容器 |
-| `settings/SettingsSidebar.tsx` | 左侧分类导航栏（Provider / Model / General / Display） |
+| 文件                           | 用途                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| `settings/SettingsPage.tsx`    | 设置主页面，管理表单状态，两栏布局容器                                   |
+| `settings/SettingsSidebar.tsx` | 左侧分类导航栏（Provider / Model / General / Display）                   |
 | `settings/ProviderSection.tsx` | Provider 区块包装器：标题 + ProviderSettings + ConnectionTest + 保存按钮 |
-| `settings/ModelSection.tsx` | Model 区块包装器：标题 + ModelSettings + 保存按钮 |
-| `settings/GeneralSection.tsx` | 通用设置占位区块（Coming soon） |
-| `settings/DisplaySection.tsx` | 显示设置占位区块（Coming soon） |
-| `settings/formUtils.ts` | 提取 DEFAULT_FORM、formStateFromSettings、分区 key 映射函数 |
+| `settings/ModelSection.tsx`    | Model 区块包装器：标题 + ModelSettings + 保存按钮                        |
+| `settings/GeneralSection.tsx`  | 通用设置占位区块（Coming soon）                                          |
+| `settings/DisplaySection.tsx`  | 显示设置占位区块（Coming soon）                                          |
+| `settings/formUtils.ts`        | 提取 DEFAULT_FORM、formStateFromSettings、分区 key 映射函数              |
 
 ### 修改文件（5 个）
 
-| 文件 | 变更 |
-|------|------|
-| `stores/settingsStore.ts` | `dialogOpen` → `activeView`，`setDialogOpen` → `setActiveView` |
-| `layout/AppLayout.tsx` | 条件渲染：activeView=chat 显示 ConversationPanel+ChatPanel，=settings 显示 SettingsPage |
-| `layout/PrimaryNav.tsx` | Chat/Settings 按钮切换 activeView，高亮当前活动视图 |
-| `hooks/useKeyboardShortcuts.ts` | Ctrl+, 改为 toggle（chat↔settings） |
-| `settings/index.ts` | 导出 SettingsPage 替代 SettingsDialog |
+| 文件                            | 变更                                                                                    |
+| ------------------------------- | --------------------------------------------------------------------------------------- |
+| `stores/settingsStore.ts`       | `dialogOpen` → `activeView`，`setDialogOpen` → `setActiveView`                          |
+| `layout/AppLayout.tsx`          | 条件渲染：activeView=chat 显示 ConversationPanel+ChatPanel，=settings 显示 SettingsPage |
+| `layout/PrimaryNav.tsx`         | Chat/Settings 按钮切换 activeView，高亮当前活动视图                                     |
+| `hooks/useKeyboardShortcuts.ts` | Ctrl+, 改为 toggle（chat↔settings）                                                     |
+| `settings/index.ts`             | 导出 SettingsPage 替代 SettingsDialog                                                   |
 
 ### 删除文件（1 个）
 
-| 文件 | 原因 |
-|------|------|
+| 文件                          | 原因                     |
+| ----------------------------- | ------------------------ |
 | `settings/SettingsDialog.tsx` | 被 SettingsPage 完全替代 |
 
 ## 实现步骤
@@ -43,6 +43,7 @@
 ### Step 1: 提取表单工具函数 → `formUtils.ts`
 
 从 SettingsDialog.tsx 提取：
+
 - `DEFAULT_FORM` 常量
 - `formStateFromSettings(settings)` 函数
 - 新增 `providerKeys(form)` — 返回 provider 相关的 `Record<string, string>`
@@ -66,6 +67,7 @@
 ### Step 4: 修改 `useKeyboardShortcuts.ts`
 
 Ctrl+, 改为 toggle：
+
 ```ts
 const current = useSettingsStore.getState().activeView
 setActiveView(current === 'settings' ? 'chat' : 'settings')
@@ -74,6 +76,7 @@ setActiveView(current === 'settings' ? 'chat' : 'settings')
 ### Step 5: 创建 `SettingsSidebar.tsx`
 
 约 200px 宽的垂直导航栏，4 个分类项：
+
 - Provider（Cloud 图标）
 - Model（Sliders 图标）
 - General（Settings2 图标）

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { useProviderStore } from '@renderer/stores/providerStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
 import { ModelSection } from './ModelSection'
@@ -11,10 +12,16 @@ import type { SettingsFormState } from './types'
 
 export function SettingsPage(): React.JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
+  const loadProviders = useProviderStore((s) => s.loadProviders)
   const [activeSection, setActiveSection] = useState<SettingsSection>('provider')
   const [formState, setFormState] = useState<SettingsFormState>(DEFAULT_FORM)
 
-  // Sync form state when settings are loaded or change
+  // Load providers when settings page opens
+  useEffect(() => {
+    loadProviders()
+  }, [loadProviders])
+
+  // Sync model form state when settings change
   useEffect(() => {
     setFormState(formStateFromSettings(settings))
   }, [settings])
@@ -34,18 +41,19 @@ export function SettingsPage(): React.JSX.Element {
       <div className="flex min-h-0 flex-1">
         <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
 
-        <ScrollArea className="flex-1">
-          <div className="mx-auto max-w-2xl p-6">
-            {activeSection === 'provider' && (
-              <ProviderSection formState={formState} onChange={handleChange} />
-            )}
-            {activeSection === 'model' && (
-              <ModelSection formState={formState} onChange={handleChange} />
-            )}
-            {activeSection === 'general' && <GeneralSection />}
-            {activeSection === 'display' && <DisplaySection />}
-          </div>
-        </ScrollArea>
+        {activeSection === 'provider' ? (
+          <ProviderSection />
+        ) : (
+          <ScrollArea className="flex-1">
+            <div className="mx-auto max-w-2xl p-6">
+              {activeSection === 'model' && (
+                <ModelSection formState={formState} onChange={handleChange} />
+              )}
+              {activeSection === 'general' && <GeneralSection />}
+              {activeSection === 'display' && <DisplaySection />}
+            </div>
+          </ScrollArea>
+        )}
       </div>
     </div>
   )

@@ -1,46 +1,35 @@
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@renderer/components/ui/select'
-import { useSettingsStore } from '@renderer/stores/settingsStore'
-import { MODEL_PRESETS } from '@renderer/lib/chat-config'
+import { useProviderStore } from '@renderer/stores/providerStore'
+import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 
 export function InputToolbar(): React.JSX.Element {
-  const currentModel = useSettingsStore((s) => s.settings['api.model']) || 'gpt-4o'
-  const provider = useSettingsStore((s) => s.settings['api.provider']) || 'openai'
-  const baseUrl = useSettingsStore((s) => s.settings['api.baseUrl'])
-  const saveSettings = useSettingsStore((s) => s.saveSettings)
+  const providers = useProviderStore((s) => s.providers)
+  const activeProviderId = useProviderStore((s) => s.activeProviderId)
 
-  const showPresets = provider === 'openai' && !baseUrl
+  const activeProvider = providers.find((p) => p.id === activeProviderId)
+  const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
 
-  const handleModelChange = (value: string): void => {
-    saveSettings({ 'api.model': value })
+  if (!activeProvider) {
+    return (
+      <div className="flex items-center px-4 pt-3 pb-1">
+        <div className="mx-auto flex w-full max-w-3xl items-center">
+          <span className="text-muted-foreground rounded-md bg-muted/50 px-2.5 py-1 text-xs">
+            No provider configured
+          </span>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="flex items-center px-4 pt-3 pb-1">
-      <div className="mx-auto flex w-full max-w-3xl items-center">
-        {showPresets ? (
-          <Select value={currentModel} onValueChange={handleModelChange}>
-            <SelectTrigger className="h-7 w-auto gap-1 border-none bg-muted/50 px-2.5 text-xs shadow-none">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {MODEL_PRESETS.map((m) => (
-                <SelectItem key={m.value} value={m.value} className="text-xs">
-                  {m.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <span className="rounded-md bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
-            {currentModel}
-          </span>
-        )}
+      <div className="mx-auto flex w-full max-w-3xl items-center gap-1.5">
+        <span
+          className="inline-block h-2 w-2 rounded-full"
+          style={{ backgroundColor: template?.color ?? '#6b7280' }}
+        />
+        <span className="text-muted-foreground rounded-md bg-muted/50 px-2.5 py-1 text-xs">
+          {activeProvider.model || 'No model set'}
+        </span>
       </div>
     </div>
   )

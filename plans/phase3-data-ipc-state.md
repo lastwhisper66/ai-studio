@@ -86,23 +86,23 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   main: {
     resolve: {
-      alias: { '@shared': resolve('src/shared') }
-    }
+      alias: { '@shared': resolve('src/shared') },
+    },
   },
   preload: {
     resolve: {
-      alias: { '@shared': resolve('src/shared') }
-    }
+      alias: { '@shared': resolve('src/shared') },
+    },
   },
   renderer: {
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
-        '@shared': resolve('src/shared')
-      }
+        '@shared': resolve('src/shared'),
+      },
     },
-    plugins: [tailwindcss(), react()]
-  }
+    plugins: [tailwindcss(), react()],
+  },
 })
 ```
 
@@ -128,12 +128,7 @@ export default defineConfig({
 
 ```json
 {
-  "include": [
-    "electron.vite.config.*",
-    "src/main/**/*",
-    "src/preload/**/*",
-    "src/shared/**/*"
-  ]
+  "include": ["electron.vite.config.*", "src/main/**/*", "src/preload/**/*", "src/shared/**/*"]
 }
 ```
 
@@ -177,7 +172,7 @@ export default defineConfig({
 export interface Conversation {
   id: string
   title: string
-  createdAt: string       // ISO 8601
+  createdAt: string // ISO 8601
   updatedAt: string
   model: string | null
   systemPrompt: string | null
@@ -370,6 +365,7 @@ registerAllIpcHandlers()
 将空 `api` 对象替换为完整的 IPC API 包装，共 11 个方法：
 
 **对话 (5 个)**：
+
 - `listConversations()`
 - `getConversation(id)`
 - `createConversation(title?)`
@@ -377,11 +373,13 @@ registerAllIpcHandlers()
 - `deleteConversation(id)`
 
 **消息 (3 个)**：
+
 - `listMessages(conversationId)`
 - `createMessage(conversationId, role, content)`
 - `deleteMessage(id)`
 
 **设置 (3 个)**：
+
 - `getSetting(key)`
 - `setSetting(key, value)`
 - `getAllSettings()`
@@ -431,14 +429,14 @@ interface ConversationState {
 
 ### Actions
 
-| Action | 行为 |
-|--------|------|
-| `loadConversations()` | 启动时从 DB 加载全部对话列表 |
-| `createConversation(title?)` | 创建新对话，自动设为 active，加载空消息 |
-| `deleteConversation(id)` | 删除对话；若删除当前对话则 fallback 到第一条或清空 |
-| `renameConversation(id, title)` | 更新对话标题 |
-| `setActiveConversation(id)` | 切换对话，加载该对话的消息 |
-| `addMessage(role, content)` | 保存消息到 DB，追加到 messages 数组；首条用户消息自动截取内容作为对话标题 |
+| Action                          | 行为                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `loadConversations()`           | 启动时从 DB 加载全部对话列表                                              |
+| `createConversation(title?)`    | 创建新对话，自动设为 active，加载空消息                                   |
+| `deleteConversation(id)`        | 删除对话；若删除当前对话则 fallback 到第一条或清空                        |
+| `renameConversation(id, title)` | 更新对话标题                                                              |
+| `setActiveConversation(id)`     | 切换对话，加载该对话的消息                                                |
+| `addMessage(role, content)`     | 保存消息到 DB，追加到 messages 数组；首条用户消息自动截取内容作为对话标题 |
 
 ### 验证
 
@@ -521,35 +519,35 @@ pnpm lint
 
 **新建 13 个文件：**
 
-| 文件 | 用途 | Step |
-|------|------|------|
-| `src/shared/types.ts` | 数据模型接口 | 3 |
-| `src/shared/ipc-channels.ts` | IPC 通道常量 | 3 |
-| `src/shared/index.ts` | 桶导出 | 3 |
-| `src/main/db/database.ts` | SQLite 初始化与连接管理 | 4 |
-| `src/main/db/conversations.ts` | 对话 CRUD | 4 |
-| `src/main/db/messages.ts` | 消息 CRUD | 4 |
-| `src/main/db/settings.ts` | 设置键值存储 | 4 |
-| `src/main/db/index.ts` | DB 桶导出 | 4 |
-| `src/main/ipc/conversation-handlers.ts` | 对话 IPC handlers | 5 |
-| `src/main/ipc/message-handlers.ts` | 消息 IPC handlers | 5 |
-| `src/main/ipc/settings-handlers.ts` | 设置 IPC handlers | 5 |
-| `src/main/ipc/index.ts` | IPC 注册入口 | 5 |
-| `src/renderer/src/stores/conversationStore.ts` | Zustand 状态管理 | 7 |
+| 文件                                           | 用途                    | Step |
+| ---------------------------------------------- | ----------------------- | ---- |
+| `src/shared/types.ts`                          | 数据模型接口            | 3    |
+| `src/shared/ipc-channels.ts`                   | IPC 通道常量            | 3    |
+| `src/shared/index.ts`                          | 桶导出                  | 3    |
+| `src/main/db/database.ts`                      | SQLite 初始化与连接管理 | 4    |
+| `src/main/db/conversations.ts`                 | 对话 CRUD               | 4    |
+| `src/main/db/messages.ts`                      | 消息 CRUD               | 4    |
+| `src/main/db/settings.ts`                      | 设置键值存储            | 4    |
+| `src/main/db/index.ts`                         | DB 桶导出               | 4    |
+| `src/main/ipc/conversation-handlers.ts`        | 对话 IPC handlers       | 5    |
+| `src/main/ipc/message-handlers.ts`             | 消息 IPC handlers       | 5    |
+| `src/main/ipc/settings-handlers.ts`            | 设置 IPC handlers       | 5    |
+| `src/main/ipc/index.ts`                        | IPC 注册入口            | 5    |
+| `src/renderer/src/stores/conversationStore.ts` | Zustand 状态管理        | 7    |
 
 **修改 9 个文件：**
 
-| 文件 | 变更 | Step |
-|------|------|------|
-| `package.json` | 添加依赖 + pnpm.onlyBuiltDependencies | 1 |
-| `electron-builder.yml` | npmRebuild + asarUnpack | 2 |
-| `electron.vite.config.ts` | @shared 别名 | 2 |
-| `tsconfig.json` | @shared path | 2 |
-| `tsconfig.node.json` | include shared | 2 |
-| `tsconfig.web.json` | include shared + @shared path | 2 |
-| `src/main/index.ts` | 初始化 DB + 注册 IPC | 6 |
-| `src/preload/index.ts` | 完整 API 桥接 | 6 |
-| `src/preload/index.d.ts` | 类型声明 | 6 |
-| `src/renderer/src/App.tsx` | 加载对话列表 | 8 |
-| `src/renderer/src/components/layout/Sidebar.tsx` | 对话列表交互 | 8 |
-| `src/renderer/src/components/layout/ChatPanel.tsx` | 消息显示与发送 | 8 |
+| 文件                                               | 变更                                  | Step |
+| -------------------------------------------------- | ------------------------------------- | ---- |
+| `package.json`                                     | 添加依赖 + pnpm.onlyBuiltDependencies | 1    |
+| `electron-builder.yml`                             | npmRebuild + asarUnpack               | 2    |
+| `electron.vite.config.ts`                          | @shared 别名                          | 2    |
+| `tsconfig.json`                                    | @shared path                          | 2    |
+| `tsconfig.node.json`                               | include shared                        | 2    |
+| `tsconfig.web.json`                                | include shared + @shared path         | 2    |
+| `src/main/index.ts`                                | 初始化 DB + 注册 IPC                  | 6    |
+| `src/preload/index.ts`                             | 完整 API 桥接                         | 6    |
+| `src/preload/index.d.ts`                           | 类型声明                              | 6    |
+| `src/renderer/src/App.tsx`                         | 加载对话列表                          | 8    |
+| `src/renderer/src/components/layout/Sidebar.tsx`   | 对话列表交互                          | 8    |
+| `src/renderer/src/components/layout/ChatPanel.tsx` | 消息显示与发送                        | 8    |

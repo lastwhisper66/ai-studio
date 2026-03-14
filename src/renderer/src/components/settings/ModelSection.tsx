@@ -20,9 +20,7 @@ export function ModelSection({ formState, onChange }: ModelSectionProps): React.
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold">Model</h2>
-        <p className="text-muted-foreground text-sm">
-          Adjust model parameters and system prompt.
-        </p>
+        <p className="text-muted-foreground text-sm">Adjust model parameters and system prompt.</p>
       </div>
 
       <ModelSettings formState={formState} onChange={onChange} />

@@ -68,7 +68,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
       if (activeConversationId === id) {
         const nextId = remaining.length > 0 ? remaining[0].id : null
-        set({ conversations: remaining, activeConversationId: nextId, messages: [], hasMoreMessages: false })
+        set({
+          conversations: remaining,
+          activeConversationId: nextId,
+          messages: [],
+          hasMoreMessages: false,
+        })
         if (nextId) {
           const msgResult = await window.api.listMessagesPaginated(nextId)
           if (msgResult.success && msgResult.data) {
@@ -115,11 +120,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     if (!activeConversationId || !hasMoreMessages || messages.length === 0) return
 
     const oldest = messages[0].createdAt
-    const result = await window.api.listMessagesPaginated(
-      activeConversationId,
-      undefined,
-      oldest,
-    )
+    const result = await window.api.listMessagesPaginated(activeConversationId, undefined, oldest)
     if (result.success && result.data) {
       const loaded = result.data
       set((state) => ({

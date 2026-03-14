@@ -15,7 +15,13 @@ export const IpcChannels = {
   SETTINGS_SET: 'settings:set',
   SETTINGS_GET_ALL: 'settings:get-all',
   SETTINGS_SET_BATCH: 'settings:set-batch',
-  SETTINGS_TEST_CONNECTION: 'settings:test-connection',
+  // Provider
+  PROVIDER_LIST: 'provider:list',
+  PROVIDER_GET: 'provider:get',
+  PROVIDER_CREATE: 'provider:create',
+  PROVIDER_UPDATE: 'provider:update',
+  PROVIDER_DELETE: 'provider:delete',
+  PROVIDER_TEST_CONNECTION: 'provider:test-connection',
   // Chat (streaming)
   CHAT_SEND_MESSAGE: 'chat:send-message',
   CHAT_STREAM_CHUNK: 'chat:stream-chunk',

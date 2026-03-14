@@ -73,12 +73,12 @@ SQLite with WAL mode and foreign key constraints enabled:
 
 All channels follow `domain:action` naming:
 
-| Domain | Channels |
-|--------|----------|
-| **conversation** | `list`, `get`, `create`, `update`, `delete` |
-| **message** | `list`, `list-paginated`, `create`, `delete` |
-| **settings** | `get`, `set`, `get-all`, `set-batch`, `test-connection` |
-| **chat** | `send-message`, `stream-chunk`, `stream-end`, `stream-error`, `stop-generation`, `title-updated` |
+| Domain           | Channels                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| **conversation** | `list`, `get`, `create`, `update`, `delete`                                                      |
+| **message**      | `list`, `list-paginated`, `create`, `delete`                                                     |
+| **settings**     | `get`, `set`, `get-all`, `set-batch`, `test-connection`                                          |
+| **chat**         | `send-message`, `stream-chunk`, `stream-end`, `stream-error`, `stop-generation`, `title-updated` |
 
 Chat streaming uses event-based IPC (not request-response): main process emits `chat:stream-chunk` events, renderer listens via `window.api.onStreamChunk()`.
 

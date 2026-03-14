@@ -3,15 +3,18 @@
 ## Context
 
 代码审查发现 ThemeProvider 中存在 2 个高优先级 bug：
+
 1. `system` 主题模式下不会监听操作系统主题变更
 2. localStorage 读取主题值时缺少合法性校验，可能导致主题行为异常
 
 ## 修复范围
 
 ### Fix 1: 添加系统主题媒体查询监听器
+
 **文件**: `src/renderer/src/components/theme/ThemeProvider.tsx`
 
 将 `useEffect` 中的 `system` 分支从一次性检查改为持续监听：
+
 - 使用 `window.matchMedia('(prefers-color-scheme: dark)')` 注册 `change` 事件
 - 在 effect cleanup 中移除监听器，防止内存泄漏
 - `localStorage.setItem` 移到条件分支外，确保所有路径都持久化
@@ -37,6 +40,7 @@ useEffect(() => {
 ```
 
 ### Fix 2: 校验 localStorage 主题值
+
 **文件**: `src/renderer/src/components/theme/ThemeProvider.tsx`
 
 将 `useState` 初始化中的不安全类型断言替换为显式校验：

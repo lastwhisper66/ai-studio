@@ -41,6 +41,8 @@ export function ThemeProvider({ children }: { children: ReactNode }): React.JSX.
   }, [theme])
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
   )
 }

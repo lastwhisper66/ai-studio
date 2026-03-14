@@ -61,7 +61,7 @@ export interface StreamChunkData {
 /** chat:stream-end 推送数据 */
 export interface StreamEndData {
   conversationId: string
-  message: Message | null  // null 表示用户中断
+  message: Message | null // null 表示用户中断
 }
 
 /** chat:stream-error 推送数据 */
@@ -78,14 +78,17 @@ export interface StreamErrorData {
 **新建目录**: `src/main/ai/`
 
 #### `src/main/ai/openai-client.ts`
+
 - 导出 `createOpenAIClient(settings: ApiSettings): OpenAI`
 - 使用 `settings.apiKey` 和 `settings.baseUrl`
 
 #### `src/main/ai/azure-client.ts`
+
 - 导出 `createAzureClient(settings: ApiSettings): AzureOpenAI`
 - 使用 `settings.apiKey`、`settings.endpoint`、`settings.apiVersion`（默认 `'2024-10-01-preview'`）、`settings.deploymentName`
 
 #### `src/main/ai/index.ts`
+
 - 导出 `createAIClient(settings: ApiSettings): OpenAI` — 工厂函数，根据 `provider` 选择客户端
   - `AzureOpenAI extends OpenAI`，返回类型兼容
 - 导出 `loadApiSettings(): ApiSettings` — 从 DB settings 表读取配置
@@ -114,6 +117,7 @@ export interface StreamErrorData {
 ```
 
 流程：
+
 1. `loadApiSettings()` 加载 API 配置
 2. `listMessages(conversationId)` 加载对话历史（此时用户消息已由渲染进程保存）
 3. 构建 API messages 数组（可选 system prompt + 历史消息）
@@ -131,6 +135,7 @@ export interface StreamErrorData {
 11. 自动标题：若对话历史仅 1 条用户消息（首次对话），调用 `generateTitle()` 生成标题，更新 DB，推送 `CHAT_TITLE_UPDATED` 事件
 
 **错误处理**:
+
 - `AbortError`（用户中断）→ 保存已累积的部分内容到 DB → 推送 `CHAT_STREAM_END`（含部分消息）
 - 其他错误 → 推送 `CHAT_STREAM_ERROR`
 
@@ -192,6 +197,7 @@ removeAllStreamListeners: () => {
 **文件**: `src/renderer/src/stores/conversationStore.ts`
 
 **不创建独立 chatStore**——扩展现有 store，因为：
+
 - 现有 store 已持有 `messages`、`activeConversationId`、`addMessage()`
 - 流式状态（`isStreaming`、`streamingContent`）与活跃对话强绑定
 - 避免两个 store 之间的交叉引用
@@ -199,8 +205,8 @@ removeAllStreamListeners: () => {
 新增状态字段：
 
 ```typescript
-isStreaming: boolean        // 默认 false
-streamingContent: string   // 默认 ''
+isStreaming: boolean // 默认 false
+streamingContent: string // 默认 ''
 ```
 
 新增 actions：
@@ -208,6 +214,7 @@ streamingContent: string   // 默认 ''
 #### `sendMessage(content: string): Promise<void>`
 
 完整流程：
+
 1. 如果无活跃对话，先 `createConversation()`
 2. 调用 `addMessage('user', content)` 保存用户消息（复用现有逻辑）
 3. `set({ isStreaming: true, streamingContent: '' })`
@@ -238,7 +245,7 @@ streamingContent: string   // 默认 ''
 interface Props {
   role: MessageRole
   content: string
-  isStreaming?: boolean  // 流式消息末尾显示闪烁光标
+  isStreaming?: boolean // 流式消息末尾显示闪烁光标
 }
 ```
 
@@ -316,24 +323,24 @@ export function ChatPanel(): React.JSX.Element {
 
 ## 文件变更总览
 
-| 顺序 | 文件 | 操作 | 说明 |
-|------|------|------|------|
-| 1 | `package.json` | 修改 | 添加 `openai` 依赖 |
-| 2 | `src/shared/ipc-channels.ts` | 修改 | +5 个 chat 通道 |
-| 3 | `src/shared/types.ts` | 修改 | +4 个流式通信类型 |
-| 4 | `src/main/ai/openai-client.ts` | 新建 | OpenAI 客户端 |
-| 5 | `src/main/ai/azure-client.ts` | 新建 | Azure 客户端 |
-| 6 | `src/main/ai/index.ts` | 新建 | 工厂 + 配置加载 + 标题生成 |
-| 7 | `src/main/ipc/chat-handlers.ts` | 新建 | 流式核心 handler |
-| 8 | `src/main/ipc/index.ts` | 修改 | 注册 chat handlers |
-| 9 | `src/preload/index.ts` | 修改 | +6 个流式 API 方法 |
-| 10 | `src/renderer/src/stores/conversationStore.ts` | 修改 | +isStreaming/streamingContent/sendMessage/stopGeneration |
-| 11 | `src/renderer/src/components/chat/MessageBubble.tsx` | 新建 | 消息气泡 |
-| 12 | `src/renderer/src/components/chat/MessageList.tsx` | 新建 | 消息列表 + 自动滚动 |
-| 13 | `src/renderer/src/components/chat/MessageInput.tsx` | 新建 | 输入框 + 发送/停止 |
-| 14 | `src/renderer/src/components/chat/ChatView.tsx` | 新建 | 聊天主视图 |
-| 15 | `src/renderer/src/components/chat/index.ts` | 新建 | barrel export |
-| 16 | `src/renderer/src/components/layout/ChatPanel.tsx` | 修改 | 简化为 ChatView 包装器 |
+| 顺序 | 文件                                                 | 操作 | 说明                                                     |
+| ---- | ---------------------------------------------------- | ---- | -------------------------------------------------------- |
+| 1    | `package.json`                                       | 修改 | 添加 `openai` 依赖                                       |
+| 2    | `src/shared/ipc-channels.ts`                         | 修改 | +5 个 chat 通道                                          |
+| 3    | `src/shared/types.ts`                                | 修改 | +4 个流式通信类型                                        |
+| 4    | `src/main/ai/openai-client.ts`                       | 新建 | OpenAI 客户端                                            |
+| 5    | `src/main/ai/azure-client.ts`                        | 新建 | Azure 客户端                                             |
+| 6    | `src/main/ai/index.ts`                               | 新建 | 工厂 + 配置加载 + 标题生成                               |
+| 7    | `src/main/ipc/chat-handlers.ts`                      | 新建 | 流式核心 handler                                         |
+| 8    | `src/main/ipc/index.ts`                              | 修改 | 注册 chat handlers                                       |
+| 9    | `src/preload/index.ts`                               | 修改 | +6 个流式 API 方法                                       |
+| 10   | `src/renderer/src/stores/conversationStore.ts`       | 修改 | +isStreaming/streamingContent/sendMessage/stopGeneration |
+| 11   | `src/renderer/src/components/chat/MessageBubble.tsx` | 新建 | 消息气泡                                                 |
+| 12   | `src/renderer/src/components/chat/MessageList.tsx`   | 新建 | 消息列表 + 自动滚动                                      |
+| 13   | `src/renderer/src/components/chat/MessageInput.tsx`  | 新建 | 输入框 + 发送/停止                                       |
+| 14   | `src/renderer/src/components/chat/ChatView.tsx`      | 新建 | 聊天主视图                                               |
+| 15   | `src/renderer/src/components/chat/index.ts`          | 新建 | barrel export                                            |
+| 16   | `src/renderer/src/components/layout/ChatPanel.tsx`   | 修改 | 简化为 ChatView 包装器                                   |
 
 ---
 

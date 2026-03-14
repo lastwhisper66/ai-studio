@@ -18,16 +18,45 @@ export interface Message {
   tokenCount: number | null
 }
 
-export type ApiProvider = 'openai' | 'azure'
+export type ProviderType =
+  | 'openai'
+  | 'azure'
+  | 'deepseek'
+  | 'gemini'
+  | 'groq'
+  | 'ollama'
+  | 'silicon'
+  | 'openrouter'
+  | 'custom'
+
+export interface Provider {
+  id: string
+  type: ProviderType
+  name: string
+  apiKey: string
+  baseUrl: string
+  model: string
+  // Azure-specific
+  endpoint: string
+  apiVersion: string
+  deploymentName: string
+  // State
+  enabled: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
 
 export interface ApiSettings {
-  provider: ApiProvider
+  provider: ProviderType
   apiKey: string
-  baseUrl?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
+  baseUrl: string
   model: string
+  // Azure-specific
+  endpoint: string
+  apiVersion: string
+  deploymentName: string
+  // Global model params
   temperature: number
   maxTokens: number
   systemPrompt: string
@@ -66,14 +95,4 @@ export interface StreamErrorData {
 export interface TitleUpdatedData {
   conversationId: string
   title: string
-}
-
-export interface TestConnectionPayload {
-  provider: ApiProvider
-  apiKey: string
-  baseUrl?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
-  model: string
 }

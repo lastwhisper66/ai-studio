@@ -3,7 +3,7 @@ import { getDb } from './database'
 
 const SENSITIVE_KEYS = new Set(['api.apiKey'])
 
-function encrypt(value: string): string {
+export function encrypt(value: string): string {
   if (safeStorage.isEncryptionAvailable()) {
     const encrypted = safeStorage.encryptString(value)
     return 'enc:' + encrypted.toString('base64')
@@ -11,7 +11,7 @@ function encrypt(value: string): string {
   return value
 }
 
-function decrypt(value: string): string {
+export function decrypt(value: string): string {
   if (value.startsWith('enc:') && safeStorage.isEncryptionAvailable()) {
     const buffer = Buffer.from(value.slice(4), 'base64')
     return safeStorage.decryptString(buffer)
