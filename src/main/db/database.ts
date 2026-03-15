@@ -109,4 +109,24 @@ function createTables(): void {
   } catch {
     // Column already exists — ignore
   }
+
+  // Migration: add is_default column to assistants if not present
+  try {
+    database.exec('ALTER TABLE assistants ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0')
+  } catch {
+    // Column already exists — ignore
+  }
+
+  // Seed: ensure a default assistant exists
+  const hasDefault = database
+    .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
+    .get() as { cnt: number }
+  if (hasDefault.cnt === 0) {
+    database
+      .prepare(
+        `INSERT INTO assistants (id, name, description, emoji, is_default, sort_order)
+         VALUES ('default-assistant', '默认助手', '使用全局设置的通用 AI 助手', '💬', 1, -1)`,
+      )
+      .run()
+  }
 }

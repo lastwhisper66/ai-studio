@@ -57,6 +57,9 @@ const api = {
   deleteMessage: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MESSAGE_DELETE, id),
 
+  clearMessages: (conversationId: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MESSAGE_CLEAR, conversationId),
+
   // Settings
   getSetting: (key: string): Promise<IpcResult<string | undefined>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_GET, key),

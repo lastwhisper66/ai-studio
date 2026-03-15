@@ -19,6 +19,7 @@ interface ConversationState {
   loadMoreMessages: () => Promise<void>
   addMessage: (role: MessageRole, content: string) => Promise<void>
   deleteMessage: (id: string) => Promise<void>
+  clearMessages: (conversationId: string) => Promise<void>
   sendMessage: (content: string) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
@@ -148,6 +149,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
     } else {
       set({ error: result.error ?? 'Failed to delete message' })
+    }
+  },
+
+  clearMessages: async (conversationId: string) => {
+    const result = await window.api.clearMessages(conversationId)
+    if (result.success) {
+      const { activeConversationId } = get()
+      if (activeConversationId === conversationId) {
+        set({ messages: [], hasMoreMessages: false })
+      }
+    } else {
+      set({ error: result.error ?? 'Failed to clear messages' })
     }
   },
 

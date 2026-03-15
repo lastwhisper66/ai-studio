@@ -13,6 +13,7 @@ interface AssistantRow {
   max_tokens: string
   prompt_suggestions: string
   emoji: string
+  is_default: number
   sort_order: number
   created_at: string
   updated_at: string
@@ -36,6 +37,7 @@ function rowToAssistant(row: AssistantRow): Assistant {
     maxTokens: row.max_tokens,
     promptSuggestions,
     emoji: row.emoji,
+    isDefault: !!row.is_default,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -165,5 +167,11 @@ export function updateAssistant(id: string, data: UpdateAssistantData): Assistan
 }
 
 export function deleteAssistant(id: string): void {
+  const row = getDb().prepare('SELECT is_default FROM assistants WHERE id = ?').get(id) as
+    | { is_default: number }
+    | undefined
+  if (row?.is_default) {
+    throw new Error('Cannot delete the default assistant')
+  }
   getDb().prepare('DELETE FROM assistants WHERE id = ?').run(id)
 }

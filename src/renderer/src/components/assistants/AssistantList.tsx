@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Pin } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 
@@ -42,7 +42,12 @@ export function AssistantList(): React.JSX.Element {
                   )}>
                   <span className="shrink-0 text-base leading-none">{assistant.emoji}</span>
                   <div className="min-w-0 flex-1">
-                    <div className="truncate">{assistant.name}</div>
+                    <div className="flex items-center gap-1 truncate">
+                      <span className="truncate">{assistant.name}</span>
+                      {assistant.isDefault && (
+                        <Pin className="h-3 w-3 shrink-0 rotate-45 text-muted-foreground" />
+                      )}
+                    </div>
                     {assistant.description && (
                       <div className="truncate text-xs text-muted-foreground">
                         {assistant.description}

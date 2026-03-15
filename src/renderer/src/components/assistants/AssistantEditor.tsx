@@ -384,31 +384,33 @@ function AssistantForm({ assistant }: { assistant: Assistant }): React.JSX.Eleme
           )}
         </div>
 
-        {/* Delete */}
-        <div className="rounded-xl border border-destructive/20 bg-card/50 p-5">
-          {confirmDelete ? (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-destructive">确定要删除此助手吗？</span>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
-                  取消
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleDelete}>
-                  确认删除
-                </Button>
+        {/* Delete — hidden for default assistant */}
+        {!assistant.isDefault && (
+          <div className="rounded-xl border border-destructive/20 bg-card/50 p-5">
+            {confirmDelete ? (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-destructive">确定要删除此助手吗？</span>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
+                    取消
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    确认删除
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setConfirmDelete(true)}>
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              删除助手
-            </Button>
-          )}
-        </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setConfirmDelete(true)}>
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                删除助手
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </ScrollArea>
   )

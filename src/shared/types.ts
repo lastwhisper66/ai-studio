@@ -19,6 +19,7 @@ export interface Assistant {
   maxTokens: string
   promptSuggestions: string[]
   emoji: string
+  isDefault: boolean
   sortOrder: number
   createdAt: string
   updatedAt: string

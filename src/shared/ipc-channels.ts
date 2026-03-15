@@ -10,6 +10,7 @@ export const IpcChannels = {
   MESSAGE_LIST_PAGINATED: 'message:list-paginated',
   MESSAGE_CREATE: 'message:create',
   MESSAGE_DELETE: 'message:delete',
+  MESSAGE_CLEAR: 'message:clear',
   // Settings
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
