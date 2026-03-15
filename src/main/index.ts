@@ -94,12 +94,15 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // Block DevTools shortcuts in production
+  // Block DevTools and refresh shortcuts in production
   if (!is.dev) {
     mainWindow.webContents.on('before-input-event', (event, input) => {
+      const key = input.key.toLowerCase()
       if (
         input.key === 'F12' ||
-        (input.control && input.shift && input.key.toLowerCase() === 'i')
+        input.key === 'F5' ||
+        (input.control && input.shift && key === 'i') ||
+        (input.control && key === 'r')
       ) {
         event.preventDefault()
       }

@@ -113,10 +113,22 @@ export function ConversationPanel({
       className={`flex h-full flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
         collapsed ? 'w-0 overflow-hidden' : 'w-70'
       }`}>
-      {/* Default Assistant — pinned top */}
+      {/* Collapse button — pinned top */}
+      <div className="flex items-center justify-end px-3 pt-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Collapse</TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Default Assistant */}
       {defaultAssistant && (
         <div
-          className={`group mx-2 mt-2 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 ${
+          className={`group mx-2 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 ${
             conversations.some(
               (c) => c.assistantId === defaultAssistant.id && c.id === activeConversationId,
             )
@@ -151,33 +163,6 @@ export function ConversationPanel({
       {/* Divider */}
       <div className="mx-3 my-1 border-b" />
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2">
-        <span className="text-sm font-semibold">Conversations</span>
-        <div className="flex items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setPickerOpen(true)}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">选择助手开始新对话</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
-                <PanelLeftClose className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">Collapse</TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
-
       {/* Search */}
       <div className="px-3 pb-2">
         <div className="relative">
@@ -189,6 +174,23 @@ export function ConversationPanel({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+      </div>
+
+      {/* Conversations Header */}
+      <div className="flex items-center justify-between px-4 py-2">
+        <span className="text-sm font-semibold">Conversations</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setPickerOpen(true)}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">选择助手开始新对话</TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Conversation list */}
