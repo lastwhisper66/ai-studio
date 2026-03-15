@@ -1,18 +1,12 @@
 import { useEffect } from 'react'
-import { X, PanelLeftOpen } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 
-interface ChatViewProps {
-  sidebarCollapsed: boolean
-  onToggleSidebar: () => void
-}
-
-export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): React.JSX.Element {
+export function ChatView(): React.JSX.Element {
   const {
     activeConversationId,
     conversations,
@@ -60,20 +54,6 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
     <div className="flex flex-1 flex-col bg-background text-foreground">
       {/* Header */}
       <div className="flex items-center border-b px-6 py-3">
-        {sidebarCollapsed && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mr-2 h-8 w-8"
-                onClick={onToggleSidebar}>
-                <PanelLeftOpen className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Expand sidebar</TooltipContent>
-          </Tooltip>
-        )}
         <h2 className="text-sm font-medium">{headerTitle}</h2>
       </div>
 

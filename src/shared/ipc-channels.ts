@@ -36,4 +36,10 @@ export const IpcChannels = {
   CHAT_STREAM_ERROR: 'chat:stream-error',
   CHAT_STOP_GENERATION: 'chat:stop-generation',
   CHAT_TITLE_UPDATED: 'chat:title-updated',
+  // Window
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE: 'window:maximize',
+  WINDOW_CLOSE: 'window:close',
+  WINDOW_IS_MAXIMIZED: 'window:is-maximized',
+  WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
 } as const

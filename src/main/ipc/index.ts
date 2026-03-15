@@ -4,6 +4,7 @@ import { registerSettingsHandlers } from './settings-handlers'
 import { registerChatHandlers } from './chat-handlers'
 import { registerProviderHandlers } from './provider-handlers'
 import { registerAssistantHandlers } from './assistant-handlers'
+import { registerWindowHandlers } from './window-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -12,4 +13,5 @@ export function registerAllIpcHandlers(): void {
   registerChatHandlers()
   registerProviderHandlers()
   registerAssistantHandlers()
+  registerWindowHandlers()
 }

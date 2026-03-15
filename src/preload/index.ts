@@ -149,6 +149,22 @@ const api = {
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_ERROR)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_TITLE_UPDATED)
   },
+
+  // Window controls
+  windowMinimize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),
+
+  windowMaximize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MAXIMIZE),
+
+  windowClose: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_CLOSE),
+
+  windowIsMaximized: (): Promise<boolean> => ipcRenderer.invoke(IpcChannels.WINDOW_IS_MAXIMIZED),
+
+  onWindowMaximizedChange: (callback: (isMaximized: boolean) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, isMaximized: boolean): void =>
+      callback(isMaximized)
+    ipcRenderer.on(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
+  },
 }
 
 export type ApiType = typeof api

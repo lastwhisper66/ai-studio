@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useCallback, useEffect } from 'react'
 import { PrimaryNav } from './PrimaryNav'
 import { ConversationPanel } from './ConversationPanel'
 import { ChatPanel } from './ChatPanel'
+import { TitleBar } from './TitleBar'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 
 const SettingsPage = lazy(() =>
@@ -42,22 +43,25 @@ export function AppLayout(): React.JSX.Element {
   }, [toggleSidebar])
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
-      <PrimaryNav />
-      {activeView === 'chat' ? (
-        <>
-          <ConversationPanel collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
-          <ChatPanel sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
-        </>
-      ) : activeView === 'assistants' ? (
-        <Suspense fallback={null}>
-          <AssistantsPage />
-        </Suspense>
-      ) : (
-        <Suspense fallback={null}>
-          <SettingsPage />
-        </Suspense>
-      )}
+    <div className="flex h-screen w-screen flex-col overflow-hidden">
+      <TitleBar sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
+      <div className="flex flex-1 overflow-hidden">
+        <PrimaryNav />
+        {activeView === 'chat' ? (
+          <>
+            <ConversationPanel collapsed={sidebarCollapsed} />
+            <ChatPanel />
+          </>
+        ) : activeView === 'assistants' ? (
+          <Suspense fallback={null}>
+            <AssistantsPage />
+          </Suspense>
+        ) : (
+          <Suspense fallback={null}>
+            <SettingsPage />
+          </Suspense>
+        )}
+      </div>
     </div>
   )
 }

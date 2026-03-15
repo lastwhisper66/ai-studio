@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, PanelLeftClose, Eraser } from 'lucide-react'
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eraser } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
@@ -24,13 +24,9 @@ import { AssistantPickerDialog } from '@renderer/components/chat/AssistantPicker
 
 interface ConversationPanelProps {
   collapsed: boolean
-  onToggle: () => void
 }
 
-export function ConversationPanel({
-  collapsed,
-  onToggle,
-}: ConversationPanelProps): React.JSX.Element {
+export function ConversationPanel({ collapsed }: ConversationPanelProps): React.JSX.Element {
   const {
     conversations,
     activeConversationId,
@@ -113,22 +109,10 @@ export function ConversationPanel({
       className={`flex h-full flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
         collapsed ? 'w-0 overflow-hidden' : 'w-70'
       }`}>
-      {/* Collapse button — pinned top */}
-      <div className="flex items-center justify-end px-3 pt-2">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Collapse</TooltipContent>
-        </Tooltip>
-      </div>
-
       {/* Default Assistant */}
       {defaultAssistant && (
         <div
-          className={`group mx-2 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 ${
+          className={`group mx-2 mt-2 flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 ${
             conversations.some(
               (c) => c.assistantId === defaultAssistant.id && c.id === activeConversationId,
             )

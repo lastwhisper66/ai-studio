@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, screen } from 'electron'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { IpcChannels } from '@shared/ipc-channels'
 import { initDatabase, closeDatabase } from './db'
 import { registerAllIpcHandlers } from './ipc'
 
@@ -68,6 +69,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     show: false,
+    frame: false,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -87,6 +89,14 @@ function createWindow(): void {
   // Persist window state on close
   mainWindow.on('close', () => {
     saveWindowState(mainWindow)
+  })
+
+  // Notify renderer of maximize/unmaximize state changes
+  mainWindow.on('maximize', () => {
+    mainWindow.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, true)
+  })
+  mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
