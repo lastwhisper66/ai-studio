@@ -10,3 +10,4 @@ out
 .env.*
 data
 plans
+.playwright-mcp
