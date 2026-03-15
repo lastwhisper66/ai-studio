@@ -7,7 +7,7 @@ import { WelcomeScreen } from './WelcomeScreen'
 import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
 import { useAutoScroll } from '@renderer/hooks/useAutoScroll'
 import { useConversationStore } from '@renderer/stores/conversationStore'
-import type { Message } from '@shared/types'
+import type { Message, Assistant } from '@shared/types'
 
 interface MessageListProps {
   messages: Message[]
@@ -18,6 +18,9 @@ interface MessageListProps {
   hasMoreMessages: boolean
   onSend: (content: string) => void
   onLoadMore: () => void
+  assistants?: Assistant[]
+  onSelectAssistant?: (id: string) => void
+  activeAssistant?: Assistant
 }
 
 export function MessageList({
@@ -29,6 +32,9 @@ export function MessageList({
   hasMoreMessages,
   onSend,
   onLoadMore,
+  assistants,
+  onSelectAssistant,
+  activeAssistant,
 }: MessageListProps): React.JSX.Element {
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
@@ -38,16 +44,49 @@ export function MessageList({
     throttledContent,
   ])
 
+  // Show assistant prompt suggestions when conversation has an assistant but no messages yet
+  const showAssistantSuggestions =
+    hasActiveConversation &&
+    activeAssistant &&
+    activeAssistant.promptSuggestions.length > 0 &&
+    messages.length === 0 &&
+    !isStreaming
+
   return (
     <ScrollArea className="flex-1" viewportRef={scrollRef}>
       <div className="mx-auto max-w-3xl space-y-6 p-6">
         {!hasActiveConversation ? (
-          <WelcomeScreen onSend={onSend} />
+          <WelcomeScreen
+            onSend={onSend}
+            assistants={assistants}
+            onSelectAssistant={onSelectAssistant}
+          />
         ) : isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>Loading messages...</span>
+            </div>
+          </div>
+        ) : showAssistantSuggestions ? (
+          <div className="flex h-full items-center justify-center py-20">
+            <div className="max-w-md text-center">
+              <span className="mb-3 block text-4xl">{activeAssistant.emoji}</span>
+              <h3 className="mb-1 text-lg font-semibold">{activeAssistant.name}</h3>
+              {activeAssistant.description && (
+                <p className="mb-6 text-sm text-muted-foreground">{activeAssistant.description}</p>
+              )}
+              <div className="flex flex-col gap-2">
+                {activeAssistant.promptSuggestions.map((suggestion, i) => (
+                  <Button
+                    key={i}
+                    variant="outline"
+                    className="h-auto justify-start rounded-xl px-4 py-3 text-left"
+                    onClick={() => onSend(suggestion)}>
+                    <span className="line-clamp-2">{suggestion}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         ) : messages.length === 0 && !isStreaming ? (

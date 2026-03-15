@@ -12,7 +12,7 @@ interface ConversationState {
   streamingContent: string
 
   loadConversations: () => Promise<void>
-  createConversation: (title?: string) => Promise<boolean>
+  createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
   renameConversation: (id: string, title: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
@@ -45,8 +45,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
-  createConversation: async (title?: string) => {
-    const result = await window.api.createConversation(title)
+  createConversation: async (title?: string, assistantId?: string) => {
+    const result = await window.api.createConversation(title, assistantId)
     if (result.success && result.data) {
       const conversation = result.data
       set((state) => ({

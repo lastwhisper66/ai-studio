@@ -22,6 +22,12 @@ export const IpcChannels = {
   PROVIDER_UPDATE: 'provider:update',
   PROVIDER_DELETE: 'provider:delete',
   PROVIDER_TEST_CONNECTION: 'provider:test-connection',
+  // Assistant
+  ASSISTANT_LIST: 'assistant:list',
+  ASSISTANT_GET: 'assistant:get',
+  ASSISTANT_CREATE: 'assistant:create',
+  ASSISTANT_UPDATE: 'assistant:update',
+  ASSISTANT_DELETE: 'assistant:delete',
   // Chat (streaming)
   CHAT_SEND_MESSAGE: 'chat:send-message',
   CHAT_STREAM_CHUNK: 'chat:stream-chunk',

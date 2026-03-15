@@ -3,7 +3,9 @@ import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SendMessagePayload, IpcResult, Message } from '@shared/types'
 import { listMessages, createMessage } from '../db/messages'
-import { updateConversation } from '../db/conversations'
+import { getConversation, updateConversation } from '../db/conversations'
+import { getAssistant } from '../db/assistants'
+import { getProvider } from '../db/providers'
 import { createAIClient, loadApiSettings, generateTitle } from '../ai'
 
 const activeStreams = new Map<string, AbortController>()
@@ -19,6 +21,41 @@ export function registerChatHandlers(): void {
       try {
         const settings = loadApiSettings()
         const messages = listMessages(conversationId)
+
+        // Assistant overlay: if conversation is linked to an assistant,
+        // override settings with assistant-specific configuration
+        const conversation = getConversation(conversationId)
+        if (conversation?.assistantId) {
+          const assistant = getAssistant(conversation.assistantId)
+          if (assistant) {
+            // Override provider if assistant specifies one
+            if (assistant.providerId) {
+              const assistantProvider = getProvider(assistant.providerId)
+              if (assistantProvider) {
+                settings.provider = assistantProvider.type
+                settings.apiKey = assistantProvider.apiKey
+                settings.baseUrl = assistantProvider.baseUrl
+                settings.endpoint = assistantProvider.endpoint
+                settings.apiVersion = assistantProvider.apiVersion
+                settings.deploymentName = assistantProvider.deploymentName
+                // Use assistant's model, or fall back to provider's model
+                settings.model = assistant.model || assistantProvider.model || settings.model
+              }
+            } else if (assistant.model) {
+              // No custom provider, but assistant specifies a model name
+              settings.model = assistant.model
+            }
+            if (assistant.systemPrompt) {
+              settings.systemPrompt = assistant.systemPrompt
+            }
+            if (assistant.temperature) {
+              settings.temperature = parseFloat(assistant.temperature)
+            }
+            if (assistant.maxTokens) {
+              settings.maxTokens = parseInt(assistant.maxTokens, 10)
+            }
+          }
+        }
 
         // Build API messages array
         const apiMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = []

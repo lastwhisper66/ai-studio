@@ -85,5 +85,28 @@ function createTables(): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS assistants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      system_prompt TEXT NOT NULL DEFAULT '',
+      provider_id TEXT,
+      model TEXT NOT NULL DEFAULT '',
+      temperature TEXT NOT NULL DEFAULT '',
+      max_tokens TEXT NOT NULL DEFAULT '',
+      prompt_suggestions TEXT NOT NULL DEFAULT '[]',
+      emoji TEXT NOT NULL DEFAULT '🤖',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `)
+
+  // Migration: add assistant_id column to conversations if not present
+  try {
+    database.exec('ALTER TABLE conversations ADD COLUMN assistant_id TEXT')
+  } catch {
+    // Column already exists — ignore
+  }
 }

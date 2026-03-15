@@ -3,6 +3,7 @@ import { X, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useConversationStore } from '@renderer/stores/conversationStore'
+import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 
@@ -25,9 +26,14 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
     stopGeneration,
     loadMoreMessages,
     clearError,
+    createConversation,
   } = useConversationStore()
 
+  const assistants = useAssistantStore((s) => s.assistants)
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
+  const activeAssistant = activeConversation?.assistantId
+    ? assistants.find((a) => a.id === activeConversation.assistantId)
+    : undefined
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -40,6 +46,15 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
   useEffect(() => {
     return () => window.api.removeAllStreamListeners()
   }, [])
+
+  const handleSelectAssistant = async (assistantId: string): Promise<void> => {
+    await createConversation(undefined, assistantId)
+  }
+
+  // Build header title
+  const headerTitle = activeAssistant
+    ? `${activeAssistant.emoji} ${activeAssistant.name}`
+    : (activeConversation?.title ?? 'New Chat')
 
   return (
     <div className="flex flex-1 flex-col bg-background text-foreground">
@@ -59,7 +74,7 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
             <TooltipContent>Expand sidebar</TooltipContent>
           </Tooltip>
         )}
-        <h2 className="text-sm font-medium">{activeConversation?.title ?? 'New Chat'}</h2>
+        <h2 className="text-sm font-medium">{headerTitle}</h2>
       </div>
 
       {/* Messages area */}
@@ -72,6 +87,9 @@ export function ChatView({ sidebarCollapsed, onToggleSidebar }: ChatViewProps): 
         hasMoreMessages={hasMoreMessages}
         onSend={sendMessage}
         onLoadMore={loadMoreMessages}
+        assistants={assistants}
+        onSelectAssistant={handleSelectAssistant}
+        activeAssistant={activeAssistant}
       />
 
       {/* Error banner */}

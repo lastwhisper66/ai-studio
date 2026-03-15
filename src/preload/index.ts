@@ -12,6 +12,7 @@ import type {
   StreamErrorData,
   TitleUpdatedData,
   Provider,
+  Assistant,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -23,8 +24,8 @@ const api = {
   getConversation: (id: string): Promise<IpcResult<Conversation | undefined>> =>
     ipcRenderer.invoke(IpcChannels.CONVERSATION_GET, id),
 
-  createConversation: (title?: string): Promise<IpcResult<Conversation>> =>
-    ipcRenderer.invoke(IpcChannels.CONVERSATION_CREATE, title),
+  createConversation: (title?: string, assistantId?: string): Promise<IpcResult<Conversation>> =>
+    ipcRenderer.invoke(IpcChannels.CONVERSATION_CREATE, title, assistantId),
 
   updateConversation: (
     id: string,
@@ -88,6 +89,25 @@ const api = {
 
   testProviderConnection: (provider: Provider): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, provider),
+
+  // Assistants
+  listAssistants: (): Promise<IpcResult<Assistant[]>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_LIST),
+
+  getAssistant: (id: string): Promise<IpcResult<Assistant | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_GET, id),
+
+  createAssistant: (data: Partial<Assistant> & { name: string }): Promise<IpcResult<Assistant>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_CREATE, data),
+
+  updateAssistant: (
+    id: string,
+    data: Partial<Assistant>,
+  ): Promise<IpcResult<Assistant | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_UPDATE, id, data),
+
+  deleteAssistant: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_DELETE, id),
 
   // Chat (streaming)
   sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>

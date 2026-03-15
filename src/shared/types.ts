@@ -5,6 +5,23 @@ export interface Conversation {
   updatedAt: string
   model: string | null
   systemPrompt: string | null
+  assistantId: string | null
+}
+
+export interface Assistant {
+  id: string
+  name: string
+  description: string
+  systemPrompt: string
+  providerId: string | null
+  model: string
+  temperature: string
+  maxTokens: string
+  promptSuggestions: string[]
+  emoji: string
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 export type MessageRole = 'user' | 'assistant' | 'system'

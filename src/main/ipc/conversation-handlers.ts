@@ -31,21 +31,24 @@ export function registerConversationHandlers(): void {
     },
   )
 
-  ipcMain.handle(IpcChannels.CONVERSATION_CREATE, (_, title?: string): IpcResult<Conversation> => {
-    try {
-      const data = createConversation(title)
-      return { success: true, data }
-    } catch (e) {
-      return { success: false, error: (e as Error).message }
-    }
-  })
+  ipcMain.handle(
+    IpcChannels.CONVERSATION_CREATE,
+    (_, title?: string, assistantId?: string): IpcResult<Conversation> => {
+      try {
+        const data = createConversation(title, assistantId)
+        return { success: true, data }
+      } catch (e) {
+        return { success: false, error: (e as Error).message }
+      }
+    },
+  )
 
   ipcMain.handle(
     IpcChannels.CONVERSATION_UPDATE,
     (
       _,
       id: string,
-      data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt'>>,
+      data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId'>>,
     ): IpcResult<Conversation | undefined> => {
       try {
         const result = updateConversation(id, data)

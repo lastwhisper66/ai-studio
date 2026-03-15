@@ -8,6 +8,10 @@ const SettingsPage = lazy(() =>
   import('@renderer/components/settings').then((m) => ({ default: m.SettingsPage })),
 )
 
+const AssistantsPage = lazy(() =>
+  import('@renderer/components/assistants').then((m) => ({ default: m.AssistantsPage })),
+)
+
 const STORAGE_KEY = 'ai-studio-sidebar-collapsed'
 
 export function AppLayout(): React.JSX.Element {
@@ -45,6 +49,10 @@ export function AppLayout(): React.JSX.Element {
           <ConversationPanel collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
           <ChatPanel sidebarCollapsed={sidebarCollapsed} onToggleSidebar={toggleSidebar} />
         </>
+      ) : activeView === 'assistants' ? (
+        <Suspense fallback={null}>
+          <AssistantsPage />
+        </Suspense>
       ) : (
         <Suspense fallback={null}>
           <SettingsPage />

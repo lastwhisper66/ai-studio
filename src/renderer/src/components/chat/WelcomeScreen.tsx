@@ -1,8 +1,11 @@
 import { Lightbulb, Code2, MessageSquare } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import type { Assistant } from '@shared/types'
 
 interface WelcomeScreenProps {
   onSend: (content: string) => void
+  assistants?: Assistant[]
+  onSelectAssistant?: (id: string) => void
 }
 
 const suggestions = [
@@ -23,14 +26,47 @@ const suggestions = [
   },
 ]
 
-export function WelcomeScreen({ onSend }: WelcomeScreenProps): React.JSX.Element {
+export function WelcomeScreen({
+  onSend,
+  assistants,
+  onSelectAssistant,
+}: WelcomeScreenProps): React.JSX.Element {
+  const hasAssistants = assistants && assistants.length > 0
+
   return (
     <div className="flex h-full items-center justify-center py-20">
-      <div className="max-w-md text-center">
+      <div className="max-w-lg text-center">
         <h3 className="mb-2 text-2xl font-semibold">Welcome to AI Studio</h3>
         <p className="mb-8 text-muted-foreground">
           Start a conversation or try one of the suggestions below.
         </p>
+
+        {/* Assistant cards */}
+        {hasAssistants && onSelectAssistant && (
+          <div className="mb-6">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              选择助手开始对话
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {assistants.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => onSelectAssistant(a.id)}
+                  className="flex items-center gap-2.5 rounded-xl border bg-card/50 px-3 py-2.5 text-left transition-colors hover:bg-accent">
+                  <span className="shrink-0 text-xl leading-none">{a.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">{a.name}</div>
+                    {a.description && (
+                      <div className="truncate text-xs text-muted-foreground">{a.description}</div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Default suggestions */}
         <div className="flex flex-col gap-3">
           {suggestions.map((s) => (
             <Button
