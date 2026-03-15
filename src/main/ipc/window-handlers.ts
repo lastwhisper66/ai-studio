@@ -16,7 +16,7 @@ export function registerWindowHandlers(): void {
     }
   })
 
-  ipcMain.handle(IpcChannels.WINDOW_CLOSE, (event) => {
+  ipcMain.on(IpcChannels.WINDOW_CLOSE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close()
   })
 

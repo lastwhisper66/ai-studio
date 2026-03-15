@@ -86,9 +86,18 @@ function createWindow(): void {
     mainWindow.show()
   })
 
-  // Persist window state on close
+  // Persist window state on close, then exit immediately to avoid
+  // the slow renderer/GPU teardown that plagues frameless windows on Windows
   mainWindow.on('close', () => {
-    saveWindowState(mainWindow)
+    try {
+      saveWindowState(mainWindow)
+    } finally {
+      try {
+        closeDatabase()
+      } finally {
+        app.exit(0)
+      }
+    }
   })
 
   // Notify renderer of maximize/unmaximize state changes
@@ -159,9 +168,10 @@ if (!gotTheLock) {
   })
 }
 
+// On macOS, apps conventionally stay active until Cmd+Q.
+// On other platforms the close handler above calls app.exit(0) directly,
+// so this only serves as a fallback safety net.
 app.on('window-all-closed', () => {
   closeDatabase()
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  app.quit()
 })

@@ -155,7 +155,7 @@ const api = {
 
   windowMaximize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MAXIMIZE),
 
-  windowClose: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_CLOSE),
+  windowClose: (): void => ipcRenderer.send(IpcChannels.WINDOW_CLOSE),
 
   windowIsMaximized: (): Promise<boolean> => ipcRenderer.invoke(IpcChannels.WINDOW_IS_MAXIMIZED),
 
