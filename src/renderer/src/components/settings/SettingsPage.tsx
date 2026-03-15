@@ -1,34 +1,19 @@
 import { useState, useEffect } from 'react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
-import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
 import { ModelSection } from './ModelSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
-import { DEFAULT_FORM, formStateFromSettings } from './formUtils'
-import type { SettingsFormState } from './types'
 
 export function SettingsPage(): React.JSX.Element {
-  const settings = useSettingsStore((s) => s.settings)
   const loadProviders = useProviderStore((s) => s.loadProviders)
   const [activeSection, setActiveSection] = useState<SettingsSection>('provider')
-  const [formState, setFormState] = useState<SettingsFormState>(DEFAULT_FORM)
 
-  // Load providers when settings page opens
   useEffect(() => {
     loadProviders()
   }, [loadProviders])
-
-  // Sync model form state when settings change
-  useEffect(() => {
-    setFormState(formStateFromSettings(settings))
-  }, [settings])
-
-  const handleChange = (field: keyof SettingsFormState, value: string): void => {
-    setFormState((prev) => ({ ...prev, [field]: value }))
-  }
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -46,9 +31,7 @@ export function SettingsPage(): React.JSX.Element {
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6">
-              {activeSection === 'model' && (
-                <ModelSection formState={formState} onChange={handleChange} />
-              )}
+              {activeSection === 'model' && <ModelSection />}
               {activeSection === 'general' && <GeneralSection />}
               {activeSection === 'display' && <DisplaySection />}
             </div>
