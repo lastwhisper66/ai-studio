@@ -14,49 +14,60 @@ export function ModelSettings({ formState, onChange }: ModelSettingsProps): Reac
 
   return (
     <div className="space-y-5">
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="temperature">Temperature</Label>
-          <span className="text-muted-foreground bg-muted rounded px-2 py-0.5 text-xs font-mono">
-            {temperatureValue.toFixed(1)}
-          </span>
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-muted-foreground mb-4 text-xs font-medium uppercase tracking-wider">
+          生成参数
+        </h3>
+        <div className="space-y-5">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="temperature">Temperature</Label>
+              <span className="text-muted-foreground bg-muted rounded px-2 py-0.5 text-xs font-mono">
+                {temperatureValue.toFixed(1)}
+              </span>
+            </div>
+            <Slider
+              id="temperature"
+              min={0}
+              max={2}
+              step={0.1}
+              value={[temperatureValue]}
+              onValueChange={([v]) => onChange('temperature', v.toString())}
+            />
+            <p className="text-muted-foreground text-xs">
+              值越高回复越有创造性，值越低回复越确定和集中。
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="maxTokens">最大 Token 数</Label>
+            <Input
+              id="maxTokens"
+              type="number"
+              min={1}
+              max={128000}
+              value={formState.maxTokens}
+              onChange={(e) => onChange('maxTokens', e.target.value)}
+            />
+            <p className="text-muted-foreground text-xs">模型单次回复的最大 Token 数量。</p>
+          </div>
         </div>
-        <Slider
-          id="temperature"
-          min={0}
-          max={2}
-          step={0.1}
-          value={[temperatureValue]}
-          onValueChange={([v]) => onChange('temperature', v.toString())}
-        />
-        <p className="text-muted-foreground text-xs">
-          值越高回复越有创造性，值越低回复越确定和集中。
-        </p>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="maxTokens">最大 Token 数</Label>
-        <Input
-          id="maxTokens"
-          type="number"
-          min={1}
-          max={128000}
-          value={formState.maxTokens}
-          onChange={(e) => onChange('maxTokens', e.target.value)}
-        />
-        <p className="text-muted-foreground text-xs">模型单次回复的最大 Token 数量。</p>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="systemPrompt">系统提示词</Label>
-        <Textarea
-          id="systemPrompt"
-          rows={4}
-          value={formState.systemPrompt}
-          onChange={(e) => onChange('systemPrompt', e.target.value)}
-          placeholder="你是一个有用的助手..."
-        />
-        <p className="text-muted-foreground text-xs">用于引导模型行为的系统级提示词。</p>
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-muted-foreground mb-4 text-xs font-medium uppercase tracking-wider">
+          系统提示词
+        </h3>
+        <div className="space-y-1.5">
+          <Textarea
+            id="systemPrompt"
+            rows={6}
+            value={formState.systemPrompt}
+            onChange={(e) => onChange('systemPrompt', e.target.value)}
+            placeholder="你是一个有用的助手..."
+          />
+          <p className="text-muted-foreground text-xs">用于引导模型行为的系统级提示词。</p>
+        </div>
       </div>
     </div>
   )

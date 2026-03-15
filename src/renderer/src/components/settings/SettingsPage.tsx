@@ -45,7 +45,7 @@ export function SettingsPage(): React.JSX.Element {
           <ProviderSection />
         ) : (
           <ScrollArea className="flex-1">
-            <div className="mx-auto max-w-2xl p-6">
+            <div className="p-6">
               {activeSection === 'model' && (
                 <ModelSection formState={formState} onChange={handleChange} />
               )}

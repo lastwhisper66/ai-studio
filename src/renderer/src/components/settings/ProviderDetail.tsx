@@ -56,8 +56,8 @@ function SettingGroup({
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <div className="space-y-4">
-      <h3 className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+    <div className="rounded-xl border bg-card/50 p-5">
+      <h3 className="text-muted-foreground mb-4 text-xs font-medium uppercase tracking-wider">
         {title}
       </h3>
       <div className="space-y-4">{children}</div>
@@ -159,16 +159,16 @@ function ProviderForm({
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-xl space-y-6 p-6">
+      <div className="space-y-6 p-6">
         {/* Header with provider info and controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between rounded-xl border bg-card/50 p-5">
           <div className="flex items-center gap-3">
             <span
-              className="h-5 w-5 shrink-0 rounded-full border border-black/10 dark:border-white/10"
+              className="h-8 w-8 shrink-0 rounded-lg border border-black/10 dark:border-white/10"
               style={{ backgroundColor: template?.color ?? '#6b7280' }}
             />
             <div>
-              <h2 className="text-lg font-semibold leading-tight">{provider.name}</h2>
+              <h2 className="text-base font-semibold leading-tight">{provider.name}</h2>
               <span className="text-muted-foreground text-xs">{provider.type.toUpperCase()}</span>
             </div>
           </div>
@@ -185,8 +185,6 @@ function ProviderForm({
           </div>
         </div>
 
-        <div className="border-t" />
-
         {/* Basic info section */}
         <SettingGroup title="基本信息">
           <SettingRow label="名称" htmlFor="name">
@@ -197,46 +195,24 @@ function ProviderForm({
         {/* API configuration */}
         <SettingGroup title="API 配置">
           <SettingRow label="API Key" htmlFor="apiKey">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  id="apiKey"
-                  type={showApiKey ? 'text' : 'password'}
-                  value={draft.apiKey}
-                  onChange={(e) => change('apiKey', e.target.value)}
-                  placeholder="sk-..."
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-0 right-0 h-full w-10"
-                  onClick={() => setShowApiKey(!showApiKey)}>
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
+            <div className="relative">
+              <Input
+                id="apiKey"
+                type={showApiKey ? 'text' : 'password'}
+                value={draft.apiKey}
+                onChange={(e) => change('apiKey', e.target.value)}
+                placeholder="sk-..."
+                className="pr-10"
+              />
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                className="h-9 shrink-0"
-                onClick={handleTest}
-                disabled={isTesting || !draft.apiKey || !draft.model}>
-                {isTesting ? <Loader2 className="h-4 w-4 animate-spin" /> : '检查'}
+                variant="ghost"
+                size="icon"
+                className="absolute top-0 right-0 h-full w-10"
+                onClick={() => setShowApiKey(!showApiKey)}>
+                {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-            {testResult && (
-              <div
-                className={`mt-1.5 flex items-center gap-1.5 text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                {testResult.success ? (
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                ) : (
-                  <XCircle className="h-3.5 w-3.5" />
-                )}
-                <span className="max-w-[360px] truncate">{testResult.message}</span>
-              </div>
-            )}
           </SettingRow>
 
           {isAzure ? (
@@ -303,17 +279,30 @@ function ProviderForm({
           </SettingRow>
         </SettingGroup>
 
-        <div className="border-t" />
-
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 rounded-xl border bg-card/50 p-5">
           <Button onClick={handleSave} disabled={isSaving} size="sm">
             {isSaving ? '保存中...' : '保存'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleTest} disabled={isTesting || !draft.apiKey || !draft.model}>
+            {isTesting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+            {isTesting ? '检测中...' : '连接测试'}
           </Button>
           {!isActive && (
             <Button variant="outline" size="sm" onClick={() => onSetActive(provider.id)}>
               设为默认
             </Button>
+          )}
+          {testResult && (
+            <div
+              className={`flex items-center gap-1.5 text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+              {testResult.success ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <XCircle className="h-3.5 w-3.5" />
+              )}
+              <span className="max-w-[360px] truncate">{testResult.message}</span>
+            </div>
           )}
           <div className="flex-1" />
           <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete}>
