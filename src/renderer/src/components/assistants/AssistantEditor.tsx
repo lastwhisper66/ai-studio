@@ -30,6 +30,7 @@ interface AssistantFormState {
   name: string
   description: string
   emoji: string
+  group: string
   systemPrompt: string
   providerId: string
   model: string
@@ -45,6 +46,7 @@ function stateFromAssistant(a: Assistant): AssistantFormState {
     name: a.name,
     description: a.description,
     emoji: a.emoji,
+    group: a.group,
     systemPrompt: a.systemPrompt,
     providerId: a.providerId ?? '',
     model: a.model,
@@ -101,6 +103,9 @@ function AssistantForm({ assistant }: { assistant: Assistant }): React.JSX.Eleme
         commit({ providerId: id || null })
         break
       }
+      case 'group':
+        commit({ group: value as string })
+        break
     }
   }
 
@@ -204,6 +209,21 @@ function AssistantForm({ assistant }: { assistant: Assistant }): React.JSX.Eleme
                 onBlur={() => handleBlur('description')}
                 placeholder="简要描述助手的用途..."
               />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="group" className="text-sm">
+                分组
+              </Label>
+              <Input
+                id="group"
+                value={form.group}
+                onChange={(e) => change('group', e.target.value)}
+                onBlur={() => handleBlur('group')}
+                placeholder={'输入分组名称，如「翻译」、「编程」'}
+              />
+              <p className="text-xs text-muted-foreground">
+                填写分组名称后，助手将在侧边栏中按分组显示。留空则不分组。
+              </p>
             </div>
           </div>
         </div>

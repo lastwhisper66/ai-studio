@@ -21,9 +21,7 @@ export function InputToolbar(): React.JSX.Element {
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
 
   if (!activeProvider) {
-    return (
-      <span className="text-muted-foreground text-xs">No provider configured</span>
-    )
+    return <span className="text-muted-foreground text-xs">No provider configured</span>
   }
 
   return (

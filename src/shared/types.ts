@@ -20,6 +20,7 @@ export interface Assistant {
   promptSuggestions: string[]
   emoji: string
   isDefault: boolean
+  group: string
   sortOrder: number
   createdAt: string
   updatedAt: string

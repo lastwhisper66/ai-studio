@@ -1,7 +1,8 @@
 import { lazy, Suspense, useState, useCallback, useEffect } from 'react'
 import { PrimaryNav } from './PrimaryNav'
-import { ConversationPanel } from './ConversationPanel'
+import { AssistantSidebar } from './AssistantSidebar'
 import { ChatPanel } from './ChatPanel'
+import { TopicPanel } from './TopicPanel'
 import { TitleBar } from './TitleBar'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 
@@ -13,11 +14,16 @@ const AssistantsPage = lazy(() =>
   import('@renderer/components/assistants').then((m) => ({ default: m.AssistantsPage })),
 )
 
-const STORAGE_KEY = 'ai-studio-sidebar-collapsed'
+const SIDEBAR_STORAGE_KEY = 'ai-studio-sidebar-collapsed'
+const TOPIC_STORAGE_KEY = 'ai-studio-topic-collapsed'
 
 export function AppLayout(): React.JSX.Element {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    return localStorage.getItem(STORAGE_KEY) === 'true'
+    return localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true'
+  })
+
+  const [topicCollapsed, setTopicCollapsed] = useState(() => {
+    return localStorage.getItem(TOPIC_STORAGE_KEY) === 'true'
   })
 
   const activeView = useSettingsStore((s) => s.activeView)
@@ -25,12 +31,20 @@ export function AppLayout(): React.JSX.Element {
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => {
       const next = !prev
-      localStorage.setItem(STORAGE_KEY, String(next))
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(next))
       return next
     })
   }, [])
 
-  // Ctrl+B to toggle conversation panel
+  const toggleTopic = useCallback(() => {
+    setTopicCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(TOPIC_STORAGE_KEY, String(next))
+      return next
+    })
+  }, [])
+
+  // Ctrl+B to toggle sidebar
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.ctrlKey && e.key === 'b') {
@@ -49,8 +63,9 @@ export function AppLayout(): React.JSX.Element {
         <PrimaryNav />
         {activeView === 'chat' ? (
           <>
-            <ConversationPanel collapsed={sidebarCollapsed} />
-            <ChatPanel />
+            <AssistantSidebar collapsed={sidebarCollapsed} />
+            <ChatPanel topicCollapsed={topicCollapsed} onToggleTopic={toggleTopic} />
+            <TopicPanel collapsed={topicCollapsed} />
           </>
         ) : activeView === 'assistants' ? (
           <Suspense fallback={null}>

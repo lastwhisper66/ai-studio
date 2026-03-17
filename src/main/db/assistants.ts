@@ -14,6 +14,7 @@ interface AssistantRow {
   prompt_suggestions: string
   emoji: string
   is_default: number
+  group_name: string
   sort_order: number
   created_at: string
   updated_at: string
@@ -38,6 +39,7 @@ function rowToAssistant(row: AssistantRow): Assistant {
     promptSuggestions,
     emoji: row.emoji,
     isDefault: !!row.is_default,
+    group: row.group_name,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -69,6 +71,7 @@ export interface CreateAssistantData {
   maxCompletionTokens?: string
   promptSuggestions?: string[]
   emoji?: string
+  group?: string
   sortOrder?: number
 }
 
@@ -77,8 +80,8 @@ export function createAssistant(data: CreateAssistantData): Assistant {
   const promptSuggestions = JSON.stringify(data.promptSuggestions ?? [])
   getDb()
     .prepare(
-      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, prompt_suggestions, emoji, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, prompt_suggestions, emoji, group_name, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -91,6 +94,7 @@ export function createAssistant(data: CreateAssistantData): Assistant {
       data.maxCompletionTokens ?? '',
       promptSuggestions,
       data.emoji ?? '🤖',
+      data.group ?? '',
       data.sortOrder ?? 0,
     )
   return getAssistant(id)!
@@ -106,6 +110,7 @@ export interface UpdateAssistantData {
   maxCompletionTokens?: string
   promptSuggestions?: string[]
   emoji?: string
+  group?: string
   sortOrder?: number
 }
 
@@ -148,6 +153,10 @@ export function updateAssistant(id: string, data: UpdateAssistantData): Assistan
   if (data.emoji !== undefined) {
     fields.push('emoji = ?')
     values.push(data.emoji)
+  }
+  if (data.group !== undefined) {
+    fields.push('group_name = ?')
+    values.push(data.group)
   }
   if (data.sortOrder !== undefined) {
     fields.push('sort_order = ?')

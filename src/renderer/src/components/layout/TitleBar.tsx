@@ -53,11 +53,7 @@ export function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): 
           className="flex w-12 items-center justify-center transition-colors hover:bg-foreground/10"
           onClick={() => window.api.windowMaximize()}
           title={isMaximized ? 'Restore' : 'Maximize'}>
-          {isMaximized ? (
-            <Copy className="h-3.5 w-3.5" />
-          ) : (
-            <Square className="h-3.5 w-3.5" />
-          )}
+          {isMaximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
         </button>
         <button
           className="flex w-12 items-center justify-center transition-colors hover:bg-[#e81123] hover:text-white"

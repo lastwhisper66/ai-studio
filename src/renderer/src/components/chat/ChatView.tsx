@@ -1,12 +1,30 @@
-import { useEffect } from 'react'
-import { X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { X, ChevronRight, PanelRightClose, PanelRightOpen, Check, ChevronDown } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@renderer/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
+import { useProviderStore } from '@renderer/stores/providerStore'
+import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
+import { AssistantSettingsDialog } from './AssistantSettingsDialog'
 
-export function ChatView(): React.JSX.Element {
+interface ChatViewProps {
+  topicCollapsed: boolean
+  onToggleTopic: () => void
+}
+
+export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): React.JSX.Element {
   const {
     activeConversationId,
     conversations,
@@ -24,10 +42,27 @@ export function ChatView(): React.JSX.Element {
   } = useConversationStore()
 
   const assistants = useAssistantStore((s) => s.assistants)
+  const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
+
+  const providers = useProviderStore((s) => s.providers)
+  const activeProviderId = useProviderStore((s) => s.activeProviderId)
+  const setActiveProvider = useProviderStore((s) => s.setActiveProvider)
+
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
-  const activeAssistant = activeConversation?.assistantId
-    ? assistants.find((a) => a.id === activeConversation.assistantId)
-    : undefined
+  const activeAssistant = activeAssistantId
+    ? assistants.find((a) => a.id === activeAssistantId)
+    : activeConversation?.assistantId
+      ? assistants.find((a) => a.id === activeConversation.assistantId)
+      : undefined
+
+  // Provider / model display
+  const enabledProviders = providers.filter((p) => p.enabled)
+  const resolvedProviderId = activeAssistant?.providerId || activeProviderId
+  const resolvedProvider = providers.find((p) => p.id === resolvedProviderId)
+  const resolvedModel = activeAssistant?.model || resolvedProvider?.model || 'No model set'
+  const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
+
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -45,16 +80,77 @@ export function ChatView(): React.JSX.Element {
     await createConversation(undefined, assistantId)
   }
 
-  // Build header title
-  const headerTitle = activeAssistant
-    ? `${activeAssistant.emoji} ${activeAssistant.name}`
-    : (activeConversation?.title ?? 'New Chat')
-
   return (
     <div className="flex flex-1 flex-col bg-background text-foreground">
       {/* Header */}
-      <div className="flex items-center border-b px-6 py-3">
-        <h2 className="text-sm font-medium">{headerTitle}</h2>
+      <div className="flex items-center justify-between border-b px-4 py-2">
+        <div className="flex items-center gap-2">
+          {/* Assistant info — clickable */}
+          <button
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-accent"
+            onClick={() => setSettingsOpen(true)}>
+            {activeAssistant && (
+              <span className="text-base leading-none">{activeAssistant.emoji}</span>
+            )}
+            <span>{activeAssistant?.name ?? 'New Chat'}</span>
+          </button>
+
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
+
+          {/* Provider + Model selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+                <span
+                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: template?.color ?? '#6b7280' }}
+                />
+                <span>{resolvedModel}</span>
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {enabledProviders.map((provider, index) => {
+                const providerTemplate = getTemplateByType(provider.type)
+                const isActive = provider.id === resolvedProviderId
+                return (
+                  <div key={provider.id}>
+                    {index > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuGroup>
+                      <DropdownMenuLabel className="flex items-center gap-1.5">
+                        <span
+                          className="inline-block h-2 w-2 shrink-0 rounded-full"
+                          style={{ backgroundColor: providerTemplate?.color ?? '#6b7280' }}
+                        />
+                        {provider.name}
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => setActiveProvider(provider.id)}>
+                        <Check className={`mr-2 h-3.5 w-3.5 ${isActive ? '' : 'invisible'}`} />
+                        <span>{provider.model || 'No model set'}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </div>
+                )
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Right: topic panel toggle */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onToggleTopic}>
+              {topicCollapsed ? (
+                <PanelRightOpen className="h-4 w-4" />
+              ) : (
+                <PanelRightClose className="h-4 w-4" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            {topicCollapsed ? '展开话题面板' : '收起话题面板'}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {/* Messages area */}
@@ -83,9 +179,14 @@ export function ChatView(): React.JSX.Element {
       )}
 
       {/* Input area */}
-      <div className="border-t">
-        <MessageInput onSend={sendMessage} onStop={stopGeneration} isStreaming={isStreaming} />
-      </div>
+      <MessageInput onSend={sendMessage} onStop={stopGeneration} isStreaming={isStreaming} />
+
+      {/* Assistant Settings Dialog */}
+      <AssistantSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        assistantId={activeAssistant?.id ?? null}
+      />
     </div>
   )
 }

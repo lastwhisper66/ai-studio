@@ -46,7 +46,8 @@ function createTables(): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       model TEXT,
-      system_prompt TEXT
+      system_prompt TEXT,
+      assistant_id TEXT
     );
 
     CREATE TABLE IF NOT EXISTS messages (
@@ -97,25 +98,13 @@ function createTables(): void {
       max_completion_tokens TEXT NOT NULL DEFAULT '',
       prompt_suggestions TEXT NOT NULL DEFAULT '[]',
       emoji TEXT NOT NULL DEFAULT '🤖',
+      is_default INTEGER NOT NULL DEFAULT 0,
+      group_name TEXT NOT NULL DEFAULT '',
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
-
-  // Migration: add assistant_id column to conversations if not present
-  try {
-    database.exec('ALTER TABLE conversations ADD COLUMN assistant_id TEXT')
-  } catch {
-    // Column already exists — ignore
-  }
-
-  // Migration: add is_default column to assistants if not present
-  try {
-    database.exec('ALTER TABLE assistants ADD COLUMN is_default INTEGER NOT NULL DEFAULT 0')
-  } catch {
-    // Column already exists — ignore
-  }
 
   // Seed: ensure a default assistant exists
   const hasDefault = database

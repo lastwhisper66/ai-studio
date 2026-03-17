@@ -15,11 +15,7 @@ export function ProviderList(): React.JSX.Element {
     updateProvider,
   } = useProviderStore()
 
-  const handleToggle = async (
-    e: React.MouseEvent,
-    id: string,
-    enabled: boolean,
-  ): Promise<void> => {
+  const handleToggle = async (e: React.MouseEvent, id: string, enabled: boolean): Promise<void> => {
     e.stopPropagation()
     await updateProvider(id, { enabled: !enabled })
   }
