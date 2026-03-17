@@ -96,7 +96,7 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       deploymentName: provider.deploymentName,
       model: provider.model,
       temperature: 0,
-      maxTokens: 1,
+      maxCompletionTokens: 1,
       systemPrompt: '',
     }
 
@@ -111,7 +111,7 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       {
         model,
         messages: [{ role: 'user', content: 'Hi' }],
-        max_tokens: 1,
+        max_completion_tokens: 1,
         stream: true,
       },
       { signal: controller.signal },

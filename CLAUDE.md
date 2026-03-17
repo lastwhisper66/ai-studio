@@ -88,7 +88,7 @@ Key interfaces in `src/shared/types.ts`:
 
 - `Conversation` — id, title, createdAt, updatedAt, model, systemPrompt
 - `Message` — id, conversationId, role, content, createdAt, tokenCount
-- `ApiSettings` — provider, apiKey, baseUrl, endpoint, apiVersion, deploymentName, model, temperature, maxTokens, systemPrompt
+- `ApiSettings` — provider, apiKey, baseUrl, endpoint, apiVersion, deploymentName, model, temperature, maxCompletionTokens, systemPrompt
 - `ApiProvider` — `'openai' | 'azure'`
 - `IpcResult<T>` — Generic response wrapper for all IPC calls
 - `SendMessagePayload`, `StreamChunkData`, `StreamEndData`, `StreamErrorData`

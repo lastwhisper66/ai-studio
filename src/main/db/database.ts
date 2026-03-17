@@ -94,7 +94,7 @@ function createTables(): void {
       provider_id TEXT,
       model TEXT NOT NULL DEFAULT '',
       temperature TEXT NOT NULL DEFAULT '',
-      max_tokens TEXT NOT NULL DEFAULT '',
+      max_completion_tokens TEXT NOT NULL DEFAULT '',
       prompt_suggestions TEXT NOT NULL DEFAULT '[]',
       emoji TEXT NOT NULL DEFAULT '🤖',
       sort_order INTEGER NOT NULL DEFAULT 0,

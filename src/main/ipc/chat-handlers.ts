@@ -51,8 +51,8 @@ export function registerChatHandlers(): void {
             if (assistant.temperature) {
               settings.temperature = parseFloat(assistant.temperature)
             }
-            if (assistant.maxTokens) {
-              settings.maxTokens = parseInt(assistant.maxTokens, 10)
+            if (assistant.maxCompletionTokens) {
+              settings.maxCompletionTokens = parseInt(assistant.maxCompletionTokens, 10)
             }
           }
         }
@@ -77,7 +77,7 @@ export function registerChatHandlers(): void {
             model: settings.model,
             messages: apiMessages,
             stream: true,
-            max_tokens: settings.maxTokens,
+            max_completion_tokens: settings.maxCompletionTokens,
             temperature: settings.temperature,
           },
           { signal: controller.signal },

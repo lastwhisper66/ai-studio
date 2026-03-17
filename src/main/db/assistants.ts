@@ -10,7 +10,7 @@ interface AssistantRow {
   provider_id: string | null
   model: string
   temperature: string
-  max_tokens: string
+  max_completion_tokens: string
   prompt_suggestions: string
   emoji: string
   is_default: number
@@ -34,7 +34,7 @@ function rowToAssistant(row: AssistantRow): Assistant {
     providerId: row.provider_id,
     model: row.model,
     temperature: row.temperature,
-    maxTokens: row.max_tokens,
+    maxCompletionTokens: row.max_completion_tokens,
     promptSuggestions,
     emoji: row.emoji,
     isDefault: !!row.is_default,
@@ -66,7 +66,7 @@ export interface CreateAssistantData {
   providerId?: string | null
   model?: string
   temperature?: string
-  maxTokens?: string
+  maxCompletionTokens?: string
   promptSuggestions?: string[]
   emoji?: string
   sortOrder?: number
@@ -77,7 +77,7 @@ export function createAssistant(data: CreateAssistantData): Assistant {
   const promptSuggestions = JSON.stringify(data.promptSuggestions ?? [])
   getDb()
     .prepare(
-      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_tokens, prompt_suggestions, emoji, sort_order)
+      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, prompt_suggestions, emoji, sort_order)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
@@ -88,7 +88,7 @@ export function createAssistant(data: CreateAssistantData): Assistant {
       data.providerId ?? null,
       data.model ?? '',
       data.temperature ?? '',
-      data.maxTokens ?? '',
+      data.maxCompletionTokens ?? '',
       promptSuggestions,
       data.emoji ?? '🤖',
       data.sortOrder ?? 0,
@@ -103,7 +103,7 @@ export interface UpdateAssistantData {
   providerId?: string | null
   model?: string
   temperature?: string
-  maxTokens?: string
+  maxCompletionTokens?: string
   promptSuggestions?: string[]
   emoji?: string
   sortOrder?: number
@@ -137,9 +137,9 @@ export function updateAssistant(id: string, data: UpdateAssistantData): Assistan
     fields.push('temperature = ?')
     values.push(data.temperature)
   }
-  if (data.maxTokens !== undefined) {
-    fields.push('max_tokens = ?')
-    values.push(data.maxTokens)
+  if (data.maxCompletionTokens !== undefined) {
+    fields.push('max_completion_tokens = ?')
+    values.push(data.maxCompletionTokens)
   }
   if (data.promptSuggestions !== undefined) {
     fields.push('prompt_suggestions = ?')

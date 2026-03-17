@@ -14,14 +14,14 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     name: 'OpenAI',
     color: '#10a37f',
     defaultBaseUrl: 'https://api.openai.com/v1',
-    defaultModels: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o3-mini'],
+    defaultModels: ['gpt-5.4', 'gpt-5.3-codex'],
   },
   {
     type: 'azure',
     name: 'Azure OpenAI',
     color: '#0078d4',
     defaultBaseUrl: '',
-    defaultModels: ['gpt-4o', 'gpt-4o-mini'],
+    defaultModels: ['gpt-5.1', 'GPT-5-mini'],
   },
   {
     type: 'deepseek',
@@ -63,7 +63,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     name: 'OpenRouter',
     color: '#8b5cf6',
     defaultBaseUrl: 'https://openrouter.ai/api/v1',
-    defaultModels: ['openai/gpt-4o'],
+    defaultModels: ['openai/gpt-5.4'],
   },
   {
     type: 'custom',

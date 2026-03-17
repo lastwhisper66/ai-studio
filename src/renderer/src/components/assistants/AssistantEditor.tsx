@@ -35,8 +35,8 @@ interface AssistantFormState {
   model: string
   temperature: string
   temperatureEnabled: boolean
-  maxTokens: string
-  maxTokensEnabled: boolean
+  maxCompletionTokens: string
+  maxCompletionTokensEnabled: boolean
   promptSuggestions: string[]
 }
 
@@ -50,8 +50,8 @@ function stateFromAssistant(a: Assistant): AssistantFormState {
     model: a.model,
     temperature: a.temperature || '0.7',
     temperatureEnabled: a.temperature !== '',
-    maxTokens: a.maxTokens || '4096',
-    maxTokensEnabled: a.maxTokens !== '',
+    maxCompletionTokens: a.maxCompletionTokens || '4096',
+    maxCompletionTokensEnabled: a.maxCompletionTokens !== '',
     promptSuggestions: [...a.promptSuggestions],
   }
 }
@@ -115,15 +115,15 @@ function AssistantForm({ assistant }: { assistant: Assistant }): React.JSX.Eleme
     commit({ temperature: str })
   }
 
-  const handleMaxTokensToggle = (enabled: boolean): void => {
-    change('maxTokensEnabled', enabled)
-    commit({ maxTokens: enabled ? form.maxTokens : '' })
+  const handleMaxCompletionTokensToggle = (enabled: boolean): void => {
+    change('maxCompletionTokensEnabled', enabled)
+    commit({ maxCompletionTokens: enabled ? form.maxCompletionTokens : '' })
   }
 
-  const handleMaxTokensCommit = (value: number): void => {
+  const handleMaxCompletionTokensCommit = (value: number): void => {
     const str = value.toString()
-    change('maxTokens', str)
-    commit({ maxTokens: str })
+    change('maxCompletionTokens', str)
+    commit({ maxCompletionTokens: str })
   }
 
   const handleAddSuggestion = (): void => {
@@ -155,7 +155,7 @@ function AssistantForm({ assistant }: { assistant: Assistant }): React.JSX.Eleme
 
   const enabledProviders = providers.filter((p) => p.enabled)
   const temperatureValue = parseFloat(form.temperature) || 0.7
-  const maxTokensValue = parseInt(form.maxTokens) || 4096
+  const maxCompletionTokensValue = parseInt(form.maxCompletionTokens) || 4096
 
   return (
     <ScrollArea className="flex-1">
@@ -309,26 +309,31 @@ function AssistantForm({ assistant }: { assistant: Assistant }): React.JSX.Eleme
             )}
           </div>
 
-          {/* Max Tokens */}
+          {/* Max Completion Tokens */}
           <div className="border-t border-border/40">
             <div className="flex items-center justify-between py-4">
               <span className="text-sm">最大 Token 数</span>
               <div className="flex items-center gap-3">
-                {form.maxTokensEnabled && (
-                  <span className="font-mono text-xs text-muted-foreground">{maxTokensValue}</span>
+                {form.maxCompletionTokensEnabled && (
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {maxCompletionTokensValue}
+                  </span>
                 )}
-                <Switch checked={form.maxTokensEnabled} onCheckedChange={handleMaxTokensToggle} />
+                <Switch
+                  checked={form.maxCompletionTokensEnabled}
+                  onCheckedChange={handleMaxCompletionTokensToggle}
+                />
               </div>
             </div>
-            {form.maxTokensEnabled && (
+            {form.maxCompletionTokensEnabled && (
               <div className="pb-4">
                 <Slider
                   min={256}
                   max={128000}
                   step={256}
-                  value={[maxTokensValue]}
-                  onValueChange={([v]) => change('maxTokens', v.toString())}
-                  onValueCommit={([v]) => handleMaxTokensCommit(v)}
+                  value={[maxCompletionTokensValue]}
+                  onValueChange={([v]) => change('maxCompletionTokens', v.toString())}
+                  onValueCommit={([v]) => handleMaxCompletionTokensCommit(v)}
                 />
                 <div className="mt-1.5 flex justify-between px-0.5">
                   {['256', '32K', '64K', '96K', '128K'].map((mark) => (

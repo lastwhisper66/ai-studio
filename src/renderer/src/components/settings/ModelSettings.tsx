@@ -57,12 +57,12 @@ export function ModelSettings({
 
   const temperatureEnabled = formState.temperatureEnabled === 'true'
   const topPEnabled = formState.topPEnabled === 'true'
-  const maxTokensEnabled = formState.maxTokensEnabled === 'true'
+  const maxCompletionTokensEnabled = formState.maxCompletionTokensEnabled === 'true'
   const streaming = formState.streaming === 'true'
   const temperatureValue = parseFloat(formState.temperature) || 0.7
   const topPValue = parseFloat(formState.topP) || 1
   const contextCount = parseInt(formState.contextCount) || 5
-  const maxTokensValue = parseInt(formState.maxTokens) || 4096
+  const maxCompletionTokensValue = parseInt(formState.maxCompletionTokens) || 4096
 
   return (
     <div className="space-y-5">
@@ -87,7 +87,10 @@ export function ModelSettings({
         {/* 模型温度 */}
         <div className={cn('border-b border-border/40', temperatureEnabled && 'pb-4')}>
           <div className="flex items-center justify-between py-4">
-            <SettingLabel label="模型温度" tooltip="控制回复的随机性。值越高越有创造性，值越低越确定。" />
+            <SettingLabel
+              label="模型温度"
+              tooltip="控制回复的随机性。值越高越有创造性，值越低越确定。"
+            />
             <div className="flex items-center gap-3">
               {temperatureEnabled && (
                 <span className="font-mono text-xs text-muted-foreground">
@@ -152,7 +155,10 @@ export function ModelSettings({
         {/* 上下文数 */}
         <div className="border-b border-border/40 pb-4">
           <div className="flex items-center justify-between py-4">
-            <SettingLabel label="上下文数" tooltip="发送给模型的历史消息数量。设为「不限」将发送所有历史消息。" />
+            <SettingLabel
+              label="上下文数"
+              tooltip="发送给模型的历史消息数量。设为「不限」将发送所有历史消息。"
+            />
             <span className="text-sm">{contextCount >= 100 ? '不限' : contextCount}</span>
           </div>
           <div>
@@ -169,28 +175,35 @@ export function ModelSettings({
         </div>
 
         {/* 最大 Token 数 */}
-        <div className={cn('border-b border-border/40', maxTokensEnabled && 'pb-4')}>
+        <div className={cn('border-b border-border/40', maxCompletionTokensEnabled && 'pb-4')}>
           <div className="flex items-center justify-between py-4">
-            <SettingLabel label="最大 Token 数" tooltip="模型单次回复的最大 Token 数量。关闭时使用模型默认值。" />
+            <SettingLabel
+              label="最大 Token 数"
+              tooltip="模型单次回复的最大 Token 数量。关闭时使用模型默认值。"
+            />
             <div className="flex items-center gap-3">
-              {maxTokensEnabled && (
-                <span className="font-mono text-xs text-muted-foreground">{maxTokensValue}</span>
+              {maxCompletionTokensEnabled && (
+                <span className="font-mono text-xs text-muted-foreground">
+                  {maxCompletionTokensValue}
+                </span>
               )}
               <Switch
-                checked={maxTokensEnabled}
-                onCheckedChange={(checked) => onCommit('maxTokensEnabled', String(checked))}
+                checked={maxCompletionTokensEnabled}
+                onCheckedChange={(checked) =>
+                  onCommit('maxCompletionTokensEnabled', String(checked))
+                }
               />
             </div>
           </div>
-          {maxTokensEnabled && (
+          {maxCompletionTokensEnabled && (
             <div>
               <Slider
                 min={256}
                 max={128000}
                 step={256}
-                value={[maxTokensValue]}
-                onValueChange={([v]) => onChange('maxTokens', v.toString())}
-                onValueCommit={([v]) => onCommit('maxTokens', v.toString())}
+                value={[maxCompletionTokensValue]}
+                onValueChange={([v]) => onChange('maxCompletionTokens', v.toString())}
+                onValueCommit={([v]) => onCommit('maxCompletionTokens', v.toString())}
               />
               <SliderMarks marks={['256', '32K', '64K', '96K', '128K']} />
             </div>
@@ -210,8 +223,7 @@ export function ModelSettings({
         <div className="flex justify-end border-t border-border/40 py-3">
           <button
             onClick={onReset}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-1.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
-          >
+            className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-1.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10">
             <RotateCcw className="h-3.5 w-3.5" />
             重置
           </button>

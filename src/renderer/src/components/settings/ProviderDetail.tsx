@@ -178,10 +178,7 @@ function ProviderForm({
                 当前使用
               </span>
             )}
-            <Switch
-              checked={draft.enabled}
-              onCheckedChange={(v) => change('enabled', v)}
-            />
+            <Switch checked={draft.enabled} onCheckedChange={(v) => change('enabled', v)} />
           </div>
         </div>
 
@@ -261,7 +258,7 @@ function ProviderForm({
               id="model"
               value={draft.model}
               onChange={(e) => change('model', e.target.value)}
-              placeholder={template?.defaultModels[0] ?? 'gpt-4o'}
+              placeholder={template?.defaultModels[0] ?? 'gpt-5.1'}
             />
             {template && template.defaultModels.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">
@@ -284,7 +281,11 @@ function ProviderForm({
           <Button onClick={handleSave} disabled={isSaving} size="sm">
             {isSaving ? '保存中...' : '保存'}
           </Button>
-          <Button variant="outline" size="sm" onClick={handleTest} disabled={isTesting || !draft.apiKey || !draft.model}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTest}
+            disabled={isTesting || !draft.apiKey || !draft.model}>
             {isTesting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             {isTesting ? '检测中...' : '连接测试'}
           </Button>
@@ -305,7 +306,11 @@ function ProviderForm({
             </div>
           )}
           <div className="flex-1" />
-          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={handleDelete}>
             <Trash2 className="mr-1.5 h-3.5 w-3.5" />
             删除
           </Button>

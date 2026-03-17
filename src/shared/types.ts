@@ -16,7 +16,7 @@ export interface Assistant {
   providerId: string | null
   model: string
   temperature: string
-  maxTokens: string
+  maxCompletionTokens: string
   promptSuggestions: string[]
   emoji: string
   isDefault: boolean
@@ -76,7 +76,7 @@ export interface ApiSettings {
   deploymentName: string
   // Global model params
   temperature: number
-  maxTokens: number
+  maxCompletionTokens: number
   systemPrompt: string
 }
 

@@ -6,8 +6,8 @@ export const DEFAULT_FORM: SettingsFormState = {
   topP: '1',
   topPEnabled: 'false',
   contextCount: '5',
-  maxTokens: '4096',
-  maxTokensEnabled: 'false',
+  maxCompletionTokens: '4096',
+  maxCompletionTokensEnabled: 'false',
   streaming: 'true',
   systemPrompt: '',
 }
@@ -18,8 +18,8 @@ export const SETTINGS_KEY_MAP: Record<keyof SettingsFormState, string> = {
   topP: 'api.topP',
   topPEnabled: 'api.topPEnabled',
   contextCount: 'api.contextCount',
-  maxTokens: 'api.maxTokens',
-  maxTokensEnabled: 'api.maxTokensEnabled',
+  maxCompletionTokens: 'api.maxCompletionTokens',
+  maxCompletionTokensEnabled: 'api.maxCompletionTokensEnabled',
   streaming: 'api.streaming',
   systemPrompt: 'api.systemPrompt',
 }
@@ -31,8 +31,9 @@ export function formStateFromSettings(settings: Record<string, string>): Setting
     topP: settings['api.topP'] || DEFAULT_FORM.topP,
     topPEnabled: settings['api.topPEnabled'] || DEFAULT_FORM.topPEnabled,
     contextCount: settings['api.contextCount'] || DEFAULT_FORM.contextCount,
-    maxTokens: settings['api.maxTokens'] || DEFAULT_FORM.maxTokens,
-    maxTokensEnabled: settings['api.maxTokensEnabled'] || DEFAULT_FORM.maxTokensEnabled,
+    maxCompletionTokens: settings['api.maxCompletionTokens'] || DEFAULT_FORM.maxCompletionTokens,
+    maxCompletionTokensEnabled:
+      settings['api.maxCompletionTokensEnabled'] || DEFAULT_FORM.maxCompletionTokensEnabled,
     streaming: settings['api.streaming'] || DEFAULT_FORM.streaming,
     systemPrompt: settings['api.systemPrompt'] || DEFAULT_FORM.systemPrompt,
   }

@@ -4,8 +4,8 @@ export interface SettingsFormState {
   topP: string
   topPEnabled: string
   contextCount: string
-  maxTokens: string
-  maxTokensEnabled: string
+  maxCompletionTokens: string
+  maxCompletionTokensEnabled: string
   streaming: string
   systemPrompt: string
 }
