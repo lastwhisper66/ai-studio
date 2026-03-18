@@ -27,6 +27,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
     deleteConversation,
     renameConversation,
     setActiveConversation,
+    clearMessages,
   } = useConversationStore()
 
   const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
@@ -64,9 +65,14 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
     setDeleteDialogOpen(true)
   }
 
-  const handleDeleteConfirm = (): void => {
+  const handleDeleteConfirm = async (): Promise<void> => {
     if (deleteId) {
-      deleteConversation(deleteId)
+      const isLastTopic = topicConversations.length === 1 && topicConversations[0].id === deleteId
+      if (isLastTopic) {
+        await clearMessages(deleteId)
+      } else {
+        await deleteConversation(deleteId)
+      }
     }
     setDeleteDialogOpen(false)
     setDeleteId(null)
