@@ -23,6 +23,11 @@ export const IpcChannels = {
   PROVIDER_UPDATE: 'provider:update',
   PROVIDER_DELETE: 'provider:delete',
   PROVIDER_TEST_CONNECTION: 'provider:test-connection',
+  // Model
+  MODEL_LIST: 'model:list',
+  MODEL_CREATE: 'model:create',
+  MODEL_UPDATE: 'model:update',
+  MODEL_DELETE: 'model:delete',
   // Assistant
   ASSISTANT_LIST: 'assistant:list',
   ASSISTANT_GET: 'assistant:get',

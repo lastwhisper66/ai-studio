@@ -87,6 +87,19 @@ function createTables(): void {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS models (
+      id TEXT PRIMARY KEY,
+      provider_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_models_provider_id
+      ON models(provider_id);
+
     CREATE TABLE IF NOT EXISTS assistants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

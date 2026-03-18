@@ -45,8 +45,10 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
 
   const providers = useProviderStore((s) => s.providers)
+  const models = useProviderStore((s) => s.models)
   const activeProviderId = useProviderStore((s) => s.activeProviderId)
-  const setActiveProvider = useProviderStore((s) => s.setActiveProvider)
+  const activeModelId = useProviderStore((s) => s.activeModelId)
+  const setActiveModel = useProviderStore((s) => s.setActiveModel)
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
   const activeAssistant = activeAssistantId
@@ -59,7 +61,15 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const enabledProviders = providers.filter((p) => p.enabled)
   const resolvedProviderId = activeAssistant?.providerId || activeProviderId
   const resolvedProvider = providers.find((p) => p.id === resolvedProviderId)
-  const resolvedModel = activeAssistant?.model || resolvedProvider?.model || 'No model set'
+  // Resolve display model name
+  const activeModelObj = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
+  const resolvedModel =
+    activeAssistant?.model ||
+    (activeModelObj && activeModelObj.providerId === resolvedProviderId
+      ? activeModelObj.name
+      : null) ||
+    resolvedProvider?.model ||
+    'No model set'
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -112,7 +122,9 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
             <DropdownMenuContent align="start" className="w-56">
               {enabledProviders.map((provider, index) => {
                 const providerTemplate = getTemplateByType(provider.type)
-                const isActive = provider.id === resolvedProviderId
+                const providerModels = models.filter(
+                  (m) => m.providerId === provider.id && m.enabled,
+                )
                 return (
                   <div key={provider.id}>
                     {index > 0 && <DropdownMenuSeparator />}
@@ -124,10 +136,26 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
                         />
                         {provider.name}
                       </DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => setActiveProvider(provider.id)}>
-                        <Check className={`mr-2 h-3.5 w-3.5 ${isActive ? '' : 'invisible'}`} />
-                        <span>{provider.model || 'No model set'}</span>
-                      </DropdownMenuItem>
+                      {providerModels.length > 0 ? (
+                        providerModels.map((m) => {
+                          const isSelected =
+                            provider.id === resolvedProviderId && m.id === activeModelId
+                          return (
+                            <DropdownMenuItem
+                              key={m.id}
+                              onClick={() => setActiveModel(m.id, provider.id)}>
+                              <Check
+                                className={`mr-2 h-3.5 w-3.5 ${isSelected ? '' : 'invisible'}`}
+                              />
+                              <span>{m.name}</span>
+                            </DropdownMenuItem>
+                          )
+                        })
+                      ) : (
+                        <DropdownMenuItem disabled>
+                          <span className="text-muted-foreground">No models configured</span>
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuGroup>
                   </div>
                 )

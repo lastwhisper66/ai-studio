@@ -12,6 +12,7 @@ import type {
   StreamErrorData,
   TitleUpdatedData,
   Provider,
+  Model,
   Assistant,
 } from '@shared/types'
 
@@ -92,6 +93,18 @@ const api = {
 
   testProviderConnection: (provider: Provider): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, provider),
+
+  // Models
+  listModels: (): Promise<IpcResult<Model[]>> => ipcRenderer.invoke(IpcChannels.MODEL_LIST),
+
+  createModel: (data: { providerId: string; name: string }): Promise<IpcResult<Model>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_CREATE, data),
+
+  updateModel: (id: string, data: Partial<Model>): Promise<IpcResult<Model | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_UPDATE, id, data),
+
+  deleteModel: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_DELETE, id),
 
   // Assistants
   listAssistants: (): Promise<IpcResult<Assistant[]>> =>

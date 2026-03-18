@@ -13,12 +13,17 @@ import {
 
 export function InputToolbar(): React.JSX.Element {
   const providers = useProviderStore((s) => s.providers)
+  const models = useProviderStore((s) => s.models)
   const activeProviderId = useProviderStore((s) => s.activeProviderId)
-  const setActiveProvider = useProviderStore((s) => s.setActiveProvider)
+  const activeModelId = useProviderStore((s) => s.activeModelId)
+  const setActiveModel = useProviderStore((s) => s.setActiveModel)
 
   const enabledProviders = providers.filter((p) => p.enabled)
   const activeProvider = providers.find((p) => p.id === activeProviderId)
+  const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
+
+  const displayModel = activeModel?.name || activeProvider?.model || 'No model set'
 
   if (!activeProvider) {
     return <span className="text-muted-foreground text-xs">No provider configured</span>
@@ -32,14 +37,14 @@ export function InputToolbar(): React.JSX.Element {
             className="inline-block h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: template?.color ?? '#6b7280' }}
           />
-          <span>{activeProvider.model || 'No model set'}</span>
+          <span>{displayModel}</span>
           <ChevronUp className="h-3 w-3 opacity-50" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-56">
         {enabledProviders.map((provider, index) => {
           const providerTemplate = getTemplateByType(provider.type)
-          const isActive = provider.id === activeProviderId
+          const providerModels = models.filter((m) => m.providerId === provider.id && m.enabled)
           return (
             <div key={provider.id}>
               {index > 0 && <DropdownMenuSeparator />}
@@ -51,10 +56,23 @@ export function InputToolbar(): React.JSX.Element {
                   />
                   {provider.name}
                 </DropdownMenuLabel>
-                <DropdownMenuItem onClick={() => setActiveProvider(provider.id)}>
-                  <Check className={`mr-2 h-3.5 w-3.5 ${isActive ? '' : 'invisible'}`} />
-                  <span>{provider.model || 'No model set'}</span>
-                </DropdownMenuItem>
+                {providerModels.length > 0 ? (
+                  providerModels.map((m) => {
+                    const isSelected = provider.id === activeProviderId && m.id === activeModelId
+                    return (
+                      <DropdownMenuItem
+                        key={m.id}
+                        onClick={() => setActiveModel(m.id, provider.id)}>
+                        <Check className={`mr-2 h-3.5 w-3.5 ${isSelected ? '' : 'invisible'}`} />
+                        <span>{m.name}</span>
+                      </DropdownMenuItem>
+                    )
+                  })
+                ) : (
+                  <DropdownMenuItem disabled>
+                    <span className="text-muted-foreground">No models configured</span>
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuGroup>
             </div>
           )

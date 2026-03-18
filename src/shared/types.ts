@@ -54,7 +54,7 @@ export interface Provider {
   name: string
   apiKey: string
   baseUrl: string
-  model: string
+  model: string // deprecated — use models table instead
   // Azure-specific
   endpoint: string
   apiVersion: string
@@ -64,6 +64,15 @@ export interface Provider {
   sortOrder: number
   createdAt: string
   updatedAt: string
+}
+
+export interface Model {
+  id: string
+  providerId: string
+  name: string
+  enabled: boolean
+  sortOrder: number
+  createdAt: string
 }
 
 export interface ApiSettings {

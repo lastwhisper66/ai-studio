@@ -6,6 +6,7 @@ import { listMessages, createMessage } from '../db/messages'
 import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
+import { listModelsByProvider } from '../db/models'
 import { createAIClient, loadApiSettings, generateTitle } from '../ai'
 
 const activeStreams = new Map<string, AbortController>()
@@ -38,8 +39,13 @@ export function registerChatHandlers(): void {
                 settings.endpoint = assistantProvider.endpoint
                 settings.apiVersion = assistantProvider.apiVersion
                 settings.deploymentName = assistantProvider.deploymentName
-                // Use assistant's model, or fall back to provider's model
-                settings.model = assistant.model || assistantProvider.model || settings.model
+                // Use assistant's model, or fall back to provider's first model
+                const providerModels = listModelsByProvider(assistantProvider.id)
+                settings.model =
+                  assistant.model ||
+                  providerModels[0]?.name ||
+                  assistantProvider.model ||
+                  settings.model
               }
             } else if (assistant.model) {
               // No custom provider, but assistant specifies a model name

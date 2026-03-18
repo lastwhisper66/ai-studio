@@ -3,6 +3,7 @@ import { registerMessageHandlers } from './message-handlers'
 import { registerSettingsHandlers } from './settings-handlers'
 import { registerChatHandlers } from './chat-handlers'
 import { registerProviderHandlers } from './provider-handlers'
+import { registerModelHandlers } from './model-handlers'
 import { registerAssistantHandlers } from './assistant-handlers'
 import { registerWindowHandlers } from './window-handlers'
 
@@ -12,6 +13,7 @@ export function registerAllIpcHandlers(): void {
   registerSettingsHandlers()
   registerChatHandlers()
   registerProviderHandlers()
+  registerModelHandlers()
   registerAssistantHandlers()
   registerWindowHandlers()
 }

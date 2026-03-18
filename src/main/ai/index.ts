@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import type { ApiSettings } from '@shared/types'
 import { getSetting } from '../db/settings'
 import { getProvider } from '../db/providers'
+import { getModel, listModelsByProvider } from '../db/models'
 import { createOpenAIClient } from './openai-client'
 import { createAzureClient } from './azure-client'
 
@@ -31,6 +32,28 @@ export function loadApiSettings(): ApiSettings {
     )
   }
 
+  // Resolve active model: active.modelId → first model of provider
+  let modelName = ''
+  const activeModelId = getSetting('active.modelId')
+  if (activeModelId) {
+    const activeModel = getModel(activeModelId)
+    if (activeModel && activeModel.providerId === activeProviderId) {
+      modelName = activeModel.name
+    }
+  }
+  if (!modelName) {
+    const models = listModelsByProvider(activeProviderId)
+    if (models.length > 0) {
+      modelName = models[0].name
+    }
+  }
+
+  if (!modelName) {
+    throw new Error(
+      `No model configured for provider "${provider.name}". Please add at least one model in Settings.`,
+    )
+  }
+
   // Global model params from settings table
   const temperature = parseFloat(getSetting('api.temperature') || '0.7')
   const maxCompletionTokens = parseInt(getSetting('api.maxCompletionTokens') || '4096', 10)
@@ -40,7 +63,7 @@ export function loadApiSettings(): ApiSettings {
     provider: provider.type,
     apiKey: provider.apiKey,
     baseUrl: provider.baseUrl,
-    model: provider.model || 'gpt-5.1',
+    model: modelName,
     endpoint: provider.endpoint,
     apiVersion: provider.apiVersion,
     deploymentName: provider.deploymentName,

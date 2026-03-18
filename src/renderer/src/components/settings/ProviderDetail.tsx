@@ -3,7 +3,7 @@ import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
-import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle } from 'lucide-react'
+import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle, Plus, X } from 'lucide-react'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider } from '@shared/types'
 import { getTemplateByType } from './provider-templates'
@@ -11,11 +11,14 @@ import { getTemplateByType } from './provider-templates'
 export function ProviderDetail(): React.JSX.Element {
   const {
     providers,
+    models,
     selectedProviderId,
     activeProviderId,
     updateProvider,
     deleteProvider,
     setActiveProvider,
+    addModel,
+    removeModel,
   } = useProviderStore()
 
   const provider = providers.find((p) => p.id === selectedProviderId)
@@ -33,9 +36,12 @@ export function ProviderDetail(): React.JSX.Element {
       key={provider.id}
       provider={provider}
       isActive={activeProviderId === provider.id}
+      providerModels={models.filter((m) => m.providerId === provider.id)}
       onUpdate={updateProvider}
       onDelete={deleteProvider}
       onSetActive={setActiveProvider}
+      onAddModel={addModel}
+      onRemoveModel={removeModel}
     />
   )
 }
@@ -43,9 +49,12 @@ export function ProviderDetail(): React.JSX.Element {
 interface ProviderFormProps {
   provider: Provider
   isActive: boolean
+  providerModels: { id: string; name: string; enabled: boolean }[]
   onUpdate: (id: string, data: Partial<Provider>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSetActive: (id: string) => Promise<void>
+  onAddModel: (providerId: string, name: string) => Promise<unknown>
+  onRemoveModel: (id: string) => Promise<void>
 }
 
 function SettingGroup({
@@ -87,21 +96,24 @@ function SettingRow({
 function ProviderForm({
   provider,
   isActive,
+  providerModels,
   onUpdate,
   onDelete,
   onSetActive,
+  onAddModel,
+  onRemoveModel,
 }: ProviderFormProps): React.JSX.Element {
   const [showApiKey, setShowApiKey] = useState(false)
   const [draft, setDraft] = useState({
     name: provider.name,
     apiKey: provider.apiKey,
     baseUrl: provider.baseUrl,
-    model: provider.model,
     endpoint: provider.endpoint,
     apiVersion: provider.apiVersion,
     deploymentName: provider.deploymentName,
     enabled: provider.enabled,
   })
+  const [newModelName, setNewModelName] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
@@ -114,7 +126,6 @@ function ProviderForm({
       name: provider.name,
       apiKey: provider.apiKey,
       baseUrl: provider.baseUrl,
-      model: provider.model,
       endpoint: provider.endpoint,
       apiVersion: provider.apiVersion,
       deploymentName: provider.deploymentName,
@@ -135,7 +146,11 @@ function ProviderForm({
     setIsTesting(true)
     setTestResult(null)
     try {
-      const testProvider: Provider = { ...provider, ...draft }
+      const testProvider: Provider = {
+        ...provider,
+        ...draft,
+        model: providerModels[0]?.name || provider.model,
+      }
       const res = await window.api.testProviderConnection(testProvider)
       if (res.success) {
         setTestResult({ success: true, message: res.data || '连接成功！' })
@@ -155,6 +170,27 @@ function ProviderForm({
 
   const change = (field: keyof typeof draft, value: string | boolean): void => {
     setDraft((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleAddModel = async (): Promise<void> => {
+    const name = newModelName.trim()
+    if (!name) return
+    // Prevent duplicate names
+    if (providerModels.some((m) => m.name === name)) return
+    await onAddModel(provider.id, name)
+    setNewModelName('')
+  }
+
+  const handleAddModelKeyDown = (e: React.KeyboardEvent): void => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      handleAddModel()
+    }
+  }
+
+  const handleQuickAddModel = async (name: string): Promise<void> => {
+    if (providerModels.some((m) => m.name === name)) return
+    await onAddModel(provider.id, name)
   }
 
   return (
@@ -251,26 +287,60 @@ function ProviderForm({
           )}
         </SettingGroup>
 
-        {/* Model configuration */}
+        {/* Model configuration — multi-model list */}
         <SettingGroup title="模型配置">
-          <SettingRow label="模型" htmlFor="model">
-            <Input
-              id="model"
-              value={draft.model}
-              onChange={(e) => change('model', e.target.value)}
-              placeholder={template?.defaultModels[0] ?? 'gpt-5.1'}
-            />
-            {template && template.defaultModels.length > 0 && (
-              <div className="mt-1.5 flex flex-wrap gap-1">
-                {template.defaultModels.map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => change('model', m)}
-                    className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded px-2 py-0.5 text-xs transition-colors">
-                    {m}
-                  </button>
+          <SettingRow label="模型列表">
+            {/* Existing models as chips */}
+            {providerModels.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {providerModels.map((m) => (
+                  <span
+                    key={m.id}
+                    className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm">
+                    {m.name}
+                    <button
+                      type="button"
+                      onClick={() => onRemoveModel(m.id)}
+                      className="hover:text-destructive ml-0.5 rounded-sm opacity-60 hover:opacity-100">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
                 ))}
+              </div>
+            )}
+            {/* Add model input */}
+            <div className="flex gap-2">
+              <Input
+                value={newModelName}
+                onChange={(e) => setNewModelName(e.target.value)}
+                onKeyDown={handleAddModelKeyDown}
+                placeholder="输入模型名称，如 gpt-4o"
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddModel}
+                disabled={!newModelName.trim()}>
+                <Plus className="mr-1 h-3.5 w-3.5" />
+                添加
+              </Button>
+            </div>
+            {/* Quick add from template */}
+            {template && template.defaultModels.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {template.defaultModels
+                  .filter((m) => !providerModels.some((pm) => pm.name === m))
+                  .map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => handleQuickAddModel(m)}
+                      className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded px-2 py-0.5 text-xs transition-colors">
+                      + {m}
+                    </button>
+                  ))}
               </div>
             )}
           </SettingRow>
@@ -285,7 +355,7 @@ function ProviderForm({
             variant="outline"
             size="sm"
             onClick={handleTest}
-            disabled={isTesting || !draft.apiKey || !draft.model}>
+            disabled={isTesting || !draft.apiKey || providerModels.length === 0}>
             {isTesting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             {isTesting ? '检测中...' : '连接测试'}
           </Button>
