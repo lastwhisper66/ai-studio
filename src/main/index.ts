@@ -5,6 +5,7 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
 import { initDatabase, closeDatabase } from './db'
 import { registerAllIpcHandlers } from './ipc'
+import { applySslSetting } from './ai'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -154,6 +155,7 @@ if (!gotTheLock) {
     electronApp.setAppUserModelId('com.ai-studio.app')
 
     initDatabase()
+    applySslSetting()
     registerAllIpcHandlers()
 
     app.on('browser-window-created', (_, window) => {
