@@ -195,11 +195,8 @@ if (!gotTheLock) {
     }
 
     // ── System tray ───────────────────────────────────────────────
-    const iconPath = join(
-      app.isPackaged ? process.resourcesPath : app.getAppPath(),
-      app.isPackaged ? 'icon.png' : 'resources/icon.png',
-    )
-    const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
+    const trayIcon = nativeImage.createFromPath(iconPath)
     tray = new Tray(trayIcon)
     tray.setToolTip('AI Studio')
 
