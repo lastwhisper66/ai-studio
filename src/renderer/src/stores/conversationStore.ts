@@ -223,16 +223,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }),
     )
 
-    cleanups.push(
-      window.api.onTitleUpdated((data) => {
-        if (data.conversationId !== conversationId) return
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c.id === data.conversationId ? { ...c, title: data.title } : c,
-          ),
-        }))
-      }),
-    )
+    // Title listener registered separately — must NOT be cleaned up by stream
+    // end/error, because title generation happens asynchronously AFTER the
+    // stream completes. It will be cleaned up by removeAllStreamListeners()
+    // at the start of the next sendMessage() call.
+    window.api.onTitleUpdated((data) => {
+      if (data.conversationId !== conversationId) return
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c.id === data.conversationId ? { ...c, title: data.title } : c,
+        ),
+      }))
+    })
 
     // Invoke the streaming request
     const result = await window.api.sendMessage({ conversationId })

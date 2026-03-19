@@ -70,6 +70,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
       const isLastTopic = topicConversations.length === 1 && topicConversations[0].id === deleteId
       if (isLastTopic) {
         await clearMessages(deleteId)
+        await renameConversation(deleteId, 'New Chat')
       } else {
         await deleteConversation(deleteId)
       }
@@ -130,45 +131,51 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
               暂无话题，点击上方按钮创建
             </div>
           ) : (
-            topicConversations.map((conv) => (
-              <div
-                key={conv.id}
-                className={`group flex cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-sm ${
-                  activeConversationId === conv.id
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
-                }`}
-                onClick={() => setActiveConversation(conv.id)}>
-                <div className="min-w-0 flex-1">
+            topicConversations.map((conv) => {
+              const isActive = activeConversationId === conv.id
+              return (
+                <div
+                  key={conv.id}
+                  className={`group relative cursor-pointer overflow-hidden rounded-lg px-3 py-2 text-sm ${
+                    isActive
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                  }`}
+                  onClick={() => setActiveConversation(conv.id)}>
                   <div className="truncate text-sm">{conv.title}</div>
                   <div className="text-[11px] text-muted-foreground/60">
                     {formatTime(conv.updatedAt)}
                   </div>
+                  <div
+                    className={`absolute inset-y-0 right-0 flex items-center gap-0.5 pr-1.5 pl-6 opacity-0 transition-opacity group-hover:opacity-100 ${
+                      isActive
+                        ? 'bg-gradient-to-l from-sidebar-accent from-60%'
+                        : 'bg-gradient-to-l from-sidebar-background from-60% group-hover:from-sidebar-accent/50'
+                    }`}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRenameOpen(conv.id, conv.title)
+                      }}>
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteOpen(conv.id)
+                      }}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRenameOpen(conv.id, conv.title)
-                    }}>
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteOpen(conv.id)
-                    }}>
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-            ))
+              )
+            })
           )}
         </div>
       </ScrollArea>
