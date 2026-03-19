@@ -1,4 +1,14 @@
-import { app, shell, BrowserWindow, screen } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  screen,
+  globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
+  dialog,
+} from 'electron'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -49,6 +59,15 @@ function saveWindowState(win: BrowserWindow): void {
 
 // ── Window creation ─────────────────────────────────────────────
 
+let isQuitting = false
+let tray: Tray | null = null
+
+function showWindow(win: BrowserWindow): void {
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
 function createWindow(): void {
   const restored = loadWindowState()
 
@@ -87,17 +106,22 @@ function createWindow(): void {
     mainWindow.show()
   })
 
-  // Persist window state on close, then exit immediately to avoid
-  // the slow renderer/GPU teardown that plagues frameless windows on Windows
-  mainWindow.on('close', () => {
+  // Minimize to tray on close; only truly quit when isQuitting is set
+  mainWindow.on('close', (e) => {
     try {
       saveWindowState(mainWindow)
+    } catch {
+      // Non-critical — silently ignore
+    }
+    if (!isQuitting) {
+      e.preventDefault()
+      mainWindow.hide()
+      return
+    }
+    try {
+      closeDatabase()
     } finally {
-      try {
-        closeDatabase()
-      } finally {
-        app.exit(0)
-      }
+      app.exit(0)
     }
   })
 
@@ -145,10 +169,7 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', () => {
     const win = BrowserWindow.getAllWindows()[0]
-    if (win) {
-      if (win.isMinimized()) win.restore()
-      win.focus()
-    }
+    if (win) showWindow(win)
   })
 
   app.whenReady().then(() => {
@@ -164,6 +185,60 @@ if (!gotTheLock) {
 
     createWindow()
 
+    // Global shortcut: Ctrl+Win+A to summon the main window
+    const registered = globalShortcut.register('Ctrl+Super+A', () => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) showWindow(win)
+    })
+    if (!registered && is.dev) {
+      console.warn('Failed to register global shortcut Ctrl+Super+A — may already be in use')
+    }
+
+    // ── System tray ───────────────────────────────────────────────
+    const iconPath = join(
+      app.isPackaged ? process.resourcesPath : app.getAppPath(),
+      app.isPackaged ? 'icon.png' : 'resources/icon.png',
+    )
+    const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+    tray = new Tray(trayIcon)
+    tray.setToolTip('AI Studio')
+
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: '打开主窗口',
+        click: () => {
+          const win = BrowserWindow.getAllWindows()[0]
+          if (win) showWindow(win)
+        },
+      },
+      { type: 'separator' },
+      {
+        label: '关于',
+        click: () => {
+          dialog.showMessageBox({
+            type: 'info',
+            title: '关于 AI Studio',
+            message: `AI Studio v${app.getVersion()}`,
+            detail: 'A desktop AI chat application',
+          })
+        },
+      },
+      { type: 'separator' },
+      {
+        label: '退出',
+        click: () => {
+          isQuitting = true
+          app.quit()
+        },
+      },
+    ])
+    tray.setContextMenu(contextMenu)
+
+    tray.on('click', () => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) showWindow(win)
+    })
+
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
@@ -171,9 +246,15 @@ if (!gotTheLock) {
 }
 
 // On macOS, apps conventionally stay active until Cmd+Q.
-// On other platforms the close handler above calls app.exit(0) directly,
-// so this only serves as a fallback safety net.
+// On Windows, the close handler hides to tray; this fires only when
+// all windows are destroyed (e.g. during a true quit).
+app.on('before-quit', () => {
+  isQuitting = true
+})
+
 app.on('window-all-closed', () => {
+  globalShortcut.unregisterAll()
+  tray?.destroy()
   closeDatabase()
   app.quit()
 })
