@@ -56,7 +56,12 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     name: 'Silicon Flow',
     color: '#6c5ce7',
     defaultBaseUrl: 'https://api.siliconflow.cn/v1',
-    defaultModels: ['Qwen/Qwen2.5-72B-Instruct'],
+    defaultModels: [
+      'Pro/deepseek-ai/DeepSeek-V3.2',
+      'Pro/MiniMaxAI/MiniMax-M2.5',
+      'Pro/zai-org/GLM-5',
+      'deepseek-ai/DeepSeek-V3.2',
+    ],
   },
   {
     type: 'openrouter',
