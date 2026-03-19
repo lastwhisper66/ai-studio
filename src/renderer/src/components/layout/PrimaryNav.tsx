@@ -1,4 +1,4 @@
-import { Sparkles, MessageSquare, Settings, Sun, Moon, Monitor, Bot } from 'lucide-react'
+import { MessageSquare, Settings, Sun, Moon, Monitor, Bot } from 'lucide-react'
 import { type Theme } from '@renderer/components/theme/ThemeContext'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -29,11 +29,6 @@ export function PrimaryNav(): React.JSX.Element {
 
   return (
     <nav className="flex h-full w-12 shrink-0 flex-col items-center border-r bg-nav-background py-3 text-nav-foreground">
-      {/* Logo */}
-      <div className="mb-4 flex h-8 w-8 items-center justify-center">
-        <Sparkles className="h-5 w-5 text-nav-active" />
-      </div>
-
       {/* Navigation icons */}
       <div className="flex flex-1 flex-col items-center gap-1">
         <Tooltip>
