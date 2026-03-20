@@ -97,6 +97,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
   const handleClearConfirm = async (): Promise<void> => {
     if (clearId) {
       await clearMessages(clearId)
+      await renameConversation(clearId, 'New Chat')
     }
     setClearDialogOpen(false)
     setClearId(null)
