@@ -97,6 +97,7 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       model: provider.model,
       temperature: 0,
       maxCompletionTokens: 1,
+      topP: 1,
       systemPrompt: '',
     }
 

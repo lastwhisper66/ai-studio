@@ -67,6 +67,7 @@ export function loadApiSettings(): ApiSettings {
   // Global model params from settings table
   const temperature = parseFloat(getSetting('api.temperature') || '0.7')
   const maxCompletionTokens = parseInt(getSetting('api.maxCompletionTokens') || '4096', 10)
+  const topP = parseFloat(getSetting('api.topP') || '1')
   const systemPrompt = getSetting('api.systemPrompt') || ''
 
   return {
@@ -79,6 +80,7 @@ export function loadApiSettings(): ApiSettings {
     deploymentName: provider.deploymentName,
     temperature,
     maxCompletionTokens,
+    topP,
     systemPrompt,
   }
 }

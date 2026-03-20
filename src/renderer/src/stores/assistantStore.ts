@@ -4,21 +4,18 @@ import type { Assistant } from '@shared/types'
 interface AssistantStore {
   assistants: Assistant[]
   isLoaded: boolean
-  selectedAssistantId: string | null
   activeAssistantId: string | null
 
   loadAssistants: () => Promise<void>
   addAssistant: (data: Partial<Assistant> & { name: string }) => Promise<Assistant | undefined>
   updateAssistant: (id: string, data: Partial<Assistant>) => Promise<void>
   deleteAssistant: (id: string) => Promise<void>
-  setSelectedAssistantId: (id: string | null) => void
   setActiveAssistantId: (id: string | null) => void
 }
 
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
   assistants: [],
   isLoaded: false,
-  selectedAssistantId: null,
   activeAssistantId: null,
 
   loadAssistants: async () => {
@@ -28,7 +25,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       set({
         assistants: result.data,
         isLoaded: true,
-        selectedAssistantId: get().selectedAssistantId ?? result.data[0]?.id ?? null,
         activeAssistantId:
           get().activeAssistantId ?? defaultAssistant?.id ?? result.data[0]?.id ?? null,
       })
@@ -41,7 +37,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       const assistant = result.data
       set((state) => ({
         assistants: [...state.assistants, assistant],
-        selectedAssistantId: assistant.id,
       }))
       return assistant
     }
@@ -61,19 +56,11 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   deleteAssistant: async (id) => {
     const result = await window.api.deleteAssistant(id)
     if (result.success) {
-      set((state) => {
-        const assistants = state.assistants.filter((a) => a.id !== id)
-        const wasSelected = state.selectedAssistantId === id
-        return {
-          assistants,
-          selectedAssistantId: wasSelected
-            ? (assistants[0]?.id ?? null)
-            : state.selectedAssistantId,
-        }
-      })
+      set((state) => ({
+        assistants: state.assistants.filter((a) => a.id !== id),
+      }))
     }
   },
 
-  setSelectedAssistantId: (id) => set({ selectedAssistantId: id }),
   setActiveAssistantId: (id) => set({ activeAssistantId: id }),
 }))

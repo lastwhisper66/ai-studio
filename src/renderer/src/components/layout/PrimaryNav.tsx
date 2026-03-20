@@ -1,4 +1,4 @@
-import { MessageSquare, Settings, Sun, Moon, Monitor, Bot } from 'lucide-react'
+import { MessageSquare, Settings, Sun, Moon, Monitor } from 'lucide-react'
 import { type Theme } from '@renderer/components/theme/ThemeContext'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -42,19 +42,6 @@ export function PrimaryNav(): React.JSX.Element {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">Chat</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn('h-9 w-9', activeView === 'assistants' && 'text-nav-active')}
-              onClick={() => setActiveView('assistants')}>
-              <Bot className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">助手</TooltipContent>
         </Tooltip>
       </div>
 

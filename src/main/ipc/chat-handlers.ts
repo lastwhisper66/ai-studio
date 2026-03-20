@@ -8,6 +8,7 @@ import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
 import { createAIClient, loadApiSettings, generateTitle } from '../ai'
+import { getSetting } from '../db/settings'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -26,9 +27,10 @@ export function registerChatHandlers(): void {
         // Assistant overlay: if conversation is linked to an assistant,
         // override settings with assistant-specific configuration
         const conversation = getConversation(conversationId)
-        if (conversation?.assistantId) {
-          const assistant = getAssistant(conversation.assistantId)
-          if (assistant) {
+        const assistant = conversation?.assistantId
+          ? getAssistant(conversation.assistantId)
+          : undefined
+        if (assistant) {
             // Override provider if assistant specifies one
             if (assistant.providerId) {
               const assistantProvider = getProvider(assistant.providerId)
@@ -60,7 +62,9 @@ export function registerChatHandlers(): void {
             if (assistant.maxCompletionTokens) {
               settings.maxCompletionTokens = parseInt(assistant.maxCompletionTokens, 10)
             }
-          }
+            if (assistant.topP) {
+              settings.topP = parseFloat(assistant.topP)
+            }
         }
 
         // Build API messages array
@@ -68,7 +72,28 @@ export function registerChatHandlers(): void {
         if (settings.systemPrompt) {
           apiMessages.push({ role: 'system', content: settings.systemPrompt })
         }
-        for (const msg of messages) {
+
+        // Apply context count limit: assistant-level overrides global setting
+        let contextMessages = messages
+        const contextCountStr = assistant?.contextCount || getSetting('api.contextCount')
+        if (contextCountStr) {
+          const limit = parseInt(contextCountStr, 10)
+          if (!isNaN(limit) && limit < 100) {
+            const nonSystemMessages = messages.filter(
+              (m) => m.role === 'user' || m.role === 'assistant',
+            )
+            if (limit === 0) {
+              contextMessages = []
+            } else {
+              contextMessages =
+                nonSystemMessages.length > limit
+                  ? nonSystemMessages.slice(-limit)
+                  : nonSystemMessages
+            }
+          }
+        }
+
+        for (const msg of contextMessages) {
           if (msg.role === 'user' || msg.role === 'assistant') {
             apiMessages.push({ role: msg.role, content: msg.content })
           }
@@ -85,6 +110,7 @@ export function registerChatHandlers(): void {
             stream: true,
             max_completion_tokens: settings.maxCompletionTokens,
             temperature: settings.temperature,
+            top_p: settings.topP,
           },
           { signal: controller.signal },
         )

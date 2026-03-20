@@ -109,6 +109,8 @@ function createTables(): void {
       model TEXT NOT NULL DEFAULT '',
       temperature TEXT NOT NULL DEFAULT '',
       max_completion_tokens TEXT NOT NULL DEFAULT '',
+      top_p TEXT NOT NULL DEFAULT '',
+      context_count TEXT NOT NULL DEFAULT '10',
       prompt_suggestions TEXT NOT NULL DEFAULT '[]',
       emoji TEXT NOT NULL DEFAULT '🤖',
       is_default INTEGER NOT NULL DEFAULT 0,

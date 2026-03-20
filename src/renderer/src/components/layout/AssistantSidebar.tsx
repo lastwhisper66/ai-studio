@@ -3,7 +3,7 @@ import { Plus, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
-import { AssistantPickerDialog } from '@renderer/components/chat/AssistantPickerDialog'
+import { AssistantSettingsDialog } from '@renderer/components/chat/AssistantSettingsDialog'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 
 interface AssistantSidebarProps {
@@ -22,9 +22,10 @@ interface GroupedAssistants {
 }
 
 export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JSX.Element {
-  const { assistants, activeAssistantId, setActiveAssistantId } = useAssistantStore()
+  const { assistants, activeAssistantId, setActiveAssistantId, addAssistant } = useAssistantStore()
   const { conversations, createConversation, setActiveConversation } = useConversationStore()
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [newAssistantId, setNewAssistantId] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   const defaultAssistant = assistants.find((a) => a.isDefault)
@@ -70,9 +71,21 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
     }
   }
 
-  const handlePickerSelect = async (assistantId: string): Promise<void> => {
-    setActiveAssistantId(assistantId)
-    await createConversation(undefined, assistantId)
+  const handleAddAssistant = async (): Promise<void> => {
+    const assistant = await addAssistant({ name: '新助手', contextCount: '10' })
+    if (assistant) {
+      setNewAssistantId(assistant.id)
+      setSettingsOpen(true)
+    }
+  }
+
+  const handleSettingsClose = async (open: boolean): Promise<void> => {
+    setSettingsOpen(open)
+    if (!open && newAssistantId) {
+      setActiveAssistantId(newAssistantId)
+      await createConversation(undefined, newAssistantId)
+      setNewAssistantId(null)
+    }
   }
 
   return (
@@ -85,7 +98,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
         <Button
           variant="outline"
           className="h-9 w-full justify-start gap-2 text-sm"
-          onClick={() => setPickerOpen(true)}>
+          onClick={handleAddAssistant}>
           <Plus className="h-4 w-4" />
           添加助手
         </Button>
@@ -150,12 +163,11 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
         </div>
       </ScrollArea>
 
-      {/* Assistant Picker Dialog */}
-      <AssistantPickerDialog
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        assistants={assistants}
-        onSelect={handlePickerSelect}
+      {/* Assistant Settings Dialog */}
+      <AssistantSettingsDialog
+        open={settingsOpen}
+        onOpenChange={handleSettingsClose}
+        assistantId={newAssistantId}
       />
     </aside>
   )

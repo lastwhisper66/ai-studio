@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-type ActiveView = 'chat' | 'settings' | 'assistants'
+type ActiveView = 'chat' | 'settings'
 
 interface SettingsState {
   settings: Record<string, string>

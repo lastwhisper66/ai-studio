@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
 import type { Assistant } from '@shared/types'
 
@@ -6,6 +7,7 @@ interface AssistantPickerDialogProps {
   onOpenChange: (open: boolean) => void
   assistants: Assistant[]
   onSelect: (assistantId: string) => void
+  onCreate?: () => void
 }
 
 export function AssistantPickerDialog({
@@ -13,10 +15,16 @@ export function AssistantPickerDialog({
   onOpenChange,
   assistants,
   onSelect,
+  onCreate,
 }: AssistantPickerDialogProps): React.JSX.Element {
   const handleSelect = (assistantId: string): void => {
     onSelect(assistantId)
     onOpenChange(false)
+  }
+
+  const handleCreate = (): void => {
+    onOpenChange(false)
+    onCreate?.()
   }
 
   return (
@@ -40,6 +48,14 @@ export function AssistantPickerDialog({
               </div>
             </button>
           ))}
+          {onCreate && (
+            <button
+              onClick={handleCreate}
+              className="flex items-center gap-2.5 rounded-xl border border-dashed px-3 py-3 text-left text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <Plus className="h-5 w-5 shrink-0" />
+              <span className="text-sm font-medium">新建助手</span>
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -11,6 +11,8 @@ interface AssistantRow {
   model: string
   temperature: string
   max_completion_tokens: string
+  top_p: string
+  context_count: string
   prompt_suggestions: string
   emoji: string
   is_default: number
@@ -36,6 +38,8 @@ function rowToAssistant(row: AssistantRow): Assistant {
     model: row.model,
     temperature: row.temperature,
     maxCompletionTokens: row.max_completion_tokens,
+    topP: row.top_p,
+    contextCount: row.context_count,
     promptSuggestions,
     emoji: row.emoji,
     isDefault: !!row.is_default,
@@ -69,6 +73,8 @@ export interface CreateAssistantData {
   model?: string
   temperature?: string
   maxCompletionTokens?: string
+  topP?: string
+  contextCount?: string
   promptSuggestions?: string[]
   emoji?: string
   group?: string
@@ -80,8 +86,8 @@ export function createAssistant(data: CreateAssistantData): Assistant {
   const promptSuggestions = JSON.stringify(data.promptSuggestions ?? [])
   getDb()
     .prepare(
-      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, prompt_suggestions, emoji, group_name, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, top_p, context_count, prompt_suggestions, emoji, group_name, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -92,6 +98,8 @@ export function createAssistant(data: CreateAssistantData): Assistant {
       data.model ?? '',
       data.temperature ?? '',
       data.maxCompletionTokens ?? '',
+      data.topP ?? '',
+      data.contextCount ?? '',
       promptSuggestions,
       data.emoji ?? '🤖',
       data.group ?? '',
@@ -108,6 +116,8 @@ export interface UpdateAssistantData {
   model?: string
   temperature?: string
   maxCompletionTokens?: string
+  topP?: string
+  contextCount?: string
   promptSuggestions?: string[]
   emoji?: string
   group?: string
@@ -145,6 +155,14 @@ export function updateAssistant(id: string, data: UpdateAssistantData): Assistan
   if (data.maxCompletionTokens !== undefined) {
     fields.push('max_completion_tokens = ?')
     values.push(data.maxCompletionTokens)
+  }
+  if (data.topP !== undefined) {
+    fields.push('top_p = ?')
+    values.push(data.topP)
+  }
+  if (data.contextCount !== undefined) {
+    fields.push('context_count = ?')
+    values.push(data.contextCount)
   }
   if (data.promptSuggestions !== undefined) {
     fields.push('prompt_suggestions = ?')

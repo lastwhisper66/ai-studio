@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
@@ -8,6 +8,15 @@ import { Slider } from '@renderer/components/ui/slider'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Assistant } from '@shared/types'
@@ -31,6 +40,10 @@ interface FormState {
   temperatureEnabled: boolean
   maxCompletionTokens: string
   maxCompletionTokensEnabled: boolean
+  topP: string
+  topPEnabled: boolean
+  contextCount: string
+  contextCountEnabled: boolean
   systemPrompt: string
   group: string
 }
@@ -46,6 +59,10 @@ function stateFromAssistant(a: Assistant): FormState {
     temperatureEnabled: a.temperature !== '',
     maxCompletionTokens: a.maxCompletionTokens || '4096',
     maxCompletionTokensEnabled: a.maxCompletionTokens !== '',
+    topP: a.topP || '1',
+    topPEnabled: a.topP !== '',
+    contextCount: a.contextCount || '10',
+    contextCountEnabled: a.contextCount !== '',
     systemPrompt: a.systemPrompt,
     group: a.group,
   }
@@ -58,12 +75,21 @@ export function AssistantSettingsDialog({
 }: AssistantSettingsDialogProps): React.JSX.Element {
   const { assistants, updateAssistant } = useAssistantStore()
   const providers = useProviderStore((s) => s.providers)
+  const models = useProviderStore((s) => s.models)
 
   const assistant = assistants.find((a) => a.id === assistantId)
   const [activeTab, setActiveTab] = useState<TabId>('model')
   const [form, setForm] = useState<FormState | null>(() =>
     assistant ? stateFromAssistant(assistant) : null,
   )
+
+  // Re-sync form when the dialog opens or the assistant changes
+  useEffect(() => {
+    if (open && assistant) {
+      setForm(stateFromAssistant(assistant))
+      setActiveTab('model')
+    }
+  }, [open, assistantId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (nextOpen && assistant) {
@@ -81,10 +107,29 @@ export function AssistantSettingsDialog({
     [assistantId, updateAssistant],
   )
 
+  // Model selector: compute the select value from providerId + model
+  const enabledProviders = providers.filter((p) => p.enabled)
+
+  const modelSelectValue = useMemo(() => {
+    if (!form) return '__default__'
+    if (!form.providerId && !form.model) return '__default__'
+    if (form.providerId && form.model) return `${form.providerId}::${form.model}`
+    if (form.providerId) return `${form.providerId}::`
+    return '__default__'
+  }, [form?.providerId, form?.model]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check if the current model is a known model in the list (for custom model input display)
+  const isKnownModel = useMemo(() => {
+    if (!form?.providerId || !form?.model) return true
+    return models.some(
+      (m) => m.providerId === form.providerId && m.name === form.model && m.enabled,
+    )
+  }, [form?.providerId, form?.model, models])
+
   if (!assistant || !form) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-w-2xl" />
+        <DialogContent className="sm:max-w-[70vw] h-[80vh]" />
       </Dialog>
     )
   }
@@ -111,9 +156,6 @@ export function AssistantSettingsDialog({
         break
       case 'model':
         commit({ model: value as string })
-        break
-      case 'providerId':
-        commit({ providerId: (value as string) || null })
         break
       case 'group':
         commit({ group: value as string })
@@ -143,12 +185,51 @@ export function AssistantSettingsDialog({
     commit({ maxCompletionTokens: str })
   }
 
+  const handleTopPToggle = (enabled: boolean): void => {
+    change('topPEnabled', enabled)
+    commit({ topP: enabled ? form.topP : '' })
+  }
+
+  const handleTopPCommit = (value: number): void => {
+    const str = value.toString()
+    change('topP', str)
+    commit({ topP: str })
+  }
+
+  const handleContextCountToggle = (enabled: boolean): void => {
+    change('contextCountEnabled', enabled)
+    commit({ contextCount: enabled ? form.contextCount : '' })
+  }
+
+  const handleContextCountCommit = (value: number): void => {
+    const str = value.toString()
+    change('contextCount', str)
+    commit({ contextCount: str })
+  }
+
+  const handleModelSelect = (val: string): void => {
+    if (val === '__default__') {
+      change('providerId', '')
+      change('model', '')
+      commit({ providerId: null, model: '' })
+    } else {
+      const sepIndex = val.indexOf('::')
+      const providerId = val.slice(0, sepIndex)
+      const modelName = val.slice(sepIndex + 2)
+      change('providerId', providerId)
+      change('model', modelName)
+      commit({ providerId: providerId || null, model: modelName })
+    }
+  }
+
   const handleReset = (): void => {
     commit({
       providerId: null,
       model: '',
       temperature: '',
       maxCompletionTokens: '',
+      topP: '',
+      contextCount: '',
       systemPrompt: '',
     })
     setForm(
@@ -158,14 +239,17 @@ export function AssistantSettingsDialog({
         model: '',
         temperature: '',
         maxCompletionTokens: '',
+        topP: '',
+        contextCount: '',
         systemPrompt: '',
       }),
     )
   }
 
-  const enabledProviders = providers.filter((p) => p.enabled)
   const temperatureValue = parseFloat(form.temperature) || 0.7
   const maxTokensValue = parseInt(form.maxCompletionTokens) || 4096
+  const topPValue = parseFloat(form.topP) || 1
+  const contextCountValue = parseInt(form.contextCount) || 10
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'model', label: '模型设置' },
@@ -174,7 +258,7 @@ export function AssistantSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl p-0">
+      <DialogContent className="sm:max-w-[60vw] h-[70vh] flex flex-col p-0">
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <span className="text-lg">{form.emoji}</span>
@@ -182,7 +266,7 @@ export function AssistantSettingsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex min-h-[400px]">
+        <div className="flex min-h-0 flex-1">
           {/* Left tab nav */}
           <div className="flex w-36 shrink-0 flex-col gap-0.5 border-r px-2 py-2">
             {tabs.map((tab) => (
@@ -205,35 +289,57 @@ export function AssistantSettingsDialog({
             <div className="space-y-4 p-5">
               {activeTab === 'model' && (
                 <>
-                  {/* Provider */}
+                  {/* Model selector (grouped by provider) */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">模型服务</Label>
-                    <select
-                      value={form.providerId}
-                      onChange={(e) => {
-                        change('providerId', e.target.value)
-                        commit({ providerId: e.target.value || null })
-                      }}
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
-                      <option value="">使用默认</option>
-                      {enabledProviders.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
+                    <Label className="text-sm">模型</Label>
+                    {enabledProviders.length === 0 ? (
+                      <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
+                        请在设置中添加供应商和可用模型
+                      </p>
+                    ) : (
+                      <Select value={modelSelectValue} onValueChange={handleModelSelect}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__default__">使用默认</SelectItem>
+                          {enabledProviders.map((provider) => {
+                            const providerModels = models.filter(
+                              (m) => m.providerId === provider.id && m.enabled,
+                            )
+                            return (
+                              <SelectGroup key={provider.id}>
+                                <SelectLabel>{provider.name}</SelectLabel>
+                                {providerModels.map((m) => (
+                                  <SelectItem key={m.id} value={`${provider.id}::${m.name}`}>
+                                    {m.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectGroup>
+                            )
+                          })}
+                        </SelectContent>
+                      </Select>
+                    )}
                   </div>
 
-                  {/* Model */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">模型名</Label>
-                    <Input
-                      value={form.model}
-                      onChange={(e) => change('model', e.target.value)}
-                      onBlur={() => handleBlur('model')}
-                      placeholder="留空使用服务商默认模型"
-                    />
-                  </div>
+                  {/* Custom model name input (shown when a provider is selected) */}
+                  {form.providerId && (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">自定义模型名</Label>
+                      <Input
+                        value={isKnownModel ? '' : form.model}
+                        onChange={(e) => {
+                          change('model', e.target.value)
+                        }}
+                        onBlur={() => handleBlur('model')}
+                        placeholder="输入不在列表中的模型名"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        如需使用列表中没有的模型，可在此输入模型名称。
+                      </p>
+                    </div>
+                  )}
 
                   {/* Temperature */}
                   <div className="space-y-2">
@@ -305,6 +411,80 @@ export function AssistantSettingsDialog({
                             </span>
                           ))}
                         </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Top P */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Top P</span>
+                      <div className="flex items-center gap-3">
+                        {form.topPEnabled && (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {topPValue.toFixed(2)}
+                          </span>
+                        )}
+                        <Switch checked={form.topPEnabled} onCheckedChange={handleTopPToggle} />
+                      </div>
+                    </div>
+                    {form.topPEnabled && (
+                      <div>
+                        <Slider
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={[topPValue]}
+                          onValueChange={([v]) => change('topP', v.toString())}
+                          onValueCommit={([v]) => handleTopPCommit(v)}
+                        />
+                        <div className="mt-1 flex justify-between px-0.5">
+                          {['0', '0.25', '0.5', '0.75', '1.0'].map((mark) => (
+                            <span key={mark} className="text-[11px] text-muted-foreground/50">
+                              {mark}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Context Count */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">上下文数</span>
+                      <div className="flex items-center gap-3">
+                        {form.contextCountEnabled && (
+                          <span className="font-mono text-xs text-muted-foreground">
+                            {contextCountValue}
+                          </span>
+                        )}
+                        <Switch
+                          checked={form.contextCountEnabled}
+                          onCheckedChange={handleContextCountToggle}
+                        />
+                      </div>
+                    </div>
+                    {form.contextCountEnabled && (
+                      <div>
+                        <Slider
+                          min={0}
+                          max={50}
+                          step={1}
+                          value={[contextCountValue]}
+                          onValueChange={([v]) => change('contextCount', v.toString())}
+                          onValueCommit={([v]) => handleContextCountCommit(v)}
+                        />
+                        <div className="mt-1 flex justify-between px-0.5">
+                          {['0', '10', '20', '30', '40', '50'].map((mark) => (
+                            <span key={mark} className="text-[11px] text-muted-foreground/50">
+                              {mark}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          限制发送给 API 的历史消息数量。0 表示不发送历史消息，关闭则发送全部。
+                        </p>
                       </div>
                     )}
                   </div>
