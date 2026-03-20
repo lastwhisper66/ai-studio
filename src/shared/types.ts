@@ -6,6 +6,7 @@ export interface Conversation {
   model: string | null
   systemPrompt: string | null
   assistantId: string | null
+  pinned: boolean
 }
 
 export interface Assistant {

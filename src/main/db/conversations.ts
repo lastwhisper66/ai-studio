@@ -10,6 +10,7 @@ interface ConversationRow {
   model: string | null
   system_prompt: string | null
   assistant_id: string | null
+  pinned: number
 }
 
 function rowToConversation(row: ConversationRow): Conversation {
@@ -21,12 +22,13 @@ function rowToConversation(row: ConversationRow): Conversation {
     model: row.model,
     systemPrompt: row.system_prompt,
     assistantId: row.assistant_id,
+    pinned: row.pinned === 1,
   }
 }
 
 export function listConversations(): Conversation[] {
   const rows = getDb()
-    .prepare('SELECT * FROM conversations ORDER BY updated_at DESC')
+    .prepare('SELECT * FROM conversations ORDER BY pinned DESC, updated_at DESC')
     .all() as ConversationRow[]
   return rows.map(rowToConversation)
 }
@@ -53,7 +55,7 @@ export function createConversation(title?: string, assistantId?: string): Conver
 
 export function updateConversation(
   id: string,
-  data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId'>>,
+  data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
 ): Conversation | undefined {
   const db = getDb()
   const now = new Date().toISOString()
@@ -76,6 +78,10 @@ export function updateConversation(
   if (data.assistantId !== undefined) {
     fields.push('assistant_id = ?')
     values.push(data.assistantId)
+  }
+  if (data.pinned !== undefined) {
+    fields.push('pinned = ?')
+    values.push(data.pinned ? 1 : 0)
   }
 
   values.push(id)

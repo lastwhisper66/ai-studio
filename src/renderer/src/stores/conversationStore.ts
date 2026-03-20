@@ -15,6 +15,7 @@ interface ConversationState {
   createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
   renameConversation: (id: string, title: string) => Promise<void>
+  pinConversation: (id: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
   loadMoreMessages: () => Promise<void>
   addMessage: (role: MessageRole, content: string) => Promise<void>
@@ -99,6 +100,24 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }))
     } else {
       set({ error: result.error ?? 'Failed to rename conversation' })
+    }
+  },
+
+  pinConversation: async (id: string) => {
+    const conv = get().conversations.find((c) => c.id === id)
+    if (!conv) return
+    const result = await window.api.updateConversation(id, { pinned: !conv.pinned })
+    if (result.success && result.data) {
+      set((state) => ({
+        conversations: state.conversations
+          .map((c) => (c.id === id ? { ...c, pinned: result.data!.pinned } : c))
+          .sort((a, b) => {
+            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          }),
+      }))
+    } else {
+      set({ error: result.error ?? 'Failed to pin conversation' })
     }
   },
 

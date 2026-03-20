@@ -34,7 +34,7 @@ const api = {
 
   updateConversation: (
     id: string,
-    data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt'>>,
+    data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'pinned'>>,
   ): Promise<IpcResult<Conversation | undefined>> =>
     ipcRenderer.invoke(IpcChannels.CONVERSATION_UPDATE, id, data),
 
