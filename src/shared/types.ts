@@ -20,7 +20,6 @@ export interface Assistant {
   topP: string
   contextCount: string
   promptSuggestions: string[]
-  emoji: string
   isDefault: boolean
   group: string
   sortOrder: number

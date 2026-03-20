@@ -112,7 +112,6 @@ function createTables(): void {
       top_p TEXT NOT NULL DEFAULT '',
       context_count TEXT NOT NULL DEFAULT '10',
       prompt_suggestions TEXT NOT NULL DEFAULT '[]',
-      emoji TEXT NOT NULL DEFAULT '🤖',
       is_default INTEGER NOT NULL DEFAULT 0,
       group_name TEXT NOT NULL DEFAULT '',
       sort_order INTEGER NOT NULL DEFAULT 0,
@@ -128,8 +127,8 @@ function createTables(): void {
   if (hasDefault.cnt === 0) {
     database
       .prepare(
-        `INSERT INTO assistants (id, name, description, emoji, is_default, sort_order)
-         VALUES ('default-assistant', '默认助手', '使用全局设置的通用 AI 助手', '💬', 1, -1)`,
+        `INSERT INTO assistants (id, name, description, is_default, sort_order)
+         VALUES ('default-assistant', '默认助手', '使用全局设置的通用 AI 助手', 1, -1)`,
       )
       .run()
   }

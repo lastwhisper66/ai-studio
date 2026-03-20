@@ -32,7 +32,6 @@ type TabId = 'model' | 'prompt'
 
 interface FormState {
   name: string
-  emoji: string
   description: string
   providerId: string
   model: string
@@ -51,7 +50,6 @@ interface FormState {
 function stateFromAssistant(a: Assistant): FormState {
   return {
     name: a.name,
-    emoji: a.emoji,
     description: a.description,
     providerId: a.providerId ?? '',
     model: a.model,
@@ -144,9 +142,6 @@ export function AssistantSettingsDialog({
     switch (field) {
       case 'name':
         if (typeof value === 'string' && value.trim()) commit({ name: value })
-        break
-      case 'emoji':
-        commit({ emoji: (value as string) || '🤖' })
         break
       case 'description':
         commit({ description: value as string })
@@ -260,10 +255,7 @@ export function AssistantSettingsDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[60vw] h-[70vh] flex flex-col p-0">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-lg">{form.emoji}</span>
-            <span>{form.name}</span>
-          </DialogTitle>
+          <DialogTitle>{form.name}</DialogTitle>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1">
@@ -493,27 +485,15 @@ export function AssistantSettingsDialog({
 
               {activeTab === 'prompt' && (
                 <>
-                  {/* Name / Emoji */}
-                  <div className="flex gap-3">
-                    <div className="w-20 space-y-1.5">
-                      <Label className="text-sm">图标</Label>
-                      <Input
-                        value={form.emoji}
-                        onChange={(e) => change('emoji', e.target.value)}
-                        onBlur={() => handleBlur('emoji')}
-                        className="text-center text-lg"
-                        maxLength={2}
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1.5">
-                      <Label className="text-sm">名称</Label>
-                      <Input
-                        value={form.name}
-                        onChange={(e) => change('name', e.target.value)}
-                        onBlur={() => handleBlur('name')}
-                        placeholder="助手名称"
-                      />
-                    </div>
+                  {/* Name */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">名称</Label>
+                    <Input
+                      value={form.name}
+                      onChange={(e) => change('name', e.target.value)}
+                      onBlur={() => handleBlur('name')}
+                      placeholder="助手名称"
+                    />
                   </div>
 
                   {/* Description */}

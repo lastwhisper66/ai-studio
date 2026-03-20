@@ -15,7 +15,6 @@ interface GroupedAssistants {
   assistants: Array<{
     id: string
     name: string
-    emoji: string
     description: string
     isDefault: boolean
   }>
@@ -113,8 +112,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
               : 'text-foreground hover:bg-sidebar-accent/50'
           }`}
           onClick={() => handleAssistantClick(defaultAssistant.id)}>
-          <span className="text-base leading-none">{defaultAssistant.emoji}</span>
-          <span className="ml-2 truncate text-sm font-medium">{defaultAssistant.name}</span>
+          <span className="truncate text-sm font-medium">{defaultAssistant.name}</span>
         </div>
       )}
 
@@ -154,8 +152,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
                         : 'text-foreground hover:bg-sidebar-accent/50'
                     }`}
                     onClick={() => handleAssistantClick(a.id)}>
-                    <span className="shrink-0 text-sm leading-none">{a.emoji}</span>
-                    <span className="ml-2 truncate text-sm">{a.name}</span>
+                    <span className="truncate text-sm">{a.name}</span>
                   </div>
                 ))}
             </div>

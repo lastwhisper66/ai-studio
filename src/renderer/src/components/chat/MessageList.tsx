@@ -71,7 +71,6 @@ export function MessageList({
         ) : showAssistantSuggestions ? (
           <div className="flex h-full items-center justify-center py-20">
             <div className="max-w-md text-center">
-              <span className="mb-3 block text-4xl">{activeAssistant.emoji}</span>
               <h3 className="mb-1 text-lg font-semibold">{activeAssistant.name}</h3>
               {activeAssistant.description && (
                 <p className="mb-6 text-sm text-muted-foreground">{activeAssistant.description}</p>

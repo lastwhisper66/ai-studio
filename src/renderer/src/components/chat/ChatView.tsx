@@ -99,9 +99,6 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
           <button
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-accent"
             onClick={() => setSettingsOpen(true)}>
-            {activeAssistant && (
-              <span className="text-base leading-none">{activeAssistant.emoji}</span>
-            )}
             <span>{activeAssistant?.name ?? 'New Chat'}</span>
           </button>
 

@@ -14,7 +14,6 @@ interface AssistantRow {
   top_p: string
   context_count: string
   prompt_suggestions: string
-  emoji: string
   is_default: number
   group_name: string
   sort_order: number
@@ -41,7 +40,6 @@ function rowToAssistant(row: AssistantRow): Assistant {
     topP: row.top_p,
     contextCount: row.context_count,
     promptSuggestions,
-    emoji: row.emoji,
     isDefault: !!row.is_default,
     group: row.group_name,
     sortOrder: row.sort_order,
@@ -76,7 +74,6 @@ export interface CreateAssistantData {
   topP?: string
   contextCount?: string
   promptSuggestions?: string[]
-  emoji?: string
   group?: string
   sortOrder?: number
 }
@@ -86,8 +83,8 @@ export function createAssistant(data: CreateAssistantData): Assistant {
   const promptSuggestions = JSON.stringify(data.promptSuggestions ?? [])
   getDb()
     .prepare(
-      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, top_p, context_count, prompt_suggestions, emoji, group_name, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, top_p, context_count, prompt_suggestions, group_name, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -101,7 +98,6 @@ export function createAssistant(data: CreateAssistantData): Assistant {
       data.topP ?? '',
       data.contextCount ?? '',
       promptSuggestions,
-      data.emoji ?? '🤖',
       data.group ?? '',
       data.sortOrder ?? 0,
     )
@@ -119,7 +115,6 @@ export interface UpdateAssistantData {
   topP?: string
   contextCount?: string
   promptSuggestions?: string[]
-  emoji?: string
   group?: string
   sortOrder?: number
 }
@@ -167,10 +162,6 @@ export function updateAssistant(id: string, data: UpdateAssistantData): Assistan
   if (data.promptSuggestions !== undefined) {
     fields.push('prompt_suggestions = ?')
     values.push(JSON.stringify(data.promptSuggestions))
-  }
-  if (data.emoji !== undefined) {
-    fields.push('emoji = ?')
-    values.push(data.emoji)
   }
   if (data.group !== undefined) {
     fields.push('group_name = ?')

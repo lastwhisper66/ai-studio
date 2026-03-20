@@ -53,7 +53,6 @@ export function WelcomeScreen({
                   key={a.id}
                   onClick={() => onSelectAssistant(a.id)}
                   className="flex items-center gap-2.5 rounded-xl border bg-card/50 px-3 py-2.5 text-left transition-colors hover:bg-accent">
-                  <span className="shrink-0 text-xl leading-none">{a.emoji}</span>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{a.name}</div>
                     {a.description && (
