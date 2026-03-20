@@ -10,6 +10,12 @@ const SettingsPage = lazy(() =>
   import('@renderer/components/settings').then((m) => ({ default: m.SettingsPage })),
 )
 
+const TranslateView = lazy(() =>
+  import('@renderer/components/translate/TranslateView').then((m) => ({
+    default: m.TranslateView,
+  })),
+)
+
 const SIDEBAR_STORAGE_KEY = 'ai-studio-sidebar-collapsed'
 const TOPIC_STORAGE_KEY = 'ai-studio-topic-collapsed'
 
@@ -63,6 +69,10 @@ export function AppLayout(): React.JSX.Element {
             <ChatPanel topicCollapsed={topicCollapsed} onToggleTopic={toggleTopic} />
             <TopicPanel collapsed={topicCollapsed} />
           </>
+        ) : activeView === 'translate' ? (
+          <Suspense fallback={null}>
+            <TranslateView />
+          </Suspense>
         ) : (
           <Suspense fallback={null}>
             <SettingsPage />

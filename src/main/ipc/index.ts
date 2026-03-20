@@ -6,6 +6,7 @@ import { registerProviderHandlers } from './provider-handlers'
 import { registerModelHandlers } from './model-handlers'
 import { registerAssistantHandlers } from './assistant-handlers'
 import { registerWindowHandlers } from './window-handlers'
+import { registerTranslateHandlers } from './translate-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -16,4 +17,5 @@ export function registerAllIpcHandlers(): void {
   registerModelHandlers()
   registerAssistantHandlers()
   registerWindowHandlers()
+  registerTranslateHandlers()
 }

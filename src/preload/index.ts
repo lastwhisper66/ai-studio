@@ -14,6 +14,10 @@ import type {
   Provider,
   Model,
   Assistant,
+  TranslateRequestPayload,
+  TranslateChunkData,
+  TranslateEndData,
+  TranslateErrorData,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -161,6 +165,38 @@ const api = {
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_END)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_ERROR)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_TITLE_UPDATED)
+  },
+
+  // Translate (streaming)
+  translate: (payload: TranslateRequestPayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.TRANSLATE_REQUEST, payload),
+
+  stopTranslation: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.TRANSLATE_STOP),
+
+  onTranslateChunk: (callback: (data: TranslateChunkData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TranslateChunkData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.TRANSLATE_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRANSLATE_CHUNK, handler)
+  },
+
+  onTranslateEnd: (callback: (data: TranslateEndData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TranslateEndData): void => callback(data)
+    ipcRenderer.on(IpcChannels.TRANSLATE_END, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRANSLATE_END, handler)
+  },
+
+  onTranslateError: (callback: (data: TranslateErrorData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TranslateErrorData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.TRANSLATE_ERROR, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRANSLATE_ERROR, handler)
+  },
+
+  removeAllTranslateListeners: (): void => {
+    ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_CHUNK)
+    ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_END)
+    ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_ERROR)
   },
 
   // Window controls

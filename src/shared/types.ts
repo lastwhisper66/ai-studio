@@ -126,3 +126,32 @@ export interface TitleUpdatedData {
   conversationId: string
   title: string
 }
+
+/** translate:request payload */
+export interface TranslateRequestPayload {
+  text: string
+  sourceLang: string
+  targetLang: string
+  /** Override provider/model (independent of chat's global selection) */
+  providerId?: string
+  modelId?: string
+  /** Custom system prompt for translation */
+  systemPrompt?: string
+  /** Custom temperature for translation (default 0.3) */
+  temperature?: number
+}
+
+/** translate:chunk push data */
+export interface TranslateChunkData {
+  delta: string
+}
+
+/** translate:end push data */
+export interface TranslateEndData {
+  fullText: string
+}
+
+/** translate:error push data */
+export interface TranslateErrorData {
+  error: string
+}
