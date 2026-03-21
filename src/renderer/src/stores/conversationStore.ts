@@ -14,6 +14,7 @@ interface ConversationState {
   loadConversations: () => Promise<void>
   createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
+  deleteConversations: (ids: string[]) => Promise<void>
   renameConversation: (id: string, title: string) => Promise<void>
   pinConversation: (id: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
@@ -87,6 +88,36 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }
     } else {
       set({ error: result.error ?? 'Failed to delete conversation' })
+    }
+  },
+
+  deleteConversations: async (ids: string[]) => {
+    if (ids.length === 0) return
+    const result = await window.api.deleteConversations(ids)
+    if (result.success) {
+      const { activeConversationId, conversations } = get()
+      const idSet = new Set(ids)
+      const remaining = conversations.filter((c) => !idSet.has(c.id))
+
+      if (activeConversationId && idSet.has(activeConversationId)) {
+        const nextId = remaining.length > 0 ? remaining[0].id : null
+        set({
+          conversations: remaining,
+          activeConversationId: nextId,
+          messages: [],
+          hasMoreMessages: false,
+        })
+        if (nextId) {
+          const msgResult = await window.api.listMessagesPaginated(nextId)
+          if (msgResult.success && msgResult.data) {
+            set({ messages: msgResult.data.messages, hasMoreMessages: msgResult.data.hasMore })
+          }
+        }
+      } else {
+        set({ conversations: remaining })
+      }
+    } else {
+      set({ error: result.error ?? 'Failed to delete conversations' })
     }
   },
 

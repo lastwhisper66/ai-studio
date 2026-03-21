@@ -41,6 +41,9 @@ const api = {
   deleteConversation: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.CONVERSATION_DELETE, id),
 
+  deleteConversations: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.CONVERSATION_DELETE_MANY, ids),
+
   // Messages
   listMessages: (conversationId: string): Promise<IpcResult<Message[]>> =>
     ipcRenderer.invoke(IpcChannels.MESSAGE_LIST, conversationId),

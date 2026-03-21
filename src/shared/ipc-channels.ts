@@ -5,6 +5,7 @@ export const IpcChannels = {
   CONVERSATION_CREATE: 'conversation:create',
   CONVERSATION_UPDATE: 'conversation:update',
   CONVERSATION_DELETE: 'conversation:delete',
+  CONVERSATION_DELETE_MANY: 'conversation:delete-many',
   // Message
   MESSAGE_LIST: 'message:list',
   MESSAGE_LIST_PAGINATED: 'message:list-paginated',

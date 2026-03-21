@@ -94,6 +94,14 @@ export function deleteConversation(id: string): void {
   getDb().prepare('DELETE FROM conversations WHERE id = ?').run(id)
 }
 
+export function deleteConversations(ids: string[]): void {
+  if (ids.length === 0) return
+  const placeholders = ids.map(() => '?').join(',')
+  getDb()
+    .prepare(`DELETE FROM conversations WHERE id IN (${placeholders})`)
+    .run(...ids)
+}
+
 export function touchConversation(id: string): void {
   const now = new Date().toISOString()
   getDb().prepare('UPDATE conversations SET updated_at = ? WHERE id = ?').run(now, id)

@@ -7,6 +7,7 @@ import {
   createConversation,
   updateConversation,
   deleteConversation,
+  deleteConversations,
 } from '../db'
 
 export function registerConversationHandlers(): void {
@@ -64,6 +65,16 @@ export function registerConversationHandlers(): void {
   ipcMain.handle(IpcChannels.CONVERSATION_DELETE, (_, id: string): IpcResult<void> => {
     try {
       deleteConversation(id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.CONVERSATION_DELETE_MANY, (_, ids: string[]): IpcResult<void> => {
+    try {
+      if (!Array.isArray(ids) || ids.length === 0) return { success: true }
+      deleteConversations(ids)
       return { success: true }
     } catch (e) {
       return { success: false, error: (e as Error).message }

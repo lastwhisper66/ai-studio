@@ -104,7 +104,13 @@
     "deleteDescription": "This will permanently delete the topic and all its messages. This cannot be undone.",
     "clearTitle": "Clear messages",
     "clearDescription": "This will clear all message history for this topic. The topic itself will be preserved. This cannot be undone.",
-    "clearButton": "Clear"
+    "clearButton": "Clear",
+    "multiSelect": "Select",
+    "selectAll": "All",
+    "cancelSelect": "Cancel",
+    "deleteSelected": "Delete",
+    "deleteSelectedTitle": "Delete selected topics",
+    "deleteSelectedDescription": "This will permanently delete {{count}} selected topics and all their messages. This cannot be undone."
   },
   "settings": {
     "title": "Settings",
