@@ -1,27 +1,31 @@
-import { Cloud, SlidersHorizontal, Settings2, Monitor } from 'lucide-react'
+import { Cloud, SlidersHorizontal, Settings2, Monitor, Globe } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 
-export type SettingsSection = 'provider' | 'model' | 'general' | 'display'
+export type SettingsSection = 'provider' | 'model' | 'general' | 'display' | 'language'
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection
   onSectionChange: (section: SettingsSection) => void
 }
 
-const sections: { id: SettingsSection; label: string; icon: React.ElementType }[] = [
-  { id: 'provider', label: '模型服务', icon: Cloud },
-  { id: 'model', label: '默认模型', icon: SlidersHorizontal },
-  { id: 'general', label: '通用设置', icon: Settings2 },
-  { id: 'display', label: '显示设置', icon: Monitor },
+const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] = [
+  { id: 'provider', labelKey: 'settings.sections.provider', icon: Cloud },
+  { id: 'model', labelKey: 'settings.sections.model', icon: SlidersHorizontal },
+  { id: 'general', labelKey: 'settings.sections.general', icon: Settings2 },
+  { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
+  { id: 'language', labelKey: 'settings.sections.language', icon: Globe },
 ]
 
 export function SettingsSidebar({
   activeSection,
   onSectionChange,
 }: SettingsSidebarProps): React.JSX.Element {
+  const { t } = useTranslation()
+
   return (
     <nav className="w-48 shrink-0 space-y-1 border-r p-3">
-      {sections.map(({ id, label, icon: Icon }) => (
+      {sections.map(({ id, labelKey, icon: Icon }) => (
         <button
           key={id}
           onClick={() => onSectionChange(id)}
@@ -32,7 +36,7 @@ export function SettingsSidebar({
               : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
           )}>
           <Icon className="h-4 w-4" />
-          {label}
+          {t(labelKey)}
         </button>
       ))}
     </nav>

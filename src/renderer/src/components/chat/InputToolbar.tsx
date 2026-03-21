@@ -1,4 +1,5 @@
 import { Check, ChevronUp } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import {
@@ -12,6 +13,7 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 
 export function InputToolbar(): React.JSX.Element {
+  const { t } = useTranslation()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
   const activeProviderId = useProviderStore((s) => s.activeProviderId)
@@ -23,10 +25,10 @@ export function InputToolbar(): React.JSX.Element {
   const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
 
-  const displayModel = activeModel?.name || activeProvider?.model || 'No model set'
+  const displayModel = activeModel?.name || activeProvider?.model || t('common.noModelSet')
 
   if (!activeProvider) {
-    return <span className="text-muted-foreground text-xs">No provider configured</span>
+    return <span className="text-muted-foreground text-xs">{t('common.noModelConfigured')}</span>
   }
 
   return (
@@ -70,7 +72,7 @@ export function InputToolbar(): React.JSX.Element {
                   })
                 ) : (
                   <DropdownMenuItem disabled>
-                    <span className="text-muted-foreground">No models configured</span>
+                    <span className="text-muted-foreground">{t('common.noModelConfigured')}</span>
                   </DropdownMenuItem>
                 )}
               </DropdownMenuGroup>

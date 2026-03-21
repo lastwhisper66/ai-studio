@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Plus, ChevronDown, ChevronRight, Pencil, Trash2, Copy, Pin } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import {
@@ -37,6 +38,7 @@ interface GroupedAssistants {
 }
 
 export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JSX.Element {
+  const { t } = useTranslation()
   const {
     assistants,
     activeAssistantId,
@@ -97,7 +99,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
   }
 
   const handleAddAssistant = async (): Promise<void> => {
-    const assistant = await addAssistant({ name: '新助手', contextCount: '10' })
+    const assistant = await addAssistant({ name: t('assistant.newAssistant'), contextCount: '10' })
     if (assistant) {
       setEditAssistantId(assistant.id)
       setSettingsOpen(true)
@@ -158,22 +160,24 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
           }`}
           onClick={() => handleAssistantClick(a.id)}>
           {isPinned(a) && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
-          <span className={`min-w-0 truncate text-sm ${a.isDefault ? 'font-medium' : ''}`}>{a.name}</span>
+          <span className={`min-w-0 truncate text-sm ${a.isDefault ? 'font-medium' : ''}`}>
+            {a.name}
+          </span>
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem onClick={() => handleEdit(a.id)}>
           <Pencil className="h-4 w-4" />
-          编辑
+          {t('assistant.editAssistant')}
         </ContextMenuItem>
         <ContextMenuItem onClick={() => duplicateAssistant(a.id)}>
           <Copy className="h-4 w-4" />
-          复制
+          {t('assistant.duplicateAssistant')}
         </ContextMenuItem>
         {!a.isDefault && (
           <ContextMenuItem onClick={() => pinAssistant(a.id)}>
             <Pin className="h-4 w-4" />
-            {isPinned(a) ? '取消置顶' : '置顶'}
+            {isPinned(a) ? t('common.unpin') : t('common.pin')}
           </ContextMenuItem>
         )}
         {!a.isDefault && (
@@ -181,7 +185,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
             <ContextMenuSeparator />
             <ContextMenuItem variant="destructive" onClick={() => handleDeleteOpen(a.id)}>
               <Trash2 className="h-4 w-4" />
-              删除
+              {t('common.delete')}
             </ContextMenuItem>
           </>
         )}
@@ -201,12 +205,14 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
           className="h-10 w-full justify-start gap-2 rounded-xl text-sm hover:bg-sidebar-accent/40"
           onClick={handleAddAssistant}>
           <Plus className="h-4 w-4" />
-          添加助手
+          {t('assistant.addAssistant')}
         </Button>
       </div>
 
       {/* Default Assistant */}
-      {defaultAssistant && <div className="px-2 py-0.5">{renderAssistantItem(defaultAssistant)}</div>}
+      {defaultAssistant && (
+        <div className="px-2 py-0.5">{renderAssistantItem(defaultAssistant)}</div>
+      )}
 
       {/* Divider */}
       <div className="mx-3 my-1.5 border-b" />
@@ -255,17 +261,15 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>删除助手</DialogTitle>
-            <DialogDescription>
-              此操作将永久删除该助手，但不会删除其关联的话题。确定继续吗？
-            </DialogDescription>
+            <DialogTitle>{t('assistant.deleteAssistant')}</DialogTitle>
+            <DialogDescription>{t('assistant.deleteDescription')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDeleteConfirm}>
-              删除
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
 import { Slider } from '@renderer/components/ui/slider'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@renderer/components/ui/tooltip'
@@ -49,6 +50,7 @@ export function ModelSettings({
   onCommit,
   onReset,
 }: ModelSettingsProps): React.JSX.Element {
+  const { t } = useTranslation()
   const activeProviderId = useProviderStore((s) => s.activeProviderId)
   const providers = useProviderStore((s) => s.providers)
 
@@ -66,30 +68,32 @@ export function ModelSettings({
 
   return (
     <div className="space-y-5">
-      {/* 模型参数卡片 */}
+      {/* Model parameter card */}
       <div className="rounded-xl border bg-card/50 px-5">
-        {/* 默认模型 */}
+        {/* Default model */}
         <div className="flex items-center justify-between border-b border-border/40 py-4">
-          <span className="text-sm">默认模型</span>
+          <span className="text-sm">{t('settings.model.defaultModel')}</span>
           {activeProvider ? (
             <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-1.5">
               <span
                 className="h-3.5 w-3.5 shrink-0 rounded-sm"
                 style={{ backgroundColor: template?.color || '#6b7280' }}
               />
-              <span className="text-sm">{activeProvider.model || '未设置模型'}</span>
+              <span className="text-sm">
+                {activeProvider.model || t('settings.model.noModelSet')}
+              </span>
             </div>
           ) : (
-            <span className="text-sm text-muted-foreground">未配置服务商</span>
+            <span className="text-sm text-muted-foreground">{t('settings.model.noProvider')}</span>
           )}
         </div>
 
-        {/* 模型温度 */}
+        {/* Temperature */}
         <div className={cn('border-b border-border/40', temperatureEnabled && 'pb-4')}>
           <div className="flex items-center justify-between py-4">
             <SettingLabel
-              label="模型温度"
-              tooltip="控制回复的随机性。值越高越有创造性，值越低越确定。"
+              label={t('settings.model.temperature')}
+              tooltip={t('settings.model.temperatureTooltip')}
             />
             <div className="flex items-center gap-3">
               {temperatureEnabled && (
@@ -122,8 +126,8 @@ export function ModelSettings({
         <div className={cn('border-b border-border/40', topPEnabled && 'pb-4')}>
           <div className="flex items-center justify-between py-4">
             <SettingLabel
-              label="Top-P"
-              tooltip="核采样参数。控制模型考虑的词汇概率累积范围，值越小回复越集中。"
+              label={t('settings.model.topP')}
+              tooltip={t('settings.model.topPTooltip')}
             />
             <div className="flex items-center gap-3">
               {topPEnabled && (
@@ -152,14 +156,16 @@ export function ModelSettings({
           )}
         </div>
 
-        {/* 上下文数 */}
+        {/* Context count */}
         <div className="border-b border-border/40 pb-4">
           <div className="flex items-center justify-between py-4">
             <SettingLabel
-              label="上下文数"
-              tooltip="发送给模型的历史消息数量。设为「不限」将发送所有历史消息。"
+              label={t('settings.model.contextCount')}
+              tooltip={t('settings.model.contextCountTooltip')}
             />
-            <span className="text-sm">{contextCount >= 100 ? '不限' : contextCount}</span>
+            <span className="text-sm">
+              {contextCount >= 100 ? t('settings.model.unlimited') : contextCount}
+            </span>
           </div>
           <div>
             <Slider
@@ -170,16 +176,16 @@ export function ModelSettings({
               onValueChange={([v]) => onChange('contextCount', v.toString())}
               onValueCommit={([v]) => onCommit('contextCount', v.toString())}
             />
-            <SliderMarks marks={['0', '25', '50', '75', '不限']} />
+            <SliderMarks marks={['0', '25', '50', '75', t('settings.model.unlimited')]} />
           </div>
         </div>
 
-        {/* 最大 Token 数 */}
+        {/* Max tokens */}
         <div className={cn('border-b border-border/40', maxCompletionTokensEnabled && 'pb-4')}>
           <div className="flex items-center justify-between py-4">
             <SettingLabel
-              label="最大 Token 数"
-              tooltip="模型单次回复的最大 Token 数量。关闭时使用模型默认值。"
+              label={t('settings.model.maxTokens')}
+              tooltip={t('settings.model.maxTokensTooltip')}
             />
             <div className="flex items-center gap-3">
               {maxCompletionTokensEnabled && (
@@ -210,39 +216,41 @@ export function ModelSettings({
           )}
         </div>
 
-        {/* 流式输出 */}
+        {/* Streaming */}
         <div className="flex items-center justify-between py-4">
-          <span className="text-sm">流式输出</span>
+          <span className="text-sm">{t('settings.model.streaming')}</span>
           <Switch
             checked={streaming}
             onCheckedChange={(checked) => onCommit('streaming', String(checked))}
           />
         </div>
 
-        {/* 重置按钮 */}
+        {/* Reset button */}
         <div className="flex justify-end border-t border-border/40 py-3">
           <button
             onClick={onReset}
             className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-4 py-1.5 text-sm text-red-500 transition-colors hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10">
             <RotateCcw className="h-3.5 w-3.5" />
-            重置
+            {t('settings.model.reset')}
           </button>
         </div>
       </div>
 
-      {/* 系统提示词卡片 */}
+      {/* System prompt card */}
       <div className="rounded-xl border bg-card/50 p-5">
         <h3 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          系统提示词
+          {t('settings.model.systemPrompt')}
         </h3>
         <Textarea
           rows={6}
           value={formState.systemPrompt}
           onChange={(e) => onChange('systemPrompt', e.target.value)}
           onBlur={(e) => onCommit('systemPrompt', e.target.value)}
-          placeholder="你是一个有用的助手..."
+          placeholder={t('settings.model.systemPromptPlaceholder')}
         />
-        <p className="mt-1.5 text-xs text-muted-foreground">用于引导模型行为的系统级提示词。</p>
+        <p className="mt-1.5 text-xs text-muted-foreground">
+          {t('settings.model.systemPromptHint')}
+        </p>
       </div>
     </div>
   )

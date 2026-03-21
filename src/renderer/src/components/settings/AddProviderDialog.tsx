@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ interface AddProviderDialogProps {
 }
 
 export function AddProviderDialog({ children }: AddProviderDialogProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const addProvider = useProviderStore((s) => s.addProvider)
 
@@ -33,7 +35,7 @@ export function AddProviderDialog({ children }: AddProviderDialogProps): React.J
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>添加服务商</DialogTitle>
+          <DialogTitle>{t('settings.provider.addProvider')}</DialogTitle>
         </DialogHeader>
         <div className="-mx-2 max-h-72 overflow-y-auto">
           {PROVIDER_TEMPLATES.map((template, index) => (

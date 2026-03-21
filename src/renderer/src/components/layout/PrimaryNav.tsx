@@ -1,4 +1,5 @@
 import { MessageSquare, Languages, Settings, Sun, Moon, Monitor } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { type Theme } from '@renderer/components/theme/ThemeContext'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -7,6 +8,7 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { cn } from '@renderer/lib/utils'
 
 export function PrimaryNav(): React.JSX.Element {
+  const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
   const activeView = useSettingsStore((s) => s.activeView)
   const setActiveView = useSettingsStore((s) => s.setActiveView)
@@ -41,7 +43,7 @@ export function PrimaryNav(): React.JSX.Element {
               <MessageSquare className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Chat</TooltipContent>
+          <TooltipContent side="right">{t('nav.chat')}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -54,7 +56,7 @@ export function PrimaryNav(): React.JSX.Element {
               <Languages className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">翻译</TooltipContent>
+          <TooltipContent side="right">{t('nav.translate')}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -65,12 +67,14 @@ export function PrimaryNav(): React.JSX.Element {
               variant="ghost"
               size="icon"
               className="h-9 w-9"
-              aria-label={`Theme: ${themeLabel}`}
+              aria-label={`${t('nav.theme')}: ${themeLabel}`}
               onClick={cycleTheme}>
               {themeIconByMode[theme]}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Theme: {themeLabel}</TooltipContent>
+          <TooltipContent side="right">
+            {t('nav.theme')}: {themeLabel}
+          </TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -83,7 +87,7 @@ export function PrimaryNav(): React.JSX.Element {
               <Settings className="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right">Settings</TooltipContent>
+          <TooltipContent side="right">{t('nav.settings')}</TooltipContent>
         </Tooltip>
       </div>
     </nav>

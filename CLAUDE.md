@@ -145,6 +145,7 @@ The app supports a multi-provider architecture where providers, models, and assi
 - **Assistants**: named configurations with system prompt, provider/model binding, and generation parameters (temperature, max_completion_tokens, top_p, context_count).
 
 Key conventions:
+
 - Provider CRUD: `src/main/db/providers.ts` + `src/main/ipc/provider-handlers.ts` + `providerStore.ts`
 - Model CRUD: `src/main/db/models.ts` + `src/main/ipc/model-handlers.ts`
 - Assistant CRUD: `src/main/db/assistants.ts` + `src/main/ipc/assistant-handlers.ts` + `assistantStore.ts`

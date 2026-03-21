@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
@@ -9,6 +10,7 @@ import type { Provider } from '@shared/types'
 import { getTemplateByType } from './provider-templates'
 
 export function ProviderDetail(): React.JSX.Element {
+  const { t } = useTranslation()
   const {
     providers,
     models,
@@ -26,7 +28,7 @@ export function ProviderDetail(): React.JSX.Element {
   if (!provider) {
     return (
       <div className="text-muted-foreground flex flex-1 items-center justify-center text-sm">
-        请选择一个服务商或添加新服务商
+        {t('settings.provider.selectOrAdd')}
       </div>
     )
   }
@@ -103,6 +105,7 @@ function ProviderForm({
   onAddModel,
   onRemoveModel,
 }: ProviderFormProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [showApiKey, setShowApiKey] = useState(false)
   const [draft, setDraft] = useState({
     name: provider.name,
@@ -153,9 +156,15 @@ function ProviderForm({
       }
       const res = await window.api.testProviderConnection(testProvider)
       if (res.success) {
-        setTestResult({ success: true, message: res.data || '连接成功！' })
+        setTestResult({
+          success: true,
+          message: res.data || t('settings.provider.connectionSuccess'),
+        })
       } else {
-        setTestResult({ success: false, message: res.error || '连接失败' })
+        setTestResult({
+          success: false,
+          message: res.error || t('settings.provider.connectionFailed'),
+        })
       }
     } catch (e) {
       setTestResult({ success: false, message: (e as Error).message })
@@ -211,7 +220,7 @@ function ProviderForm({
           <div className="flex items-center gap-3">
             {isActive && (
               <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
-                当前使用
+                {t('settings.provider.currentlyUsed')}
               </span>
             )}
             <Switch checked={draft.enabled} onCheckedChange={(v) => change('enabled', v)} />
@@ -219,15 +228,15 @@ function ProviderForm({
         </div>
 
         {/* Basic info section */}
-        <SettingGroup title="基本信息">
-          <SettingRow label="名称" htmlFor="name">
+        <SettingGroup title={t('settings.provider.basicInfo')}>
+          <SettingRow label={t('settings.provider.name')} htmlFor="name">
             <Input id="name" value={draft.name} onChange={(e) => change('name', e.target.value)} />
           </SettingRow>
         </SettingGroup>
 
         {/* API configuration */}
-        <SettingGroup title="API 配置">
-          <SettingRow label="API Key" htmlFor="apiKey">
+        <SettingGroup title={t('settings.provider.apiConfig')}>
+          <SettingRow label={t('settings.provider.apiKey')} htmlFor="apiKey">
             <div className="relative">
               <Input
                 id="apiKey"
@@ -250,7 +259,7 @@ function ProviderForm({
 
           {isAzure ? (
             <>
-              <SettingRow label="端点 (Endpoint)" htmlFor="endpoint">
+              <SettingRow label={t('settings.provider.endpoint')} htmlFor="endpoint">
                 <Input
                   id="endpoint"
                   value={draft.endpoint}
@@ -258,7 +267,7 @@ function ProviderForm({
                   placeholder="https://your-resource.openai.azure.com"
                 />
               </SettingRow>
-              <SettingRow label="API 版本" htmlFor="apiVersion">
+              <SettingRow label={t('settings.provider.apiVersion')} htmlFor="apiVersion">
                 <Input
                   id="apiVersion"
                   value={draft.apiVersion}
@@ -266,7 +275,7 @@ function ProviderForm({
                   placeholder="2024-10-01-preview"
                 />
               </SettingRow>
-              <SettingRow label="部署名称" htmlFor="deploymentName">
+              <SettingRow label={t('settings.provider.deploymentName')} htmlFor="deploymentName">
                 <Input
                   id="deploymentName"
                   value={draft.deploymentName}
@@ -276,7 +285,7 @@ function ProviderForm({
               </SettingRow>
             </>
           ) : (
-            <SettingRow label="API 地址" htmlFor="baseUrl">
+            <SettingRow label={t('settings.provider.apiAddress')} htmlFor="baseUrl">
               <Input
                 id="baseUrl"
                 value={draft.baseUrl}
@@ -288,8 +297,8 @@ function ProviderForm({
         </SettingGroup>
 
         {/* Model configuration — multi-model list */}
-        <SettingGroup title="模型配置">
-          <SettingRow label="模型列表">
+        <SettingGroup title={t('settings.provider.modelConfig')}>
+          <SettingRow label={t('settings.provider.modelList')}>
             {/* Existing models as chips */}
             {providerModels.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
@@ -314,7 +323,7 @@ function ProviderForm({
                 value={newModelName}
                 onChange={(e) => setNewModelName(e.target.value)}
                 onKeyDown={handleAddModelKeyDown}
-                placeholder="输入模型名称，如 gpt-4o"
+                placeholder={t('settings.provider.modelNamePlaceholder')}
                 className="flex-1"
               />
               <Button
@@ -324,7 +333,7 @@ function ProviderForm({
                 onClick={handleAddModel}
                 disabled={!newModelName.trim()}>
                 <Plus className="mr-1 h-3.5 w-3.5" />
-                添加
+                {t('common.add')}
               </Button>
             </div>
             {/* Quick add from template */}
@@ -349,7 +358,7 @@ function ProviderForm({
         {/* Actions */}
         <div className="flex items-center gap-2 rounded-xl border bg-card/50 p-5">
           <Button onClick={handleSave} disabled={isSaving} size="sm">
-            {isSaving ? '保存中...' : '保存'}
+            {isSaving ? t('common.saving') : t('settings.provider.save')}
           </Button>
           <Button
             variant="outline"
@@ -357,11 +366,11 @@ function ProviderForm({
             onClick={handleTest}
             disabled={isTesting || !draft.apiKey || providerModels.length === 0}>
             {isTesting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-            {isTesting ? '检测中...' : '连接测试'}
+            {isTesting ? t('settings.provider.testing') : t('settings.provider.testConnection')}
           </Button>
           {!isActive && (
             <Button variant="outline" size="sm" onClick={() => onSetActive(provider.id)}>
-              设为默认
+              {t('settings.provider.setDefault')}
             </Button>
           )}
           {testResult && (
@@ -382,7 +391,7 @@ function ProviderForm({
             className="text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={handleDelete}>
             <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            删除
+            {t('settings.provider.delete')}
           </Button>
         </div>
       </div>

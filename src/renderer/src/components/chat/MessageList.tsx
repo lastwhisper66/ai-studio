@@ -1,5 +1,6 @@
 import React from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Button } from '@renderer/components/ui/button'
 import { MessageBubble } from './MessageBubble'
@@ -36,6 +37,7 @@ export function MessageList({
   onSelectAssistant,
   activeAssistant,
 }: MessageListProps): React.JSX.Element {
+  const { t } = useTranslation()
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
 
@@ -65,7 +67,7 @@ export function MessageList({
           <div className="flex items-center justify-center py-20">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Loading messages...</span>
+              <span>{t('chat.loadingMessages')}</span>
             </div>
           </div>
         ) : showAssistantSuggestions ? (
@@ -90,14 +92,14 @@ export function MessageList({
           </div>
         ) : messages.length === 0 && !isStreaming ? (
           <div className="flex h-full items-center justify-center py-20">
-            <p className="text-muted-foreground">Send a message to start the conversation.</p>
+            <p className="text-muted-foreground">{t('chat.sendMessage')}</p>
           </div>
         ) : (
           <>
             {hasMoreMessages && (
               <div className="flex justify-center py-2">
                 <Button variant="ghost" size="sm" onClick={onLoadMore}>
-                  Load earlier messages
+                  {t('chat.loadEarlier')}
                 </Button>
               </div>
             )}
@@ -126,7 +128,7 @@ export function MessageList({
             size="icon"
             className="h-8 w-8 rounded-full shadow-lg"
             onClick={scrollToBottom}
-            aria-label="Scroll to bottom">
+            aria-label={t('chat.scrollToBottom')}>
             <ChevronDown className="h-4 w-4" />
           </Button>
         </div>

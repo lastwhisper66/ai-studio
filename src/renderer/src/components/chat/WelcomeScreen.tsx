@@ -1,4 +1,5 @@
 import { Lightbulb, Code2, MessageSquare } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import type { Assistant } from '@shared/types'
 
@@ -8,44 +9,44 @@ interface WelcomeScreenProps {
   onSelectAssistant?: (id: string) => void
 }
 
-const suggestions = [
-  {
-    icon: Lightbulb,
-    label: 'Explain a concept',
-    prompt: 'Explain the concept of closures in JavaScript with examples.',
-  },
-  {
-    icon: Code2,
-    label: 'Help me write code',
-    prompt: 'Help me write a function that finds the most frequent element in an array.',
-  },
-  {
-    icon: MessageSquare,
-    label: 'Brainstorm ideas',
-    prompt: 'Brainstorm 5 creative project ideas for learning web development.',
-  },
-]
-
 export function WelcomeScreen({
   onSend,
   assistants,
   onSelectAssistant,
 }: WelcomeScreenProps): React.JSX.Element {
+  const { t } = useTranslation()
+
+  const suggestions = [
+    {
+      icon: Lightbulb,
+      label: t('welcome.explainConcept'),
+      prompt: t('welcome.explainPrompt'),
+    },
+    {
+      icon: Code2,
+      label: t('welcome.writeCode'),
+      prompt: t('welcome.writeCodePrompt'),
+    },
+    {
+      icon: MessageSquare,
+      label: t('welcome.brainstorm'),
+      prompt: t('welcome.brainstormPrompt'),
+    },
+  ]
+
   const hasAssistants = assistants && assistants.length > 0
 
   return (
     <div className="flex h-full items-center justify-center py-20">
       <div className="max-w-lg text-center">
-        <h3 className="mb-2 text-2xl font-semibold">Welcome to AI Studio</h3>
-        <p className="mb-8 text-muted-foreground">
-          Start a conversation or try one of the suggestions below.
-        </p>
+        <h3 className="mb-2 text-2xl font-semibold">{t('welcome.title')}</h3>
+        <p className="mb-8 text-muted-foreground">{t('welcome.subtitle')}</p>
 
         {/* Assistant cards */}
         {hasAssistants && onSelectAssistant && (
           <div className="mb-6">
             <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              选择助手开始对话
+              {t('welcome.selectAssistant')}
             </p>
             <div className="grid grid-cols-2 gap-2">
               {assistants.map((a) => (

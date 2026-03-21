@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { X, ChevronRight, PanelRightClose, PanelRightOpen, Check, ChevronDown } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import {
   DropdownMenu,
@@ -25,6 +26,7 @@ interface ChatViewProps {
 }
 
 export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): React.JSX.Element {
+  const { t } = useTranslation()
   const {
     activeConversationId,
     conversations,
@@ -69,7 +71,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       ? activeModelObj.name
       : null) ||
     resolvedProvider?.model ||
-    'No model set'
+    t('common.noModelSet')
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -99,7 +101,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
           <button
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-accent"
             onClick={() => setSettingsOpen(true)}>
-            <span>{activeAssistant?.name ?? 'New Chat'}</span>
+            <span>{activeAssistant?.name ?? t('chat.newChat')}</span>
           </button>
 
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -150,7 +152,9 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
                         })
                       ) : (
                         <DropdownMenuItem disabled>
-                          <span className="text-muted-foreground">No models configured</span>
+                          <span className="text-muted-foreground">
+                            {t('common.noModelConfigured')}
+                          </span>
                         </DropdownMenuItem>
                       )}
                     </DropdownMenuGroup>
@@ -173,7 +177,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
             </Button>
           </TooltipTrigger>
           <TooltipContent side="left">
-            {topicCollapsed ? '展开话题面板' : '收起话题面板'}
+            {topicCollapsed ? t('chat.expandTopicPanel') : t('chat.collapseTopicPanel')}
           </TooltipContent>
         </Tooltip>
       </div>

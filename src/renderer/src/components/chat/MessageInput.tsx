@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Send, Square } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { InputToolbar } from './InputToolbar'
@@ -15,6 +16,7 @@ export function MessageInput({
   onStop,
   isStreaming,
 }: MessageInputProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [input, setInput] = useState('')
 
   const handleSend = (): void => {
@@ -38,8 +40,10 @@ export function MessageInput({
           {/* Textarea area */}
           <div className="px-4 pt-3 pb-2">
             <Textarea
-              placeholder={isStreaming ? 'AI 正在生成中...' : '在这里输入消息，按 Enter 发送'}
-              className="min-h-[60px] resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+              placeholder={
+                isStreaming ? t('chat.streamingPlaceholder') : t('chat.inputPlaceholder')
+              }
+              className="min-h-15 resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
               rows={2}
               value={input}
               onChange={(e) => setInput(e.target.value)}

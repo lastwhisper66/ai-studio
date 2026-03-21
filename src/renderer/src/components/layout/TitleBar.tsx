@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Minus, Square, X, PanelLeftClose, PanelLeftOpen, Copy } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 interface TitleBarProps {
   sidebarCollapsed: boolean
@@ -7,6 +8,7 @@ interface TitleBarProps {
 }
 
 export function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): 
         <button
           className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-foreground/10"
           onClick={onToggleSidebar}
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+          title={sidebarCollapsed ? t('titleBar.expandSidebar') : t('titleBar.collapseSidebar')}>
           {sidebarCollapsed ? (
             <PanelLeftOpen className="h-4 w-4" />
           ) : (
@@ -46,19 +48,19 @@ export function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): 
         <button
           className="flex w-12 items-center justify-center transition-colors hover:bg-foreground/10"
           onClick={() => window.api.windowMinimize()}
-          title="Minimize">
+          title={t('titleBar.minimize')}>
           <Minus className="h-4 w-4" />
         </button>
         <button
           className="flex w-12 items-center justify-center transition-colors hover:bg-foreground/10"
           onClick={() => window.api.windowMaximize()}
-          title={isMaximized ? 'Restore' : 'Maximize'}>
+          title={isMaximized ? t('titleBar.restore') : t('titleBar.maximize')}>
           {isMaximized ? <Copy className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
         </button>
         <button
           className="flex w-12 items-center justify-center transition-colors hover:bg-[#e81123] hover:text-white"
           onClick={() => window.api.windowClose()}
-          title="Close">
+          title={t('titleBar.close')}>
           <X className="h-4 w-4" />
         </button>
       </div>

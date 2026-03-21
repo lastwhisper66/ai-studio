@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Label } from '@renderer/components/ui/label'
 import { Slider } from '@renderer/components/ui/slider'
 import { Textarea } from '@renderer/components/ui/textarea'
@@ -34,6 +35,7 @@ export function TranslateSettingsDialog({
   settings,
   onSave,
 }: TranslateSettingsDialogProps): React.JSX.Element {
+  const { t } = useTranslation()
   const [prompt, setPrompt] = useState(settings.systemPrompt)
   const [temperature, setTemperature] = useState(settings.temperature)
 
@@ -59,13 +61,13 @@ export function TranslateSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>翻译设置</DialogTitle>
-          <DialogDescription>自定义翻译行为。</DialogDescription>
+          <DialogTitle>{t('translate.settings.title')}</DialogTitle>
+          <DialogDescription>{t('translate.settings.description')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>自定义提示词</Label>
+            <Label>{t('translate.settings.customPrompt')}</Label>
             <Textarea
               placeholder={DEFAULT_PROMPT}
               value={prompt}
@@ -73,14 +75,12 @@ export function TranslateSettingsDialog({
               rows={4}
               className="text-sm"
             />
-            <p className="text-xs text-muted-foreground">
-              使用 {'{source}'} 和 {'{target}'} 作为源语言和目标语言占位符。留空则使用默认提示词。
-            </p>
+            <p className="text-xs text-muted-foreground">{t('translate.settings.promptHint')}</p>
           </div>
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Temperature</Label>
+              <Label>{t('translate.settings.temperature')}</Label>
               <span className="text-sm text-muted-foreground">{temperature.toFixed(1)}</span>
             </div>
             <Slider
@@ -91,16 +91,16 @@ export function TranslateSettingsDialog({
               step={0.1}
             />
             <p className="text-xs text-muted-foreground">
-              较低值产生更准确的翻译，较高值更具创造性。默认 0.3。
+              {t('translate.settings.temperatureHint')}
             </p>
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>
-            重置默认
+            {t('translate.settings.resetDefault')}
           </Button>
-          <Button onClick={handleSave}>保存</Button>
+          <Button onClick={handleSave}>{t('common.save')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef, memo } from 'react'
 import { Copy, Check, Trash2, User, Bot } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
 import { MarkdownRenderer } from './MarkdownRenderer'
@@ -20,6 +21,7 @@ export const MessageBubble = memo(function MessageBubble({
   messageId,
   onDelete,
 }: MessageBubbleProps) {
+  const { t } = useTranslation()
   const isUser = role === 'user'
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -78,7 +80,7 @@ export const MessageBubble = memo(function MessageBubble({
               size="icon"
               className="h-6 w-6"
               onClick={handleCopy}
-              aria-label="Copy message">
+              aria-label={t('chat.copyMessage')}>
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
             </Button>
             <Button
@@ -86,7 +88,7 @@ export const MessageBubble = memo(function MessageBubble({
               size="icon"
               className="h-6 w-6 text-destructive hover:text-destructive"
               onClick={handleDelete}
-              aria-label="Delete message">
+              aria-label={t('chat.deleteMessage')}>
               <Trash2 className="h-3 w-3" />
             </Button>
           </div>

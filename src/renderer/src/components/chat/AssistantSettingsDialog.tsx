@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { RotateCcw, Save } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Textarea } from '@renderer/components/ui/textarea'
@@ -71,6 +72,7 @@ export function AssistantSettingsDialog({
   onOpenChange,
   assistantId,
 }: AssistantSettingsDialogProps): React.JSX.Element {
+  const { t } = useTranslation()
   const { assistants, updateAssistant } = useAssistantStore()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -263,8 +265,8 @@ export function AssistantSettingsDialog({
   const contextCountValue = parseInt(form.contextCount) || 10
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'model', label: '模型设置' },
-    { id: 'prompt', label: '提示词设置' },
+    { id: 'model', label: t('assistant.settings.modelTab') },
+    { id: 'prompt', label: t('assistant.settings.promptTab') },
   ]
 
   return (
@@ -299,10 +301,10 @@ export function AssistantSettingsDialog({
                 <>
                   {/* Model selector (grouped by provider) */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">模型</Label>
+                    <Label className="text-sm">{t('assistant.settings.model')}</Label>
                     {enabledProviders.length === 0 ? (
                       <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
-                        请在设置中添加供应商和可用模型
+                        {t('assistant.settings.noProviderHint')}
                       </p>
                     ) : (
                       <Select value={modelSelectValue} onValueChange={handleModelSelect}>
@@ -310,7 +312,9 @@ export function AssistantSettingsDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="__default__">使用默认</SelectItem>
+                          <SelectItem value="__default__">
+                            {t('assistant.settings.useDefault')}
+                          </SelectItem>
                           {enabledProviders.map((provider) => {
                             const providerModels = models.filter(
                               (m) => m.providerId === provider.id && m.enabled,
@@ -334,17 +338,17 @@ export function AssistantSettingsDialog({
                   {/* Custom model name input (shown when a provider is selected) */}
                   {form.providerId && (
                     <div className="space-y-1.5">
-                      <Label className="text-sm">自定义模型名</Label>
+                      <Label className="text-sm">{t('assistant.settings.customModelName')}</Label>
                       <Input
                         value={isKnownModel ? '' : form.model}
                         onChange={(e) => {
                           change('model', e.target.value)
                         }}
                         onBlur={() => handleBlur('model')}
-                        placeholder="输入不在列表中的模型名"
+                        placeholder={t('assistant.settings.customModelPlaceholder')}
                       />
                       <p className="text-xs text-muted-foreground">
-                        如需使用列表中没有的模型，可在此输入模型名称。
+                        {t('assistant.settings.customModelHint')}
                       </p>
                     </div>
                   )}
@@ -352,7 +356,7 @@ export function AssistantSettingsDialog({
                   {/* Temperature */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">模型温度</span>
+                      <span className="text-sm">{t('assistant.settings.temperature')}</span>
                       <div className="flex items-center gap-3">
                         {form.temperatureEnabled && (
                           <span className="font-mono text-xs text-muted-foreground">
@@ -389,7 +393,7 @@ export function AssistantSettingsDialog({
                   {/* Max Tokens */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">最大 Token 数</span>
+                      <span className="text-sm">{t('assistant.settings.maxTokens')}</span>
                       <div className="flex items-center gap-3">
                         {form.maxCompletionTokensEnabled && (
                           <span className="font-mono text-xs text-muted-foreground">
@@ -426,7 +430,7 @@ export function AssistantSettingsDialog({
                   {/* Top P */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Top P</span>
+                      <span className="text-sm">{t('assistant.settings.topP')}</span>
                       <div className="flex items-center gap-3">
                         {form.topPEnabled && (
                           <span className="font-mono text-xs text-muted-foreground">
@@ -460,7 +464,7 @@ export function AssistantSettingsDialog({
                   {/* Context Count */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">上下文数</span>
+                      <span className="text-sm">{t('assistant.settings.contextCount')}</span>
                       <div className="flex items-center gap-3">
                         {form.contextCountEnabled && (
                           <span className="font-mono text-xs text-muted-foreground">
@@ -491,7 +495,7 @@ export function AssistantSettingsDialog({
                           ))}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          限制发送给 API 的历史消息数量。0 表示不发送历史消息，关闭则发送全部。
+                          {t('assistant.settings.contextCountHint')}
                         </p>
                       </div>
                     )}
@@ -503,52 +507,52 @@ export function AssistantSettingsDialog({
                 <>
                   {/* Name */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">名称</Label>
+                    <Label className="text-sm">{t('assistant.settings.name')}</Label>
                     <Input
                       value={form.name}
                       onChange={(e) => change('name', e.target.value)}
                       onBlur={() => handleBlur('name')}
-                      placeholder="助手名称"
+                      placeholder={t('assistant.settings.namePlaceholder')}
                     />
                   </div>
 
                   {/* Description */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">描述</Label>
+                    <Label className="text-sm">{t('assistant.settings.description')}</Label>
                     <Input
                       value={form.description}
                       onChange={(e) => change('description', e.target.value)}
                       onBlur={() => handleBlur('description')}
-                      placeholder="简要描述助手的用途..."
+                      placeholder={t('assistant.settings.descriptionPlaceholder')}
                     />
                   </div>
 
                   {/* Group */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">分组</Label>
+                    <Label className="text-sm">{t('assistant.settings.group')}</Label>
                     <Input
                       value={form.group}
                       onChange={(e) => change('group', e.target.value)}
                       onBlur={() => handleBlur('group')}
-                      placeholder={'输入分组名称，如「翻译」、「编程」'}
+                      placeholder={t('assistant.settings.groupPlaceholder')}
                     />
                     <p className="text-xs text-muted-foreground">
-                      填写分组名称后，助手将按分组折叠显示在侧边栏中。留空则不分组。
+                      {t('assistant.settings.groupHint')}
                     </p>
                   </div>
 
                   {/* System Prompt */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm">系统提示词</Label>
+                    <Label className="text-sm">{t('assistant.settings.systemPrompt')}</Label>
                     <Textarea
                       rows={8}
                       value={form.systemPrompt}
                       onChange={(e) => change('systemPrompt', e.target.value)}
                       onBlur={() => handleBlur('systemPrompt')}
-                      placeholder="设定助手的角色和行为..."
+                      placeholder={t('assistant.settings.systemPromptPlaceholder')}
                     />
                     <p className="text-xs text-muted-foreground">
-                      定义助手的角色、能力和行为规则。留空则使用全局系统提示词。
+                      {t('assistant.settings.systemPromptHint')}
                     </p>
                   </div>
                 </>
@@ -561,11 +565,11 @@ export function AssistantSettingsDialog({
         <div className="flex justify-end gap-2 border-t px-6 py-3">
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            重置
+            {t('assistant.settings.resetButton')}
           </Button>
           <Button size="sm" onClick={handleSave}>
             <Save className="mr-1.5 h-3.5 w-3.5" />
-            保存
+            {t('assistant.settings.saveButton')}
           </Button>
         </div>
       </DialogContent>

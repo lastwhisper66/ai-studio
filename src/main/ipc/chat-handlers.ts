@@ -31,40 +31,40 @@ export function registerChatHandlers(): void {
           ? getAssistant(conversation.assistantId)
           : undefined
         if (assistant) {
-            // Override provider if assistant specifies one
-            if (assistant.providerId) {
-              const assistantProvider = getProvider(assistant.providerId)
-              if (assistantProvider) {
-                settings.provider = assistantProvider.type
-                settings.apiKey = assistantProvider.apiKey
-                settings.baseUrl = assistantProvider.baseUrl
-                settings.endpoint = assistantProvider.endpoint
-                settings.apiVersion = assistantProvider.apiVersion
-                settings.deploymentName = assistantProvider.deploymentName
-                // Use assistant's model, or fall back to provider's first model
-                const providerModels = listModelsByProvider(assistantProvider.id)
-                settings.model =
-                  assistant.model ||
-                  providerModels[0]?.name ||
-                  assistantProvider.model ||
-                  settings.model
-              }
-            } else if (assistant.model) {
-              // No custom provider, but assistant specifies a model name
-              settings.model = assistant.model
+          // Override provider if assistant specifies one
+          if (assistant.providerId) {
+            const assistantProvider = getProvider(assistant.providerId)
+            if (assistantProvider) {
+              settings.provider = assistantProvider.type
+              settings.apiKey = assistantProvider.apiKey
+              settings.baseUrl = assistantProvider.baseUrl
+              settings.endpoint = assistantProvider.endpoint
+              settings.apiVersion = assistantProvider.apiVersion
+              settings.deploymentName = assistantProvider.deploymentName
+              // Use assistant's model, or fall back to provider's first model
+              const providerModels = listModelsByProvider(assistantProvider.id)
+              settings.model =
+                assistant.model ||
+                providerModels[0]?.name ||
+                assistantProvider.model ||
+                settings.model
             }
-            if (assistant.systemPrompt) {
-              settings.systemPrompt = assistant.systemPrompt
-            }
-            if (assistant.temperature) {
-              settings.temperature = parseFloat(assistant.temperature)
-            }
-            if (assistant.maxCompletionTokens) {
-              settings.maxCompletionTokens = parseInt(assistant.maxCompletionTokens, 10)
-            }
-            if (assistant.topP) {
-              settings.topP = parseFloat(assistant.topP)
-            }
+          } else if (assistant.model) {
+            // No custom provider, but assistant specifies a model name
+            settings.model = assistant.model
+          }
+          if (assistant.systemPrompt) {
+            settings.systemPrompt = assistant.systemPrompt
+          }
+          if (assistant.temperature) {
+            settings.temperature = parseFloat(assistant.temperature)
+          }
+          if (assistant.maxCompletionTokens) {
+            settings.maxCompletionTokens = parseInt(assistant.maxCompletionTokens, 10)
+          }
+          if (assistant.topP) {
+            settings.topP = parseFloat(assistant.topP)
+          }
         }
 
         // Build API messages array

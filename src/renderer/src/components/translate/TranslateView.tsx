@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   ArrowRightLeft,
   Copy,
@@ -9,6 +9,7 @@ import {
   Settings2,
   ChevronDown,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import {
   Select,
@@ -44,9 +45,14 @@ const LANGUAGES: Language[] = [
   { code: 'ja', label: '日本語' },
 ]
 
-const SOURCE_LANGUAGES: Language[] = [{ code: 'auto', label: '自动检测' }, ...LANGUAGES]
-
 export function TranslateView(): React.JSX.Element {
+  const { t } = useTranslation()
+
+  const SOURCE_LANGUAGES: Language[] = useMemo(
+    () => [{ code: 'auto', label: t('translate.autoDetect') }, ...LANGUAGES],
+    [t],
+  )
+
   const [sourceText, setSourceText] = useState('')
   const [translatedText, setTranslatedText] = useState('')
   const [sourceLang, setSourceLang] = useState('auto')
@@ -95,7 +101,7 @@ export function TranslateView(): React.JSX.Element {
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
-  const displayModel = activeModel?.name || activeProvider?.model || '未选择模型'
+  const displayModel = activeModel?.name || activeProvider?.model || t('translate.noModelSelected')
   const enabledProviders = providers.filter((p) => p.enabled)
 
   const handleSelectModel = useCallback(
@@ -168,7 +174,7 @@ export function TranslateView(): React.JSX.Element {
     })
 
     if (!result.success) {
-      setError(result.error ?? '翻译失败')
+      setError(result.error ?? t('translate.failed'))
       setIsTranslating(false)
     }
   }, [
@@ -179,6 +185,8 @@ export function TranslateView(): React.JSX.Element {
     activeProviderId,
     activeModelId,
     translateSettings,
+    t,
+    SOURCE_LANGUAGES,
   ])
 
   const handleStop = useCallback(async () => {
@@ -248,7 +256,7 @@ export function TranslateView(): React.JSX.Element {
               <ArrowRightLeft className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>交换语言</TooltipContent>
+          <TooltipContent>{t('translate.swapLanguages')}</TooltipContent>
         </Tooltip>
 
         <Select value={targetLang} onValueChange={setTargetLang}>
@@ -267,12 +275,12 @@ export function TranslateView(): React.JSX.Element {
         {isTranslating ? (
           <Button variant="destructive" size="sm" onClick={handleStop}>
             <Square className="mr-1.5 h-3.5 w-3.5" />
-            停止
+            {t('translate.stop')}
           </Button>
         ) : (
           <Button size="sm" onClick={handleTranslate} disabled={!sourceText.trim()}>
             <Play className="mr-1.5 h-3.5 w-3.5" />
-            翻译
+            {t('translate.translate')}
           </Button>
         )}
 
@@ -285,7 +293,7 @@ export function TranslateView(): React.JSX.Element {
                 <Eraser className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>清空</TooltipContent>
+            <TooltipContent>{t('translate.clear')}</TooltipContent>
           </Tooltip>
         )}
 
@@ -333,7 +341,9 @@ export function TranslateView(): React.JSX.Element {
                       })
                     ) : (
                       <DropdownMenuItem disabled>
-                        <span className="text-muted-foreground">未配置模型</span>
+                        <span className="text-muted-foreground">
+                          {t('translate.noModelConfigured')}
+                        </span>
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuGroup>
@@ -354,7 +364,7 @@ export function TranslateView(): React.JSX.Element {
               <Settings2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>翻译设置</TooltipContent>
+          <TooltipContent>{t('translate.settings.title')}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -365,7 +375,7 @@ export function TranslateView(): React.JSX.Element {
           <textarea
             ref={textareaRef}
             className="flex-1 resize-none bg-transparent p-4 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
-            placeholder="输入或粘贴要翻译的文本... (Enter 翻译，Shift+Enter 换行)"
+            placeholder={t('translate.inputPlaceholder')}
             value={sourceText}
             onChange={(e) => setSourceText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -379,7 +389,9 @@ export function TranslateView(): React.JSX.Element {
         {/* Result panel */}
         <div className="flex flex-1 flex-col bg-muted/30">
           <div className="flex items-center justify-between border-b px-4 py-2">
-            <span className="text-sm font-medium text-muted-foreground">翻译结果</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              {t('translate.result')}
+            </span>
             {translatedText && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -391,7 +403,9 @@ export function TranslateView(): React.JSX.Element {
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>{copied ? '已复制' : '复制翻译'}</TooltipContent>
+                <TooltipContent>
+                  {copied ? t('translate.copied') : t('translate.copyTranslation')}
+                </TooltipContent>
               </Tooltip>
             )}
           </div>
@@ -406,7 +420,7 @@ export function TranslateView(): React.JSX.Element {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {isTranslating ? '正在翻译...' : '翻译结果将显示在这里'}
+                  {isTranslating ? t('translate.translating') : t('translate.resultPlaceholder')}
                 </p>
               )}
             </div>

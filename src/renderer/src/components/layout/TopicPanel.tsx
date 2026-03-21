@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Plus, Trash2, Pencil, Pin, Eraser } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -27,6 +28,7 @@ interface TopicPanelProps {
 }
 
 export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
+  const { t } = useTranslation()
   const {
     conversations,
     activeConversationId,
@@ -113,9 +115,9 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
         d.getDate() === now.getDate()
 
       if (sameDay) {
-        return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+        return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
       }
-      return d.toLocaleDateString('zh-CN', {
+      return d.toLocaleDateString(undefined, {
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
@@ -133,14 +135,14 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
       }`}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5">
-        <span className="text-sm font-semibold">话题</span>
+        <span className="text-sm font-semibold">{t('topic.title')}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNewTopic}>
               <Plus className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left">新建话题</TooltipContent>
+          <TooltipContent side="left">{t('topic.newTopic')}</TooltipContent>
         </Tooltip>
       </div>
 
@@ -152,7 +154,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
         <div className="space-y-0.5 pb-2">
           {topicConversations.length === 0 ? (
             <div className="px-2 py-4 text-center text-xs text-muted-foreground">
-              暂无话题，点击上方按钮创建
+              {t('topic.noTopics')}
             </div>
           ) : (
             topicConversations.map((conv) => {
@@ -179,22 +181,22 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
                   <ContextMenuContent>
                     <ContextMenuItem onClick={() => handleRenameOpen(conv.id, conv.title)}>
                       <Pencil className="h-4 w-4" />
-                      重命名
+                      {t('topic.rename')}
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => pinConversation(conv.id)}>
                       <Pin className="h-4 w-4" />
-                      {conv.pinned ? '取消置顶' : '置顶'}
+                      {conv.pinned ? t('common.unpin') : t('common.pin')}
                     </ContextMenuItem>
                     <ContextMenuSeparator />
                     <ContextMenuItem onClick={() => handleClearOpen(conv.id)}>
                       <Eraser className="h-4 w-4" />
-                      清空消息
+                      {t('topic.clearMessages')}
                     </ContextMenuItem>
                     <ContextMenuItem
                       variant="destructive"
                       onClick={() => handleDeleteOpen(conv.id)}>
                       <Trash2 className="h-4 w-4" />
-                      删除
+                      {t('common.delete')}
                     </ContextMenuItem>
                   </ContextMenuContent>
                 </ContextMenu>
@@ -208,7 +210,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>重命名话题</DialogTitle>
+            <DialogTitle>{t('topic.renameTitle')}</DialogTitle>
           </DialogHeader>
           <Input
             value={renameValue}
@@ -216,13 +218,13 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleRenameConfirm()
             }}
-            placeholder="话题标题"
+            placeholder={t('topic.topicTitlePlaceholder')}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleRenameConfirm}>保存</Button>
+            <Button onClick={handleRenameConfirm}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -231,15 +233,15 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>删除话题</DialogTitle>
-            <DialogDescription>此操作将永久删除该话题及其所有消息，无法撤销。</DialogDescription>
+            <DialogTitle>{t('topic.deleteTitle')}</DialogTitle>
+            <DialogDescription>{t('topic.deleteDescription')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDeleteConfirm}>
-              删除
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -249,17 +251,15 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
       <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>清空消息</DialogTitle>
-            <DialogDescription>
-              此操作将清除该话题的所有消息记录，话题本身将被保留。无法撤销。
-            </DialogDescription>
+            <DialogTitle>{t('topic.clearTitle')}</DialogTitle>
+            <DialogDescription>{t('topic.clearDescription')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setClearDialogOpen(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleClearConfirm}>
-              清空
+              {t('topic.clearButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
