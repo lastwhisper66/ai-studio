@@ -5,6 +5,27 @@ export interface Conversation {
   updatedAt: string
   model: string | null
   systemPrompt: string | null
+  assistantId: string | null
+  pinned: boolean
+}
+
+export interface Assistant {
+  id: string
+  name: string
+  description: string
+  systemPrompt: string
+  providerId: string | null
+  model: string
+  temperature: string
+  maxCompletionTokens: string
+  topP: string
+  contextCount: string
+  promptSuggestions: string[]
+  isDefault: boolean
+  group: string
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
 }
 
 export type MessageRole = 'user' | 'assistant' | 'system'
@@ -18,18 +39,57 @@ export interface Message {
   tokenCount: number | null
 }
 
-export type ApiProvider = 'openai' | 'azure'
+export type ProviderType =
+  | 'openai'
+  | 'azure'
+  | 'deepseek'
+  | 'gemini'
+  | 'groq'
+  | 'ollama'
+  | 'silicon'
+  | 'openrouter'
+  | 'custom'
+
+export interface Provider {
+  id: string
+  type: ProviderType
+  name: string
+  apiKey: string
+  baseUrl: string
+  model: string // deprecated — use models table instead
+  // Azure-specific
+  endpoint: string
+  apiVersion: string
+  deploymentName: string
+  // State
+  enabled: boolean
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Model {
+  id: string
+  providerId: string
+  name: string
+  enabled: boolean
+  sortOrder: number
+  createdAt: string
+}
 
 export interface ApiSettings {
-  provider: ApiProvider
+  provider: ProviderType
   apiKey: string
-  baseUrl?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
+  baseUrl: string
   model: string
+  // Azure-specific
+  endpoint: string
+  apiVersion: string
+  deploymentName: string
+  // Global model params
   temperature: number
-  maxTokens: number
+  maxCompletionTokens: number
+  topP: number
   systemPrompt: string
 }
 
@@ -68,12 +128,31 @@ export interface TitleUpdatedData {
   title: string
 }
 
-export interface TestConnectionPayload {
-  provider: ApiProvider
-  apiKey: string
-  baseUrl?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
-  model: string
+/** translate:request payload */
+export interface TranslateRequestPayload {
+  text: string
+  sourceLang: string
+  targetLang: string
+  /** Override provider/model (independent of chat's global selection) */
+  providerId?: string
+  modelId?: string
+  /** Custom system prompt for translation */
+  systemPrompt?: string
+  /** Custom temperature for translation (default 0.3) */
+  temperature?: number
+}
+
+/** translate:chunk push data */
+export interface TranslateChunkData {
+  delta: string
+}
+
+/** translate:end push data */
+export interface TranslateEndData {
+  fullText: string
+}
+
+/** translate:error push data */
+export interface TranslateErrorData {
+  error: string
 }

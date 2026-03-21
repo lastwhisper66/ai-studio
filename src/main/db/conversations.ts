@@ -9,6 +9,8 @@ interface ConversationRow {
   updated_at: string
   model: string | null
   system_prompt: string | null
+  assistant_id: string | null
+  pinned: number
 }
 
 function rowToConversation(row: ConversationRow): Conversation {
@@ -19,12 +21,14 @@ function rowToConversation(row: ConversationRow): Conversation {
     updatedAt: row.updated_at,
     model: row.model,
     systemPrompt: row.system_prompt,
+    assistantId: row.assistant_id,
+    pinned: row.pinned === 1,
   }
 }
 
 export function listConversations(): Conversation[] {
   const rows = getDb()
-    .prepare('SELECT * FROM conversations ORDER BY updated_at DESC')
+    .prepare('SELECT * FROM conversations ORDER BY pinned DESC, updated_at DESC')
     .all() as ConversationRow[]
   return rows.map(rowToConversation)
 }
@@ -36,22 +40,22 @@ export function getConversation(id: string): Conversation | undefined {
   return row ? rowToConversation(row) : undefined
 }
 
-export function createConversation(title?: string): Conversation {
+export function createConversation(title?: string, assistantId?: string): Conversation {
   const id = uuidv4()
   const now = new Date().toISOString()
   const db = getDb()
 
   db.prepare(
-    `INSERT INTO conversations (id, title, created_at, updated_at)
-     VALUES (?, ?, ?, ?)`,
-  ).run(id, title ?? 'New Chat', now, now)
+    `INSERT INTO conversations (id, title, created_at, updated_at, assistant_id)
+     VALUES (?, ?, ?, ?, ?)`,
+  ).run(id, title ?? 'New Chat', now, now, assistantId ?? null)
 
   return getConversation(id)!
 }
 
 export function updateConversation(
   id: string,
-  data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt'>>,
+  data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
 ): Conversation | undefined {
   const db = getDb()
   const now = new Date().toISOString()
@@ -70,6 +74,14 @@ export function updateConversation(
   if (data.systemPrompt !== undefined) {
     fields.push('system_prompt = ?')
     values.push(data.systemPrompt)
+  }
+  if (data.assistantId !== undefined) {
+    fields.push('assistant_id = ?')
+    values.push(data.assistantId)
+  }
+  if (data.pinned !== undefined) {
+    fields.push('pinned = ?')
+    values.push(data.pinned ? 1 : 0)
   }
 
   values.push(id)

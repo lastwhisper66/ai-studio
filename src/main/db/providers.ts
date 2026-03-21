@@ -1,0 +1,159 @@
+import { randomUUID } from 'crypto'
+import type { Provider, ProviderType } from '@shared/types'
+import { getDb } from './database'
+import { encrypt, decrypt } from './settings'
+
+interface ProviderRow {
+  id: string
+  type: string
+  name: string
+  api_key: string
+  base_url: string
+  model: string
+  endpoint: string
+  api_version: string
+  deployment_name: string
+  enabled: number
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
+function rowToProvider(row: ProviderRow): Provider {
+  return {
+    id: row.id,
+    type: row.type as ProviderType,
+    name: row.name,
+    apiKey: row.api_key ? decrypt(row.api_key) : '',
+    baseUrl: row.base_url,
+    model: row.model,
+    endpoint: row.endpoint,
+    apiVersion: row.api_version,
+    deploymentName: row.deployment_name,
+    enabled: row.enabled === 1,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }
+}
+
+export function listProviders(): Provider[] {
+  const rows = getDb()
+    .prepare('SELECT * FROM providers ORDER BY sort_order ASC, created_at ASC')
+    .all() as ProviderRow[]
+  return rows.map(rowToProvider)
+}
+
+export function getProvider(id: string): Provider | undefined {
+  const row = getDb().prepare('SELECT * FROM providers WHERE id = ?').get(id) as
+    | ProviderRow
+    | undefined
+  if (!row) return undefined
+  return rowToProvider(row)
+}
+
+export interface CreateProviderData {
+  type: ProviderType
+  name: string
+  apiKey?: string
+  baseUrl?: string
+  model?: string
+  endpoint?: string
+  apiVersion?: string
+  deploymentName?: string
+  enabled?: boolean
+  sortOrder?: number
+}
+
+export function createProvider(data: CreateProviderData): Provider {
+  const id = randomUUID()
+  const apiKey = data.apiKey ? encrypt(data.apiKey) : ''
+  getDb()
+    .prepare(
+      `INSERT INTO providers (id, type, name, api_key, base_url, model, endpoint, api_version, deployment_name, enabled, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      id,
+      data.type,
+      data.name,
+      apiKey,
+      data.baseUrl ?? '',
+      data.model ?? '',
+      data.endpoint ?? '',
+      data.apiVersion ?? '',
+      data.deploymentName ?? '',
+      data.enabled !== false ? 1 : 0,
+      data.sortOrder ?? 0,
+    )
+  return getProvider(id)!
+}
+
+export interface UpdateProviderData {
+  name?: string
+  apiKey?: string
+  baseUrl?: string
+  model?: string
+  endpoint?: string
+  apiVersion?: string
+  deploymentName?: string
+  enabled?: boolean
+  sortOrder?: number
+}
+
+export function updateProvider(id: string, data: UpdateProviderData): Provider | undefined {
+  const fields: string[] = []
+  const values: unknown[] = []
+
+  if (data.name !== undefined) {
+    fields.push('name = ?')
+    values.push(data.name)
+  }
+  if (data.apiKey !== undefined) {
+    fields.push('api_key = ?')
+    values.push(data.apiKey ? encrypt(data.apiKey) : '')
+  }
+  if (data.baseUrl !== undefined) {
+    fields.push('base_url = ?')
+    values.push(data.baseUrl)
+  }
+  if (data.model !== undefined) {
+    fields.push('model = ?')
+    values.push(data.model)
+  }
+  if (data.endpoint !== undefined) {
+    fields.push('endpoint = ?')
+    values.push(data.endpoint)
+  }
+  if (data.apiVersion !== undefined) {
+    fields.push('api_version = ?')
+    values.push(data.apiVersion)
+  }
+  if (data.deploymentName !== undefined) {
+    fields.push('deployment_name = ?')
+    values.push(data.deploymentName)
+  }
+  if (data.enabled !== undefined) {
+    fields.push('enabled = ?')
+    values.push(data.enabled ? 1 : 0)
+  }
+  if (data.sortOrder !== undefined) {
+    fields.push('sort_order = ?')
+    values.push(data.sortOrder)
+  }
+
+  if (fields.length === 0) return getProvider(id)
+
+  fields.push("updated_at = datetime('now')")
+  values.push(id)
+
+  getDb()
+    .prepare(`UPDATE providers SET ${fields.join(', ')} WHERE id = ?`)
+    .run(...values)
+
+  return getProvider(id)
+}
+
+export function deleteProvider(id: string): void {
+  getDb().prepare('DELETE FROM providers WHERE id = ?').run(id)
+}

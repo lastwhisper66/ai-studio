@@ -1,4 +1,5 @@
 import './assets/main.css'
+import './i18n'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -13,5 +14,5 @@ createRoot(document.getElementById('root')!).render(
         <App />
       </TooltipProvider>
     </ThemeProvider>
-  </StrictMode>
+  </StrictMode>,
 )

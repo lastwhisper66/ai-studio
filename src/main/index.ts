@@ -1,9 +1,21 @@
-import { app, shell, BrowserWindow, screen } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  screen,
+  globalShortcut,
+  Tray,
+  Menu,
+  nativeImage,
+  dialog,
+} from 'electron'
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { IpcChannels } from '@shared/ipc-channels'
 import { initDatabase, closeDatabase } from './db'
 import { registerAllIpcHandlers } from './ipc'
+import { applySslSetting } from './ai'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -47,6 +59,15 @@ function saveWindowState(win: BrowserWindow): void {
 
 // ── Window creation ─────────────────────────────────────────────
 
+let isQuitting = false
+let tray: Tray | null = null
+
+function showWindow(win: BrowserWindow): void {
+  if (win.isMinimized()) win.restore()
+  win.show()
+  win.focus()
+}
+
 function createWindow(): void {
   const restored = loadWindowState()
 
@@ -56,7 +77,9 @@ function createWindow(): void {
     restored.y !== undefined &&
     screen.getAllDisplays().some((display) => {
       const { x, y, width, height } = display.bounds
-      return restored.x! >= x && restored.x! < x + width && restored.y! >= y && restored.y! < y + height
+      return (
+        restored.x! >= x && restored.x! < x + width && restored.y! >= y && restored.y! < y + height
+      )
     })
 
   const mainWindow = new BrowserWindow({
@@ -66,6 +89,7 @@ function createWindow(): void {
     minWidth: 800,
     minHeight: 600,
     show: false,
+    frame: false,
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -82,9 +106,31 @@ function createWindow(): void {
     mainWindow.show()
   })
 
-  // Persist window state on close
-  mainWindow.on('close', () => {
-    saveWindowState(mainWindow)
+  // Minimize to tray on close; only truly quit when isQuitting is set
+  mainWindow.on('close', (e) => {
+    try {
+      saveWindowState(mainWindow)
+    } catch {
+      // Non-critical — silently ignore
+    }
+    if (!isQuitting) {
+      e.preventDefault()
+      mainWindow.hide()
+      return
+    }
+    try {
+      closeDatabase()
+    } finally {
+      app.exit(0)
+    }
+  })
+
+  // Notify renderer of maximize/unmaximize state changes
+  mainWindow.on('maximize', () => {
+    mainWindow.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, true)
+  })
+  mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false)
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -92,12 +138,15 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // Block DevTools shortcuts in production
+  // Block DevTools and refresh shortcuts in production
   if (!is.dev) {
     mainWindow.webContents.on('before-input-event', (event, input) => {
+      const key = input.key.toLowerCase()
       if (
         input.key === 'F12' ||
-        (input.control && input.shift && input.key.toLowerCase() === 'i')
+        input.key === 'F5' ||
+        (input.control && input.shift && key === 'i') ||
+        (input.control && key === 'r')
       ) {
         event.preventDefault()
       }
@@ -120,16 +169,14 @@ if (!gotTheLock) {
 } else {
   app.on('second-instance', () => {
     const win = BrowserWindow.getAllWindows()[0]
-    if (win) {
-      if (win.isMinimized()) win.restore()
-      win.focus()
-    }
+    if (win) showWindow(win)
   })
 
   app.whenReady().then(() => {
     electronApp.setAppUserModelId('com.ai-studio.app')
 
     initDatabase()
+    applySslSetting()
     registerAllIpcHandlers()
 
     app.on('browser-window-created', (_, window) => {
@@ -138,15 +185,73 @@ if (!gotTheLock) {
 
     createWindow()
 
+    // Global shortcut: Ctrl+Win+A to summon the main window
+    const registered = globalShortcut.register('Ctrl+Super+A', () => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) showWindow(win)
+    })
+    if (!registered && is.dev) {
+      console.warn('Failed to register global shortcut Ctrl+Super+A — may already be in use')
+    }
+
+    // ── System tray ───────────────────────────────────────────────
+    const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
+    const trayIcon = nativeImage.createFromPath(iconPath)
+    tray = new Tray(trayIcon)
+    tray.setToolTip('AI Studio')
+
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: '打开主窗口',
+        click: () => {
+          const win = BrowserWindow.getAllWindows()[0]
+          if (win) showWindow(win)
+        },
+      },
+      { type: 'separator' },
+      {
+        label: '关于',
+        click: () => {
+          dialog.showMessageBox({
+            type: 'info',
+            title: '关于 AI Studio',
+            message: `AI Studio v${app.getVersion()}`,
+            detail: 'A desktop AI chat application',
+          })
+        },
+      },
+      { type: 'separator' },
+      {
+        label: '退出',
+        click: () => {
+          isQuitting = true
+          app.quit()
+        },
+      },
+    ])
+    tray.setContextMenu(contextMenu)
+
+    tray.on('click', () => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (win) showWindow(win)
+    })
+
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
   })
 }
 
+// On macOS, apps conventionally stay active until Cmd+Q.
+// On Windows, the close handler hides to tray; this fires only when
+// all windows are destroyed (e.g. during a true quit).
+app.on('before-quit', () => {
+  isQuitting = true
+})
+
 app.on('window-all-closed', () => {
+  globalShortcut.unregisterAll()
+  tray?.destroy()
   closeDatabase()
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  app.quit()
 })

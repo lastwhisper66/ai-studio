@@ -3,8 +3,12 @@ import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SendMessagePayload, IpcResult, Message } from '@shared/types'
 import { listMessages, createMessage } from '../db/messages'
-import { updateConversation } from '../db/conversations'
+import { getConversation, updateConversation } from '../db/conversations'
+import { getAssistant } from '../db/assistants'
+import { getProvider } from '../db/providers'
+import { listModelsByProvider } from '../db/models'
 import { createAIClient, loadApiSettings, generateTitle } from '../ai'
+import { getSetting } from '../db/settings'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -20,12 +24,76 @@ export function registerChatHandlers(): void {
         const settings = loadApiSettings()
         const messages = listMessages(conversationId)
 
+        // Assistant overlay: if conversation is linked to an assistant,
+        // override settings with assistant-specific configuration
+        const conversation = getConversation(conversationId)
+        const assistant = conversation?.assistantId
+          ? getAssistant(conversation.assistantId)
+          : undefined
+        if (assistant) {
+          // Override provider if assistant specifies one
+          if (assistant.providerId) {
+            const assistantProvider = getProvider(assistant.providerId)
+            if (assistantProvider) {
+              settings.provider = assistantProvider.type
+              settings.apiKey = assistantProvider.apiKey
+              settings.baseUrl = assistantProvider.baseUrl
+              settings.endpoint = assistantProvider.endpoint
+              settings.apiVersion = assistantProvider.apiVersion
+              settings.deploymentName = assistantProvider.deploymentName
+              // Use assistant's model, or fall back to provider's first model
+              const providerModels = listModelsByProvider(assistantProvider.id)
+              settings.model =
+                assistant.model ||
+                providerModels[0]?.name ||
+                assistantProvider.model ||
+                settings.model
+            }
+          } else if (assistant.model) {
+            // No custom provider, but assistant specifies a model name
+            settings.model = assistant.model
+          }
+          if (assistant.systemPrompt) {
+            settings.systemPrompt = assistant.systemPrompt
+          }
+          if (assistant.temperature) {
+            settings.temperature = parseFloat(assistant.temperature)
+          }
+          if (assistant.maxCompletionTokens) {
+            settings.maxCompletionTokens = parseInt(assistant.maxCompletionTokens, 10)
+          }
+          if (assistant.topP) {
+            settings.topP = parseFloat(assistant.topP)
+          }
+        }
+
         // Build API messages array
         const apiMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = []
         if (settings.systemPrompt) {
           apiMessages.push({ role: 'system', content: settings.systemPrompt })
         }
-        for (const msg of messages) {
+
+        // Apply context count limit: assistant-level overrides global setting
+        let contextMessages = messages
+        const contextCountStr = assistant?.contextCount || getSetting('api.contextCount')
+        if (contextCountStr) {
+          const limit = parseInt(contextCountStr, 10)
+          if (!isNaN(limit) && limit < 100) {
+            const nonSystemMessages = messages.filter(
+              (m) => m.role === 'user' || m.role === 'assistant',
+            )
+            if (limit === 0) {
+              contextMessages = []
+            } else {
+              contextMessages =
+                nonSystemMessages.length > limit
+                  ? nonSystemMessages.slice(-limit)
+                  : nonSystemMessages
+            }
+          }
+        }
+
+        for (const msg of contextMessages) {
           if (msg.role === 'user' || msg.role === 'assistant') {
             apiMessages.push({ role: msg.role, content: msg.content })
           }
@@ -40,8 +108,9 @@ export function registerChatHandlers(): void {
             model: settings.model,
             messages: apiMessages,
             stream: true,
-            max_tokens: settings.maxTokens,
+            max_completion_tokens: settings.maxCompletionTokens,
             temperature: settings.temperature,
+            top_p: settings.topP,
           },
           { signal: controller.signal },
         )

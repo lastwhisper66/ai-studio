@@ -10,12 +10,30 @@ export const IpcChannels = {
   MESSAGE_LIST_PAGINATED: 'message:list-paginated',
   MESSAGE_CREATE: 'message:create',
   MESSAGE_DELETE: 'message:delete',
+  MESSAGE_CLEAR: 'message:clear',
   // Settings
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',
   SETTINGS_GET_ALL: 'settings:get-all',
   SETTINGS_SET_BATCH: 'settings:set-batch',
-  SETTINGS_TEST_CONNECTION: 'settings:test-connection',
+  // Provider
+  PROVIDER_LIST: 'provider:list',
+  PROVIDER_GET: 'provider:get',
+  PROVIDER_CREATE: 'provider:create',
+  PROVIDER_UPDATE: 'provider:update',
+  PROVIDER_DELETE: 'provider:delete',
+  PROVIDER_TEST_CONNECTION: 'provider:test-connection',
+  // Model
+  MODEL_LIST: 'model:list',
+  MODEL_CREATE: 'model:create',
+  MODEL_UPDATE: 'model:update',
+  MODEL_DELETE: 'model:delete',
+  // Assistant
+  ASSISTANT_LIST: 'assistant:list',
+  ASSISTANT_GET: 'assistant:get',
+  ASSISTANT_CREATE: 'assistant:create',
+  ASSISTANT_UPDATE: 'assistant:update',
+  ASSISTANT_DELETE: 'assistant:delete',
   // Chat (streaming)
   CHAT_SEND_MESSAGE: 'chat:send-message',
   CHAT_STREAM_CHUNK: 'chat:stream-chunk',
@@ -23,4 +41,16 @@ export const IpcChannels = {
   CHAT_STREAM_ERROR: 'chat:stream-error',
   CHAT_STOP_GENERATION: 'chat:stop-generation',
   CHAT_TITLE_UPDATED: 'chat:title-updated',
+  // Translate (streaming)
+  TRANSLATE_REQUEST: 'translate:request',
+  TRANSLATE_CHUNK: 'translate:chunk',
+  TRANSLATE_END: 'translate:end',
+  TRANSLATE_ERROR: 'translate:error',
+  TRANSLATE_STOP: 'translate:stop',
+  // Window
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE: 'window:maximize',
+  WINDOW_CLOSE: 'window:close',
+  WINDOW_IS_MAXIMIZED: 'window:is-maximized',
+  WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
 } as const

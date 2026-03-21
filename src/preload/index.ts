@@ -11,7 +11,13 @@ import type {
   StreamEndData,
   StreamErrorData,
   TitleUpdatedData,
-  TestConnectionPayload,
+  Provider,
+  Model,
+  Assistant,
+  TranslateRequestPayload,
+  TranslateChunkData,
+  TranslateEndData,
+  TranslateErrorData,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -23,12 +29,12 @@ const api = {
   getConversation: (id: string): Promise<IpcResult<Conversation | undefined>> =>
     ipcRenderer.invoke(IpcChannels.CONVERSATION_GET, id),
 
-  createConversation: (title?: string): Promise<IpcResult<Conversation>> =>
-    ipcRenderer.invoke(IpcChannels.CONVERSATION_CREATE, title),
+  createConversation: (title?: string, assistantId?: string): Promise<IpcResult<Conversation>> =>
+    ipcRenderer.invoke(IpcChannels.CONVERSATION_CREATE, title, assistantId),
 
   updateConversation: (
     id: string,
-    data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt'>>,
+    data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'pinned'>>,
   ): Promise<IpcResult<Conversation | undefined>> =>
     ipcRenderer.invoke(IpcChannels.CONVERSATION_UPDATE, id, data),
 
@@ -56,6 +62,9 @@ const api = {
   deleteMessage: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MESSAGE_DELETE, id),
 
+  clearMessages: (conversationId: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MESSAGE_CLEAR, conversationId),
+
   // Settings
   getSetting: (key: string): Promise<IpcResult<string | undefined>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_GET, key),
@@ -69,8 +78,56 @@ const api = {
   setSettingsBatch: (entries: Record<string, string>): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_SET_BATCH, entries),
 
-  testConnection: (payload: TestConnectionPayload): Promise<IpcResult<string>> =>
-    ipcRenderer.invoke(IpcChannels.SETTINGS_TEST_CONNECTION, payload),
+  // Providers
+  listProviders: (): Promise<IpcResult<Provider[]>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_LIST),
+
+  getProvider: (id: string): Promise<IpcResult<Provider | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_GET, id),
+
+  createProvider: (
+    data: Partial<Provider> & { type: Provider['type']; name: string },
+  ): Promise<IpcResult<Provider>> => ipcRenderer.invoke(IpcChannels.PROVIDER_CREATE, data),
+
+  updateProvider: (id: string, data: Partial<Provider>): Promise<IpcResult<Provider | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_UPDATE, id, data),
+
+  deleteProvider: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_DELETE, id),
+
+  testProviderConnection: (provider: Provider): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, provider),
+
+  // Models
+  listModels: (): Promise<IpcResult<Model[]>> => ipcRenderer.invoke(IpcChannels.MODEL_LIST),
+
+  createModel: (data: { providerId: string; name: string }): Promise<IpcResult<Model>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_CREATE, data),
+
+  updateModel: (id: string, data: Partial<Model>): Promise<IpcResult<Model | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_UPDATE, id, data),
+
+  deleteModel: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_DELETE, id),
+
+  // Assistants
+  listAssistants: (): Promise<IpcResult<Assistant[]>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_LIST),
+
+  getAssistant: (id: string): Promise<IpcResult<Assistant | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_GET, id),
+
+  createAssistant: (data: Partial<Assistant> & { name: string }): Promise<IpcResult<Assistant>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_CREATE, data),
+
+  updateAssistant: (
+    id: string,
+    data: Partial<Assistant>,
+  ): Promise<IpcResult<Assistant | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_UPDATE, id, data),
+
+  deleteAssistant: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_DELETE, id),
 
   // Chat (streaming)
   sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>
@@ -108,6 +165,54 @@ const api = {
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_END)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_ERROR)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_TITLE_UPDATED)
+  },
+
+  // Translate (streaming)
+  translate: (payload: TranslateRequestPayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.TRANSLATE_REQUEST, payload),
+
+  stopTranslation: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.TRANSLATE_STOP),
+
+  onTranslateChunk: (callback: (data: TranslateChunkData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TranslateChunkData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.TRANSLATE_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRANSLATE_CHUNK, handler)
+  },
+
+  onTranslateEnd: (callback: (data: TranslateEndData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TranslateEndData): void => callback(data)
+    ipcRenderer.on(IpcChannels.TRANSLATE_END, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRANSLATE_END, handler)
+  },
+
+  onTranslateError: (callback: (data: TranslateErrorData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: TranslateErrorData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.TRANSLATE_ERROR, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRANSLATE_ERROR, handler)
+  },
+
+  removeAllTranslateListeners: (): void => {
+    ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_CHUNK)
+    ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_END)
+    ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_ERROR)
+  },
+
+  // Window controls
+  windowMinimize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),
+
+  windowMaximize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MAXIMIZE),
+
+  windowClose: (): void => ipcRenderer.send(IpcChannels.WINDOW_CLOSE),
+
+  windowIsMaximized: (): Promise<boolean> => ipcRenderer.invoke(IpcChannels.WINDOW_IS_MAXIMIZED),
+
+  onWindowMaximizedChange: (callback: (isMaximized: boolean) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, isMaximized: boolean): void =>
+      callback(isMaximized)
+    ipcRenderer.on(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
   },
 }
 

@@ -38,8 +38,8 @@ src/
 ├── main/
 │   ├── index.ts              # App entry, window creation, window state persistence
 │   ├── ai/                   # AI client factories (openai-client, azure-client)
-│   ├── db/                   # SQLite operations (database, conversations, messages, settings)
-│   └── ipc/                  # IPC handler registration (chat, conversation, message, settings)
+│   ├── db/                   # SQLite operations (database, conversations, messages, settings, providers, models, assistants)
+│   └── ipc/                  # IPC handler registration (chat, conversation, message, settings, provider, model, assistant, translate, window)
 ├── preload/
 │   ├── index.ts              # contextBridge API exposure
 │   └── index.d.ts            # TypeScript types for window.api and window.electron
@@ -48,14 +48,15 @@ src/
 │   ├── main.tsx              # Entry point with ThemeProvider + TooltipProvider
 │   ├── assets/main.css       # Tailwind v4 config, CSS variables, themes
 │   ├── components/
-│   │   ├── chat/             # ChatView, MessageList, MessageInput, MessageBubble, MarkdownRenderer, CodeBlock, WelcomeScreen
-│   │   ├── layout/           # AppLayout, ChatPanel, Sidebar
-│   │   ├── settings/         # SettingsDialog, ProviderSettings, ModelSettings, ConnectionTest
+│   │   ├── chat/             # ChatView, MessageList, MessageInput, MessageBubble, MarkdownRenderer, CodeBlock, WelcomeScreen, AssistantPickerDialog, AssistantSettingsDialog, InputToolbar
+│   │   ├── layout/           # AppLayout, ChatPanel, AssistantSidebar, TopicPanel, PrimaryNav, TitleBar
+│   │   ├── settings/         # SettingsPage, SettingsSidebar, ProviderList, ProviderDetail, ModelSection, GeneralSection, DisplaySection
+│   │   ├── translate/        # Translation feature components
 │   │   ├── theme/            # ThemeProvider, ThemeContext
 │   │   └── ui/               # Shadcn/UI primitives
 │   ├── hooks/                # useKeyboardShortcuts, useAutoScroll, useTheme, useThrottledValue
 │   ├── lib/                  # shiki highlighter setup, utils (cn)
-│   └── stores/               # conversationStore, settingsStore
+│   └── stores/               # conversationStore, settingsStore, assistantStore, providerStore
 ├── shared/
 │   └── types.ts              # Shared interfaces and IPC channel definitions
 data/                         # Runtime data (SQLite DB, window-state.json) - gitignored
@@ -68,17 +69,25 @@ SQLite with WAL mode and foreign key constraints enabled:
 - **conversations**: `id` (TEXT PK), `title`, `created_at`, `updated_at`, `model`, `system_prompt`
 - **messages**: `id` (TEXT PK), `conversation_id` (FK), `role`, `content`, `created_at`, `token_count` — indexed on `(conversation_id, created_at)`
 - **settings**: `key` (TEXT PK), `value` — API key encrypted via Electron safeStorage
+- **providers**: `id` (TEXT PK), `type`, `name`, `api_key`, `base_url`, `model`, `endpoint`, `api_version`, `deployment_name`, `enabled`, `sort_order`
+- **models**: `id` (TEXT PK), `provider_id` (FK → providers, CASCADE), `name`, `enabled`, `sort_order` — indexed on `provider_id`
+- **assistants**: `id` (TEXT PK), `name`, `description`, `system_prompt`, `provider_id` (FK), `model`, `temperature`, `max_completion_tokens`, `top_p`, `context_count`, `prompt_suggestions` (JSON array string), `is_default`, `group_name`, `sort_order`
 
 ## IPC Channels
 
 All channels follow `domain:action` naming:
 
-| Domain | Channels |
-|--------|----------|
-| **conversation** | `list`, `get`, `create`, `update`, `delete` |
-| **message** | `list`, `list-paginated`, `create`, `delete` |
-| **settings** | `get`, `set`, `get-all`, `set-batch`, `test-connection` |
-| **chat** | `send-message`, `stream-chunk`, `stream-end`, `stream-error`, `stop-generation`, `title-updated` |
+| Domain           | Channels                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| **conversation** | `list`, `get`, `create`, `update`, `delete`                                                      |
+| **message**      | `list`, `create`, `delete`, `clear`                                                              |
+| **settings**     | `get`, `set`, `get-all`                                                                          |
+| **chat**         | `send-message`, `stream-chunk`, `stream-end`, `stream-error`, `stop-generation`, `title-updated` |
+| **provider**     | `list`, `get`, `delete`                                                                          |
+| **model**        | `list`, `create`, `delete`                                                                       |
+| **assistant**    | `list`, `get`, `delete`                                                                          |
+| **translate**    | `stop`                                                                                           |
+| **window**       | `minimize`, `maximize`, `is-maximized`, `close`                                                  |
 
 Chat streaming uses event-based IPC (not request-response): main process emits `chat:stream-chunk` events, renderer listens via `window.api.onStreamChunk()`.
 
@@ -88,7 +97,7 @@ Key interfaces in `src/shared/types.ts`:
 
 - `Conversation` — id, title, createdAt, updatedAt, model, systemPrompt
 - `Message` — id, conversationId, role, content, createdAt, tokenCount
-- `ApiSettings` — provider, apiKey, baseUrl, endpoint, apiVersion, deploymentName, model, temperature, maxTokens, systemPrompt
+- `ApiSettings` — provider, apiKey, baseUrl, endpoint, apiVersion, deploymentName, model, temperature, maxCompletionTokens, systemPrompt
 - `ApiProvider` — `'openai' | 'azure'`
 - `IpcResult<T>` — Generic response wrapper for all IPC calls
 - `SendMessagePayload`, `StreamChunkData`, `StreamEndData`, `StreamErrorData`
@@ -122,11 +131,25 @@ npm run typecheck         # Run TypeScript type checking (all three processes)
 - Database operations go in `src/main/db/` — only accessible from main process
 - IPC handlers go in `src/main/ipc/` — one file per domain
 - Shadcn/UI components live in `src/renderer/src/components/ui/` — added via `npx shadcn@latest add <component>`
-- Zustand stores in `src/renderer/src/stores/` — one store per domain (conversationStore, settingsStore)
-- Settings keys use dot notation: `api.provider`, `api.apiKey`, `api.model`, etc.
+- Zustand stores in `src/renderer/src/stores/` — one store per domain (conversationStore, settingsStore, assistantStore, providerStore)
 - Use `streaming: true` for AI responses to enable typewriter effect via IPC event streaming
 - Conversation titles auto-generated by AI after first assistant response
-- Messages support pagination (default 50 per page) via `message:list-paginated`
+- `prompt_suggestions` field on assistants stored as JSON string array in SQLite
+
+## Provider / Model / Assistant System
+
+The app supports a multi-provider architecture where providers, models, and assistants are independently managed:
+
+- **Providers**: configured AI backends (OpenAI, Azure, custom). Each has connection settings and an API key.
+- **Models**: belong to a provider; represent available models for selection.
+- **Assistants**: named configurations with system prompt, provider/model binding, and generation parameters (temperature, max_completion_tokens, top_p, context_count).
+
+Key conventions:
+
+- Provider CRUD: `src/main/db/providers.ts` + `src/main/ipc/provider-handlers.ts` + `providerStore.ts`
+- Model CRUD: `src/main/db/models.ts` + `src/main/ipc/model-handlers.ts`
+- Assistant CRUD: `src/main/db/assistants.ts` + `src/main/ipc/assistant-handlers.ts` + `assistantStore.ts`
+- Settings UI: `src/renderer/src/components/settings/` (SettingsPage with SettingsSidebar, ProviderList, ProviderDetail, ModelSection)
 
 ## Security
 

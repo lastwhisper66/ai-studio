@@ -1,13 +1,10 @@
 import { ChatView } from '@renderer/components/chat/ChatView'
 
 interface ChatPanelProps {
-  sidebarCollapsed: boolean
-  onToggleSidebar: () => void
+  topicCollapsed: boolean
+  onToggleTopic: () => void
 }
 
-export function ChatPanel({
-  sidebarCollapsed,
-  onToggleSidebar,
-}: ChatPanelProps): React.JSX.Element {
-  return <ChatView sidebarCollapsed={sidebarCollapsed} onToggleSidebar={onToggleSidebar} />
+export function ChatPanel({ topicCollapsed, onToggleTopic }: ChatPanelProps): React.JSX.Element {
+  return <ChatView topicCollapsed={topicCollapsed} onToggleTopic={onToggleTopic} />
 }

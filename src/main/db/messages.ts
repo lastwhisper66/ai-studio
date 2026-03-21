@@ -79,3 +79,7 @@ export function createMessage(conversationId: string, role: MessageRole, content
 export function deleteMessage(id: string): void {
   getDb().prepare('DELETE FROM messages WHERE id = ?').run(id)
 }
+
+export function clearConversationMessages(conversationId: string): void {
+  getDb().prepare('DELETE FROM messages WHERE conversation_id = ?').run(conversationId)
+}

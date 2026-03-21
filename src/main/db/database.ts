@@ -46,7 +46,9 @@ function createTables(): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       model TEXT,
-      system_prompt TEXT
+      system_prompt TEXT,
+      assistant_id TEXT,
+      pinned INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS messages (
@@ -69,5 +71,66 @@ function createTables(): void {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS providers (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      api_key TEXT NOT NULL DEFAULT '',
+      base_url TEXT NOT NULL DEFAULT '',
+      model TEXT NOT NULL DEFAULT '',
+      endpoint TEXT NOT NULL DEFAULT '',
+      api_version TEXT NOT NULL DEFAULT '',
+      deployment_name TEXT NOT NULL DEFAULT '',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS models (
+      id TEXT PRIMARY KEY,
+      provider_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (provider_id) REFERENCES providers(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_models_provider_id
+      ON models(provider_id);
+
+    CREATE TABLE IF NOT EXISTS assistants (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      system_prompt TEXT NOT NULL DEFAULT '',
+      provider_id TEXT,
+      model TEXT NOT NULL DEFAULT '',
+      temperature TEXT NOT NULL DEFAULT '',
+      max_completion_tokens TEXT NOT NULL DEFAULT '',
+      top_p TEXT NOT NULL DEFAULT '',
+      context_count TEXT NOT NULL DEFAULT '10',
+      prompt_suggestions TEXT NOT NULL DEFAULT '[]',
+      is_default INTEGER NOT NULL DEFAULT 0,
+      group_name TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
   `)
+
+  // Seed: ensure a default assistant exists
+  const hasDefault = database
+    .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
+    .get() as { cnt: number }
+  if (hasDefault.cnt === 0) {
+    database
+      .prepare(
+        `INSERT INTO assistants (id, name, description, is_default, sort_order)
+         VALUES ('default-assistant', '默认助手', '使用全局设置的通用 AI 助手', 1, -1)`,
+      )
+      .run()
+  }
 }

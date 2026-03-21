@@ -10,12 +10,12 @@ interface CodeBlockProps {
 }
 
 export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockProps) {
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
   const [highlightedHtml, setHighlightedHtml] = useState<string>('')
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const shikiTheme = theme === 'light' ? 'github-light' : 'github-dark'
+  const shikiTheme = resolvedTheme === 'light' ? 'github-light' : 'github-dark'
 
   useEffect(() => {
     let cancelled = false

@@ -1,16 +1,18 @@
 import { create } from 'zustand'
 
+type ActiveView = 'chat' | 'settings' | 'translate'
+
 interface SettingsState {
   settings: Record<string, string>
   isLoaded: boolean
   isSaving: boolean
   error: string | null
-  dialogOpen: boolean
+  activeView: ActiveView
 
   loadSettings: () => Promise<void>
   saveSettings: (values: Record<string, string>) => Promise<boolean>
   clearError: () => void
-  setDialogOpen: (open: boolean) => void
+  setActiveView: (view: ActiveView) => void
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -18,10 +20,10 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   isLoaded: false,
   isSaving: false,
   error: null,
-  dialogOpen: false,
+  activeView: 'chat',
 
   clearError: () => set({ error: null }),
-  setDialogOpen: (open: boolean) => set({ dialogOpen: open }),
+  setActiveView: (view: ActiveView) => set({ activeView: view }),
 
   loadSettings: async () => {
     const result = await window.api.getAllSettings()

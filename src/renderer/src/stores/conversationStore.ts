@@ -12,13 +12,15 @@ interface ConversationState {
   streamingContent: string
 
   loadConversations: () => Promise<void>
-  createConversation: (title?: string) => Promise<boolean>
+  createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
   renameConversation: (id: string, title: string) => Promise<void>
+  pinConversation: (id: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
   loadMoreMessages: () => Promise<void>
   addMessage: (role: MessageRole, content: string) => Promise<void>
   deleteMessage: (id: string) => Promise<void>
+  clearMessages: (conversationId: string) => Promise<void>
   sendMessage: (content: string) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
@@ -45,8 +47,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
-  createConversation: async (title?: string) => {
-    const result = await window.api.createConversation(title)
+  createConversation: async (title?: string, assistantId?: string) => {
+    const result = await window.api.createConversation(title, assistantId)
     if (result.success && result.data) {
       const conversation = result.data
       set((state) => ({
@@ -68,7 +70,12 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
       if (activeConversationId === id) {
         const nextId = remaining.length > 0 ? remaining[0].id : null
-        set({ conversations: remaining, activeConversationId: nextId, messages: [], hasMoreMessages: false })
+        set({
+          conversations: remaining,
+          activeConversationId: nextId,
+          messages: [],
+          hasMoreMessages: false,
+        })
         if (nextId) {
           const msgResult = await window.api.listMessagesPaginated(nextId)
           if (msgResult.success && msgResult.data) {
@@ -96,6 +103,24 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
+  pinConversation: async (id: string) => {
+    const conv = get().conversations.find((c) => c.id === id)
+    if (!conv) return
+    const result = await window.api.updateConversation(id, { pinned: !conv.pinned })
+    if (result.success && result.data) {
+      set((state) => ({
+        conversations: state.conversations
+          .map((c) => (c.id === id ? { ...c, pinned: result.data!.pinned } : c))
+          .sort((a, b) => {
+            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          }),
+      }))
+    } else {
+      set({ error: result.error ?? 'Failed to pin conversation' })
+    }
+  },
+
   setActiveConversation: async (id: string) => {
     set({ activeConversationId: id, isLoading: true })
     const result = await window.api.listMessagesPaginated(id)
@@ -115,11 +140,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     if (!activeConversationId || !hasMoreMessages || messages.length === 0) return
 
     const oldest = messages[0].createdAt
-    const result = await window.api.listMessagesPaginated(
-      activeConversationId,
-      undefined,
-      oldest,
-    )
+    const result = await window.api.listMessagesPaginated(activeConversationId, undefined, oldest)
     if (result.success && result.data) {
       const loaded = result.data
       set((state) => ({
@@ -147,6 +168,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
     } else {
       set({ error: result.error ?? 'Failed to delete message' })
+    }
+  },
+
+  clearMessages: async (conversationId: string) => {
+    const result = await window.api.clearMessages(conversationId)
+    if (result.success) {
+      const { activeConversationId } = get()
+      if (activeConversationId === conversationId) {
+        set({ messages: [], hasMoreMessages: false })
+      }
+    } else {
+      set({ error: result.error ?? 'Failed to clear messages' })
     }
   },
 
@@ -209,16 +242,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       }),
     )
 
-    cleanups.push(
-      window.api.onTitleUpdated((data) => {
-        if (data.conversationId !== conversationId) return
-        set((state) => ({
-          conversations: state.conversations.map((c) =>
-            c.id === data.conversationId ? { ...c, title: data.title } : c,
-          ),
-        }))
-      }),
-    )
+    // Title listener registered separately — must NOT be cleaned up by stream
+    // end/error, because title generation happens asynchronously AFTER the
+    // stream completes. It will be cleaned up by removeAllStreamListeners()
+    // at the start of the next sendMessage() call.
+    window.api.onTitleUpdated((data) => {
+      if (data.conversationId !== conversationId) return
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c.id === data.conversationId ? { ...c, title: data.title } : c,
+        ),
+      }))
+    })
 
     // Invoke the streaming request
     const result = await window.api.sendMessage({ conversationId })
