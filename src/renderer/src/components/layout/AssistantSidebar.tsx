@@ -158,7 +158,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
           }`}
           onClick={() => handleAssistantClick(a.id)}>
           {isPinned(a) && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
-          <span className={`truncate text-sm ${a.isDefault ? 'font-medium' : ''}`}>{a.name}</span>
+          <span className={`min-w-0 truncate text-sm ${a.isDefault ? 'font-medium' : ''}`}>{a.name}</span>
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
@@ -206,7 +206,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
       </div>
 
       {/* Default Assistant */}
-      {defaultAssistant && renderAssistantItem(defaultAssistant)}
+      {defaultAssistant && <div className="px-2">{renderAssistantItem(defaultAssistant)}</div>}
 
       {/* Divider */}
       <div className="mx-3 my-1.5 border-b" />
