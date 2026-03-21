@@ -82,6 +82,8 @@ function createWindow(): void {
       )
     })
 
+  const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
+
   const mainWindow = new BrowserWindow({
     width: restored.width,
     height: restored.height,
@@ -91,6 +93,7 @@ function createWindow(): void {
     show: false,
     frame: false,
     autoHideMenuBar: true,
+    icon: iconPath,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: true,
