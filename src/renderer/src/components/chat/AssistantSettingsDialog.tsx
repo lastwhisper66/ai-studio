@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Save } from 'lucide-react'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Textarea } from '@renderer/components/ui/textarea'
@@ -215,6 +215,22 @@ export function AssistantSettingsDialog({
       change('model', modelName)
       commit({ providerId: providerId || null, model: modelName })
     }
+  }
+
+  const handleSave = (): void => {
+    commit({
+      name: form.name,
+      description: form.description,
+      providerId: form.providerId || null,
+      model: form.model,
+      temperature: form.temperatureEnabled ? form.temperature : '',
+      maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
+      topP: form.topPEnabled ? form.topP : '',
+      contextCount: form.contextCountEnabled ? form.contextCount : '',
+      systemPrompt: form.systemPrompt,
+      group: form.group,
+    })
+    onOpenChange(false)
   }
 
   const handleReset = (): void => {
@@ -542,10 +558,14 @@ export function AssistantSettingsDialog({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t px-6 py-3">
+        <div className="flex justify-end gap-2 border-t px-6 py-3">
           <Button variant="outline" size="sm" onClick={handleReset}>
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             重置
+          </Button>
+          <Button size="sm" onClick={handleSave}>
+            <Save className="mr-1.5 h-3.5 w-3.5" />
+            保存
           </Button>
         </div>
       </DialogContent>

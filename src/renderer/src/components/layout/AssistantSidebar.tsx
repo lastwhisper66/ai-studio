@@ -151,10 +151,10 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
     <ContextMenu key={a.id}>
       <ContextMenuTrigger asChild>
         <div
-          className={`group flex cursor-pointer items-center rounded-lg px-3 ${a.isDefault ? 'py-2.5' : 'py-2'} ${
+          className={`group flex cursor-pointer items-center rounded-xl px-3 transition-all ${a.isDefault ? 'py-2.5' : 'py-2'} ${
             activeAssistantId === a.id
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'text-foreground hover:bg-sidebar-accent/50'
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+              : 'text-foreground hover:bg-sidebar-accent/40'
           }`}
           onClick={() => handleAssistantClick(a.id)}>
           {isPinned(a) && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
@@ -197,8 +197,8 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
       {/* Add Assistant Button */}
       <div className="mx-2 mt-2 mb-1">
         <Button
-          variant="outline"
-          className="h-9 w-full justify-start gap-2 text-sm"
+          variant="ghost"
+          className="h-9 w-full justify-start gap-2 rounded-xl text-sm hover:bg-sidebar-accent/40"
           onClick={handleAddAssistant}>
           <Plus className="h-4 w-4" />
           添加助手
@@ -206,14 +206,14 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
       </div>
 
       {/* Default Assistant */}
-      {defaultAssistant && <div className="px-2">{renderAssistantItem(defaultAssistant)}</div>}
+      {defaultAssistant && <div className="px-2 py-0.5">{renderAssistantItem(defaultAssistant)}</div>}
 
       {/* Divider */}
       <div className="mx-3 my-1.5 border-b" />
 
       {/* Grouped Assistants */}
       <ScrollArea className="flex-1 px-2">
-        <div className="space-y-0.5 pb-2">
+        <div className="space-y-2 pb-2">
           {groups.map((group) => (
             <div key={group.name || '__ungrouped__'}>
               {/* Group header — only for named groups */}
@@ -234,8 +234,11 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
               )}
 
               {/* Group items */}
-              {(!group.name || !collapsedGroups[group.name]) &&
-                group.assistants.map((a) => renderAssistantItem(a))}
+              {(!group.name || !collapsedGroups[group.name]) && (
+                <div className="flex flex-col gap-2">
+                  {group.assistants.map((a) => renderAssistantItem(a))}
+                </div>
+              )}
             </div>
           ))}
         </div>
