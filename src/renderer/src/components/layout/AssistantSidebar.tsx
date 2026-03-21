@@ -151,7 +151,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
     <ContextMenu key={a.id}>
       <ContextMenuTrigger asChild>
         <div
-          className={`group flex cursor-pointer items-center rounded-xl px-3 transition-all ${a.isDefault ? 'py-2.5' : 'py-2'} ${
+          className={`group flex cursor-pointer items-center rounded-xl px-3 transition-all py-2.5 ${
             activeAssistantId === a.id
               ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
               : 'text-foreground hover:bg-sidebar-accent/40'
@@ -198,7 +198,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
       <div className="mx-2 mt-2 mb-1">
         <Button
           variant="ghost"
-          className="h-9 w-full justify-start gap-2 rounded-xl text-sm hover:bg-sidebar-accent/40"
+          className="h-10 w-full justify-start gap-2 rounded-xl text-sm hover:bg-sidebar-accent/40"
           onClick={handleAddAssistant}>
           <Plus className="h-4 w-4" />
           添加助手
