@@ -19,9 +19,13 @@ export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockPr
 
   useEffect(() => {
     let cancelled = false
-    highlightCode(code, language, shikiTheme).then((html) => {
-      if (!cancelled) setHighlightedHtml(html)
-    })
+    highlightCode(code, language, shikiTheme)
+      .then((html) => {
+        if (!cancelled) setHighlightedHtml(html)
+      })
+      .catch((err) => {
+        console.error('[CodeBlock] shiki highlight failed:', err)
+      })
     return () => {
       cancelled = true
     }
@@ -56,7 +60,7 @@ export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockPr
       {/* Code content */}
       <div className="overflow-x-auto p-4 text-sm">
         {highlightedHtml ? (
-          <div className="shiki" dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
+          <div dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
         ) : (
           <pre>
             <code>{code}</code>

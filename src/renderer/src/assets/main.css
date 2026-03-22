@@ -140,11 +140,8 @@ body {
 }
 
 /* ── Shiki code block overrides ── */
-.shiki {
-  background-color: transparent !important;
-}
-
-.shiki code {
+pre.shiki,
+pre.shiki code {
   background-color: transparent !important;
 }
 

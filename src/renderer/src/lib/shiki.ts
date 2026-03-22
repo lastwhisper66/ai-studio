@@ -1,6 +1,10 @@
-import { createHighlighter, type Highlighter } from 'shiki'
+import { createHighlighterCore } from 'shiki/core'
+import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
+import { bundledThemes } from 'shiki/themes'
+import { bundledLanguages } from 'shiki/langs'
+import type { HighlighterCore } from 'shiki'
 
-const PRELOADED_LANGS = [
+const PRELOADED_LANG_KEYS = [
   'javascript',
   'typescript',
   'python',
@@ -14,18 +18,22 @@ const PRELOADED_LANGS = [
   'tsx',
 ] as const
 
-const THEMES = ['github-dark', 'github-light'] as const
+type PreloadedLang = (typeof PRELOADED_LANG_KEYS)[number]
 
-let highlighterPromise: Promise<Highlighter> | null = null
+let highlighterPromise: Promise<HighlighterCore> | null = null
 
-function getHighlighter(): Promise<Highlighter> {
+function getHighlighter(): Promise<HighlighterCore> {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: [...THEMES],
-      langs: [...PRELOADED_LANGS],
+    highlighterPromise = createHighlighterCore({
+      themes: [bundledThemes['github-dark'], bundledThemes['github-light']],
+      langs: PRELOADED_LANG_KEYS.map((k) => bundledLanguages[k as PreloadedLang]),
+      engine: createJavaScriptRegexEngine(),
+    }).catch((err) => {
+      highlighterPromise = null
+      throw err
     })
   }
-  return highlighterPromise
+  return highlighterPromise!
 }
 
 export async function highlightCode(
@@ -39,13 +47,15 @@ export async function highlightCode(
   let resolvedLang = lang.toLowerCase()
 
   if (!loadedLangs.includes(resolvedLang)) {
-    try {
-      await highlighter.loadLanguage(resolvedLang as Parameters<Highlighter['loadLanguage']>[0])
-    } catch {
-      resolvedLang = 'text'
-      if (!loadedLangs.includes('text')) {
-        await highlighter.loadLanguage('text')
+    const langKey = resolvedLang as keyof typeof bundledLanguages
+    if (bundledLanguages[langKey]) {
+      try {
+        await highlighter.loadLanguage(bundledLanguages[langKey])
+      } catch {
+        resolvedLang = 'text'
       }
+    } else {
+      resolvedLang = 'text'
     }
   }
 
