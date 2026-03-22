@@ -7,6 +7,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@renderer/components/ui/dialog'
+import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { PROVIDER_TEMPLATES } from './provider-templates'
 
@@ -37,7 +38,7 @@ export function AddProviderDialog({ children }: AddProviderDialogProps): React.J
         <DialogHeader>
           <DialogTitle>{t('settings.provider.addProvider')}</DialogTitle>
         </DialogHeader>
-        <div className="-mx-2 max-h-72 overflow-y-auto">
+        <ScrollArea className="-mx-2 max-h-72">
           {PROVIDER_TEMPLATES.map((template, index) => (
             <button
               key={template.type}
@@ -50,7 +51,7 @@ export function AddProviderDialog({ children }: AddProviderDialogProps): React.J
               {template.name}
             </button>
           ))}
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   )

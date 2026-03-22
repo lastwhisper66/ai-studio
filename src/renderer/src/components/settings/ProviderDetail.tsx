@@ -5,6 +5,7 @@ import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
 import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle, Plus, X } from 'lucide-react'
+import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider } from '@shared/types'
 import { getTemplateByType } from './provider-templates'
@@ -203,7 +204,7 @@ function ProviderForm({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <ScrollArea className="flex-1">
       <div className="space-y-6 p-6">
         {/* Header with provider info and controls */}
         <div className="flex items-center justify-between rounded-xl border bg-card/50 p-5">
@@ -395,6 +396,6 @@ function ProviderForm({
           </Button>
         </div>
       </div>
-    </div>
+    </ScrollArea>
   )
 }

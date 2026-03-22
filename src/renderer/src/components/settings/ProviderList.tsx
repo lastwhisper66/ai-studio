@@ -2,6 +2,7 @@ import { Plus, Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 import { Switch } from '@renderer/components/ui/switch'
+import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from './provider-templates'
 import { AddProviderDialog } from './AddProviderDialog'
@@ -33,7 +34,8 @@ export function ProviderList(): React.JSX.Element {
         </AddProviderDialog>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-1.5">
+      <ScrollArea className="flex-1">
+        <div className="p-1.5">
         {providers.length === 0 ? (
           <div className="text-muted-foreground flex flex-col items-center gap-2 py-8 text-center text-sm">
             <p>{t('settings.provider.noProviders')}</p>
@@ -72,7 +74,8 @@ export function ProviderList(): React.JSX.Element {
             })}
           </div>
         )}
-      </div>
+        </div>
+      </ScrollArea>
     </div>
   )
 }
