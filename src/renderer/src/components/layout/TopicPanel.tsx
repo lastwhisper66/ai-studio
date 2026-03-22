@@ -87,13 +87,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
 
   const handleDeleteConfirm = async (): Promise<void> => {
     if (deleteId) {
-      const isLastTopic = topicConversations.length === 1 && topicConversations[0].id === deleteId
-      if (isLastTopic) {
-        await clearMessages(deleteId)
-        await renameConversation(deleteId, 'New Chat')
-      } else {
-        await deleteConversation(deleteId)
-      }
+      await deleteConversation(deleteId)
     }
     setDeleteDialogOpen(false)
     setDeleteId(null)
@@ -146,18 +140,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
 
   const handleDeleteManyConfirm = async (): Promise<void> => {
     const ids = Array.from(selectedIds)
-    const isAllTopics = ids.length === topicConversations.length
-
-    if (isAllTopics) {
-      // Keep the most recently updated topic: clear its messages and rename, delete the rest
-      const keepId = topicConversations.find((c) => selectedIds.has(c.id))!.id
-      const deleteIds = ids.filter((id) => id !== keepId)
-      await clearMessages(keepId)
-      await renameConversation(keepId, 'New Chat')
-      if (deleteIds.length > 0) {
-        await deleteConversations(deleteIds)
-      }
-    } else {
+    if (ids.length > 0) {
       await deleteConversations(ids)
     }
 
