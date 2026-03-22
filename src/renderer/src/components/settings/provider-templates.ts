@@ -38,20 +38,6 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultModels: ['gemini-2.0-flash', 'gemini-2.5-pro'],
   },
   {
-    type: 'groq',
-    name: 'Groq',
-    color: '#f55036',
-    defaultBaseUrl: 'https://api.groq.com/openai/v1',
-    defaultModels: ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
-  },
-  {
-    type: 'ollama',
-    name: 'Ollama',
-    color: '#ffffff',
-    defaultBaseUrl: 'http://localhost:11434/v1',
-    defaultModels: ['llama3', 'qwen2.5'],
-  },
-  {
     type: 'silicon',
     name: 'Silicon Flow',
     color: '#6c5ce7',
@@ -62,13 +48,6 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
       'Pro/zai-org/GLM-5',
       'deepseek-ai/DeepSeek-V3.2',
     ],
-  },
-  {
-    type: 'openrouter',
-    name: 'OpenRouter',
-    color: '#8b5cf6',
-    defaultBaseUrl: 'https://openrouter.ai/api/v1',
-    defaultModels: ['openai/gpt-5.4'],
   },
   {
     type: 'custom',

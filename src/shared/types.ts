@@ -59,10 +59,7 @@ export type ProviderType =
   | 'azure'
   | 'deepseek'
   | 'gemini'
-  | 'groq'
-  | 'ollama'
   | 'silicon'
-  | 'openrouter'
   | 'custom'
 
 export interface Provider {
