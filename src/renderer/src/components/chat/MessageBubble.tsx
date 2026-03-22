@@ -61,7 +61,7 @@ export const MessageBubble = memo(function MessageBubble({
           className={`rounded-2xl px-4 py-3 text-sm ${
             isUser
               ? 'whitespace-pre-wrap bg-chat-user text-chat-user-foreground'
-              : 'bg-muted text-muted-foreground'
+              : 'text-foreground'
           }`}>
           {isUser ? content : <MarkdownRenderer content={content} />}
           {isStreaming && (

@@ -39,7 +39,7 @@ export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockPr
   }, [code])
 
   return (
-    <div className="my-3 overflow-hidden rounded-lg border bg-muted/50">
+    <div className="my-3 overflow-hidden rounded-lg border bg-muted">
       {/* Header bar */}
       <div className="flex items-center justify-between border-b px-4 py-1.5 text-xs text-muted-foreground">
         <span>{language || 'text'}</span>

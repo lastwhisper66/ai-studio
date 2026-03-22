@@ -10,7 +10,9 @@ interface MarkdownRendererProps {
 
 function InlineCode({ children, ...props }: ComponentPropsWithoutRef<'code'>): React.JSX.Element {
   return (
-    <code className="rounded bg-muted px-1.5 py-0.5 text-sm" {...props}>
+    <code
+      className="rounded border bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground"
+      {...props}>
       {children}
     </code>
   )
@@ -73,7 +75,7 @@ const components = {
 
   td({ children, ...props }: ComponentPropsWithoutRef<'td'>) {
     return (
-      <td className="border px-3 py-2" {...props}>
+      <td className="border px-3 py-2 text-foreground" {...props}>
         {children}
       </td>
     )
@@ -97,7 +99,7 @@ const components = {
 
   blockquote({ children, ...props }: ComponentPropsWithoutRef<'blockquote'>) {
     return (
-      <blockquote className="border-l-4 border-primary/30 pl-4 italic" {...props}>
+      <blockquote className="border-l-4 border-primary/30 pl-4 italic text-foreground" {...props}>
         {children}
       </blockquote>
     )
@@ -145,7 +147,7 @@ const components = {
 
   h6({ children, ...props }: ComponentPropsWithoutRef<'h6'>) {
     return (
-      <h6 className="mb-1 mt-2 text-sm font-semibold text-muted-foreground" {...props}>
+      <h6 className="mb-1 mt-2 text-sm font-semibold text-foreground/70" {...props}>
         {children}
       </h6>
     )
@@ -153,7 +155,7 @@ const components = {
 
   p({ children, ...props }: ComponentPropsWithoutRef<'p'>) {
     return (
-      <p className="my-2 leading-relaxed" {...props}>
+      <p className="my-2 leading-relaxed text-foreground" {...props}>
         {children}
       </p>
     )
