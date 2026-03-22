@@ -3,6 +3,7 @@ import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult } from '@shared/types'
 import { getSetting, setSetting, setSettingsBatch, getAllSettings } from '../db'
 import { applySslSetting } from '../ai'
+import { applyCloseToTraySetting } from '../app-state'
 
 export function registerSettingsHandlers(): void {
   ipcMain.handle(IpcChannels.SETTINGS_GET, (_, key: string): IpcResult<string | undefined> => {
@@ -19,6 +20,9 @@ export function registerSettingsHandlers(): void {
       setSetting(key, value)
       if (key === 'app.skipSslVerify') {
         applySslSetting(value === 'true')
+      }
+      if (key === 'app.closeToTray') {
+        applyCloseToTraySetting(value)
       }
       return { success: true }
     } catch (e) {
@@ -42,6 +46,9 @@ export function registerSettingsHandlers(): void {
         setSettingsBatch(entries)
         if ('app.skipSslVerify' in entries) {
           applySslSetting(entries['app.skipSslVerify'] === 'true')
+        }
+        if ('app.closeToTray' in entries) {
+          applyCloseToTraySetting(entries['app.closeToTray'])
         }
         return { success: true }
       } catch (e) {

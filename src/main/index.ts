@@ -16,6 +16,7 @@ import { IpcChannels } from '@shared/ipc-channels'
 import { initDatabase, closeDatabase } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
+import { initCloseToTray, getCloseToTray } from './app-state'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -109,7 +110,7 @@ function createWindow(): void {
     mainWindow.show()
   })
 
-  // Minimize to tray on close; only truly quit when isQuitting is set
+  // Close behavior: hide to tray or quit, controlled by app.closeToTray setting
   mainWindow.on('close', (e) => {
     try {
       saveWindowState(mainWindow)
@@ -117,9 +118,12 @@ function createWindow(): void {
       // Non-critical — silently ignore
     }
     if (!isQuitting) {
-      e.preventDefault()
-      mainWindow.hide()
-      return
+      const closeToTray = getCloseToTray()
+      if (closeToTray) {
+        e.preventDefault()
+        mainWindow.hide()
+        return
+      }
     }
     try {
       closeDatabase()
@@ -180,6 +184,7 @@ if (!gotTheLock) {
 
     initDatabase()
     applySslSetting()
+    initCloseToTray()
     registerAllIpcHandlers()
 
     app.on('browser-window-created', (_, window) => {
