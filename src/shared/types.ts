@@ -28,7 +28,22 @@ export interface Assistant {
   updatedAt: string
 }
 
-export type MessageRole = 'user' | 'assistant' | 'system'
+export type MessageRole = 'user' | 'assistant' | 'system' | 'divider'
+
+export interface Phrase {
+  id: string
+  title: string
+  content: string
+  sortOrder: number
+  createdAt: string
+}
+
+export interface FileData {
+  name: string
+  mimeType: string
+  base64: string
+  size: number
+}
 
 export interface Message {
   id: string

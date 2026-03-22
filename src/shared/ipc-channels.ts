@@ -12,6 +12,14 @@ export const IpcChannels = {
   MESSAGE_CREATE: 'message:create',
   MESSAGE_DELETE: 'message:delete',
   MESSAGE_CLEAR: 'message:clear',
+  MESSAGE_INSERT_DIVIDER: 'message:insert-divider',
+  // Phrase
+  PHRASE_LIST: 'phrase:list',
+  PHRASE_CREATE: 'phrase:create',
+  PHRASE_UPDATE: 'phrase:update',
+  PHRASE_DELETE: 'phrase:delete',
+  // File
+  FILE_OPEN_DIALOG: 'file:open-dialog',
   // Settings
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',

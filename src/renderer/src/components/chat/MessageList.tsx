@@ -103,15 +103,23 @@ export function MessageList({
                 </Button>
               </div>
             )}
-            {messages.map((msg) => (
-              <MessageBubble
-                key={msg.id}
-                role={msg.role}
-                content={msg.content}
-                messageId={msg.id}
-                onDelete={deleteMessage}
-              />
-            ))}
+            {messages.map((msg) =>
+              msg.role === 'divider' ? (
+                <div key={msg.id} className="flex items-center gap-3 py-1">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-muted-foreground shrink-0 text-xs">{t('chat.contextDivider')}</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+              ) : (
+                <MessageBubble
+                  key={msg.id}
+                  role={msg.role}
+                  content={msg.content}
+                  messageId={msg.id}
+                  onDelete={deleteMessage}
+                />
+              ),
+            )}
             {isStreaming && throttledContent && (
               <MessageBubble role="assistant" content={throttledContent} isStreaming />
             )}

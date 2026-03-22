@@ -7,6 +7,7 @@ import {
   createMessage,
   deleteMessage,
   clearConversationMessages,
+  insertDivider,
 } from '../db'
 
 export function registerMessageHandlers(): void {
@@ -65,4 +66,15 @@ export function registerMessageHandlers(): void {
       return { success: false, error: (e as Error).message }
     }
   })
+
+  ipcMain.handle(
+    IpcChannels.MESSAGE_INSERT_DIVIDER,
+    (_, conversationId: string): IpcResult<Message> => {
+      try {
+        return { success: true, data: insertDivider(conversationId) }
+      } catch (e) {
+        return { success: false, error: (e as Error).message }
+      }
+    },
+  )
 }

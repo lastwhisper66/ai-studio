@@ -14,6 +14,8 @@ import type {
   Provider,
   Model,
   Assistant,
+  Phrase,
+  FileData,
   TranslateRequestPayload,
   TranslateChunkData,
   TranslateEndData,
@@ -67,6 +69,29 @@ const api = {
 
   clearMessages: (conversationId: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MESSAGE_CLEAR, conversationId),
+
+  insertDivider: (conversationId: string): Promise<IpcResult<Message>> =>
+    ipcRenderer.invoke(IpcChannels.MESSAGE_INSERT_DIVIDER, conversationId),
+
+  // Phrases
+  listPhrases: (): Promise<IpcResult<Phrase[]>> =>
+    ipcRenderer.invoke(IpcChannels.PHRASE_LIST),
+
+  createPhrase: (title: string, content: string): Promise<IpcResult<Phrase>> =>
+    ipcRenderer.invoke(IpcChannels.PHRASE_CREATE, title, content),
+
+  updatePhrase: (
+    id: string,
+    data: Partial<Pick<Phrase, 'title' | 'content'>>,
+  ): Promise<IpcResult<Phrase | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.PHRASE_UPDATE, id, data),
+
+  deletePhrase: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.PHRASE_DELETE, id),
+
+  // File
+  openFileDialog: (): Promise<IpcResult<FileData[]>> =>
+    ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG),
 
   // Settings
   getSetting: (key: string): Promise<IpcResult<string | undefined>> =>

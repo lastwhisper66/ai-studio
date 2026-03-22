@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Conversation, Message, MessageRole } from '@shared/types'
+import { useAssistantStore } from './assistantStore'
 
 interface ConversationState {
   conversations: Conversation[]
@@ -22,6 +23,7 @@ interface ConversationState {
   addMessage: (role: MessageRole, content: string) => Promise<void>
   deleteMessage: (id: string) => Promise<void>
   clearMessages: (conversationId: string) => Promise<void>
+  insertDivider: () => Promise<void>
   sendMessage: (content: string) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
@@ -214,6 +216,15 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
+  insertDivider: async () => {
+    const { activeConversationId } = get()
+    if (!activeConversationId) return
+    const result = await window.api.insertDivider(activeConversationId)
+    if (result.success && result.data) {
+      set((state) => ({ messages: [...state.messages, result.data!] }))
+    }
+  },
+
   sendMessage: async (content: string) => {
     if (get().isStreaming) return
 
@@ -221,7 +232,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
     // Auto-create conversation if none is active
     if (!conversationId) {
-      const ok = await get().createConversation()
+      const assistantId = useAssistantStore.getState().activeAssistantId ?? undefined
+      const ok = await get().createConversation(undefined, assistantId)
       if (!ok) return
       conversationId = get().activeConversationId
       if (!conversationId) return

@@ -54,7 +54,7 @@ function createTables(): void {
     CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY,
       conversation_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'divider')),
       content TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       token_count INTEGER,
@@ -100,6 +100,14 @@ function createTables(): void {
 
     CREATE INDEX IF NOT EXISTS idx_models_provider_id
       ON models(provider_id);
+
+    CREATE TABLE IF NOT EXISTS phrases (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
 
     CREATE TABLE IF NOT EXISTS assistants (
       id TEXT PRIMARY KEY,

@@ -7,6 +7,8 @@ import { registerModelHandlers } from './model-handlers'
 import { registerAssistantHandlers } from './assistant-handlers'
 import { registerWindowHandlers } from './window-handlers'
 import { registerTranslateHandlers } from './translate-handlers'
+import { registerPhraseHandlers } from './phrase-handlers'
+import { registerFileHandlers } from './file-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -18,4 +20,6 @@ export function registerAllIpcHandlers(): void {
   registerAssistantHandlers()
   registerWindowHandlers()
   registerTranslateHandlers()
+  registerPhraseHandlers()
+  registerFileHandlers()
 }

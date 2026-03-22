@@ -74,12 +74,16 @@ export function registerChatHandlers(): void {
         }
 
         // Apply context count limit: assistant-level overrides global setting
-        let contextMessages = messages
+        // First: find last divider — only messages after it are included
+        const lastDividerIdx = messages.map((m) => m.role).lastIndexOf('divider')
+        const afterDivider = lastDividerIdx >= 0 ? messages.slice(lastDividerIdx + 1) : messages
+
+        let contextMessages = afterDivider
         const contextCountStr = assistant?.contextCount || getSetting('api.contextCount')
         if (contextCountStr) {
           const limit = parseInt(contextCountStr, 10)
           if (!isNaN(limit) && limit < 100) {
-            const nonSystemMessages = messages.filter(
+            const nonSystemMessages = afterDivider.filter(
               (m) => m.role === 'user' || m.role === 'assistant',
             )
             if (limit === 0) {

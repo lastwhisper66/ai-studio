@@ -83,3 +83,7 @@ export function deleteMessage(id: string): void {
 export function clearConversationMessages(conversationId: string): void {
   getDb().prepare('DELETE FROM messages WHERE conversation_id = ?').run(conversationId)
 }
+
+export function insertDivider(conversationId: string): Message {
+  return createMessage(conversationId, 'divider', '')
+}
