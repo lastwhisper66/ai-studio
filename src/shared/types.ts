@@ -58,7 +58,6 @@ export type ProviderType =
   | 'openai'
   | 'azure'
   | 'deepseek'
-  | 'gemini'
   | 'silicon'
   | 'custom'
 

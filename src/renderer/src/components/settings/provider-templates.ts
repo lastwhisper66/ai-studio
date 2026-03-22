@@ -13,7 +13,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     type: 'openai',
     name: 'OpenAI',
     color: '#10a37f',
-    defaultBaseUrl: 'https://api.openai.com/v1',
+    defaultBaseUrl: 'https://api.openai.com',
     defaultModels: ['gpt-5.4', 'gpt-5.3-codex'],
   },
   {
@@ -30,18 +30,11 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultBaseUrl: 'https://api.deepseek.com',
     defaultModels: ['deepseek-chat', 'deepseek-reasoner'],
   },
-  {
-    type: 'gemini',
-    name: 'Google Gemini',
-    color: '#4285f4',
-    defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    defaultModels: ['gemini-2.0-flash', 'gemini-2.5-pro'],
-  },
-  {
+{
     type: 'silicon',
     name: 'Silicon Flow',
     color: '#6c5ce7',
-    defaultBaseUrl: 'https://api.siliconflow.cn/v1',
+    defaultBaseUrl: 'https://api.siliconflow.cn',
     defaultModels: [
       'Pro/deepseek-ai/DeepSeek-V3.2',
       'Pro/MiniMaxAI/MiniMax-M2.5',

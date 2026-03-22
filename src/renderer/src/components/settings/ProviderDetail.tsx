@@ -8,6 +8,7 @@ import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle, Plus, X } from 'lu
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider } from '@shared/types'
+import { normalizeBaseUrl } from '@shared/url'
 import { getTemplateByType } from './provider-templates'
 
 export function ProviderDetail(): React.JSX.Element {
@@ -291,8 +292,18 @@ function ProviderForm({
                 id="baseUrl"
                 value={draft.baseUrl}
                 onChange={(e) => change('baseUrl', e.target.value)}
-                placeholder={template?.defaultBaseUrl || 'https://api.openai.com/v1'}
+                placeholder={template?.defaultBaseUrl || 'https://api.openai.com'}
               />
+              {(() => {
+                const raw = draft.baseUrl || template?.defaultBaseUrl || ''
+                if (!raw) return null
+                const resolved = normalizeBaseUrl(raw, provider.type)
+                return (
+                  <p className="text-muted-foreground truncate text-xs">
+                    {resolved}/chat/completions
+                  </p>
+                )
+              })()}
             </SettingRow>
           )}
         </SettingGroup>
