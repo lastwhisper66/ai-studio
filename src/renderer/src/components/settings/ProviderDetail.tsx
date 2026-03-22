@@ -4,8 +4,16 @@ import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
-import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle, Plus, X } from 'lucide-react'
+import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle, Plus, X, Pencil } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@renderer/components/ui/dialog'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider } from '@shared/types'
 import { normalizeBaseUrl } from '@shared/url'
@@ -118,6 +126,8 @@ function ProviderForm({
     deploymentName: provider.deploymentName,
     enabled: provider.enabled,
   })
+  const [showRenameDialog, setShowRenameDialog] = useState(false)
+  const [renameDraft, setRenameDraft] = useState('')
   const [newModelName, setNewModelName] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
@@ -208,18 +218,36 @@ function ProviderForm({
     <ScrollArea className="flex-1">
       <div className="space-y-6 p-6">
         {/* Header with provider info and controls */}
-        <div className="flex items-center justify-between rounded-xl border bg-card/50 p-5">
-          <div className="flex items-center gap-3">
-            <span
-              className="h-8 w-8 shrink-0 rounded-lg border border-black/10 dark:border-white/10"
-              style={{ backgroundColor: template?.color ?? '#6b7280' }}
-            />
-            <div>
-              <h2 className="text-base font-semibold leading-tight">{provider.name}</h2>
-              <span className="text-muted-foreground text-xs">{provider.type.toUpperCase()}</span>
+        <div className="flex items-center gap-3 rounded-xl border bg-card/50 p-5">
+          <span
+            className="h-8 w-8 shrink-0 rounded-lg border border-black/10 dark:border-white/10"
+            style={{ backgroundColor: template?.color ?? '#6b7280' }}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <h2 className="truncate text-base font-semibold">{draft.name}</h2>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRenameDraft(draft.name)
+                      setShowRenameDialog(true)
+                    }}
+                    className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1 transition-colors">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {t('settings.provider.providerSettings')}
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-3">
+            <span className="text-muted-foreground text-xs">
+              {t('settings.provider.providerType')}：{provider.type.toUpperCase()}
+            </span>
             {isActive && (
               <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
                 {t('settings.provider.currentlyUsed')}
@@ -229,12 +257,49 @@ function ProviderForm({
           </div>
         </div>
 
-        {/* Basic info section */}
-        <SettingGroup title={t('settings.provider.basicInfo')}>
-          <SettingRow label={t('settings.provider.name')} htmlFor="name">
-            <Input id="name" value={draft.name} onChange={(e) => change('name', e.target.value)} />
-          </SettingRow>
-        </SettingGroup>
+        {/* Rename dialog */}
+        <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{t('settings.provider.providerSettings')}</DialogTitle>
+            </DialogHeader>
+            <div className="py-2">
+              <Label htmlFor="rename-input" className="text-muted-foreground mb-1.5 text-xs">
+                {t('settings.provider.providerName')}
+              </Label>
+              <Input
+                id="rename-input"
+                value={renameDraft}
+                onChange={(e) => setRenameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && renameDraft.trim()) {
+                    const newName = renameDraft.trim()
+                    change('name', newName)
+                    onUpdate(provider.id, { ...draft, name: newName })
+                    setShowRenameDialog(false)
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setShowRenameDialog(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                size="sm"
+                disabled={!renameDraft.trim()}
+                onClick={() => {
+                  const newName = renameDraft.trim()
+                  change('name', newName)
+                  onUpdate(provider.id, { ...draft, name: newName })
+                  setShowRenameDialog(false)
+                }}>
+                {t('common.confirm')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* API configuration */}
         <SettingGroup title={t('settings.provider.apiConfig')}>
