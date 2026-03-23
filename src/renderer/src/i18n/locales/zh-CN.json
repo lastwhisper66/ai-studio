@@ -246,5 +246,48 @@
       "temperatureHint": "较低值产生更准确的翻译，较高值更具创造性。默认 0.3。",
       "resetDefault": "重置默认"
     }
+  },
+  "modelManage": {
+    "models": "模型",
+    "searchPlaceholder": "搜索模型 ID 或名称",
+    "noCatalog": "该供应商暂无预置模型目录",
+    "noResults": "没有匹配的模型",
+    "addGroup": "添加整组",
+    "removeGroup": "移除整组",
+    "tab": {
+      "all": "全部",
+      "reasoning": "推理",
+      "vision": "视觉",
+      "web": "联网",
+      "free": "免费",
+      "embedding": "嵌入",
+      "reranking": "重排",
+      "tools": "工具"
+    },
+    "cap": {
+      "reasoning": "推理",
+      "vision": "视觉",
+      "web": "联网",
+      "free": "免费",
+      "embedding": "嵌入",
+      "reranking": "重排",
+      "tools": "工具"
+    }
+  },
+  "addModel": {
+    "title": "添加模型",
+    "modelId": "模型 ID",
+    "modelIdTooltip": "模型 ID 是发送给 API 的标识符，如 gpt-4o、deepseek-chat",
+    "modelIdPlaceholder": "必填 例如 gpt-3.5-turbo",
+    "groupName": "分组名称",
+    "groupNameTooltip": "用于在模型列表中分组显示，如 ChatGPT、DeepSeek",
+    "groupNamePlaceholder": "例如 ChatGPT",
+    "duplicateError": "该模型已存在",
+    "submit": "添加模型",
+    "capabilities": "模型能力"
+  },
+  "editModel": {
+    "title": "编辑模型",
+    "save": "保存"
   }
 }

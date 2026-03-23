@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Provider, Model } from '@shared/types'
+import type { Provider, Model, ModelCapability } from '@shared/types'
 
 interface ProviderStore {
   providers: Provider[]
@@ -19,7 +19,16 @@ interface ProviderStore {
   setSelectedProviderId: (id: string | null) => void
 
   // Model operations
-  addModel: (providerId: string, name: string, group?: string) => Promise<Model | undefined>
+  addModel: (
+    providerId: string,
+    name: string,
+    group?: string,
+    capabilities?: ModelCapability[],
+  ) => Promise<Model | undefined>
+  updateModel: (
+    id: string,
+    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+  ) => Promise<void>
   removeModel: (id: string) => Promise<void>
   setActiveModel: (modelId: string, providerId: string) => Promise<void>
 }
@@ -113,14 +122,24 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
 
   setSelectedProviderId: (id) => set({ selectedProviderId: id }),
 
-  addModel: async (providerId, name, group) => {
-    const result = await window.api.createModel({ providerId, name, group })
+  addModel: async (providerId, name, group, capabilities) => {
+    const result = await window.api.createModel({ providerId, name, group, capabilities })
     if (result.success && result.data) {
       const model = result.data
       set((state) => ({ models: [...state.models, model] }))
       return model
     }
     return undefined
+  },
+
+  updateModel: async (id, data) => {
+    const result = await window.api.updateModel(id, data)
+    if (result.success && result.data) {
+      const updated = result.data
+      set((state) => ({
+        models: state.models.map((m) => (m.id === id ? updated : m)),
+      }))
+    }
   },
 
   removeModel: async (id) => {

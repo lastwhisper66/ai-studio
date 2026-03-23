@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import type { Model } from '@shared/types'
+import type { Model, ModelCapability } from '@shared/types'
 import { getDb } from './database'
 
 interface ModelRow {
@@ -7,17 +7,25 @@ interface ModelRow {
   provider_id: string
   name: string
   group_name: string
+  capabilities: string
   enabled: number
   sort_order: number
   created_at: string
 }
 
 function rowToModel(row: ModelRow): Model {
+  let capabilities: ModelCapability[] = []
+  try {
+    capabilities = JSON.parse(row.capabilities)
+  } catch {
+    capabilities = []
+  }
   return {
     id: row.id,
     providerId: row.provider_id,
     name: row.name,
     group: row.group_name,
+    capabilities,
     enabled: row.enabled === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -48,6 +56,7 @@ export interface CreateModelData {
   providerId: string
   name: string
   group?: string
+  capabilities?: ModelCapability[]
   enabled?: boolean
   sortOrder?: number
 }
@@ -56,14 +65,15 @@ export function createModel(data: CreateModelData): Model {
   const id = randomUUID()
   getDb()
     .prepare(
-      `INSERT INTO models (id, provider_id, name, group_name, enabled, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO models (id, provider_id, name, group_name, capabilities, enabled, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
       data.providerId,
       data.name,
       data.group ?? '',
+      JSON.stringify(data.capabilities ?? []),
       data.enabled !== false ? 1 : 0,
       data.sortOrder ?? 0,
     )
@@ -73,6 +83,7 @@ export function createModel(data: CreateModelData): Model {
 export interface UpdateModelData {
   name?: string
   group?: string
+  capabilities?: ModelCapability[]
   enabled?: boolean
   sortOrder?: number
 }
@@ -88,6 +99,10 @@ export function updateModel(id: string, data: UpdateModelData): Model | undefine
   if (data.group !== undefined) {
     fields.push('group_name = ?')
     values.push(data.group)
+  }
+  if (data.capabilities !== undefined) {
+    fields.push('capabilities = ?')
+    values.push(JSON.stringify(data.capabilities))
   }
   if (data.enabled !== undefined) {
     fields.push('enabled = ?')

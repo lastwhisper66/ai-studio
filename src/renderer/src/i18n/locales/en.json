@@ -246,5 +246,48 @@
       "temperatureHint": "Lower values produce more accurate translations, higher values are more creative. Default 0.3.",
       "resetDefault": "Reset default"
     }
+  },
+  "modelManage": {
+    "models": " Models",
+    "searchPlaceholder": "Search model ID or name",
+    "noCatalog": "No preset model catalog for this provider",
+    "noResults": "No matching models",
+    "addGroup": "Add entire group",
+    "removeGroup": "Remove entire group",
+    "tab": {
+      "all": "All",
+      "reasoning": "Reasoning",
+      "vision": "Vision",
+      "web": "Web",
+      "free": "Free",
+      "embedding": "Embedding",
+      "reranking": "Reranking",
+      "tools": "Tools"
+    },
+    "cap": {
+      "reasoning": "Reasoning",
+      "vision": "Vision",
+      "web": "Web",
+      "free": "Free",
+      "embedding": "Embedding",
+      "reranking": "Reranking",
+      "tools": "Tools"
+    }
+  },
+  "addModel": {
+    "title": "Add Model",
+    "modelId": "Model ID",
+    "modelIdTooltip": "The model identifier sent to the API, e.g. gpt-4o, deepseek-chat",
+    "modelIdPlaceholder": "Required, e.g. gpt-3.5-turbo",
+    "groupName": "Group Name",
+    "groupNameTooltip": "Used for grouping models in the list, e.g. ChatGPT, DeepSeek",
+    "groupNamePlaceholder": "e.g. ChatGPT",
+    "duplicateError": "This model already exists",
+    "submit": "Add Model",
+    "capabilities": "Capabilities"
+  },
+  "editModel": {
+    "title": "Edit Model",
+    "save": "Save"
   }
 }

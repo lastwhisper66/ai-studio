@@ -74,11 +74,21 @@ export interface Provider {
   updatedAt: string
 }
 
+export type ModelCapability =
+  | 'reasoning'
+  | 'vision'
+  | 'web'
+  | 'free'
+  | 'embedding'
+  | 'reranking'
+  | 'tools'
+
 export interface Model {
   id: string
   providerId: string
   name: string
   group: string
+  capabilities: ModelCapability[]
   enabled: boolean
   sortOrder: number
   createdAt: string

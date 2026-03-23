@@ -18,7 +18,6 @@ import {
   ChevronDown,
   ChevronRight,
   Minus,
-  Link2,
   HelpCircle,
 } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
@@ -31,9 +30,14 @@ import {
   DialogFooter,
 } from '@renderer/components/ui/dialog'
 import { useProviderStore } from '@renderer/stores/providerStore'
-import type { Provider } from '@shared/types'
+import type { Provider, ModelCapability } from '@shared/types'
 import { normalizeBaseUrl } from '@shared/url'
 import { getTemplateByType } from './provider-templates'
+import { getModelCatalog } from './model-catalog'
+import { CAPABILITY_CONFIG } from './capability-config'
+import { ModelManageDialog } from './ModelManageDialog'
+import { AddModelDialog } from './AddModelDialog'
+import { EditModelDialog } from './EditModelDialog'
 
 export function ProviderDetail(): React.JSX.Element {
   const { t } = useTranslation()
@@ -46,6 +50,7 @@ export function ProviderDetail(): React.JSX.Element {
     deleteProvider,
     setActiveProvider,
     addModel,
+    updateModel,
     removeModel,
   } = useProviderStore()
 
@@ -69,6 +74,7 @@ export function ProviderDetail(): React.JSX.Element {
       onDelete={deleteProvider}
       onSetActive={setActiveProvider}
       onAddModel={addModel}
+      onUpdateModel={updateModel}
       onRemoveModel={removeModel}
     />
   )
@@ -77,11 +83,26 @@ export function ProviderDetail(): React.JSX.Element {
 interface ProviderFormProps {
   provider: Provider
   isActive: boolean
-  providerModels: { id: string; name: string; group: string; enabled: boolean }[]
+  providerModels: {
+    id: string
+    name: string
+    group: string
+    enabled: boolean
+    capabilities: ModelCapability[]
+  }[]
   onUpdate: (id: string, data: Partial<Provider>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSetActive: (id: string) => Promise<void>
-  onAddModel: (providerId: string, name: string, group?: string) => Promise<unknown>
+  onAddModel: (
+    providerId: string,
+    name: string,
+    group?: string,
+    capabilities?: ModelCapability[],
+  ) => Promise<unknown>
+  onUpdateModel: (
+    id: string,
+    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+  ) => Promise<void>
   onRemoveModel: (id: string) => Promise<void>
 }
 
@@ -112,6 +133,7 @@ function ProviderForm({
   onDelete,
   onSetActive,
   onAddModel,
+  onUpdateModel,
   onRemoveModel,
 }: ProviderFormProps): React.JSX.Element {
   const { t } = useTranslation()
@@ -127,14 +149,19 @@ function ProviderForm({
   })
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [renameDraft, setRenameDraft] = useState('')
-  const [newModelName, setNewModelName] = useState('')
-  const [newModelGroup, setNewModelGroup] = useState('')
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
   const [showModelSearch, setShowModelSearch] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-  const [showAddModel, setShowAddModel] = useState(false)
+  const [showManageDialog, setShowManageDialog] = useState(false)
+  const [showAddDialog, setShowAddDialog] = useState(false)
+  const [editingModel, setEditingModel] = useState<{
+    id: string
+    name: string
+    group: string
+    capabilities: ModelCapability[]
+  } | null>(null)
 
   const template = getTemplateByType(provider.type)
   const isAzure = provider.type === 'azure'
@@ -196,22 +223,7 @@ function ProviderForm({
     await onDelete(provider.id)
   }
 
-  const handleAddModel = async (): Promise<void> => {
-    const name = newModelName.trim()
-    if (!name) return
-    if (providerModels.some((m) => m.name === name)) return
-    const group = newModelGroup.trim()
-    await onAddModel(provider.id, name, group || undefined)
-    setNewModelName('')
-    setNewModelGroup('')
-  }
-
-  const handleAddModelKeyDown = (e: React.KeyboardEvent): void => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      handleAddModel()
-    }
-  }
+  const hasCatalog = getModelCatalog(provider.type).length > 0
 
   const toggleGroup = (group: string): void => {
     setCollapsedGroups((prev) => {
@@ -403,18 +415,6 @@ function ProviderForm({
                   <TooltipContent>{t('settings.provider.apiAddressTooltip')}</TooltipContent>
                 </Tooltip>
               }
-              action={
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
-                      <Link2 className="h-4 w-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{t('settings.provider.apiAddressSettings')}</TooltipContent>
-                </Tooltip>
-              }
             />
             <Input
               value={draft.baseUrl}
@@ -506,7 +506,43 @@ function ProviderForm({
                             {provider.name.charAt(0).toUpperCase()}
                           </span>
                           <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
+                          {/* Capability badges */}
+                          {model.capabilities.length > 0 && (
+                            <div className="flex shrink-0 items-center gap-0.5">
+                              {model.capabilities.map((cap) => {
+                                const config = CAPABILITY_CONFIG[cap]
+                                if (!config) return null
+                                const Icon = config.icon
+                                return (
+                                  <Tooltip key={cap}>
+                                    <TooltipTrigger asChild>
+                                      <span
+                                        className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
+                                        style={{ backgroundColor: config.color + '20' }}>
+                                        <Icon
+                                          className="h-2.5 w-2.5"
+                                          style={{ color: config.color }}
+                                        />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>{t(config.labelKey)}</TooltipContent>
+                                  </Tooltip>
+                                )
+                              })}
+                            </div>
+                          )}
                           <div className="flex shrink-0 items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingModel(model)}
+                                  className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
+                                  <Settings className="h-3 w-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t('editModel.title')}</TooltipContent>
+                            </Tooltip>
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <button
@@ -527,74 +563,64 @@ function ProviderForm({
             )}
           </div>
 
-          {/* Add model area */}
+          {/* Add model buttons */}
           <div className="mt-3 flex items-center gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setShowAddModel(!showAddModel)}
-              className="gap-1.5">
-              <Pencil className="h-3.5 w-3.5" />
-              {t('settings.provider.manage')}
-            </Button>
+            {hasCatalog && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setShowManageDialog(true)}
+                className="gap-1.5">
+                <Pencil className="h-3.5 w-3.5" />
+                {t('settings.provider.manage')}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowAddModel(true)}
+              onClick={() => setShowAddDialog(true)}
               className="gap-1.5">
               <Plus className="h-3.5 w-3.5" />
               {t('common.add')}
             </Button>
           </div>
 
-          {/* Add model form (shown when toggled) */}
-          {showAddModel && (
-            <div className="mt-3 space-y-2 rounded-lg border p-3">
-              <div className="flex gap-2">
-                <Input
-                  value={newModelName}
-                  onChange={(e) => setNewModelName(e.target.value)}
-                  onKeyDown={handleAddModelKeyDown}
-                  placeholder={t('settings.provider.modelNamePlaceholder')}
-                  className="flex-1 text-sm"
-                />
-                <Input
-                  value={newModelGroup}
-                  onChange={(e) => setNewModelGroup(e.target.value)}
-                  onKeyDown={handleAddModelKeyDown}
-                  placeholder={t('settings.provider.modelGroupPlaceholder')}
-                  className="w-36 text-sm"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddModel}
-                  disabled={!newModelName.trim()}>
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  {t('common.add')}
-                </Button>
-              </div>
-              {/* Quick add from template */}
-              {template && template.defaultModels.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {template.defaultModels
-                    .filter((m) => !providerModels.some((pm) => pm.name === m))
-                    .map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        onClick={async () => {
-                          if (providerModels.some((pm) => pm.name === m)) return
-                          await onAddModel(provider.id, m)
-                        }}
-                        className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded px-2 py-0.5 text-xs transition-colors">
-                        + {m}
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
+          {/* Model manage dialog (catalog browser) */}
+          {hasCatalog && (
+            <ModelManageDialog
+              open={showManageDialog}
+              onOpenChange={setShowManageDialog}
+              providerName={provider.name}
+              providerType={provider.type}
+              providerColor={template?.color ?? '#6b7280'}
+              addedModels={providerModels.map((m) => ({ id: m.id, name: m.name, group: m.group }))}
+              onAdd={(modelId, group, capabilities) =>
+                onAddModel(provider.id, modelId, group, capabilities)
+              }
+              onRemove={onRemoveModel}
+            />
+          )}
+
+          {/* Add model dialog (manual input) */}
+          <AddModelDialog
+            open={showAddDialog}
+            onOpenChange={setShowAddDialog}
+            existingNames={providerModels.map((m) => m.name)}
+            onAdd={(modelId, group, capabilities) =>
+              onAddModel(provider.id, modelId, group, capabilities)
+            }
+          />
+
+          {/* Edit model dialog */}
+          {editingModel && (
+            <EditModelDialog
+              open={!!editingModel}
+              onOpenChange={(open) => {
+                if (!open) setEditingModel(null)
+              }}
+              model={editingModel}
+              onSave={onUpdateModel}
+            />
           )}
         </div>
 

@@ -20,6 +20,7 @@ import type {
   TranslateChunkData,
   TranslateEndData,
   TranslateErrorData,
+  ModelCapability,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -132,6 +133,7 @@ const api = {
     providerId: string
     name: string
     group?: string
+    capabilities?: ModelCapability[]
   }): Promise<IpcResult<Model>> => ipcRenderer.invoke(IpcChannels.MODEL_CREATE, data),
 
   updateModel: (id: string, data: Partial<Model>): Promise<IpcResult<Model | undefined>> =>
