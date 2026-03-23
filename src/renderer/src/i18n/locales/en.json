@@ -177,6 +177,13 @@
       "setDefault": "Set as default",
       "connectionSuccess": "Connection successful!",
       "connectionFailed": "Connection failed",
+      "testAll": "Test All",
+      "passed": "passed",
+      "failed": "failed",
+      "statusIdle": "Pending",
+      "statusTesting": "Testing",
+      "statusSuccess": "Success",
+      "statusError": "Failed",
       "delete": "Delete"
     },
     "model": {

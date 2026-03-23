@@ -8,9 +8,6 @@ import {
   Eye,
   EyeOff,
   Trash2,
-  Loader2,
-  CheckCircle2,
-  XCircle,
   Plus,
   Pencil,
   Settings,
@@ -38,6 +35,7 @@ import { CAPABILITY_CONFIG } from './capability-config'
 import { ModelManageDialog } from './ModelManageDialog'
 import { AddModelDialog } from './AddModelDialog'
 import { EditModelDialog } from './EditModelDialog'
+import { ConnectionTestDialog } from './ConnectionTestDialog'
 
 export function ProviderDetail(): React.JSX.Element {
   const { t } = useTranslation()
@@ -149,8 +147,7 @@ function ProviderForm({
   })
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [renameDraft, setRenameDraft] = useState('')
-  const [isTesting, setIsTesting] = useState(false)
-  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [showTestDialog, setShowTestDialog] = useState(false)
   const [showModelSearch, setShowModelSearch] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
@@ -190,33 +187,9 @@ function ProviderForm({
   }
 
   const handleTest = async (): Promise<void> => {
-    setIsTesting(true)
-    setTestResult(null)
-    try {
-      // Save current draft first
-      await onUpdate(provider.id, draft)
-      const testProvider: Provider = {
-        ...provider,
-        ...draft,
-        model: providerModels[0]?.name || provider.model,
-      }
-      const res = await window.api.testProviderConnection(testProvider)
-      if (res.success) {
-        setTestResult({
-          success: true,
-          message: res.data || t('settings.provider.connectionSuccess'),
-        })
-      } else {
-        setTestResult({
-          success: false,
-          message: res.error || t('settings.provider.connectionFailed'),
-        })
-      }
-    } catch (e) {
-      setTestResult({ success: false, message: (e as Error).message })
-    } finally {
-      setIsTesting(false)
-    }
+    // Save current draft first, then open test dialog
+    await onUpdate(provider.id, draft)
+    setShowTestDialog(true)
   }
 
   const handleDelete = async (): Promise<void> => {
@@ -351,25 +324,12 @@ function ProviderForm({
             </div>
             <Button
               variant="outline"
-              size="sm"
               onClick={handleTest}
-              disabled={isTesting || !draft.apiKey}
+              disabled={!draft.apiKey}
               className="shrink-0 gap-1.5 px-4">
-              {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              {isTesting ? t('settings.provider.testing') : t('settings.provider.test')}
+              {t('settings.provider.test')}
             </Button>
           </div>
-          {testResult && (
-            <div
-              className={`mt-2 flex items-center gap-1.5 text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-              {testResult.success ? (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              ) : (
-                <XCircle className="h-3.5 w-3.5" />
-              )}
-              <span className="truncate">{testResult.message}</span>
-            </div>
-          )}
         </div>
 
         {/* API Address */}
@@ -623,6 +583,14 @@ function ProviderForm({
             />
           )}
         </div>
+
+        {/* Connection test dialog */}
+        <ConnectionTestDialog
+          open={showTestDialog}
+          onOpenChange={setShowTestDialog}
+          provider={{ ...provider, ...draft }}
+          models={providerModels.map((m) => ({ id: m.id, name: m.name }))}
+        />
 
         {/* Bottom actions */}
         <div className="flex items-center gap-2 border-t pt-4">

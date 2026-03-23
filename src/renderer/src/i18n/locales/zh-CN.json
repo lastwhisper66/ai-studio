@@ -177,6 +177,13 @@
       "setDefault": "设为默认",
       "connectionSuccess": "连接成功！",
       "connectionFailed": "连接失败",
+      "testAll": "检测所有",
+      "passed": "通过",
+      "failed": "失败",
+      "statusIdle": "待检测",
+      "statusTesting": "检测中",
+      "statusSuccess": "检测成功",
+      "statusError": "检测失败",
       "delete": "删除"
     },
     "model": {
