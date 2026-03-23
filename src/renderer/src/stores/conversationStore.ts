@@ -1,5 +1,7 @@
 import { create } from 'zustand'
-import type { Conversation, Message, MessageRole } from '@shared/types'
+import type { Conversation, Message, MessageRole, FileData } from '@shared/types'
+import { isImageMime } from '@shared/types'
+
 import { useAssistantStore } from './assistantStore'
 
 interface ConversationState {
@@ -20,11 +22,11 @@ interface ConversationState {
   pinConversation: (id: string) => Promise<void>
   setActiveConversation: (id: string) => Promise<void>
   loadMoreMessages: () => Promise<void>
-  addMessage: (role: MessageRole, content: string) => Promise<void>
+  addMessage: (role: MessageRole, content: string, files?: FileData[]) => Promise<void>
   deleteMessage: (id: string) => Promise<void>
   clearMessages: (conversationId: string) => Promise<void>
   insertDivider: () => Promise<void>
-  sendMessage: (content: string) => Promise<void>
+  sendMessage: (content: string, files?: FileData[]) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
 }
@@ -183,11 +185,17 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
-  addMessage: async (role: MessageRole, content: string) => {
+  addMessage: async (role: MessageRole, content: string, files?: FileData[]) => {
     const activeConversationId = get().activeConversationId
     if (!activeConversationId) return
 
-    const result = await window.api.createMessage(activeConversationId, role, content)
+    const imageFiles = files?.filter((f) => isImageMime(f.mimeType))
+    const result = await window.api.createMessage(
+      activeConversationId,
+      role,
+      content,
+      imageFiles && imageFiles.length > 0 ? imageFiles : undefined,
+    )
     if (result.success && result.data) {
       set((state) => ({ messages: [...state.messages, result.data!] }))
     } else {
@@ -225,7 +233,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
-  sendMessage: async (content: string) => {
+  sendMessage: async (content: string, files?: FileData[]) => {
     if (get().isStreaming) return
 
     let conversationId = get().activeConversationId
@@ -239,8 +247,8 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       if (!conversationId) return
     }
 
-    // Save user message to DB and update local state
-    await get().addMessage('user', content)
+    // Save user message to DB and update local state (also persists images to disk)
+    await get().addMessage('user', content, files)
 
     // Clean up any leftover listeners before registering new ones
     window.api.removeAllStreamListeners()
@@ -299,7 +307,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     })
 
     // Invoke the streaming request
-    const result = await window.api.sendMessage({ conversationId })
+    const result = await window.api.sendMessage({ conversationId, files })
     if (!result.success) {
       set({ isStreaming: false, streamingContent: '', error: result.error })
       cleanup()

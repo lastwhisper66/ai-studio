@@ -20,6 +20,7 @@ export const IpcChannels = {
   PHRASE_DELETE: 'phrase:delete',
   // File
   FILE_OPEN_DIALOG: 'file:open-dialog',
+  ATTACHMENT_READ: 'attachment:read',
   // Settings
   SETTINGS_GET: 'settings:get',
   SETTINGS_SET: 'settings:set',

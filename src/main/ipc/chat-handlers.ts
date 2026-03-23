@@ -1,8 +1,10 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { SendMessagePayload, IpcResult, Message } from '@shared/types'
+import type { SendMessagePayload, IpcResult, Message, FileData } from '@shared/types'
+import { isImageMime } from '@shared/types'
 import { listMessages, createMessage } from '../db/messages'
+import { loadAttachmentBase64 } from '../db/attachments'
 import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
@@ -16,7 +18,7 @@ export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,
     async (event: IpcMainInvokeEvent, payload: SendMessagePayload): Promise<IpcResult<void>> => {
-      const { conversationId } = payload
+      const { conversationId, files } = payload
       const sender = event.sender
       let fullContent = ''
 
@@ -67,8 +69,15 @@ export function registerChatHandlers(): void {
           }
         }
 
-        // Build API messages array
-        const apiMessages: { role: 'system' | 'user' | 'assistant'; content: string }[] = []
+        // Build API messages array — content may be string or multipart array for vision
+        type ContentPart =
+          | { type: 'text'; text: string }
+          | { type: 'image_url'; image_url: { url: string } }
+        type ChatMessage = {
+          role: 'system' | 'user' | 'assistant'
+          content: string | ContentPart[]
+        }
+        const apiMessages: ChatMessage[] = []
         if (settings.systemPrompt) {
           apiMessages.push({ role: 'system', content: settings.systemPrompt })
         }
@@ -103,6 +112,49 @@ export function registerChatHandlers(): void {
           }
         }
 
+        // Attach image files to the last user message using OpenAI Vision format
+        // Source 1: files passed directly in the payload (current send)
+        const imageFiles = files?.filter((f: FileData) => isImageMime(f.mimeType)) ?? []
+
+        // Source 2: if no files in payload, check if the last user message has persisted attachments
+        const lastUserMsg = [...contextMessages].reverse().find((m) => m.role === 'user')
+        if (
+          imageFiles.length === 0 &&
+          lastUserMsg?.attachments &&
+          lastUserMsg.attachments.length > 0
+        ) {
+          for (const att of lastUserMsg.attachments) {
+            if (isImageMime(att.mimeType)) {
+              try {
+                const base64 = loadAttachmentBase64(att.path)
+                imageFiles.push({ name: att.name, mimeType: att.mimeType, base64, size: 0 })
+              } catch (e) {
+                console.error('[chat] Failed to load attachment:', att.path, e)
+              }
+            }
+          }
+        }
+
+        if (imageFiles.length > 0) {
+          const lastIdx = apiMessages.length - 1
+          if (lastIdx >= 0 && apiMessages[lastIdx].role === 'user') {
+            const textContent = apiMessages[lastIdx].content as string
+            const parts: ContentPart[] = []
+            if (textContent) {
+              parts.push({ type: 'text', text: textContent })
+            }
+            for (const file of imageFiles) {
+              parts.push({
+                type: 'image_url',
+                image_url: { url: `data:${file.mimeType};base64,${file.base64}` },
+              })
+            }
+            apiMessages[lastIdx] = { role: 'user', content: parts }
+          } else {
+            // No user message to attach images to — skip silently
+          }
+        }
+
         const client = createAIClient(settings)
         const controller = new AbortController()
         activeStreams.set(conversationId, controller)
@@ -110,7 +162,9 @@ export function registerChatHandlers(): void {
         const stream = await client.chat.completions.create(
           {
             model: settings.model,
-            messages: apiMessages,
+            messages: apiMessages as Parameters<
+              typeof client.chat.completions.create
+            >[0]['messages'],
             stream: true,
             max_completion_tokens: settings.maxCompletionTokens,
             temperature: settings.temperature,

@@ -62,8 +62,9 @@ const api = {
     conversationId: string,
     role: MessageRole,
     content: string,
+    files?: FileData[],
   ): Promise<IpcResult<Message>> =>
-    ipcRenderer.invoke(IpcChannels.MESSAGE_CREATE, conversationId, role, content),
+    ipcRenderer.invoke(IpcChannels.MESSAGE_CREATE, conversationId, role, content, files),
 
   deleteMessage: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MESSAGE_DELETE, id),
@@ -92,6 +93,9 @@ const api = {
   // File
   openFileDialog: (): Promise<IpcResult<FileData[]>> =>
     ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG),
+
+  readAttachment: (relativePath: string): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.ATTACHMENT_READ, relativePath),
 
   // Settings
   getSetting: (key: string): Promise<IpcResult<string | undefined>> =>

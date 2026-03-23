@@ -1,17 +1,83 @@
-import { useState, useCallback, useEffect, useRef, memo } from 'react'
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
 import { Copy, Check, Trash2, User, Bot } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
 import { MarkdownRenderer } from './MarkdownRenderer'
-import type { MessageRole } from '@shared/types'
+import type { MessageRole, AttachmentMeta } from '@shared/types'
+import { isImageMime } from '@shared/types'
 
 interface MessageBubbleProps {
   role: MessageRole
   content: string
   isStreaming?: boolean
   messageId?: string
+  attachments?: AttachmentMeta[]
   onDelete?: (id: string) => void
+}
+
+function AttachmentImages({
+  attachments,
+}: {
+  attachments: AttachmentMeta[]
+}): React.JSX.Element | null {
+  const images = attachments.filter((a) => isImageMime(a.mimeType))
+  if (images.length === 0) return null
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {images.map((att, i) => (
+        <AttachmentImage key={i} attachment={att} />
+      ))}
+    </div>
+  )
+}
+
+function AttachmentImage({
+  attachment,
+}: {
+  attachment: AttachmentMeta
+}): React.JSX.Element {
+  const [src, setSrc] = useState<string | null>(null)
+  const [preview, setPreview] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    window.api.readAttachment(attachment.path).then((result) => {
+      if (!cancelled && result.success && result.data) {
+        setSrc(`data:${attachment.mimeType};base64,${result.data}`)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [attachment.path, attachment.mimeType])
+
+  if (!src) {
+    return <div className="h-32 w-32 animate-pulse rounded-lg bg-muted" />
+  }
+
+  return (
+    <>
+      <img
+        src={src}
+        alt={attachment.name}
+        className="max-h-64 max-w-xs rounded-lg object-contain cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => setPreview(true)}
+      />
+      {preview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 cursor-pointer"
+          onClick={() => setPreview(false)}>
+          <img
+            src={src}
+            alt={attachment.name}
+            className="max-h-[90vh] max-w-[90vw] object-contain"
+          />
+        </div>
+      )}
+    </>
+  )
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -19,6 +85,7 @@ export const MessageBubble = memo(function MessageBubble({
   content,
   isStreaming,
   messageId,
+  attachments,
   onDelete,
 }: MessageBubbleProps) {
   const { t } = useTranslation()
@@ -44,6 +111,7 @@ export const MessageBubble = memo(function MessageBubble({
   }, [messageId, onDelete])
 
   const showActions = !isStreaming && messageId
+  const hasImages = attachments && attachments.some((a) => isImageMime(a.mimeType))
 
   return (
     <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -68,6 +136,9 @@ export const MessageBubble = memo(function MessageBubble({
             <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-current align-text-bottom" />
           )}
         </div>
+
+        {/* Image attachments rendered below the text bubble */}
+        {hasImages && <AttachmentImages attachments={attachments!} />}
 
         {/* Hover action bar */}
         {showActions && (

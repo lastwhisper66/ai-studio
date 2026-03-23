@@ -118,6 +118,7 @@ export function MessageList({
                   role={msg.role}
                   content={msg.content}
                   messageId={msg.id}
+                  attachments={msg.attachments}
                   onDelete={deleteMessage}
                 />
               ),

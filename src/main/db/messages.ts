@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Message, MessageRole } from '@shared/types'
+import type { Message, MessageRole, AttachmentMeta } from '@shared/types'
 import { getDb } from './database'
 import { touchConversation } from './conversations'
 
@@ -10,10 +10,11 @@ interface MessageRow {
   content: string
   created_at: string
   token_count: number | null
+  attachments: string | null
 }
 
 function rowToMessage(row: MessageRow): Message {
-  return {
+  const msg: Message = {
     id: row.id,
     conversationId: row.conversation_id,
     role: row.role as MessageRole,
@@ -21,6 +22,14 @@ function rowToMessage(row: MessageRow): Message {
     createdAt: row.created_at,
     tokenCount: row.token_count,
   }
+  if (row.attachments) {
+    try {
+      msg.attachments = JSON.parse(row.attachments) as AttachmentMeta[]
+    } catch {
+      // ignore malformed JSON
+    }
+  }
+  return msg
 }
 
 export function listMessages(conversationId: string): Message[] {
@@ -59,15 +68,21 @@ export function listMessagesPaginated(
   }
 }
 
-export function createMessage(conversationId: string, role: MessageRole, content: string): Message {
+export function createMessage(
+  conversationId: string,
+  role: MessageRole,
+  content: string,
+  attachments?: AttachmentMeta[],
+): Message {
   const id = uuidv4()
   const now = new Date().toISOString()
   const db = getDb()
+  const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null
 
   db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, created_at)
-     VALUES (?, ?, ?, ?, ?)`,
-  ).run(id, conversationId, role, content, now)
+    `INSERT INTO messages (id, conversation_id, role, content, created_at, attachments)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+  ).run(id, conversationId, role, content, now, attachmentsJson)
 
   // Update conversation's updated_at timestamp
   touchConversation(conversationId)
@@ -78,6 +93,16 @@ export function createMessage(conversationId: string, role: MessageRole, content
 
 export function deleteMessage(id: string): void {
   getDb().prepare('DELETE FROM messages WHERE id = ?').run(id)
+}
+
+export function getMessageAttachments(
+  conversationId: string,
+): { id: string; attachments: string }[] {
+  return getDb()
+    .prepare(
+      'SELECT id, attachments FROM messages WHERE conversation_id = ? AND attachments IS NOT NULL',
+    )
+    .all(conversationId) as { id: string; attachments: string }[]
 }
 
 export function clearConversationMessages(conversationId: string): void {

@@ -3,6 +3,7 @@ import { readFileSync } from 'fs'
 import { basename } from 'path'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, FileData } from '@shared/types'
+import { loadAttachmentBase64 } from '../db/attachments'
 
 const MIME_MAP: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -57,6 +58,15 @@ export function registerFileHandlers(): void {
         return { success: false, error: `文件过大（最大 10MB）：${oversized.join(', ')}` }
       }
       return { success: true, data: files }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.ATTACHMENT_READ, (_, relativePath: string): IpcResult<string> => {
+    try {
+      const base64 = loadAttachmentBase64(relativePath)
+      return { success: true, data: base64 }
     } catch (e) {
       return { success: false, error: (e as Error).message }
     }

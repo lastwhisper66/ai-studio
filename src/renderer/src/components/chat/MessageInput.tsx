@@ -26,11 +26,12 @@ import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { cn } from '@renderer/lib/utils'
 import type { FileData } from '@shared/types'
+import { isImageMime } from '@shared/types'
 
 type AttachedFile = FileData
 
 interface MessageInputProps {
-  onSend: (content: string) => void
+  onSend: (content: string, files?: FileData[]) => void
   onStop: () => void
   isStreaming: boolean
 }
@@ -285,7 +286,7 @@ function AttachmentPreview({
     <div className="flex flex-wrap gap-1.5 px-4 pt-2">
       {files.map((f, i) => (
         <div key={i} className="bg-muted flex items-center gap-1 rounded-md px-2 py-1 text-xs">
-          {f.mimeType.startsWith('image/') ? (
+          {isImageMime(f.mimeType) ? (
             <img
               src={`data:${f.mimeType};base64,${f.base64}`}
               className="h-5 w-5 rounded object-cover"
@@ -347,19 +348,27 @@ export function MessageInput({
         const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0))
         const text = new TextDecoder('utf-8').decode(bytes)
         content += `\n\n--- 附件: ${f.name} ---\n${text}`
-      } else {
-        content += `\n\n[附件: ${f.name} (${f.mimeType})]`
       }
+      // Image files are sent separately via IPC payload, not embedded in text
     }
     return content
   }
 
   const handleSend = (): void => {
     const content = buildContent()
-    if (!content || isStreaming) return
+    if (!content && attachedFiles.length === 0) return
+    if (isStreaming) return
+    // Collect image files to send via IPC payload
+    const imageFiles = attachedFiles.filter((f) => isImageMime(f.mimeType))
+    // Use placeholder text when sending only images (images are not persisted in DB)
+    const displayContent =
+      content ||
+      (imageFiles.length > 0
+        ? `[${imageFiles.length > 1 ? `${imageFiles.length} 张图片` : '图片'}]`
+        : '')
     setInput('')
     setAttachedFiles([])
-    onSend(content)
+    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -370,6 +379,38 @@ export function MessageInput({
     if (e.key === 'Escape' && isExpanded) {
       setIsExpanded(false)
     }
+  }
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>): void => {
+    const items = e.clipboardData.items
+    for (const item of items) {
+      if (isImageMime(item.type)) {
+        e.preventDefault()
+        // Capture mimeType synchronously — DataTransferItem properties become
+        // unavailable after the paste event handler returns
+        const mimeType = item.type
+        const blob = item.getAsFile()
+        if (!blob) return
+        const reader = new FileReader()
+        reader.onload = () => {
+          const dataUrl = reader.result as string
+          // Extract base64 from data URL: "data:image/png;base64,xxxx"
+          const base64 = dataUrl.split(',')[1]
+          setAttachedFiles((prev) => [
+            ...prev,
+            {
+              name: `clipboard-${Date.now()}.${mimeType.split('/')[1]}`,
+              mimeType,
+              base64,
+              size: blob.size,
+            },
+          ])
+        }
+        reader.readAsDataURL(blob)
+        return
+      }
+    }
+    // No image found — let default text paste happen
   }
 
   const handleAttach = async (): Promise<void> => {
@@ -431,6 +472,7 @@ export function MessageInput({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               disabled={isStreaming}
               style={{ minHeight: '2.5rem' }}
             />

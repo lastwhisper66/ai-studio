@@ -45,6 +45,17 @@ export interface FileData {
   size: number
 }
 
+/** Check whether a MIME type represents an image */
+export function isImageMime(mimeType: string): boolean {
+  return mimeType.startsWith('image/')
+}
+
+export interface AttachmentMeta {
+  name: string
+  mimeType: string
+  path: string // relative path under data/attachments/
+}
+
 export interface Message {
   id: string
   conversationId: string
@@ -52,6 +63,7 @@ export interface Message {
   content: string
   createdAt: string
   tokenCount: number | null
+  attachments?: AttachmentMeta[]
 }
 
 export type ProviderType = 'openai' | 'azure' | 'deepseek' | 'silicon' | 'custom'
@@ -119,6 +131,7 @@ export interface IpcResult<T> {
 /** chat:send-message request payload */
 export interface SendMessagePayload {
   conversationId: string
+  files?: FileData[]
 }
 
 /** chat:stream-chunk push data */
