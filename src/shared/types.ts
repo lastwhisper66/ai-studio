@@ -54,12 +54,7 @@ export interface Message {
   tokenCount: number | null
 }
 
-export type ProviderType =
-  | 'openai'
-  | 'azure'
-  | 'deepseek'
-  | 'silicon'
-  | 'custom'
+export type ProviderType = 'openai' | 'azure' | 'deepseek' | 'silicon' | 'custom'
 
 export interface Provider {
   id: string
@@ -83,6 +78,7 @@ export interface Model {
   id: string
   providerId: string
   name: string
+  group: string
   enabled: boolean
   sortOrder: number
   createdAt: string

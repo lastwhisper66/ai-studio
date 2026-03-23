@@ -107,7 +107,9 @@ export function MessageList({
               msg.role === 'divider' ? (
                 <div key={msg.id} className="flex items-center gap-3 py-1">
                   <div className="h-px flex-1 bg-border" />
-                  <span className="text-muted-foreground shrink-0 text-xs">{t('chat.contextDivider')}</span>
+                  <span className="text-muted-foreground shrink-0 text-xs">
+                    {t('chat.contextDivider')}
+                  </span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
               ) : (

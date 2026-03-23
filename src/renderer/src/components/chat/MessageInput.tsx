@@ -57,7 +57,10 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
 
   const handleEdit = async (id: string) => {
     if (!newContent.trim()) return
-    await updatePhrase(id, { title: newTitle.trim() || newContent.slice(0, 20), content: newContent.trim() })
+    await updatePhrase(id, {
+      title: newTitle.trim() || newContent.slice(0, 20),
+      content: newContent.trim(),
+    })
     setEditingId(null)
     setNewTitle('')
     setNewContent('')
@@ -82,7 +85,10 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
             size="icon"
             variant="ghost"
             className="h-6 w-6"
-            onClick={() => { setAdding(true); setEditingId(null) }}>
+            onClick={() => {
+              setAdding(true)
+              setEditingId(null)
+            }}>
             <Plus className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -101,14 +107,24 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
               className="min-h-16 resize-none text-xs"
             />
             <div className="flex justify-end gap-1">
-              <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setAdding(false)}>{t('common.cancel')}</Button>
-              <Button size="sm" className="h-6 text-xs" onClick={handleAdd}>{t('common.save')}</Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-xs"
+                onClick={() => setAdding(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button size="sm" className="h-6 text-xs" onClick={handleAdd}>
+                {t('common.save')}
+              </Button>
             </div>
           </div>
         )}
         <ScrollArea className="max-h-64">
           {phrases.length === 0 && !adding && (
-            <p className="text-muted-foreground px-3 py-4 text-center text-xs">{t('chat.noPhrasesYet')}</p>
+            <p className="text-muted-foreground px-3 py-4 text-center text-xs">
+              {t('chat.noPhrasesYet')}
+            </p>
           )}
           {phrases.map((phrase) =>
             editingId === phrase.id ? (
@@ -124,15 +140,27 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
                   className="min-h-16 resize-none text-xs"
                 />
                 <div className="flex justify-end gap-1">
-                  <Button size="sm" variant="ghost" className="h-6 text-xs" onClick={() => setEditingId(null)}>{t('common.cancel')}</Button>
-                  <Button size="sm" className="h-6 text-xs" onClick={() => handleEdit(phrase.id)}><Check className="mr-1 h-3 w-3" />{t('common.save')}</Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs"
+                    onClick={() => setEditingId(null)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button size="sm" className="h-6 text-xs" onClick={() => handleEdit(phrase.id)}>
+                    <Check className="mr-1 h-3 w-3" />
+                    {t('common.save')}
+                  </Button>
                 </div>
               </div>
             ) : (
               <div
                 key={phrase.id}
                 className="hover:bg-accent group flex cursor-pointer items-start justify-between gap-2 px-3 py-2"
-                onClick={() => { onSelect(phrase.content); setOpen(false) }}>
+                onClick={() => {
+                  onSelect(phrase.content)
+                  setOpen(false)
+                }}>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-medium">{phrase.title}</p>
                   <p className="text-muted-foreground truncate text-xs">{phrase.content}</p>
@@ -142,14 +170,20 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
                     size="icon"
                     variant="ghost"
                     className="h-5 w-5"
-                    onClick={(e) => { e.stopPropagation(); startEdit(phrase.id, phrase.title, phrase.content) }}>
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      startEdit(phrase.id, phrase.title, phrase.content)
+                    }}>
                     <Pencil className="h-3 w-3" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
                     className="text-destructive h-5 w-5"
-                    onClick={(e) => { e.stopPropagation(); deletePhrase(phrase.id) }}>
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deletePhrase(phrase.id)
+                    }}>
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
@@ -250,9 +284,7 @@ function AttachmentPreview({
   return (
     <div className="flex flex-wrap gap-1.5 px-4 pt-2">
       {files.map((f, i) => (
-        <div
-          key={i}
-          className="bg-muted flex items-center gap-1 rounded-md px-2 py-1 text-xs">
+        <div key={i} className="bg-muted flex items-center gap-1 rounded-md px-2 py-1 text-xs">
           {f.mimeType.startsWith('image/') ? (
             <img
               src={`data:${f.mimeType};base64,${f.base64}`}
@@ -275,7 +307,11 @@ function AttachmentPreview({
 }
 
 // ── Main Component ──────────────────────────────────────────────
-export function MessageInput({ onSend, onStop, isStreaming }: MessageInputProps): React.JSX.Element {
+export function MessageInput({
+  onSend,
+  onStop,
+  isStreaming,
+}: MessageInputProps): React.JSX.Element {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
@@ -366,7 +402,11 @@ export function MessageInput({ onSend, onStop, isStreaming }: MessageInputProps)
       {isExpanded && (
         <div className="flex items-center justify-between border-b px-6 py-2">
           <span className="text-sm font-medium">{t('chat.expandedEditor')}</span>
-          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setIsExpanded(false)}>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-7 w-7"
+            onClick={() => setIsExpanded(false)}>
             <Minimize2 className="h-4 w-4" />
           </Button>
         </div>
@@ -383,7 +423,9 @@ export function MessageInput({ onSend, onStop, isStreaming }: MessageInputProps)
           <div className="px-4 pt-3 pb-1">
             <textarea
               ref={textareaRef}
-              placeholder={isStreaming ? t('chat.streamingPlaceholder') : t('chat.inputPlaceholder')}
+              placeholder={
+                isStreaming ? t('chat.streamingPlaceholder') : t('chat.inputPlaceholder')
+              }
               className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
               rows={2}
               value={input}
@@ -417,7 +459,9 @@ export function MessageInput({ onSend, onStop, isStreaming }: MessageInputProps)
                 onClick={handleClearMessages}
               />
               <ToolButton
-                icon={isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                icon={
+                  isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />
+                }
                 label={isExpanded ? t('chat.collapse') : t('chat.expand')}
                 onClick={() => setIsExpanded((v) => !v)}
               />

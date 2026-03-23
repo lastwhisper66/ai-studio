@@ -1,10 +1,26 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
 import { Switch } from '@renderer/components/ui/switch'
-import { Eye, EyeOff, Trash2, Loader2, CheckCircle2, XCircle, Plus, X, Pencil } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Plus,
+  Pencil,
+  Settings,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Minus,
+  Link2,
+  HelpCircle,
+} from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
@@ -61,46 +77,29 @@ export function ProviderDetail(): React.JSX.Element {
 interface ProviderFormProps {
   provider: Provider
   isActive: boolean
-  providerModels: { id: string; name: string; enabled: boolean }[]
+  providerModels: { id: string; name: string; group: string; enabled: boolean }[]
   onUpdate: (id: string, data: Partial<Provider>) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onSetActive: (id: string) => Promise<void>
-  onAddModel: (providerId: string, name: string) => Promise<unknown>
+  onAddModel: (providerId: string, name: string, group?: string) => Promise<unknown>
   onRemoveModel: (id: string) => Promise<void>
 }
 
-function SettingGroup({
+function SectionHeader({
   title,
-  children,
+  icon,
+  action,
 }: {
   title: string
-  children: React.ReactNode
+  icon?: React.ReactNode
+  action?: React.ReactNode
 }): React.JSX.Element {
   return (
-    <div className="rounded-xl border bg-card/50 p-5">
-      <h3 className="text-muted-foreground mb-4 text-xs font-medium uppercase tracking-wider">
-        {title}
-      </h3>
-      <div className="space-y-4">{children}</div>
-    </div>
-  )
-}
-
-function SettingRow({
-  label,
-  htmlFor,
-  children,
-}: {
-  label: string
-  htmlFor?: string
-  children: React.ReactNode
-}): React.JSX.Element {
-  return (
-    <div className="space-y-1.5">
-      <Label htmlFor={htmlFor} className="text-sm">
-        {label}
-      </Label>
-      {children}
+    <div className="mb-3 flex items-center gap-2">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      {icon}
+      <div className="flex-1" />
+      {action}
     </div>
   )
 }
@@ -129,9 +128,13 @@ function ProviderForm({
   const [showRenameDialog, setShowRenameDialog] = useState(false)
   const [renameDraft, setRenameDraft] = useState('')
   const [newModelName, setNewModelName] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
+  const [newModelGroup, setNewModelGroup] = useState('')
   const [isTesting, setIsTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [showModelSearch, setShowModelSearch] = useState(false)
+  const [modelSearch, setModelSearch] = useState('')
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const [showAddModel, setShowAddModel] = useState(false)
 
   const template = getTemplateByType(provider.type)
   const isAzure = provider.type === 'azure'
@@ -148,12 +151,14 @@ function ProviderForm({
     })
   }, [provider])
 
-  const handleSave = async (): Promise<void> => {
-    setIsSaving(true)
-    try {
-      await onUpdate(provider.id, draft)
-    } finally {
-      setIsSaving(false)
+  const change = (field: keyof typeof draft, value: string | boolean): void => {
+    setDraft((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // Auto-save on blur
+  const handleBlurSave = async (field: keyof typeof draft): Promise<void> => {
+    if (draft[field] !== provider[field]) {
+      await onUpdate(provider.id, { [field]: draft[field] })
     }
   }
 
@@ -161,6 +166,8 @@ function ProviderForm({
     setIsTesting(true)
     setTestResult(null)
     try {
+      // Save current draft first
+      await onUpdate(provider.id, draft)
       const testProvider: Provider = {
         ...provider,
         ...draft,
@@ -189,17 +196,14 @@ function ProviderForm({
     await onDelete(provider.id)
   }
 
-  const change = (field: keyof typeof draft, value: string | boolean): void => {
-    setDraft((prev) => ({ ...prev, [field]: value }))
-  }
-
   const handleAddModel = async (): Promise<void> => {
     const name = newModelName.trim()
     if (!name) return
-    // Prevent duplicate names
     if (providerModels.some((m) => m.name === name)) return
-    await onAddModel(provider.id, name)
+    const group = newModelGroup.trim()
+    await onAddModel(provider.id, name, group || undefined)
     setNewModelName('')
+    setNewModelGroup('')
   }
 
   const handleAddModelKeyDown = (e: React.KeyboardEvent): void => {
@@ -209,52 +213,62 @@ function ProviderForm({
     }
   }
 
-  const handleQuickAddModel = async (name: string): Promise<void> => {
-    if (providerModels.some((m) => m.name === name)) return
-    await onAddModel(provider.id, name)
+  const toggleGroup = (group: string): void => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(group)) {
+        next.delete(group)
+      } else {
+        next.add(group)
+      }
+      return next
+    })
   }
+
+  // Group models
+  const modelGroups = useMemo(() => {
+    const groups = new Map<string, typeof providerModels>()
+    const filtered = modelSearch.trim()
+      ? providerModels.filter((m) => m.name.toLowerCase().includes(modelSearch.toLowerCase()))
+      : providerModels
+
+    for (const model of filtered) {
+      const groupName = model.group || model.name
+      const existing = groups.get(groupName) || []
+      existing.push(model)
+      groups.set(groupName, existing)
+    }
+    return groups
+  }, [providerModels, modelSearch])
 
   return (
     <ScrollArea className="flex-1">
       <div className="space-y-6 p-6">
-        {/* Header with provider info and controls */}
-        <div className="flex items-center gap-3 rounded-xl border bg-card/50 p-5">
-          <span
-            className="h-8 w-8 shrink-0 rounded-lg border border-black/10 dark:border-white/10"
-            style={{ backgroundColor: template?.color ?? '#6b7280' }}
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold">{draft.name}</h2>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => {
+                  setRenameDraft(draft.name)
+                  setShowRenameDialog(true)
+                }}
+                className="text-muted-foreground hover:text-foreground rounded-md p-1 transition-colors">
+                <Settings className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{t('settings.provider.providerSettings')}</TooltipContent>
+          </Tooltip>
+          <div className="flex-1" />
+          <Switch
+            checked={draft.enabled}
+            onCheckedChange={(v) => {
+              change('enabled', v)
+              onUpdate(provider.id, { enabled: v })
+            }}
           />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <h2 className="truncate text-base font-semibold">{draft.name}</h2>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRenameDraft(draft.name)
-                      setShowRenameDialog(true)
-                    }}
-                    className="text-muted-foreground hover:text-foreground shrink-0 rounded-md p-1 transition-colors">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  {t('settings.provider.providerSettings')}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <span className="text-muted-foreground text-xs">
-              {t('settings.provider.providerType')}：{provider.type.toUpperCase()}
-            </span>
-            {isActive && (
-              <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
-                {t('settings.provider.currentlyUsed')}
-              </span>
-            )}
-            <Switch checked={draft.enabled} onCheckedChange={(v) => change('enabled', v)} />
-          </div>
         </div>
 
         {/* Rename dialog */}
@@ -301,15 +315,16 @@ function ProviderForm({
           </DialogContent>
         </Dialog>
 
-        {/* API configuration */}
-        <SettingGroup title={t('settings.provider.apiConfig')}>
-          <SettingRow label={t('settings.provider.apiKey')} htmlFor="apiKey">
-            <div className="relative">
+        {/* API Key */}
+        <div>
+          <SectionHeader title={t('settings.provider.apiKey')} />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
               <Input
-                id="apiKey"
                 type={showApiKey ? 'text' : 'password'}
                 value={draft.apiKey}
                 onChange={(e) => change('apiKey', e.target.value)}
+                onBlur={() => handleBlurSave('apiKey')}
                 placeholder="sk-..."
                 className="pr-10"
               />
@@ -322,144 +337,278 @@ function ProviderForm({
                 {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-          </SettingRow>
-
-          {isAzure ? (
-            <>
-              <SettingRow label={t('settings.provider.endpoint')} htmlFor="endpoint">
-                <Input
-                  id="endpoint"
-                  value={draft.endpoint}
-                  onChange={(e) => change('endpoint', e.target.value)}
-                  placeholder="https://your-resource.openai.azure.com"
-                />
-              </SettingRow>
-              <SettingRow label={t('settings.provider.apiVersion')} htmlFor="apiVersion">
-                <Input
-                  id="apiVersion"
-                  value={draft.apiVersion}
-                  onChange={(e) => change('apiVersion', e.target.value)}
-                  placeholder="2024-10-01-preview"
-                />
-              </SettingRow>
-              <SettingRow label={t('settings.provider.deploymentName')} htmlFor="deploymentName">
-                <Input
-                  id="deploymentName"
-                  value={draft.deploymentName}
-                  onChange={(e) => change('deploymentName', e.target.value)}
-                  placeholder="my-gpt4o-deployment"
-                />
-              </SettingRow>
-            </>
-          ) : (
-            <SettingRow label={t('settings.provider.apiAddress')} htmlFor="baseUrl">
-              <Input
-                id="baseUrl"
-                value={draft.baseUrl}
-                onChange={(e) => change('baseUrl', e.target.value)}
-                placeholder={template?.defaultBaseUrl || 'https://api.openai.com'}
-              />
-              {(() => {
-                const raw = draft.baseUrl || template?.defaultBaseUrl || ''
-                if (!raw) return null
-                const resolved = normalizeBaseUrl(raw, provider.type)
-                return (
-                  <p className="text-muted-foreground truncate text-xs">
-                    {resolved}/chat/completions
-                  </p>
-                )
-              })()}
-            </SettingRow>
-          )}
-        </SettingGroup>
-
-        {/* Model configuration — multi-model list */}
-        <SettingGroup title={t('settings.provider.modelConfig')}>
-          <SettingRow label={t('settings.provider.modelList')}>
-            {/* Existing models as chips */}
-            {providerModels.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {providerModels.map((m) => (
-                  <span
-                    key={m.id}
-                    className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm">
-                    {m.name}
-                    <button
-                      type="button"
-                      onClick={() => onRemoveModel(m.id)}
-                      className="hover:text-destructive ml-0.5 rounded-sm opacity-60 hover:opacity-100">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {/* Add model input */}
-            <div className="flex gap-2">
-              <Input
-                value={newModelName}
-                onChange={(e) => setNewModelName(e.target.value)}
-                onKeyDown={handleAddModelKeyDown}
-                placeholder={t('settings.provider.modelNamePlaceholder')}
-                className="flex-1"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddModel}
-                disabled={!newModelName.trim()}>
-                <Plus className="mr-1 h-3.5 w-3.5" />
-                {t('common.add')}
-              </Button>
-            </div>
-            {/* Quick add from template */}
-            {template && template.defaultModels.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {template.defaultModels
-                  .filter((m) => !providerModels.some((pm) => pm.name === m))
-                  .map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => handleQuickAddModel(m)}
-                      className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded px-2 py-0.5 text-xs transition-colors">
-                      + {m}
-                    </button>
-                  ))}
-              </div>
-            )}
-          </SettingRow>
-        </SettingGroup>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 rounded-xl border bg-card/50 p-5">
-          <Button onClick={handleSave} disabled={isSaving} size="sm">
-            {isSaving ? t('common.saving') : t('settings.provider.save')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleTest}
-            disabled={isTesting || !draft.apiKey || providerModels.length === 0}>
-            {isTesting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
-            {isTesting ? t('settings.provider.testing') : t('settings.provider.testConnection')}
-          </Button>
-          {!isActive && (
-            <Button variant="outline" size="sm" onClick={() => onSetActive(provider.id)}>
-              {t('settings.provider.setDefault')}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleTest}
+              disabled={isTesting || !draft.apiKey}
+              className="shrink-0 gap-1.5 px-4">
+              {isTesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              {isTesting ? t('settings.provider.testing') : t('settings.provider.test')}
             </Button>
-          )}
+          </div>
           {testResult && (
             <div
-              className={`flex items-center gap-1.5 text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+              className={`mt-2 flex items-center gap-1.5 text-xs ${testResult.success ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
               {testResult.success ? (
                 <CheckCircle2 className="h-3.5 w-3.5" />
               ) : (
                 <XCircle className="h-3.5 w-3.5" />
               )}
-              <span className="max-w-[360px] truncate">{testResult.message}</span>
+              <span className="truncate">{testResult.message}</span>
             </div>
+          )}
+        </div>
+
+        {/* API Address */}
+        {isAzure ? (
+          <div className="space-y-4">
+            <div>
+              <SectionHeader title={t('settings.provider.endpoint')} />
+              <Input
+                value={draft.endpoint}
+                onChange={(e) => change('endpoint', e.target.value)}
+                onBlur={() => handleBlurSave('endpoint')}
+                placeholder="https://your-resource.openai.azure.com"
+              />
+            </div>
+            <div>
+              <SectionHeader title={t('settings.provider.apiVersion')} />
+              <Input
+                value={draft.apiVersion}
+                onChange={(e) => change('apiVersion', e.target.value)}
+                onBlur={() => handleBlurSave('apiVersion')}
+                placeholder="2024-10-01-preview"
+              />
+            </div>
+            <div>
+              <SectionHeader title={t('settings.provider.deploymentName')} />
+              <Input
+                value={draft.deploymentName}
+                onChange={(e) => change('deploymentName', e.target.value)}
+                onBlur={() => handleBlurSave('deploymentName')}
+                placeholder="my-gpt4o-deployment"
+              />
+            </div>
+          </div>
+        ) : (
+          <div>
+            <SectionHeader
+              title={t('settings.provider.apiAddress')}
+              icon={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="text-muted-foreground/50 h-3.5 w-3.5 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>{t('settings.provider.apiAddressTooltip')}</TooltipContent>
+                </Tooltip>
+              }
+              action={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
+                      <Link2 className="h-4 w-4" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('settings.provider.apiAddressSettings')}</TooltipContent>
+                </Tooltip>
+              }
+            />
+            <Input
+              value={draft.baseUrl}
+              onChange={(e) => change('baseUrl', e.target.value)}
+              onBlur={() => handleBlurSave('baseUrl')}
+              placeholder={template?.defaultBaseUrl || 'https://api.openai.com'}
+            />
+            {(() => {
+              const raw = draft.baseUrl || template?.defaultBaseUrl || ''
+              if (!raw) return null
+              const resolved = normalizeBaseUrl(raw, provider.type)
+              return (
+                <p className="text-muted-foreground mt-1.5 truncate text-xs">
+                  {t('settings.provider.urlPreview')}：{resolved}/chat/completions
+                </p>
+              )
+            })()}
+          </div>
+        )}
+
+        {/* Models section */}
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold">{t('settings.provider.modelCount')}</h3>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {providerModels.length}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setShowModelSearch((prev) => !prev)
+                if (showModelSearch) setModelSearch('')
+              }}
+              className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
+              <Search className="h-3.5 w-3.5" />
+            </button>
+            <div className="flex-1" />
+          </div>
+
+          {/* Model search (shown when toggled) */}
+          {showModelSearch && (
+            <div className="mb-3">
+              <Input
+                value={modelSearch}
+                onChange={(e) => setModelSearch(e.target.value)}
+                placeholder={t('settings.provider.modelNamePlaceholder')}
+                className="h-8 text-sm"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {/* Grouped model list */}
+          <div className="rounded-lg border">
+            {modelGroups.size === 0 ? (
+              <div className="text-muted-foreground py-6 text-center text-sm">
+                {providerModels.length === 0
+                  ? t('settings.provider.noModels')
+                  : t('settings.provider.noSearchResults')}
+              </div>
+            ) : (
+              Array.from(modelGroups.entries()).map(([groupName, groupModels], idx) => {
+                const isCollapsed = collapsedGroups.has(groupName)
+                const isLast = idx === modelGroups.size - 1
+                return (
+                  <div key={groupName} className={isLast ? '' : 'border-b'}>
+                    {/* Group header */}
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(groupName)}
+                      className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent/30">
+                      {isCollapsed ? (
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                      <span className="font-medium">{groupName}</span>
+                    </button>
+
+                    {/* Model items */}
+                    {!isCollapsed &&
+                      groupModels.map((model) => (
+                        <div
+                          key={model.id}
+                          className="flex items-center gap-2.5 border-t border-border/40 px-3 py-2 pl-8">
+                          <span
+                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                            style={{ backgroundColor: template?.color ?? '#6b7280' }}>
+                            {provider.name.charAt(0).toUpperCase()}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => onRemoveModel(model.id)}
+                                  className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive">
+                                  <Minus className="h-3.5 w-3.5" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>{t('settings.provider.delete')}</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )
+              })
+            )}
+          </div>
+
+          {/* Add model area */}
+          <div className="mt-3 flex items-center gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setShowAddModel(!showAddModel)}
+              className="gap-1.5">
+              <Pencil className="h-3.5 w-3.5" />
+              {t('settings.provider.manage')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAddModel(true)}
+              className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              {t('common.add')}
+            </Button>
+          </div>
+
+          {/* Add model form (shown when toggled) */}
+          {showAddModel && (
+            <div className="mt-3 space-y-2 rounded-lg border p-3">
+              <div className="flex gap-2">
+                <Input
+                  value={newModelName}
+                  onChange={(e) => setNewModelName(e.target.value)}
+                  onKeyDown={handleAddModelKeyDown}
+                  placeholder={t('settings.provider.modelNamePlaceholder')}
+                  className="flex-1 text-sm"
+                />
+                <Input
+                  value={newModelGroup}
+                  onChange={(e) => setNewModelGroup(e.target.value)}
+                  onKeyDown={handleAddModelKeyDown}
+                  placeholder={t('settings.provider.modelGroupPlaceholder')}
+                  className="w-36 text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddModel}
+                  disabled={!newModelName.trim()}>
+                  <Plus className="mr-1 h-3.5 w-3.5" />
+                  {t('common.add')}
+                </Button>
+              </div>
+              {/* Quick add from template */}
+              {template && template.defaultModels.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {template.defaultModels
+                    .filter((m) => !providerModels.some((pm) => pm.name === m))
+                    .map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        onClick={async () => {
+                          if (providerModels.some((pm) => pm.name === m)) return
+                          await onAddModel(provider.id, m)
+                        }}
+                        className="bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded px-2 py-0.5 text-xs transition-colors">
+                        + {m}
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Bottom actions */}
+        <div className="flex items-center gap-2 border-t pt-4">
+          {!isActive && (
+            <Button variant="outline" size="sm" onClick={() => onSetActive(provider.id)}>
+              {t('settings.provider.setDefault')}
+            </Button>
+          )}
+          {isActive && (
+            <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
+              {t('settings.provider.currentlyUsed')}
+            </span>
           )}
           <div className="flex-1" />
           <Button

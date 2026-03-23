@@ -32,7 +32,9 @@ export function createPhrase(title: string, content: string): Phrase {
   const now = new Date().toISOString()
   const db = getDb()
   const insert = db.transaction(() => {
-    const maxRow = db.prepare('SELECT COALESCE(MAX(sort_order), 0) as max FROM phrases').get() as { max: number }
+    const maxRow = db.prepare('SELECT COALESCE(MAX(sort_order), 0) as max FROM phrases').get() as {
+      max: number
+    }
     const sortOrder = maxRow.max + 1
     db.prepare(
       'INSERT INTO phrases (id, title, content, sort_order, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -43,12 +45,21 @@ export function createPhrase(title: string, content: string): Phrase {
   return rowToPhrase(row)
 }
 
-export function updatePhrase(id: string, data: Partial<Pick<Phrase, 'title' | 'content'>>): Phrase | undefined {
+export function updatePhrase(
+  id: string,
+  data: Partial<Pick<Phrase, 'title' | 'content'>>,
+): Phrase | undefined {
   const db = getDb()
   const fields: string[] = []
   const values: unknown[] = []
-  if (data.title !== undefined) { fields.push('title = ?'); values.push(data.title) }
-  if (data.content !== undefined) { fields.push('content = ?'); values.push(data.content) }
+  if (data.title !== undefined) {
+    fields.push('title = ?')
+    values.push(data.title)
+  }
+  if (data.content !== undefined) {
+    fields.push('content = ?')
+    values.push(data.content)
+  }
   if (fields.length === 0) return undefined
   values.push(id)
   db.prepare(`UPDATE phrases SET ${fields.join(', ')} WHERE id = ?`).run(...values)

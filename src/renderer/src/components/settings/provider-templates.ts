@@ -30,7 +30,7 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultBaseUrl: 'https://api.deepseek.com',
     defaultModels: ['deepseek-chat', 'deepseek-reasoner'],
   },
-{
+  {
     type: 'silicon',
     name: 'Silicon Flow',
     color: '#6c5ce7',

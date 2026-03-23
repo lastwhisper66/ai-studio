@@ -74,8 +74,7 @@ const api = {
     ipcRenderer.invoke(IpcChannels.MESSAGE_INSERT_DIVIDER, conversationId),
 
   // Phrases
-  listPhrases: (): Promise<IpcResult<Phrase[]>> =>
-    ipcRenderer.invoke(IpcChannels.PHRASE_LIST),
+  listPhrases: (): Promise<IpcResult<Phrase[]>> => ipcRenderer.invoke(IpcChannels.PHRASE_LIST),
 
   createPhrase: (title: string, content: string): Promise<IpcResult<Phrase>> =>
     ipcRenderer.invoke(IpcChannels.PHRASE_CREATE, title, content),
@@ -129,8 +128,11 @@ const api = {
   // Models
   listModels: (): Promise<IpcResult<Model[]>> => ipcRenderer.invoke(IpcChannels.MODEL_LIST),
 
-  createModel: (data: { providerId: string; name: string }): Promise<IpcResult<Model>> =>
-    ipcRenderer.invoke(IpcChannels.MODEL_CREATE, data),
+  createModel: (data: {
+    providerId: string
+    name: string
+    group?: string
+  }): Promise<IpcResult<Model>> => ipcRenderer.invoke(IpcChannels.MODEL_CREATE, data),
 
   updateModel: (id: string, data: Partial<Model>): Promise<IpcResult<Model | undefined>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_UPDATE, id, data),

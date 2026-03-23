@@ -6,6 +6,7 @@ interface ModelRow {
   id: string
   provider_id: string
   name: string
+  group_name: string
   enabled: number
   sort_order: number
   created_at: string
@@ -16,6 +17,7 @@ function rowToModel(row: ModelRow): Model {
     id: row.id,
     providerId: row.provider_id,
     name: row.name,
+    group: row.group_name,
     enabled: row.enabled === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -45,6 +47,7 @@ export function getModel(id: string): Model | undefined {
 export interface CreateModelData {
   providerId: string
   name: string
+  group?: string
   enabled?: boolean
   sortOrder?: number
 }
@@ -53,15 +56,23 @@ export function createModel(data: CreateModelData): Model {
   const id = randomUUID()
   getDb()
     .prepare(
-      `INSERT INTO models (id, provider_id, name, enabled, sort_order)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO models (id, provider_id, name, group_name, enabled, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
-    .run(id, data.providerId, data.name, data.enabled !== false ? 1 : 0, data.sortOrder ?? 0)
+    .run(
+      id,
+      data.providerId,
+      data.name,
+      data.group ?? '',
+      data.enabled !== false ? 1 : 0,
+      data.sortOrder ?? 0,
+    )
   return getModel(id)!
 }
 
 export interface UpdateModelData {
   name?: string
+  group?: string
   enabled?: boolean
   sortOrder?: number
 }
@@ -73,6 +84,10 @@ export function updateModel(id: string, data: UpdateModelData): Model | undefine
   if (data.name !== undefined) {
     fields.push('name = ?')
     values.push(data.name)
+  }
+  if (data.group !== undefined) {
+    fields.push('group_name = ?')
+    values.push(data.group)
   }
   if (data.enabled !== undefined) {
     fields.push('enabled = ?')
