@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import {
   Paperclip,
   Brain,
@@ -18,6 +18,14 @@ import {
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Textarea } from '@renderer/components/ui/textarea'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@renderer/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Input } from '@renderer/components/ui/input'
@@ -319,6 +327,7 @@ export function MessageInput({
   const [isExpanded, setIsExpanded] = useState(false)
   const [webSearch, setWebSearch] = useState(false)
   const [reasoning, setReasoning] = useState<ReasoningLevel>('off')
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const activeConversationId = useConversationStore((s) => s.activeConversationId)
   const clearMessages = useConversationStore((s) => s.clearMessages)
@@ -420,12 +429,17 @@ export function MessageInput({
     }
   }
 
-  const handleClearMessages = async (): Promise<void> => {
+  const handleClearMessages = useCallback((): void => {
     if (!activeConversationId) return
-    if (window.confirm(t('chat.confirmClearMessages'))) {
+    setClearDialogOpen(true)
+  }, [activeConversationId])
+
+  const handleClearConfirm = useCallback(async (): Promise<void> => {
+    if (activeConversationId) {
       await clearMessages(activeConversationId)
     }
-  }
+    setClearDialogOpen(false)
+  }, [activeConversationId, clearMessages])
 
   const handleInsertDivider = async (): Promise<void> => {
     if (!activeConversationId) return
@@ -537,6 +551,24 @@ export function MessageInput({
           </div>
         </div>
       </div>
+
+      {/* Clear Messages Confirmation Dialog */}
+      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('chat.clearMessagesTitle')}</DialogTitle>
+            <DialogDescription>{t('chat.confirmClearMessages')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleClearConfirm}>
+              {t('chat.clearMessages')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
