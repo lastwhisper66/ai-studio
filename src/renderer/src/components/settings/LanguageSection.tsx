@@ -39,7 +39,7 @@ export function LanguageSection(): React.JSX.Element {
               </p>
             </div>
           </div>
-          <Select value={i18n.language} onValueChange={handleLanguageChange}>
+          <Select value={i18n.resolvedLanguage} onValueChange={handleLanguageChange}>
             <SelectTrigger className="w-44">
               <SelectValue />
             </SelectTrigger>
