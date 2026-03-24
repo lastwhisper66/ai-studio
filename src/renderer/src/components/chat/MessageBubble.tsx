@@ -140,11 +140,11 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Image attachments rendered below the text bubble */}
         {hasImages && <AttachmentImages attachments={attachments!} />}
 
-        {/* Hover action bar */}
+        {/* Action bar — always visible, positioned at bottom */}
         {showActions && (
           <div
-            className={`absolute -top-8 flex items-center gap-0.5 rounded-md border bg-popover p-0.5 shadow-sm opacity-0 transition-opacity group-hover:opacity-100 ${
-              isUser ? 'right-0' : 'left-0'
+            className={`mt-1 flex items-center gap-0.5 ${
+              isUser ? 'justify-end' : 'justify-start'
             }`}>
             <Button
               variant="ghost"
