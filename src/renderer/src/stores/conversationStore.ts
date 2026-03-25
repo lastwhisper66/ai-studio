@@ -327,7 +327,16 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
 
   updateConversationModel: async (providerId: string, model: string) => {
     const conversationId = get().activeConversationId
-    if (!conversationId) return
+    const assistantStore = useAssistantStore.getState()
+
+    if (!conversationId) {
+      const assistant = assistantStore.assistants.find((a) => a.id === assistantStore.activeAssistantId)
+      if (assistant) {
+        await assistantStore.updateAssistant(assistant.id, { providerId, model })
+      }
+      return
+    }
+
     const result = await window.api.updateConversation(conversationId, { providerId, model })
     if (result.success && result.data) {
       set((state) => ({
@@ -342,10 +351,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
       // - Default assistant: always update (remember last selected model)
       // - Other assistants: only if they have no model configured yet
       const conversation = get().conversations.find((c) => c.id === conversationId)
-      const assistantStore = useAssistantStore.getState()
-      const assistant = assistantStore.assistants.find(
-        (a) => a.id === conversation?.assistantId,
-      )
+      const assistant = assistantStore.assistants.find((a) => a.id === conversation?.assistantId)
       if (assistant && (assistant.isDefault || !assistant.providerId)) {
         await assistantStore.updateAssistant(assistant.id, { providerId, model })
       }
