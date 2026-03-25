@@ -60,6 +60,7 @@ function createTables(): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       token_count INTEGER,
       attachments TEXT,
+      duration INTEGER,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
 
@@ -143,12 +144,6 @@ function createTables(): void {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
-
-  // Migrate: add duration column to messages if missing
-  const cols = database.pragma('table_info(messages)') as { name: string }[]
-  if (!cols.some((c) => c.name === 'duration')) {
-    database.exec('ALTER TABLE messages ADD COLUMN duration INTEGER')
-  }
 
   // Seed: ensure a default assistant exists
   const hasDefault = database
