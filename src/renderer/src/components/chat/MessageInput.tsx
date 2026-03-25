@@ -331,6 +331,7 @@ export function MessageInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const activeConversationId = useConversationStore((s) => s.activeConversationId)
   const clearMessages = useConversationStore((s) => s.clearMessages)
+  const renameConversation = useConversationStore((s) => s.renameConversation)
   const insertDivider = useConversationStore((s) => s.insertDivider)
 
   // Auto-resize textarea
@@ -437,9 +438,10 @@ export function MessageInput({
   const handleClearConfirm = useCallback(async (): Promise<void> => {
     if (activeConversationId) {
       await clearMessages(activeConversationId)
+      await renameConversation(activeConversationId, 'New Chat')
     }
     setClearDialogOpen(false)
-  }, [activeConversationId, clearMessages])
+  }, [activeConversationId, clearMessages, renameConversation])
 
   const handleInsertDivider = async (): Promise<void> => {
     if (!activeConversationId) return
