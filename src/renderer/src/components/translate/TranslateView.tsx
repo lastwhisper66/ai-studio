@@ -538,16 +538,16 @@ export function TranslateView(): React.JSX.Element {
             </span>
             {history.length > 0 && (
               <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
-                <DialogTrigger asChild>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{t('translate.history.clearHistory')}</TooltipContent>
-                  </Tooltip>
-                </DialogTrigger>
+                    </DialogTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('translate.history.clearHistory')}</TooltipContent>
+                </Tooltip>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{t('translate.history.clearHistory')}</DialogTitle>
