@@ -337,6 +337,18 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
             : c,
         ),
       }))
+
+      // Auto-writeback to assistant:
+      // - Default assistant: always update (remember last selected model)
+      // - Other assistants: only if they have no model configured yet
+      const conversation = get().conversations.find((c) => c.id === conversationId)
+      const assistantStore = useAssistantStore.getState()
+      const assistant = assistantStore.assistants.find(
+        (a) => a.id === conversation?.assistantId,
+      )
+      if (assistant && (assistant.isDefault || !assistant.providerId)) {
+        await assistantStore.updateAssistant(assistant.id, { providerId, model })
+      }
     }
   },
 }))
