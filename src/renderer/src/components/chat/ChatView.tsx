@@ -47,6 +47,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
 
   const assistants = useAssistantStore((s) => s.assistants)
   const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
+  const setActiveAssistantId = useAssistantStore((s) => s.setActiveAssistantId)
 
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -81,6 +82,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   }, [])
 
   const handleSelectAssistant = async (assistantId: string): Promise<void> => {
+    setActiveAssistantId(assistantId)
     await createConversation(undefined, assistantId)
   }
 

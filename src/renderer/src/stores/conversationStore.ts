@@ -74,10 +74,14 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     const result = await window.api.deleteConversation(id)
     if (result.success) {
       const { activeConversationId, conversations } = get()
+      const deletedConversation = conversations.find((c) => c.id === id)
       const remaining = conversations.filter((c) => c.id !== id)
 
       if (activeConversationId === id) {
-        const nextId = remaining.length > 0 ? remaining[0].id : null
+        const currentAssistantId =
+          deletedConversation?.assistantId ?? useAssistantStore.getState().activeAssistantId
+        const sameAssistantRemaining = remaining.filter((c) => c.assistantId === currentAssistantId)
+        const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
         set({
           conversations: remaining,
           activeConversationId: nextId,
@@ -104,10 +108,16 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     if (result.success) {
       const { activeConversationId, conversations } = get()
       const idSet = new Set(ids)
+      const activeConversation = activeConversationId
+        ? conversations.find((c) => c.id === activeConversationId)
+        : undefined
       const remaining = conversations.filter((c) => !idSet.has(c.id))
 
       if (activeConversationId && idSet.has(activeConversationId)) {
-        const nextId = remaining.length > 0 ? remaining[0].id : null
+        const currentAssistantId =
+          activeConversation?.assistantId ?? useAssistantStore.getState().activeAssistantId
+        const sameAssistantRemaining = remaining.filter((c) => c.assistantId === currentAssistantId)
+        const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
         set({
           conversations: remaining,
           activeConversationId: nextId,
@@ -330,7 +340,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     const assistantStore = useAssistantStore.getState()
 
     if (!conversationId) {
-      const assistant = assistantStore.assistants.find((a) => a.id === assistantStore.activeAssistantId)
+      const assistant = assistantStore.assistants.find(
+        (a) => a.id === assistantStore.activeAssistantId,
+      )
       if (assistant) {
         await assistantStore.updateAssistant(assistant.id, { providerId, model })
       }
