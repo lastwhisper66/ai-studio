@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
-import { Copy, Check, Trash2, User, Bot } from 'lucide-react'
+import { Copy, Check, Trash2, User, Bot, Clock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
@@ -13,7 +13,29 @@ interface MessageBubbleProps {
   isStreaming?: boolean
   messageId?: string
   attachments?: AttachmentMeta[]
+  duration?: number | null
+  streamStartTime?: number | null
   onDelete?: (id: string) => void
+}
+
+function formatDuration(ms: number): string {
+  const seconds = ms / 1000
+  if (seconds < 60) return `${seconds.toFixed(1)}s`
+  const mins = Math.floor(seconds / 60)
+  const secs = Math.round(seconds % 60)
+  return `${mins}m ${secs}s`
+}
+
+function useElapsedTime(startTime: number | null | undefined): number {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    if (!startTime) return
+    const update = (): void => setElapsed(Date.now() - startTime)
+    update()
+    const timer = setInterval(update, 100)
+    return () => clearInterval(timer)
+  }, [startTime])
+  return startTime ? elapsed : 0
 }
 
 function AttachmentImages({
@@ -33,11 +55,7 @@ function AttachmentImages({
   )
 }
 
-function AttachmentImage({
-  attachment,
-}: {
-  attachment: AttachmentMeta
-}): React.JSX.Element {
+function AttachmentImage({ attachment }: { attachment: AttachmentMeta }): React.JSX.Element {
   const [src, setSrc] = useState<string | null>(null)
   const [preview, setPreview] = useState(false)
 
@@ -86,12 +104,15 @@ export const MessageBubble = memo(function MessageBubble({
   isStreaming,
   messageId,
   attachments,
+  duration,
+  streamStartTime,
   onDelete,
 }: MessageBubbleProps) {
   const { t } = useTranslation()
   const isUser = role === 'user'
   const [copied, setCopied] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const elapsed = useElapsedTime(isStreaming ? streamStartTime : null)
 
   useEffect(() => {
     return () => clearTimeout(copyTimerRef.current)
@@ -112,6 +133,8 @@ export const MessageBubble = memo(function MessageBubble({
 
   const showActions = !isStreaming && messageId
   const hasImages = attachments && attachments.some((a) => isImageMime(a.mimeType))
+  const showDuration = !isUser && (isStreaming || (duration ?? 0) > 0)
+  const isWaiting = isStreaming && !content
 
   return (
     <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -131,8 +154,18 @@ export const MessageBubble = memo(function MessageBubble({
               ? 'whitespace-pre-wrap bg-chat-user text-chat-user-foreground'
               : 'text-foreground'
           }`}>
-          {isUser ? content : <MarkdownRenderer content={content} />}
-          {isStreaming && (
+          {isWaiting ? (
+            <div className="space-y-2">
+              <div className="h-3 w-48 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-36 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            </div>
+          ) : isUser ? (
+            content
+          ) : (
+            <MarkdownRenderer content={content} />
+          )}
+          {isStreaming && !isWaiting && (
             <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-current align-text-bottom" />
           )}
         </div>
@@ -140,28 +173,38 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Image attachments rendered below the text bubble */}
         {hasImages && <AttachmentImages attachments={attachments!} />}
 
-        {/* Action bar — always visible, positioned at bottom */}
-        {showActions && (
+        {/* Action bar + duration — positioned at bottom */}
+        {(showActions || showDuration) && (
           <div
             className={`mt-1 flex items-center gap-0.5 ${
               isUser ? 'justify-end' : 'justify-start'
             }`}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={handleCopy}
-              aria-label={t('chat.copyMessage')}>
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-destructive hover:text-destructive"
-              onClick={handleDelete}
-              aria-label={t('chat.deleteMessage')}>
-              <Trash2 className="h-3 w-3" />
-            </Button>
+            {showActions && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={handleCopy}
+                  aria-label={t('chat.copyMessage')}>
+                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-destructive hover:text-destructive"
+                  onClick={handleDelete}
+                  aria-label={t('chat.deleteMessage')}>
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </>
+            )}
+            {showDuration && (
+              <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {isStreaming ? formatDuration(elapsed) : formatDuration(duration!)}
+              </span>
+            )}
           </div>
         )}
       </div>

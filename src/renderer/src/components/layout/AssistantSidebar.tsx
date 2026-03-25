@@ -51,6 +51,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
   const { conversations, createConversation, setActiveConversation } = useConversationStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editAssistantId, setEditAssistantId] = useState<string | null>(null)
+  const [createMode, setCreateMode] = useState(false)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -98,24 +99,33 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
     }
   }
 
-  const handleAddAssistant = async (): Promise<void> => {
-    const assistant = await addAssistant({ name: t('assistant.newAssistant'), contextCount: '10' })
+  const handleAddAssistant = (): void => {
+    setCreateMode(true)
+    setEditAssistantId(null)
+    setSettingsOpen(true)
+  }
+
+  const handleCreate = async (data: Partial<import('@shared/types').Assistant> & { name: string }): Promise<void> => {
+    const assistant = await addAssistant(data)
     if (assistant) {
-      setEditAssistantId(assistant.id)
-      setSettingsOpen(true)
+      setActiveAssistantId(assistant.id)
+      await createConversation(undefined, assistant.id)
     }
   }
 
   const handleSettingsClose = async (open: boolean): Promise<void> => {
     setSettingsOpen(open)
-    if (!open && editAssistantId) {
-      // If this was a newly created assistant, switch to it
-      const isNew = !conversations.some((c) => c.assistantId === editAssistantId)
-      if (isNew) {
-        setActiveAssistantId(editAssistantId)
-        await createConversation(undefined, editAssistantId)
+    if (!open) {
+      if (!createMode && editAssistantId) {
+        // Edit mode: if this was a newly created assistant, switch to it
+        const isNew = !conversations.some((c) => c.assistantId === editAssistantId)
+        if (isNew) {
+          setActiveAssistantId(editAssistantId)
+          await createConversation(undefined, editAssistantId)
+        }
       }
       setEditAssistantId(null)
+      setCreateMode(false)
     }
   }
 
@@ -255,6 +265,8 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
         open={settingsOpen}
         onOpenChange={handleSettingsClose}
         assistantId={editAssistantId}
+        mode={createMode ? 'create' : 'edit'}
+        onCreate={handleCreate}
       />
 
       {/* Delete Confirmation Dialog */}

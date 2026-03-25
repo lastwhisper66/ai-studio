@@ -17,6 +17,7 @@ interface MessageListProps {
   isLoading: boolean
   hasActiveConversation: boolean
   hasMoreMessages: boolean
+  streamStartTime: number | null
   onSend: (content: string) => void
   onLoadMore: () => void
   assistants?: Assistant[]
@@ -31,6 +32,7 @@ export function MessageList({
   isLoading,
   hasActiveConversation,
   hasMoreMessages,
+  streamStartTime,
   onSend,
   onLoadMore,
   assistants,
@@ -119,12 +121,18 @@ export function MessageList({
                   content={msg.content}
                   messageId={msg.id}
                   attachments={msg.attachments}
+                  duration={msg.duration}
                   onDelete={deleteMessage}
                 />
               ),
             )}
-            {isStreaming && throttledContent && (
-              <MessageBubble role="assistant" content={throttledContent} isStreaming />
+            {isStreaming && (
+              <MessageBubble
+                role="assistant"
+                content={throttledContent}
+                isStreaming
+                streamStartTime={streamStartTime}
+              />
             )}
           </>
         )}

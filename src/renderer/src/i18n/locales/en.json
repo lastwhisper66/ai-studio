@@ -89,6 +89,8 @@
       "model": "Model",
       "noProviderHint": "Please add providers and available models in settings",
       "useDefault": "Use default",
+      "selectModel": "Select a model",
+      "modelRequired": "Please select a model for this assistant",
       "customModelName": "Custom model name",
       "customModelPlaceholder": "Enter a model name not in the list",
       "customModelHint": "If the model you need is not in the list, you can enter the model name here.",
@@ -108,7 +110,8 @@
       "systemPromptPlaceholder": "Define the assistant's role and behavior...",
       "systemPromptHint": "Define the assistant's role, capabilities, and behavior rules. Leave empty to use the global system prompt.",
       "resetButton": "Reset",
-      "saveButton": "Save"
+      "saveButton": "Save",
+      "createTitle": "Create Assistant"
     }
   },
   "topic": {

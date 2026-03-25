@@ -59,7 +59,10 @@ export function registerConversationHandlers(): void {
       _,
       id: string,
       data: Partial<
-        Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'>
+        Pick<
+          Conversation,
+          'title' | 'providerId' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'
+        >
       >,
     ): IpcResult<Conversation | undefined> => {
       try {

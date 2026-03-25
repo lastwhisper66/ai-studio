@@ -10,6 +10,7 @@ interface MessageRow {
   content: string
   created_at: string
   token_count: number | null
+  duration: number | null
   attachments: string | null
 }
 
@@ -21,6 +22,7 @@ function rowToMessage(row: MessageRow): Message {
     content: row.content,
     createdAt: row.created_at,
     tokenCount: row.token_count,
+    duration: row.duration,
   }
   if (row.attachments) {
     try {
@@ -73,6 +75,7 @@ export function createMessage(
   role: MessageRole,
   content: string,
   attachments?: AttachmentMeta[],
+  duration?: number,
 ): Message {
   const id = uuidv4()
   const now = new Date().toISOString()
@@ -80,9 +83,9 @@ export function createMessage(
   const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null
 
   db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, created_at, attachments)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(id, conversationId, role, content, now, attachmentsJson)
+    `INSERT INTO messages (id, conversation_id, role, content, created_at, attachments, duration)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(id, conversationId, role, content, now, attachmentsJson, duration ?? null)
 
   // Update conversation's updated_at timestamp
   touchConversation(conversationId)

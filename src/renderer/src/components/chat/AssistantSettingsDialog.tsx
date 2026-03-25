@@ -27,6 +27,8 @@ interface AssistantSettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   assistantId: string | null
+  mode?: 'create' | 'edit'
+  onCreate?: (data: Partial<Assistant> & { name: string }) => void
 }
 
 type TabId = 'model' | 'prompt'
@@ -46,6 +48,25 @@ interface FormState {
   contextCountEnabled: boolean
   systemPrompt: string
   group: string
+}
+
+function defaultFormState(): FormState {
+  return {
+    name: '',
+    description: '',
+    providerId: '',
+    model: '',
+    temperature: '0.7',
+    temperatureEnabled: false,
+    maxCompletionTokens: '4096',
+    maxCompletionTokensEnabled: false,
+    topP: '1',
+    topPEnabled: false,
+    contextCount: '10',
+    contextCountEnabled: true,
+    systemPrompt: '',
+    group: '',
+  }
 }
 
 function stateFromAssistant(a: Assistant): FormState {
@@ -71,29 +92,40 @@ export function AssistantSettingsDialog({
   open,
   onOpenChange,
   assistantId,
+  mode = 'edit',
+  onCreate,
 }: AssistantSettingsDialogProps): React.JSX.Element {
   const { t } = useTranslation()
   const { assistants, updateAssistant } = useAssistantStore()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
 
+  const isCreateMode = mode === 'create'
   const assistant = assistants.find((a) => a.id === assistantId)
   const [activeTab, setActiveTab] = useState<TabId>('model')
   const [form, setForm] = useState<FormState | null>(() =>
-    assistant ? stateFromAssistant(assistant) : null,
+    isCreateMode ? defaultFormState() : assistant ? stateFromAssistant(assistant) : null,
   )
 
   // Re-sync form when the dialog opens or the assistant changes
   useEffect(() => {
-    if (open && assistant) {
-      setForm(stateFromAssistant(assistant))
+    if (open) {
+      if (isCreateMode) {
+        setForm(defaultFormState())
+      } else if (assistant) {
+        setForm(stateFromAssistant(assistant))
+      }
       setActiveTab('model')
     }
   }, [open, assistantId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenChange = (nextOpen: boolean): void => {
-    if (nextOpen && assistant) {
-      setForm(stateFromAssistant(assistant))
+    if (nextOpen) {
+      if (isCreateMode) {
+        setForm(defaultFormState())
+      } else if (assistant) {
+        setForm(stateFromAssistant(assistant))
+      }
       setActiveTab('model')
     }
     onOpenChange(nextOpen)
@@ -101,22 +133,25 @@ export function AssistantSettingsDialog({
 
   const commit = useCallback(
     (partial: Partial<Assistant>) => {
+      if (isCreateMode) return // create mode: only update local form state
       if (!assistantId) return
       updateAssistant(assistantId, partial)
     },
-    [assistantId, updateAssistant],
+    [isCreateMode, assistantId, updateAssistant],
   )
 
   // Model selector: compute the select value from providerId + model
   const enabledProviders = providers.filter((p) => p.enabled)
 
   const modelSelectValue = useMemo(() => {
-    if (!form) return '__default__'
-    if (!form.providerId && !form.model) return '__default__'
+    if (!form) return ''
+    if (!form.providerId && !form.model) return ''
     if (form.providerId && form.model) return `${form.providerId}::${form.model}`
     if (form.providerId) return `${form.providerId}::`
-    return '__default__'
+    return ''
   }, [form?.providerId, form?.model]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const isModelSelected = !!(form?.providerId && form?.model)
 
   // Check if the current model is a known model in the list (for custom model input display)
   const isKnownModel = useMemo(() => {
@@ -126,7 +161,15 @@ export function AssistantSettingsDialog({
     )
   }, [form?.providerId, form?.model, models])
 
-  if (!assistant || !form) {
+  if (!isCreateMode && (!assistant || !form)) {
+    return (
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent className="sm:max-w-[70vw] h-[80vh]" />
+      </Dialog>
+    )
+  }
+
+  if (!form) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-[70vw] h-[80vh]" />
@@ -205,37 +248,50 @@ export function AssistantSettingsDialog({
   }
 
   const handleModelSelect = (val: string): void => {
-    if (val === '__default__') {
-      change('providerId', '')
-      change('model', '')
-      commit({ providerId: null, model: '' })
-    } else {
-      const sepIndex = val.indexOf('::')
-      const providerId = val.slice(0, sepIndex)
-      const modelName = val.slice(sepIndex + 2)
-      change('providerId', providerId)
-      change('model', modelName)
-      commit({ providerId: providerId || null, model: modelName })
-    }
+    const sepIndex = val.indexOf('::')
+    const providerId = val.slice(0, sepIndex)
+    const modelName = val.slice(sepIndex + 2)
+    change('providerId', providerId)
+    change('model', modelName)
+    commit({ providerId: providerId || null, model: modelName })
   }
 
   const handleSave = (): void => {
-    commit({
-      name: form.name,
-      description: form.description,
-      providerId: form.providerId || null,
-      model: form.model,
-      temperature: form.temperatureEnabled ? form.temperature : '',
-      maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
-      topP: form.topPEnabled ? form.topP : '',
-      contextCount: form.contextCountEnabled ? form.contextCount : '',
-      systemPrompt: form.systemPrompt,
-      group: form.group,
-    })
+    if (isCreateMode) {
+      onCreate?.({
+        name: form.name.trim() || t('assistant.newAssistant'),
+        description: form.description,
+        providerId: form.providerId || null,
+        model: form.model,
+        temperature: form.temperatureEnabled ? form.temperature : '',
+        maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
+        topP: form.topPEnabled ? form.topP : '',
+        contextCount: form.contextCountEnabled ? form.contextCount : '',
+        systemPrompt: form.systemPrompt,
+        group: form.group,
+      })
+    } else {
+      commit({
+        name: form.name,
+        description: form.description,
+        providerId: form.providerId || null,
+        model: form.model,
+        temperature: form.temperatureEnabled ? form.temperature : '',
+        maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
+        topP: form.topPEnabled ? form.topP : '',
+        contextCount: form.contextCountEnabled ? form.contextCount : '',
+        systemPrompt: form.systemPrompt,
+        group: form.group,
+      })
+    }
     onOpenChange(false)
   }
 
   const handleReset = (): void => {
+    if (isCreateMode) {
+      setForm(defaultFormState())
+      return
+    }
     commit({
       providerId: null,
       model: '',
@@ -247,7 +303,7 @@ export function AssistantSettingsDialog({
     })
     setForm(
       stateFromAssistant({
-        ...assistant,
+        ...assistant!,
         providerId: null,
         model: '',
         temperature: '',
@@ -273,7 +329,9 @@ export function AssistantSettingsDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[60vw] h-[70vh] flex flex-col p-0">
         <DialogHeader className="border-b px-6 py-4">
-          <DialogTitle>{form.name}</DialogTitle>
+          <DialogTitle>
+            {isCreateMode ? t('assistant.settings.createTitle') : form.name}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="flex min-h-0 flex-1">
@@ -307,31 +365,35 @@ export function AssistantSettingsDialog({
                         {t('assistant.settings.noProviderHint')}
                       </p>
                     ) : (
-                      <Select value={modelSelectValue} onValueChange={handleModelSelect}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__default__">
-                            {t('assistant.settings.useDefault')}
-                          </SelectItem>
-                          {enabledProviders.map((provider) => {
-                            const providerModels = models.filter(
-                              (m) => m.providerId === provider.id && m.enabled,
-                            )
-                            return (
-                              <SelectGroup key={provider.id}>
-                                <SelectLabel>{provider.name}</SelectLabel>
-                                {providerModels.map((m) => (
-                                  <SelectItem key={m.id} value={`${provider.id}::${m.name}`}>
-                                    {m.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            )
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <>
+                        <Select value={modelSelectValue} onValueChange={handleModelSelect}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder={t('assistant.settings.selectModel')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {enabledProviders.map((provider) => {
+                              const providerModels = models.filter(
+                                (m) => m.providerId === provider.id && m.enabled,
+                              )
+                              return (
+                                <SelectGroup key={provider.id}>
+                                  <SelectLabel>{provider.name}</SelectLabel>
+                                  {providerModels.map((m) => (
+                                    <SelectItem key={m.id} value={`${provider.id}::${m.name}`}>
+                                      {m.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectGroup>
+                              )
+                            })}
+                          </SelectContent>
+                        </Select>
+                        {!isModelSelected && (
+                          <p className="text-sm text-destructive">
+                            {t('assistant.settings.modelRequired')}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -567,7 +629,7 @@ export function AssistantSettingsDialog({
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             {t('assistant.settings.resetButton')}
           </Button>
-          <Button size="sm" onClick={handleSave}>
+          <Button size="sm" onClick={handleSave} disabled={!isModelSelected}>
             <Save className="mr-1.5 h-3.5 w-3.5" />
             {t('assistant.settings.saveButton')}
           </Button>

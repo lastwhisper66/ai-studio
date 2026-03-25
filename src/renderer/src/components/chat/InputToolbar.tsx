@@ -1,6 +1,8 @@
 import { Check, ChevronUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useProviderStore } from '@renderer/stores/providerStore'
+import { useConversationStore } from '@renderer/stores/conversationStore'
+import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import {
   DropdownMenu,
@@ -16,19 +18,35 @@ export function InputToolbar(): React.JSX.Element {
   const { t } = useTranslation()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
-  const activeProviderId = useProviderStore((s) => s.activeProviderId)
-  const activeModelId = useProviderStore((s) => s.activeModelId)
-  const setActiveModel = useProviderStore((s) => s.setActiveModel)
+
+  const conversations = useConversationStore((s) => s.conversations)
+  const activeConversationId = useConversationStore((s) => s.activeConversationId)
+  const updateConversationModel = useConversationStore((s) => s.updateConversationModel)
+
+  const assistants = useAssistantStore((s) => s.assistants)
+  const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
+
+  // Resolve effective provider + model: conversation-level → assistant-level
+  const activeConversation = conversations.find((c) => c.id === activeConversationId)
+  const activeAssistant = assistants.find(
+    (a) => a.id === (activeConversation?.assistantId ?? activeAssistantId),
+  )
+
+  const effectiveProviderId = activeConversation?.providerId ?? activeAssistant?.providerId ?? null
+  const effectiveModelName = activeConversation?.model ?? activeAssistant?.model ?? ''
 
   const enabledProviders = providers.filter((p) => p.enabled)
-  const activeProvider = providers.find((p) => p.id === activeProviderId)
-  const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
-  const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
+  const effectiveProvider = providers.find((p) => p.id === effectiveProviderId)
+  const template = effectiveProvider ? getTemplateByType(effectiveProvider.type) : undefined
 
-  const displayModel = activeModel?.name || activeProvider?.model || t('common.noModelSet')
+  const displayModel = effectiveModelName || effectiveProvider?.model || t('common.noModelSet')
 
-  if (!activeProvider) {
-    return <span className="text-muted-foreground text-xs">{t('common.noModelConfigured')}</span>
+  const handleSelectModel = (modelName: string, providerId: string): void => {
+    updateConversationModel(providerId, modelName)
+  }
+
+  if (!effectiveProvider) {
+    return <span className="text-muted-foreground text-xs">{t('common.noModelSet')}</span>
   }
 
   return (
@@ -60,11 +78,12 @@ export function InputToolbar(): React.JSX.Element {
                 </DropdownMenuLabel>
                 {providerModels.length > 0 ? (
                   providerModels.map((m) => {
-                    const isSelected = provider.id === activeProviderId && m.id === activeModelId
+                    const isSelected =
+                      provider.id === effectiveProviderId && m.name === effectiveModelName
                     return (
                       <DropdownMenuItem
                         key={m.id}
-                        onClick={() => setActiveModel(m.id, provider.id)}>
+                        onClick={() => handleSelectModel(m.name, provider.id)}>
                         <Check className={`mr-2 h-3.5 w-3.5 ${isSelected ? '' : 'invisible'}`} />
                         <span>{m.name}</span>
                       </DropdownMenuItem>

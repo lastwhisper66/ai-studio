@@ -89,6 +89,8 @@
       "model": "模型",
       "noProviderHint": "请在设置中添加供应商和可用模型",
       "useDefault": "使用默认",
+      "selectModel": "请选择模型",
+      "modelRequired": "请为助手选择一个模型",
       "customModelName": "自定义模型名",
       "customModelPlaceholder": "输入不在列表中的模型名",
       "customModelHint": "如需使用列表中没有的模型，可在此输入模型名称。",
@@ -108,7 +110,8 @@
       "systemPromptPlaceholder": "设定助手的角色和行为...",
       "systemPromptHint": "定义助手的角色、能力和行为规则。留空则使用全局系统提示词。",
       "resetButton": "重置",
-      "saveButton": "保存"
+      "saveButton": "保存",
+      "createTitle": "新建助手"
     }
   },
   "topic": {

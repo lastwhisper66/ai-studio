@@ -36,11 +36,13 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     isLoading,
     isStreaming,
     streamingContent,
+    streamStartTime,
     sendMessage,
     stopGeneration,
     loadMoreMessages,
     clearError,
     createConversation,
+    updateConversationModel,
   } = useConversationStore()
 
   const assistants = useAssistantStore((s) => s.assistants)
@@ -48,9 +50,6 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
 
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
-  const activeProviderId = useProviderStore((s) => s.activeProviderId)
-  const activeModelId = useProviderStore((s) => s.activeModelId)
-  const setActiveModel = useProviderStore((s) => s.setActiveModel)
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
   const activeAssistant = activeAssistantId
@@ -59,19 +58,12 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       ? assistants.find((a) => a.id === activeConversation.assistantId)
       : undefined
 
-  // Provider / model display
+  // Provider / model display — conversation-level override → assistant-level
   const enabledProviders = providers.filter((p) => p.enabled)
-  const resolvedProviderId = activeAssistant?.providerId || activeProviderId
+  const resolvedProviderId = activeConversation?.providerId ?? activeAssistant?.providerId ?? null
+  const resolvedModelName = activeConversation?.model ?? activeAssistant?.model ?? ''
   const resolvedProvider = providers.find((p) => p.id === resolvedProviderId)
-  // Resolve display model name
-  const activeModelObj = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
-  const resolvedModel =
-    activeAssistant?.model ||
-    (activeModelObj && activeModelObj.providerId === resolvedProviderId
-      ? activeModelObj.name
-      : null) ||
-    resolvedProvider?.model ||
-    t('common.noModelSet')
+  const resolvedModel = resolvedModelName || resolvedProvider?.model || t('common.noModelSet')
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -138,11 +130,11 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
                       {providerModels.length > 0 ? (
                         providerModels.map((m) => {
                           const isSelected =
-                            provider.id === resolvedProviderId && m.id === activeModelId
+                            provider.id === resolvedProviderId && m.name === resolvedModelName
                           return (
                             <DropdownMenuItem
                               key={m.id}
-                              onClick={() => setActiveModel(m.id, provider.id)}>
+                              onClick={() => updateConversationModel(provider.id, m.name)}>
                               <Check
                                 className={`mr-2 h-3.5 w-3.5 ${isSelected ? '' : 'invisible'}`}
                               />
@@ -190,6 +182,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         isLoading={isLoading}
         hasActiveConversation={!!activeConversationId}
         hasMoreMessages={hasMoreMessages}
+        streamStartTime={streamStartTime}
         onSend={sendMessage}
         onLoadMore={loadMoreMessages}
         assistants={assistants}

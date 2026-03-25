@@ -13,6 +13,7 @@ interface ConversationState {
   error: string | null
   isStreaming: boolean
   streamingContent: string
+  streamStartTime: number | null
 
   loadConversations: () => Promise<void>
   createConversation: (title?: string, assistantId?: string) => Promise<boolean>
@@ -29,6 +30,7 @@ interface ConversationState {
   sendMessage: (content: string, files?: FileData[]) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
+  updateConversationModel: (providerId: string, model: string) => Promise<void>
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
@@ -40,6 +42,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   error: null,
   isStreaming: false,
   streamingContent: '',
+  streamStartTime: null,
 
   clearError: () => set({ error: null }),
 
@@ -253,7 +256,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Clean up any leftover listeners before registering new ones
     window.api.removeAllStreamListeners()
 
-    set({ isStreaming: true, streamingContent: '' })
+    set({ isStreaming: true, streamingContent: '', streamStartTime: Date.now() })
 
     // Register listeners BEFORE invoke to prevent race condition
     const cleanups: (() => void)[] = []
@@ -277,9 +280,10 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
             messages: [...state.messages, data.message!],
             isStreaming: false,
             streamingContent: '',
+            streamStartTime: null,
           }))
         } else {
-          set({ isStreaming: false, streamingContent: '' })
+          set({ isStreaming: false, streamingContent: '', streamStartTime: null })
         }
         cleanup()
       }),
@@ -288,7 +292,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     cleanups.push(
       window.api.onStreamError((data) => {
         if (data.conversationId !== conversationId) return
-        set({ isStreaming: false, streamingContent: '', error: data.error })
+        set({ isStreaming: false, streamingContent: '', streamStartTime: null, error: data.error })
         cleanup()
       }),
     )
@@ -309,7 +313,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Invoke the streaming request
     const result = await window.api.sendMessage({ conversationId, files })
     if (!result.success) {
-      set({ isStreaming: false, streamingContent: '', error: result.error })
+      set({ isStreaming: false, streamingContent: '', streamStartTime: null, error: result.error })
       cleanup()
     }
   },
@@ -318,6 +322,21 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     const conversationId = get().activeConversationId
     if (conversationId) {
       window.api.stopGeneration(conversationId)
+    }
+  },
+
+  updateConversationModel: async (providerId: string, model: string) => {
+    const conversationId = get().activeConversationId
+    if (!conversationId) return
+    const result = await window.api.updateConversation(conversationId, { providerId, model })
+    if (result.success && result.data) {
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c.id === conversationId
+            ? { ...c, providerId: result.data!.providerId, model: result.data!.model }
+            : c,
+        ),
+      }))
     }
   },
 }))

@@ -45,6 +45,7 @@ function createTables(): void {
       title TEXT NOT NULL DEFAULT 'New Chat',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      provider_id TEXT,
       model TEXT,
       system_prompt TEXT,
       assistant_id TEXT,
@@ -131,6 +132,12 @@ function createTables(): void {
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `)
+
+  // Migrate: add duration column to messages if missing
+  const cols = database.pragma('table_info(messages)') as { name: string }[]
+  if (!cols.some((c) => c.name === 'duration')) {
+    database.exec('ALTER TABLE messages ADD COLUMN duration INTEGER')
+  }
 
   // Seed: ensure a default assistant exists
   const hasDefault = database
