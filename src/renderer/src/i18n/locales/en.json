@@ -256,6 +256,13 @@
       "temperature": "Temperature",
       "temperatureHint": "Lower values produce more accurate translations, higher values are more creative. Default 0.3.",
       "resetDefault": "Reset default"
+    },
+    "history": {
+      "title": "History",
+      "clearHistory": "Clear history",
+      "clearHistoryConfirm": "Are you sure you want to clear all translation history? This cannot be undone.",
+      "empty": "No translation history",
+      "clearInput": "Clear input"
     }
   },
   "modelManage": {

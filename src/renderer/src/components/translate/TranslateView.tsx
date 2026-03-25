@@ -8,6 +8,9 @@ import {
   Eraser,
   Settings2,
   ChevronDown,
+  X,
+  Trash2,
+  History,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
@@ -29,10 +32,20 @@ import {
 } from '@renderer/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@renderer/components/ui/dialog'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { TranslateSettingsDialog, type TranslateSettings } from './TranslateSettingsDialog'
+import type { TranslationHistoryItem } from '@shared/types'
 
 interface Language {
   code: string
@@ -65,7 +78,11 @@ export function TranslateView(): React.JSX.Element {
     systemPrompt: '',
     temperature: 0.3,
   })
+  const [history, setHistory] = useState<TranslationHistoryItem[]>([])
+  const [clearHistoryOpen, setClearHistoryOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Track current translation params for saving history on stream end
+  const currentTranslationRef = useRef<{ sourceText: string; sourceLang: string; targetLang: string } | null>(null)
 
   // Independent model selection for translate (separate from chat's global selection)
   const providers = useProviderStore((s) => s.providers)
@@ -80,20 +97,43 @@ export function TranslateView(): React.JSX.Element {
   // Load persisted translate settings on mount
   useEffect(() => {
     async function load(): Promise<void> {
-      const [promptResult, tempResult, providerResult, modelResult] = await Promise.all([
-        window.api.getSetting('translate.systemPrompt'),
-        window.api.getSetting('translate.temperature'),
-        window.api.getSetting('translate.providerId'),
-        window.api.getSetting('translate.modelId'),
-      ])
+      const [promptResult, tempResult, providerResult, modelResult, srcLangResult, tgtLangResult] =
+        await Promise.all([
+          window.api.getSetting('translate.systemPrompt'),
+          window.api.getSetting('translate.temperature'),
+          window.api.getSetting('translate.providerId'),
+          window.api.getSetting('translate.modelId'),
+          window.api.getSetting('translate.sourceLang'),
+          window.api.getSetting('translate.targetLang'),
+        ])
       setTranslateSettings({
         systemPrompt: promptResult.data ?? '',
         temperature: tempResult.data ? parseFloat(tempResult.data) : 0.3,
       })
       if (providerResult.data) setLocalProviderId(providerResult.data)
       if (modelResult.data) setLocalModelId(modelResult.data)
+      if (srcLangResult.data) setSourceLang(srcLangResult.data)
+      if (tgtLangResult.data) setTargetLang(tgtLangResult.data)
     }
     load()
+  }, [])
+
+  // Load translation history on mount
+  useEffect(() => {
+    window.api.listTranslationHistory().then((result) => {
+      if (result.success && result.data) setHistory(result.data)
+    })
+  }, [])
+
+  // Persist language selection changes
+  const handleSourceLangChange = useCallback((value: string) => {
+    setSourceLang(value)
+    window.api.setSetting('translate.sourceLang', value)
+  }, [])
+
+  const handleTargetLangChange = useCallback((value: string) => {
+    setTargetLang(value)
+    window.api.setSetting('translate.targetLang', value)
   }, [])
 
   const activeProviderId = localProviderId ?? globalProviderId
@@ -132,13 +172,32 @@ export function TranslateView(): React.JSX.Element {
       setTranslatedText((prev) => prev + data.delta)
     })
 
-    const unsubEnd = window.api.onTranslateEnd(() => {
+    const unsubEnd = window.api.onTranslateEnd((data) => {
       setIsTranslating(false)
+      // Save to history if we have a completed translation
+      const params = currentTranslationRef.current
+      if (params && data.fullText) {
+        window.api
+          .createTranslationHistory(
+            params.sourceText,
+            data.fullText,
+            params.sourceLang,
+            params.targetLang,
+          )
+          .then((result) => {
+            if (result.success && result.data) {
+              const newItem = result.data
+              setHistory((prev) => [newItem, ...prev].slice(0, 50))
+            }
+          })
+      }
+      currentTranslationRef.current = null
     })
 
     const unsubError = window.api.onTranslateError((data) => {
       setError(data.error)
       setIsTranslating(false)
+      currentTranslationRef.current = null
     })
 
     return () => {
@@ -163,6 +222,13 @@ export function TranslateView(): React.JSX.Element {
         : (SOURCE_LANGUAGES.find((l) => l.code === sourceLang)?.label ?? sourceLang)
     const targetLabel = LANGUAGES.find((l) => l.code === targetLang)?.label ?? targetLang
 
+    // Store params for history saving on stream end
+    currentTranslationRef.current = {
+      sourceText: text,
+      sourceLang: sourceLabel,
+      targetLang: targetLabel,
+    }
+
     const result = await window.api.translate({
       text,
       sourceLang: sourceLabel,
@@ -176,6 +242,7 @@ export function TranslateView(): React.JSX.Element {
     if (!result.success) {
       setError(result.error ?? t('translate.failed'))
       setIsTranslating(false)
+      currentTranslationRef.current = null
     }
   }, [
     sourceText,
@@ -190,14 +257,21 @@ export function TranslateView(): React.JSX.Element {
   ])
 
   const handleStop = useCallback(async () => {
+    currentTranslationRef.current = null
     await window.api.stopTranslation()
     setIsTranslating(false)
   }, [])
 
   const handleSwapLanguages = useCallback(() => {
     if (sourceLang === 'auto') return
-    setSourceLang(targetLang)
-    setTargetLang(sourceLang)
+    const newSource = targetLang
+    const newTarget = sourceLang
+    setSourceLang(newSource)
+    setTargetLang(newTarget)
+    window.api.setSettingsBatch({
+      'translate.sourceLang': newSource,
+      'translate.targetLang': newTarget,
+    })
     if (translatedText) {
       setSourceText(translatedText)
       setTranslatedText(sourceText)
@@ -218,6 +292,22 @@ export function TranslateView(): React.JSX.Element {
     textareaRef.current?.focus()
   }, [])
 
+  const handleClearInput = useCallback(() => {
+    setSourceText('')
+    textareaRef.current?.focus()
+  }, [])
+
+  const handleClearHistory = useCallback(async () => {
+    await window.api.clearTranslationHistory()
+    setHistory([])
+    setClearHistoryOpen(false)
+  }, [])
+
+  const handleHistoryItemClick = useCallback((item: TranslationHistoryItem) => {
+    setSourceText(item.sourceText)
+    setTranslatedText(item.translatedText)
+  }, [])
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -232,7 +322,7 @@ export function TranslateView(): React.JSX.Element {
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center gap-2 border-b px-4 py-2">
-        <Select value={sourceLang} onValueChange={setSourceLang}>
+        <Select value={sourceLang} onValueChange={handleSourceLangChange}>
           <SelectTrigger className="w-40" size="sm">
             <SelectValue />
           </SelectTrigger>
@@ -259,7 +349,7 @@ export function TranslateView(): React.JSX.Element {
           <TooltipContent>{t('translate.swapLanguages')}</TooltipContent>
         </Tooltip>
 
-        <Select value={targetLang} onValueChange={setTargetLang}>
+        <Select value={targetLang} onValueChange={handleTargetLangChange}>
           <SelectTrigger className="w-40" size="sm">
             <SelectValue />
           </SelectTrigger>
@@ -368,13 +458,25 @@ export function TranslateView(): React.JSX.Element {
         </Tooltip>
       </div>
 
-      {/* Main content: source & result panels */}
+      {/* Main content: source & result & history panels */}
       <div className="flex flex-1 overflow-hidden">
         {/* Source panel */}
         <div className="relative flex flex-1 flex-col border-r">
+          {sourceText && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={handleClearInput}>
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{t('translate.history.clearInput')}</TooltipContent>
+            </Tooltip>
+          )}
           <textarea
             ref={textareaRef}
-            className="flex-1 resize-none bg-transparent p-4 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
+            className="flex-1 resize-none bg-transparent p-4 pr-10 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
             placeholder={t('translate.inputPlaceholder')}
             value={sourceText}
             onChange={(e) => setSourceText(e.target.value)}
@@ -424,6 +526,70 @@ export function TranslateView(): React.JSX.Element {
                 </p>
               )}
             </div>
+          </ScrollArea>
+        </div>
+
+        {/* History panel */}
+        <div className="flex w-64 flex-col border-l">
+          <div className="flex items-center justify-between border-b px-4 py-2">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+              <History className="h-3.5 w-3.5" />
+              {t('translate.history.title')}
+            </span>
+            {history.length > 0 && (
+              <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
+                <DialogTrigger asChild>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('translate.history.clearHistory')}</TooltipContent>
+                  </Tooltip>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('translate.history.clearHistory')}</DialogTitle>
+                    <DialogDescription>
+                      {t('translate.history.clearHistoryConfirm')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setClearHistoryOpen(false)}>
+                      {t('common.cancel')}
+                    </Button>
+                    <Button variant="destructive" onClick={handleClearHistory}>
+                      {t('common.confirm')}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+          <ScrollArea className="flex-1">
+            {history.length === 0 ? (
+              <div className="flex h-full items-center justify-center p-4">
+                <p className="text-sm text-muted-foreground">{t('translate.history.empty')}</p>
+              </div>
+            ) : (
+              <div className="flex flex-col">
+                {history.map((item) => (
+                  <button
+                    key={item.id}
+                    className="border-b px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                    onClick={() => handleHistoryItemClick(item)}>
+                    <div className="mb-1 text-xs text-muted-foreground">
+                      {item.sourceLang} → {item.targetLang}
+                    </div>
+                    <div className="line-clamp-2 text-sm">{item.sourceText}</div>
+                    <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                      {item.translatedText}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </ScrollArea>
         </div>
       </div>

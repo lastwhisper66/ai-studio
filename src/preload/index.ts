@@ -21,6 +21,7 @@ import type {
   TranslateEndData,
   TranslateErrorData,
   ModelCapability,
+  TranslationHistoryItem,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -234,6 +235,27 @@ const api = {
     ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_END)
     ipcRenderer.removeAllListeners(IpcChannels.TRANSLATE_ERROR)
   },
+
+  // Translation History
+  listTranslationHistory: (): Promise<IpcResult<TranslationHistoryItem[]>> =>
+    ipcRenderer.invoke(IpcChannels.TRANSLATION_HISTORY_LIST),
+
+  createTranslationHistory: (
+    sourceText: string,
+    translatedText: string,
+    sourceLang: string,
+    targetLang: string,
+  ): Promise<IpcResult<TranslationHistoryItem>> =>
+    ipcRenderer.invoke(
+      IpcChannels.TRANSLATION_HISTORY_CREATE,
+      sourceText,
+      translatedText,
+      sourceLang,
+      targetLang,
+    ),
+
+  clearTranslationHistory: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.TRANSLATION_HISTORY_CLEAR),
 
   // Window controls
   windowMinimize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),

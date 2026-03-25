@@ -256,6 +256,13 @@
       "temperature": "Temperature",
       "temperatureHint": "较低值产生更准确的翻译，较高值更具创造性。默认 0.3。",
       "resetDefault": "重置默认"
+    },
+    "history": {
+      "title": "翻译历史",
+      "clearHistory": "清除历史",
+      "clearHistoryConfirm": "确定要清除所有翻译历史记录吗？此操作不可撤销。",
+      "empty": "暂无翻译历史",
+      "clearInput": "清空输入"
     }
   },
   "modelManage": {

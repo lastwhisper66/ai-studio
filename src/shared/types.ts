@@ -188,3 +188,13 @@ export interface TranslateEndData {
 export interface TranslateErrorData {
   error: string
 }
+
+/** Translation history item */
+export interface TranslationHistoryItem {
+  id: string
+  sourceText: string
+  translatedText: string
+  sourceLang: string
+  targetLang: string
+  createdAt: string
+}

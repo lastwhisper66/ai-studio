@@ -57,6 +57,10 @@ export const IpcChannels = {
   TRANSLATE_END: 'translate:end',
   TRANSLATE_ERROR: 'translate:error',
   TRANSLATE_STOP: 'translate:stop',
+  // Translation History
+  TRANSLATION_HISTORY_LIST: 'translation-history:list',
+  TRANSLATION_HISTORY_CREATE: 'translation-history:create',
+  TRANSLATION_HISTORY_CLEAR: 'translation-history:clear',
   // Window
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',

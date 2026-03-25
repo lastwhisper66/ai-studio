@@ -133,6 +133,17 @@ function createTables(): void {
     );
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS translation_history (
+      id TEXT PRIMARY KEY,
+      source_text TEXT NOT NULL,
+      translated_text TEXT NOT NULL,
+      source_lang TEXT NOT NULL,
+      target_lang TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `)
+
   // Migrate: add duration column to messages if missing
   const cols = database.pragma('table_info(messages)') as { name: string }[]
   if (!cols.some((c) => c.name === 'duration')) {
