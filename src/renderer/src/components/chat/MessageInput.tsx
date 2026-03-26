@@ -33,18 +33,18 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { cn } from '@renderer/lib/utils'
-import type { FileData } from '@shared/types'
+import type { FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 type AttachedFile = FileData
 
 interface MessageInputProps {
-  onSend: (content: string, files?: FileData[]) => void
+  onSend: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => void
   onStop: () => void
   isStreaming: boolean
 }
 
-type ReasoningLevel = 'low' | 'medium' | 'high' | 'off'
+type ReasoningLevel = ReasoningEffort | 'off'
 
 // ── Phrase Popover ──────────────────────────────────────────────
 function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
@@ -84,9 +84,18 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <ToolButton icon={<Zap className="h-4 w-4" />} label={t('chat.quickPhrases')} />
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="hover:bg-muted text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors">
+              <Zap className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">{t('chat.quickPhrases')}</TooltipContent>
+      </Tooltip>
       <PopoverContent side="top" align="start" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-medium">{t('chat.quickPhrases')}</span>
@@ -214,22 +223,32 @@ function ReasoningPopover({
   onChange: (v: ReasoningLevel) => void
 }) {
   const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
   const levels: { value: ReasoningLevel; label: string }[] = [
     { value: 'off', label: t('chat.reasoningOff') },
     { value: 'low', label: t('chat.reasoningLow') },
     { value: 'medium', label: t('chat.reasoningMedium') },
     { value: 'high', label: t('chat.reasoningHigh') },
+    { value: 'xhigh', label: t('chat.reasoningXhigh') },
   ]
   const active = value !== 'off'
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <ToolButton
-          icon={<Brain className="h-4 w-4" />}
-          label={t('chat.reasoning')}
-          active={active}
-        />
-      </PopoverTrigger>
+    <Popover open={open} onOpenChange={setOpen}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'hover:bg-muted text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                active && 'text-primary bg-primary/10 hover:bg-primary/15',
+              )}>
+              <Brain className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">{t('chat.reasoning')}</TooltipContent>
+      </Tooltip>
       <PopoverContent side="top" align="start" className="w-44 p-1">
         {levels.map((l) => (
           <button
@@ -238,7 +257,10 @@ function ReasoningPopover({
               'hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs',
               value === l.value && 'bg-accent font-medium',
             )}
-            onClick={() => onChange(l.value)}>
+            onClick={() => {
+              onChange(l.value)
+              setOpen(false)
+            }}>
             <Check className={cn('h-3 w-3', value !== l.value && 'invisible')} />
             {l.label}
           </button>
@@ -353,9 +375,6 @@ export function MessageInput({
     if (webSearch) {
       content = `[网络搜索已开启]\n${content}`
     }
-    if (reasoning !== 'off') {
-      content = `[推理深度: ${reasoning}]\n${content}`
-    }
     for (const f of attachedFiles) {
       if (f.mimeType.startsWith('text/') || f.mimeType === 'application/json') {
         // Correctly decode UTF-8 encoded text files
@@ -380,9 +399,11 @@ export function MessageInput({
       (imageFiles.length > 0
         ? `[${imageFiles.length > 1 ? `${imageFiles.length} 张图片` : '图片'}]`
         : '')
+    // Resolve reasoning effort: 'off' means no reasoning parameter
+    const effort = reasoning !== 'off' ? reasoning : undefined
     setInput('')
     setAttachedFiles([])
-    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined)
+    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {

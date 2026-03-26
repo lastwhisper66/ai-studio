@@ -130,10 +130,14 @@ export interface IpcResult<T> {
   error?: string
 }
 
+/** Reasoning effort level for models that support chain-of-thought */
+export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh'
+
 /** chat:send-message request payload */
 export interface SendMessagePayload {
   conversationId: string
   files?: FileData[]
+  reasoningEffort?: ReasoningEffort
 }
 
 /** chat:stream-chunk push data */

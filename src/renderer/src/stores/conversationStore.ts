@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Conversation, Message, MessageRole, FileData } from '@shared/types'
+import type { Conversation, Message, MessageRole, FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 import { useAssistantStore } from './assistantStore'
@@ -27,7 +27,7 @@ interface ConversationState {
   deleteMessage: (id: string) => Promise<void>
   clearMessages: (conversationId: string) => Promise<void>
   insertDivider: () => Promise<void>
-  sendMessage: (content: string, files?: FileData[]) => Promise<void>
+  sendMessage: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
   updateConversationModel: (providerId: string, model: string) => Promise<void>
@@ -246,7 +246,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     }
   },
 
-  sendMessage: async (content: string, files?: FileData[]) => {
+  sendMessage: async (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => {
     if (get().isStreaming) return
 
     let conversationId = get().activeConversationId
@@ -321,7 +321,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     })
 
     // Invoke the streaming request
-    const result = await window.api.sendMessage({ conversationId, files })
+    const result = await window.api.sendMessage({ conversationId, files, reasoningEffort })
     if (!result.success) {
       set({ isStreaming: false, streamingContent: '', streamStartTime: null, error: result.error })
       cleanup()

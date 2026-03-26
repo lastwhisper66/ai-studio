@@ -18,7 +18,7 @@ export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,
     async (event: IpcMainInvokeEvent, payload: SendMessagePayload): Promise<IpcResult<void>> => {
-      const { conversationId, files } = payload
+      const { conversationId, files, reasoningEffort } = payload
       const sender = event.sender
       let fullContent = ''
       const streamStartTime = Date.now()
@@ -188,17 +188,20 @@ export function registerChatHandlers(): void {
         const controller = new AbortController()
         activeStreams.set(conversationId, controller)
 
+        const createParams: Record<string, unknown> = {
+          model: settings.model,
+          messages: apiMessages,
+          stream: true,
+          max_completion_tokens: settings.maxCompletionTokens,
+          temperature: settings.temperature,
+          top_p: settings.topP,
+        }
+        if (reasoningEffort && reasoningEffort !== 'none') {
+          createParams.reasoning_effort = reasoningEffort
+        }
+
         const stream = await client.chat.completions.create(
-          {
-            model: settings.model,
-            messages: apiMessages as Parameters<
-              typeof client.chat.completions.create
-            >[0]['messages'],
-            stream: true,
-            max_completion_tokens: settings.maxCompletionTokens,
-            temperature: settings.temperature,
-            top_p: settings.topP,
-          },
+          createParams as Parameters<typeof client.chat.completions.create>[0],
           { signal: controller.signal },
         )
 
