@@ -338,8 +338,12 @@ export function MessageInput({
   useEffect(() => {
     const el = textareaRef.current
     if (!el) return
+    if (isExpanded) {
+      el.style.height = ''
+      return
+    }
     el.style.height = 'auto'
-    const maxRows = isExpanded ? 999 : 8
+    const maxRows = 8
     const lineH = parseInt(getComputedStyle(el).lineHeight) || 20
     el.style.height = Math.min(el.scrollHeight, lineH * maxRows) + 'px'
   }, [input, isExpanded])
@@ -449,7 +453,7 @@ export function MessageInput({
   }
 
   const wrapperCls = isExpanded
-    ? 'fixed inset-0 z-50 flex flex-col bg-background'
+    ? 'absolute inset-0 z-50 flex flex-col bg-background'
     : 'px-4 pb-4 pt-2'
 
   const innerCls = isExpanded ? 'flex flex-1 flex-col px-6 pb-6 pt-4' : 'mx-auto max-w-3xl'
@@ -469,7 +473,8 @@ export function MessageInput({
         </div>
       )}
       <div className={innerCls}>
-        <div className="rounded-2xl border bg-card shadow-sm">
+        <div
+          className={`rounded-2xl border bg-card shadow-sm${isExpanded ? ' flex flex-1 flex-col overflow-hidden' : ''}`}>
           {/* Attachment preview */}
           <AttachmentPreview
             files={attachedFiles}
@@ -477,20 +482,21 @@ export function MessageInput({
           />
 
           {/* Textarea */}
-          <div className="px-4 pt-3 pb-1">
+          <div
+            className={`px-4 pt-3 pb-1${isExpanded ? ' flex flex-1 flex-col overflow-hidden' : ''}`}>
             <textarea
               ref={textareaRef}
               placeholder={
                 isStreaming ? t('chat.streamingPlaceholder') : t('chat.inputPlaceholder')
               }
-              className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className={`w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground${isExpanded ? ' flex-1' : ''}`}
               rows={2}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               disabled={isStreaming}
-              style={{ minHeight: '2.5rem' }}
+              style={isExpanded ? undefined : { minHeight: '2.5rem' }}
             />
           </div>
 

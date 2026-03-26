@@ -87,7 +87,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-background text-foreground">
+    <div className="relative flex flex-1 flex-col bg-background text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div className="flex items-center gap-2">
