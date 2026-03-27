@@ -256,7 +256,9 @@
       "promptHint": "使用 {source} 和 {target} 作为源语言和目标语言占位符。留空则使用默认提示词。",
       "temperature": "Temperature",
       "temperatureHint": "较低值产生更准确的翻译，较高值更具创造性。默认 0.3。",
-      "resetDefault": "重置默认"
+      "resetDefault": "重置默认",
+      "wordWrap": "自动换行",
+      "wordWrapHint": "当翻译结果内容过长时自动换行显示。关闭后可通过水平滚动条查看。"
     },
     "history": {
       "title": "翻译历史",

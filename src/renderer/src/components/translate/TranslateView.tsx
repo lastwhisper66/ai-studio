@@ -77,6 +77,7 @@ export function TranslateView(): React.JSX.Element {
   const [translateSettings, setTranslateSettings] = useState<TranslateSettings>({
     systemPrompt: '',
     temperature: 0.3,
+    wordWrap: true,
   })
   const [history, setHistory] = useState<TranslationHistoryItem[]>([])
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false)
@@ -97,7 +98,7 @@ export function TranslateView(): React.JSX.Element {
   // Load persisted translate settings on mount
   useEffect(() => {
     async function load(): Promise<void> {
-      const [promptResult, tempResult, providerResult, modelResult, srcLangResult, tgtLangResult] =
+      const [promptResult, tempResult, providerResult, modelResult, srcLangResult, tgtLangResult, wordWrapResult] =
         await Promise.all([
           window.api.getSetting('translate.systemPrompt'),
           window.api.getSetting('translate.temperature'),
@@ -105,10 +106,12 @@ export function TranslateView(): React.JSX.Element {
           window.api.getSetting('translate.modelId'),
           window.api.getSetting('translate.sourceLang'),
           window.api.getSetting('translate.targetLang'),
+          window.api.getSetting('translate.wordWrap'),
         ])
       setTranslateSettings({
         systemPrompt: promptResult.data ?? '',
         temperature: tempResult.data ? parseFloat(tempResult.data) : 0.3,
+        wordWrap: wordWrapResult.data !== 'false',
       })
       if (providerResult.data) setLocalProviderId(providerResult.data)
       if (modelResult.data) setLocalModelId(modelResult.data)
@@ -461,7 +464,7 @@ export function TranslateView(): React.JSX.Element {
       {/* Main content: source & result & history panels */}
       <div className="flex flex-1 overflow-hidden">
         {/* Source panel */}
-        <div className="relative flex flex-1 flex-col border-r">
+        <div className="relative flex min-w-0 flex-1 flex-col border-r">
           {sourceText && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -489,7 +492,7 @@ export function TranslateView(): React.JSX.Element {
         </div>
 
         {/* Result panel */}
-        <div className="flex flex-1 flex-col bg-muted/30">
+        <div className="flex min-w-0 flex-1 flex-col bg-muted/30">
           <div className="flex items-center justify-between border-b px-4 py-2">
             <span className="text-sm font-medium text-muted-foreground">
               {t('translate.result')}
@@ -512,8 +515,10 @@ export function TranslateView(): React.JSX.Element {
             )}
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="p-4">
+          <div className="flex-1 overflow-auto">
+            <div
+              className={`p-4 ${translateSettings.wordWrap ? 'break-words' : 'translate-no-wrap w-max min-w-full'}`}
+            >
               {error ? (
                 <p className="text-sm text-destructive">{error}</p>
               ) : translatedText ? (
@@ -526,7 +531,7 @@ export function TranslateView(): React.JSX.Element {
                 </p>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* History panel */}
@@ -604,6 +609,7 @@ export function TranslateView(): React.JSX.Element {
           window.api.setSettingsBatch({
             'translate.systemPrompt': s.systemPrompt,
             'translate.temperature': String(s.temperature),
+            'translate.wordWrap': String(s.wordWrap),
           })
         }}
       />

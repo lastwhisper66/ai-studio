@@ -153,3 +153,14 @@ pre.shiki code {
 .markdown-body > :last-child {
   margin-bottom: 0;
 }
+
+/* ── Translate: no-wrap mode ── */
+/* Forces all text to not wrap; code blocks keep original formatting */
+.translate-no-wrap * {
+  white-space: nowrap !important;
+}
+
+.translate-no-wrap pre,
+.translate-no-wrap pre * {
+  white-space: pre !important;
+}

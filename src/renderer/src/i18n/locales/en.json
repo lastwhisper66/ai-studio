@@ -256,7 +256,9 @@
       "promptHint": "Use {source} and {target} as placeholders for source and target languages. Leave empty to use default prompt.",
       "temperature": "Temperature",
       "temperatureHint": "Lower values produce more accurate translations, higher values are more creative. Default 0.3.",
-      "resetDefault": "Reset default"
+      "resetDefault": "Reset default",
+      "wordWrap": "Word wrap",
+      "wordWrapHint": "Wrap long lines in translation results. When off, use horizontal scrollbar to view."
     },
     "history": {
       "title": "History",
