@@ -84,7 +84,7 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
+      <Tooltip open={open ? false : undefined}>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <button
@@ -234,7 +234,7 @@ function ReasoningPopover({
   const active = value !== 'off'
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <Tooltip>
+      <Tooltip open={open ? false : undefined}>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <button

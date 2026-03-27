@@ -3,6 +3,11 @@ import { Tooltip as TooltipPrimitive } from 'radix-ui'
 
 import { cn } from '@renderer/lib/utils'
 
+// Context to communicate pointer state from TooltipTrigger to Tooltip
+const TooltipPointerContext = React.createContext<{
+  setPointerIn: (v: boolean) => void
+}>({ setPointerIn: () => {} })
+
 function TooltipProvider({
   delayDuration = 0,
   ...props
@@ -11,17 +16,58 @@ function TooltipProvider({
     <TooltipPrimitive.Provider
       data-slot="tooltip-provider"
       delayDuration={delayDuration}
+      disableHoverableContent
       {...props}
     />
   )
 }
 
-function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+function Tooltip({
+  open: openProp,
+  children,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+  const [pointerIn, setPointerIn] = React.useState(false)
+  const [internalOpen, setInternalOpen] = React.useState(false)
+
+  // If open prop is explicitly provided (not undefined), respect it.
+  // Otherwise, only show when pointer is hovering (ignore focus events).
+  const isControlled = openProp !== undefined
+  const computedOpen = isControlled ? openProp : pointerIn && internalOpen
+
+  return (
+    <TooltipPointerContext.Provider value={{ setPointerIn }}>
+      <TooltipPrimitive.Root
+        data-slot="tooltip"
+        open={computedOpen}
+        onOpenChange={setInternalOpen}
+        {...props}>
+        {children}
+      </TooltipPrimitive.Root>
+    </TooltipPointerContext.Provider>
+  )
 }
 
-function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+function TooltipTrigger({
+  onPointerEnter,
+  onPointerLeave,
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  const { setPointerIn } = React.useContext(TooltipPointerContext)
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      onPointerEnter={(e) => {
+        setPointerIn(true)
+        onPointerEnter?.(e)
+      }}
+      onPointerLeave={(e) => {
+        setPointerIn(false)
+        onPointerLeave?.(e)
+      }}
+      {...props}
+    />
+  )
 }
 
 function TooltipContent({
