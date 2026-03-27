@@ -155,7 +155,7 @@ const components = {
 
   p({ children, ...props }: ComponentPropsWithoutRef<'p'>) {
     return (
-      <p className="my-2 leading-relaxed text-foreground" {...props}>
+      <p className="my-2 leading-relaxed text-foreground whitespace-pre-wrap" {...props}>
         {children}
       </p>
     )
