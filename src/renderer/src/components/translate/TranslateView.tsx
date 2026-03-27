@@ -326,7 +326,7 @@ export function TranslateView(): React.JSX.Element {
           <SelectTrigger className="w-40" size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" side="bottom">
             {SOURCE_LANGUAGES.map((lang) => (
               <SelectItem key={lang.code} value={lang.code}>
                 {lang.label}
@@ -353,7 +353,7 @@ export function TranslateView(): React.JSX.Element {
           <SelectTrigger className="w-40" size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent position="popper" side="bottom">
             {LANGUAGES.map((lang) => (
               <SelectItem key={lang.code} value={lang.code}>
                 {lang.label}
