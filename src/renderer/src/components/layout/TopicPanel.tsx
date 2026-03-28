@@ -26,9 +26,17 @@ import { useAssistantStore } from '@renderer/stores/assistantStore'
 
 interface TopicPanelProps {
   collapsed: boolean
+  width: number
+  isResizing: boolean
+  onResizeStart: (e: React.MouseEvent) => void
 }
 
-export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
+export function TopicPanel({
+  collapsed,
+  width,
+  isResizing,
+  onResizeStart,
+}: TopicPanelProps): React.JSX.Element {
   const { t } = useTranslation()
   const {
     conversations,
@@ -174,9 +182,17 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
 
   return (
     <aside
-      className={`flex h-full flex-col border-l bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
-        collapsed ? 'w-0 overflow-hidden' : 'w-56'
-      }`}>
+      className={`relative flex h-full shrink-0 flex-col border-l bg-sidebar-background text-sidebar-foreground${isResizing ? '' : ' transition-all duration-300'}${collapsed ? ' overflow-hidden' : ''}`}
+      style={{ width: collapsed ? 0 : width }}>
+      {/* Drag handle */}
+      {!collapsed && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50"
+          onMouseDown={onResizeStart}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-2 pt-2 pb-1">
         <Button

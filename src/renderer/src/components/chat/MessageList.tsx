@@ -58,7 +58,7 @@ export function MessageList({
 
   return (
     <ScrollArea className="flex-1" viewportRef={scrollRef}>
-      <div className="mx-auto max-w-3xl space-y-6 p-6">
+      <div className="space-y-6 p-6">
         {!hasActiveConversation ? (
           <WelcomeScreen
             onSend={onSend}

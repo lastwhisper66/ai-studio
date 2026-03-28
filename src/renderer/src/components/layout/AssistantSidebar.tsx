@@ -24,6 +24,9 @@ import { useConversationStore } from '@renderer/stores/conversationStore'
 
 interface AssistantSidebarProps {
   collapsed: boolean
+  width: number
+  isResizing: boolean
+  onResizeStart: (e: React.MouseEvent) => void
 }
 
 interface GroupedAssistants {
@@ -37,7 +40,12 @@ interface GroupedAssistants {
   }>
 }
 
-export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JSX.Element {
+export function AssistantSidebar({
+  collapsed,
+  width,
+  isResizing,
+  onResizeStart,
+}: AssistantSidebarProps): React.JSX.Element {
   const { t } = useTranslation()
   const {
     assistants,
@@ -205,9 +213,17 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
 
   return (
     <aside
-      className={`flex h-full flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
-        collapsed ? 'w-0 overflow-hidden' : 'w-56'
-      }`}>
+      className={`relative flex h-full shrink-0 flex-col border-r bg-sidebar-background text-sidebar-foreground${isResizing ? '' : ' transition-all duration-300'}${collapsed ? ' overflow-hidden' : ''}`}
+      style={{ width: collapsed ? 0 : width }}>
+      {/* Drag handle */}
+      {!collapsed && (
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/30 active:bg-primary/50"
+          onMouseDown={onResizeStart}
+        />
+      )}
       {/* Add Assistant Button */}
       <div className="mx-2 mt-2 mb-1">
         <Button

@@ -477,7 +477,7 @@ export function MessageInput({
     ? 'absolute inset-0 z-50 flex flex-col bg-background'
     : 'px-4 pb-4 pt-2'
 
-  const innerCls = isExpanded ? 'flex flex-1 flex-col px-6 pb-6 pt-4' : 'mx-auto max-w-3xl'
+  const innerCls = isExpanded ? 'flex flex-1 flex-col px-6 pb-6 pt-4' : ''
 
   return (
     <div className={wrapperCls}>
