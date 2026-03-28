@@ -469,7 +469,7 @@ export function TranslateView(): React.JSX.Element {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="absolute right-5 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   onClick={handleClearInput}>
                   <X className="h-3.5 w-3.5" />
                 </button>
