@@ -126,3 +126,7 @@ export function updateModel(id: string, data: UpdateModelData): Model | undefine
 export function deleteModel(id: string): void {
   getDb().prepare('DELETE FROM models WHERE id = ?').run(id)
 }
+
+export function deleteModelsByProvider(providerId: string): void {
+  getDb().prepare('DELETE FROM models WHERE provider_id = ?').run(providerId)
+}

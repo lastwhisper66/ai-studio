@@ -62,6 +62,7 @@ export function ProviderDetail(): React.JSX.Element {
     addModel,
     updateModel,
     removeModel,
+    removeAllModels,
   } = useProviderStore()
 
   const provider = providers.find((p) => p.id === selectedProviderId)
@@ -86,6 +87,7 @@ export function ProviderDetail(): React.JSX.Element {
       onAddModel={addModel}
       onUpdateModel={updateModel}
       onRemoveModel={removeModel}
+      onRemoveAllModels={removeAllModels}
     />
   )
 }
@@ -114,6 +116,7 @@ interface ProviderFormProps {
     data: { name?: string; group?: string; capabilities?: ModelCapability[] },
   ) => Promise<void>
   onRemoveModel: (id: string) => Promise<void>
+  onRemoveAllModels: (providerId: string) => Promise<void>
 }
 
 function SectionHeader({
@@ -145,6 +148,7 @@ function ProviderForm({
   onAddModel,
   onUpdateModel,
   onRemoveModel,
+  onRemoveAllModels,
 }: ProviderFormProps): React.JSX.Element {
   const { t } = useTranslation()
   const [showApiKey, setShowApiKey] = useState(false)
@@ -166,6 +170,7 @@ function ProviderForm({
   const [showManageDialog, setShowManageDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showRemoveAllModelsConfirm, setShowRemoveAllModelsConfirm] = useState(false)
   const [editingModel, setEditingModel] = useState<{
     id: string
     name: string
@@ -456,6 +461,15 @@ function ProviderForm({
               <Search className="h-3.5 w-3.5" />
             </button>
             <div className="flex-1" />
+            {providerModels.length > 0 && !(showModelSearch && modelSearch.trim()) && (
+              <button
+                type="button"
+                onClick={() => setShowRemoveAllModelsConfirm(true)}
+                className="text-muted-foreground hover:text-destructive flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors">
+                <Trash2 className="h-3 w-3" />
+                {t('settings.provider.removeAll')}
+              </button>
+            )}
           </div>
 
           {/* Model search (shown when toggled) */}
@@ -692,6 +706,29 @@ function ProviderForm({
               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
               <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
                 {t('common.delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Remove all models confirmation dialog */}
+        <AlertDialog open={showRemoveAllModelsConfirm} onOpenChange={setShowRemoveAllModelsConfirm}>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('settings.provider.removeAllTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('settings.provider.removeAllDescription', {
+                  count: providerModels.length,
+                  name: provider.name,
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => onRemoveAllModels(provider.id)}>
+                {t('common.confirm')}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

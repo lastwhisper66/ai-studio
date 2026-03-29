@@ -38,6 +38,7 @@ export const IpcChannels = {
   MODEL_CREATE: 'model:create',
   MODEL_UPDATE: 'model:update',
   MODEL_DELETE: 'model:delete',
+  MODEL_DELETE_BY_PROVIDER: 'model:delete-by-provider',
   MODEL_FETCH_REMOTE: 'model:fetch-remote',
   // Assistant
   ASSISTANT_LIST: 'assistant:list',

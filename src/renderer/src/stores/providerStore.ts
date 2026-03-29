@@ -30,6 +30,7 @@ interface ProviderStore {
     data: { name?: string; group?: string; capabilities?: ModelCapability[] },
   ) => Promise<void>
   removeModel: (id: string) => Promise<void>
+  removeAllModels: (providerId: string) => Promise<void>
   setActiveModel: (modelId: string, providerId: string) => Promise<void>
 }
 
@@ -151,6 +152,24 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
         const activeModelId = state.activeModelId === id ? null : state.activeModelId
         return { models, activeModelId }
       })
+    }
+  },
+
+  removeAllModels: async (providerId) => {
+    const result = await window.api.deleteModelsByProvider(providerId)
+    if (result.success) {
+      let activeWasRemoved = false
+      set((state) => {
+        const removedIds = new Set(
+          state.models.filter((m) => m.providerId === providerId).map((m) => m.id),
+        )
+        activeWasRemoved = !!state.activeModelId && removedIds.has(state.activeModelId)
+        const models = state.models.filter((m) => m.providerId !== providerId)
+        return { models, activeModelId: activeWasRemoved ? null : state.activeModelId }
+      })
+      if (activeWasRemoved) {
+        await window.api.setSetting('active.modelId', '')
+      }
     }
   },
 
