@@ -1,5 +1,10 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { APIUserAbortError } from 'openai'
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionCreateParamsStreaming,
+  ChatCompletionMessageParam,
+} from 'openai/resources/chat/completions'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SendMessagePayload, IpcResult, Message, FileData, ApiSettings } from '@shared/types'
 import { isImageMime } from '@shared/types'
@@ -99,14 +104,7 @@ export function registerChatHandlers(): void {
         }
 
         // Build API messages array — content may be string or multipart array for vision
-        type ContentPart =
-          | { type: 'text'; text: string }
-          | { type: 'image_url'; image_url: { url: string } }
-        type ChatMessage = {
-          role: 'system' | 'user' | 'assistant'
-          content: string | ContentPart[]
-        }
-        const apiMessages: ChatMessage[] = []
+        const apiMessages: ChatCompletionMessageParam[] = []
         if (settings.systemPrompt) {
           apiMessages.push({ role: 'system', content: settings.systemPrompt })
         }
@@ -168,7 +166,7 @@ export function registerChatHandlers(): void {
           const lastIdx = apiMessages.length - 1
           if (lastIdx >= 0 && apiMessages[lastIdx].role === 'user') {
             const textContent = apiMessages[lastIdx].content as string
-            const parts: ContentPart[] = []
+            const parts: ChatCompletionContentPart[] = []
             if (textContent) {
               parts.push({ type: 'text', text: textContent })
             }
@@ -188,22 +186,19 @@ export function registerChatHandlers(): void {
         const controller = new AbortController()
         activeStreams.set(conversationId, controller)
 
-        const createParams: Record<string, unknown> = {
+        const createParams: ChatCompletionCreateParamsStreaming = {
           model: settings.model,
           messages: apiMessages,
           stream: true,
           max_completion_tokens: settings.maxCompletionTokens,
           temperature: settings.temperature,
           top_p: settings.topP,
-        }
-        if (reasoningEffort && reasoningEffort !== 'none') {
-          createParams.reasoning_effort = reasoningEffort
+          ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
         }
 
-        const stream = await client.chat.completions.create(
-          createParams as Parameters<typeof client.chat.completions.create>[0],
-          { signal: controller.signal },
-        )
+        const stream = await client.chat.completions.create(createParams, {
+          signal: controller.signal,
+        })
 
         for await (const chunk of stream) {
           const delta = chunk.choices[0]?.delta?.content
