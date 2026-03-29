@@ -62,7 +62,8 @@
     "contextDivider": "Context cleared",
     "phraseTitle": "Phrase title (optional)",
     "phraseContent": "Phrase content",
-    "noPhrasesYet": "No phrases yet, click + to add"
+    "noPhrasesYet": "No phrases yet, click + to add",
+    "systemPromptPlaceholder": "Click to set assistant system prompt"
   },
   "welcome": {
     "title": "Welcome to AI Studio",

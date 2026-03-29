@@ -62,7 +62,8 @@
     "contextDivider": "上下文已清除",
     "phraseTitle": "短语标题（可选）",
     "phraseContent": "短语内容",
-    "noPhrasesYet": "暂无快捷短语，点击 + 添加"
+    "noPhrasesYet": "暂无快捷短语，点击 + 添加",
+    "systemPromptPlaceholder": "点击设置助手提示词"
   },
   "welcome": {
     "title": "欢迎使用 AI Studio",

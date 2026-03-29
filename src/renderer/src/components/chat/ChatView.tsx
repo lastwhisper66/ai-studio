@@ -41,13 +41,11 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     stopGeneration,
     loadMoreMessages,
     clearError,
-    createConversation,
     updateConversationModel,
   } = useConversationStore()
 
   const assistants = useAssistantStore((s) => s.assistants)
   const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
-  const setActiveAssistantId = useAssistantStore((s) => s.setActiveAssistantId)
 
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -68,6 +66,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'model' | 'prompt'>('model')
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -81,9 +80,14 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     return () => window.api.removeAllStreamListeners()
   }, [])
 
-  const handleSelectAssistant = async (assistantId: string): Promise<void> => {
-    setActiveAssistantId(assistantId)
-    await createConversation(undefined, assistantId)
+  const handleEditSystemPrompt = (): void => {
+    setSettingsInitialTab('prompt')
+    setSettingsOpen(true)
+  }
+
+  const handleOpenSettings = (): void => {
+    setSettingsInitialTab('model')
+    setSettingsOpen(true)
   }
 
   return (
@@ -94,7 +98,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
           {/* Assistant info — clickable */}
           <button
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-accent"
-            onClick={() => setSettingsOpen(true)}>
+            onClick={() => handleOpenSettings()}>
             <span>{activeAssistant?.name ?? t('chat.newChat')}</span>
           </button>
 
@@ -187,9 +191,8 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         streamStartTime={streamStartTime}
         onSend={sendMessage}
         onLoadMore={loadMoreMessages}
-        assistants={assistants}
-        onSelectAssistant={handleSelectAssistant}
         activeAssistant={activeAssistant}
+        onEditSystemPrompt={handleEditSystemPrompt}
       />
 
       {/* Error banner */}
@@ -210,6 +213,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         assistantId={activeAssistant?.id ?? null}
+        initialTab={settingsInitialTab}
       />
     </div>
   )

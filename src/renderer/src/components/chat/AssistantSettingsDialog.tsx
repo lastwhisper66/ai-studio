@@ -28,6 +28,7 @@ interface AssistantSettingsDialogProps {
   onOpenChange: (open: boolean) => void
   assistantId: string | null
   mode?: 'create' | 'edit'
+  initialTab?: TabId
   onCreate?: (data: Partial<Assistant> & { name: string }) => void
 }
 
@@ -93,6 +94,7 @@ export function AssistantSettingsDialog({
   onOpenChange,
   assistantId,
   mode = 'edit',
+  initialTab,
   onCreate,
 }: AssistantSettingsDialogProps): React.JSX.Element {
   const { t } = useTranslation()
@@ -115,9 +117,9 @@ export function AssistantSettingsDialog({
       } else if (assistant) {
         setForm(stateFromAssistant(assistant))
       }
-      setActiveTab('model')
+      setActiveTab(initialTab ?? 'model')
     }
-  }, [open, assistantId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, assistantId, initialTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenChange = (nextOpen: boolean): void => {
     if (nextOpen) {
@@ -126,7 +128,7 @@ export function AssistantSettingsDialog({
       } else if (assistant) {
         setForm(stateFromAssistant(assistant))
       }
-      setActiveTab('model')
+      setActiveTab(initialTab ?? 'model')
     }
     onOpenChange(nextOpen)
   }

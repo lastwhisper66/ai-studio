@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Button } from '@renderer/components/ui/button'
 import { MessageBubble } from './MessageBubble'
-import { WelcomeScreen } from './WelcomeScreen'
+import { SystemPromptBanner } from './SystemPromptBanner'
 import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
 import { useAutoScroll } from '@renderer/hooks/useAutoScroll'
 import { useConversationStore } from '@renderer/stores/conversationStore'
@@ -20,9 +20,8 @@ interface MessageListProps {
   streamStartTime: number | null
   onSend: (content: string) => void
   onLoadMore: () => void
-  assistants?: Assistant[]
-  onSelectAssistant?: (id: string) => void
   activeAssistant?: Assistant
+  onEditSystemPrompt?: () => void
 }
 
 export function MessageList({
@@ -35,9 +34,8 @@ export function MessageList({
   streamStartTime,
   onSend,
   onLoadMore,
-  assistants,
-  onSelectAssistant,
   activeAssistant,
+  onEditSystemPrompt,
 }: MessageListProps): React.JSX.Element {
   const { t } = useTranslation()
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
@@ -59,13 +57,15 @@ export function MessageList({
   return (
     <ScrollArea className="flex-1" viewportRef={scrollRef}>
       <div className="space-y-6 p-6">
-        {!hasActiveConversation ? (
-          <WelcomeScreen
-            onSend={onSend}
-            assistants={assistants}
-            onSelectAssistant={onSelectAssistant}
+        {/* System prompt banner — only when no messages yet */}
+        {activeAssistant && onEditSystemPrompt && messages.length === 0 && !isStreaming && (
+          <SystemPromptBanner
+            systemPrompt={activeAssistant.systemPrompt}
+            onClick={onEditSystemPrompt}
           />
-        ) : isLoading ? (
+        )}
+
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -73,12 +73,8 @@ export function MessageList({
             </div>
           </div>
         ) : showAssistantSuggestions ? (
-          <div className="flex h-full items-center justify-center py-20">
+          <div className="flex items-center justify-center py-12">
             <div className="max-w-md text-center">
-              <h3 className="mb-1 text-lg font-semibold">{activeAssistant.name}</h3>
-              {activeAssistant.description && (
-                <p className="mb-6 text-sm text-muted-foreground">{activeAssistant.description}</p>
-              )}
               <div className="flex flex-col gap-2">
                 {activeAssistant.promptSuggestions.map((suggestion, i) => (
                   <Button
