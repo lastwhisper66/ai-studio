@@ -141,7 +141,6 @@
     "title": "设置",
     "sections": {
       "provider": "模型服务",
-      "model": "默认模型",
       "general": "通用设置",
       "display": "显示设置",
       "language": "语言设置"
@@ -191,26 +190,9 @@
       "statusTesting": "检测中",
       "statusSuccess": "检测成功",
       "statusError": "检测失败",
-      "delete": "删除"
-    },
-    "model": {
-      "defaultModel": "默认模型",
-      "noModelSet": "未设置模型",
-      "noProvider": "未配置服务商",
-      "temperature": "Temperature",
-      "temperatureTooltip": "控制回复的随机性。值越高越有创造性，值越低越确定。",
-      "topP": "Top-P",
-      "topPTooltip": "核采样参数。控制模型考虑的词汇概率累积范围，值越小回复越集中。",
-      "contextCount": "上下文数",
-      "contextCountTooltip": "发送给模型的历史消息数量。设为「不限」将发送所有历史消息。",
-      "unlimited": "不限",
-      "maxTokens": "Max Tokens",
-      "maxTokensTooltip": "模型单次回复的最大 Token 数量。关闭时使用模型默认值。",
-      "streaming": "流式输出",
-      "systemPrompt": "系统提示词",
-      "systemPromptPlaceholder": "你是一个有用的助手...",
-      "systemPromptHint": "用于引导模型行为的系统级提示词。",
-      "reset": "重置"
+      "delete": "删除",
+      "confirmDeleteTitle": "删除服务商",
+      "confirmDeleteDescription": "确定要删除服务商「{{name}}」吗？该服务商下的所有模型配置也将被删除，此操作不可撤销。"
     },
     "general": {
       "title": "通用设置",

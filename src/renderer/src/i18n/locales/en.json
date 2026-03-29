@@ -141,7 +141,6 @@
     "title": "Settings",
     "sections": {
       "provider": "Providers",
-      "model": "Default Model",
       "general": "General",
       "display": "Display",
       "language": "Language"
@@ -191,26 +190,9 @@
       "statusTesting": "Testing",
       "statusSuccess": "Success",
       "statusError": "Failed",
-      "delete": "Delete"
-    },
-    "model": {
-      "defaultModel": "Default model",
-      "noModelSet": "No model set",
-      "noProvider": "No provider configured",
-      "temperature": "Temperature",
-      "temperatureTooltip": "Controls the randomness of replies. Higher values are more creative, lower values are more deterministic.",
-      "topP": "Top-P",
-      "topPTooltip": "Nucleus sampling parameter. Controls the cumulative probability range of vocabulary the model considers. Lower values produce more focused replies.",
-      "contextCount": "Context count",
-      "contextCountTooltip": "Number of history messages sent to the model. Set to \"Unlimited\" to send all history.",
-      "unlimited": "Unlimited",
-      "maxTokens": "Max tokens",
-      "maxTokensTooltip": "Maximum number of tokens for a single model reply. When disabled, uses model default.",
-      "streaming": "Streaming output",
-      "systemPrompt": "System prompt",
-      "systemPromptPlaceholder": "You are a helpful assistant...",
-      "systemPromptHint": "System-level prompt to guide model behavior.",
-      "reset": "Reset"
+      "delete": "Delete",
+      "confirmDeleteTitle": "Delete Provider",
+      "confirmDeleteDescription": "Are you sure you want to delete \"{{name}}\"? All model configurations under this provider will also be deleted. This cannot be undone."
     },
     "general": {
       "title": "General",

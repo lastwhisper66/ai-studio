@@ -26,6 +26,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@renderer/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@renderer/components/ui/alert-dialog'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider, ModelCapability } from '@shared/types'
 import { normalizeBaseUrl } from '@shared/url'
@@ -153,6 +163,7 @@ function ProviderForm({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [showManageDialog, setShowManageDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [editingModel, setEditingModel] = useState<{
     id: string
     name: string
@@ -192,7 +203,11 @@ function ProviderForm({
     setShowTestDialog(true)
   }
 
-  const handleDelete = async (): Promise<void> => {
+  const handleDelete = (): void => {
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = async (): Promise<void> => {
     await onDelete(provider.id)
   }
 
@@ -616,6 +631,24 @@ function ProviderForm({
             {t('settings.provider.delete')}
           </Button>
         </div>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('settings.provider.confirmDeleteTitle')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('settings.provider.confirmDeleteDescription', { name: provider.name })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={handleConfirmDelete}>
+                {t('common.delete')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ScrollArea>
   )

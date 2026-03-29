@@ -15,7 +15,6 @@ import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
 import { createAIClient, generateTitle, applySslSetting } from '../ai'
-import { getSetting } from '../db/settings'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -67,7 +66,7 @@ export function registerChatHandlers(): void {
         let modelName = effectiveModel
         if (!modelName) {
           const providerModels = listModelsByProvider(provider.id)
-          modelName = providerModels[0]?.name || provider.model || ''
+          modelName = providerModels[0]?.name || ''
         }
         if (!modelName) {
           return {
@@ -76,18 +75,18 @@ export function registerChatHandlers(): void {
           }
         }
 
-        // Build settings from provider + assistant params + global fallbacks
+        // Build settings from provider + assistant params (defaults if unset)
         applySslSetting()
         const temperature = assistant?.temperature
           ? parseFloat(assistant.temperature)
-          : parseFloat(getSetting('api.temperature') || '0.7')
+          : 0.7
         const maxCompletionTokens = assistant?.maxCompletionTokens
           ? parseInt(assistant.maxCompletionTokens, 10)
-          : parseInt(getSetting('api.maxCompletionTokens') || '4096', 10)
+          : 4096
         const topP = assistant?.topP
           ? parseFloat(assistant.topP)
-          : parseFloat(getSetting('api.topP') || '1')
-        const systemPrompt = assistant?.systemPrompt || getSetting('api.systemPrompt') || ''
+          : 1
+        const systemPrompt = assistant?.systemPrompt || ''
 
         const settings: ApiSettings = {
           provider: provider.type,
@@ -115,7 +114,7 @@ export function registerChatHandlers(): void {
         const afterDivider = lastDividerIdx >= 0 ? messages.slice(lastDividerIdx + 1) : messages
 
         let contextMessages = afterDivider
-        const contextCountStr = assistant?.contextCount || getSetting('api.contextCount')
+        const contextCountStr = assistant?.contextCount
         if (contextCountStr) {
           const limit = parseInt(contextCountStr, 10)
           if (!isNaN(limit) && limit < 100) {

@@ -52,7 +52,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const resolvedProviderId = activeAssistant?.providerId ?? null
   const resolvedModelName = activeAssistant?.model ?? ''
   const resolvedProvider = providers.find((p) => p.id === resolvedProviderId)
-  const resolvedModel = resolvedModelName || resolvedProvider?.model || t('common.noModelSet')
+  const resolvedModel = resolvedModelName || t('common.noModelSet')
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
