@@ -86,6 +86,7 @@
     "selectAssistant": "Select assistant",
     "createAssistant": "Create assistant",
     "settings": {
+      "assistantTab": "Assistant",
       "modelTab": "Model settings",
       "promptTab": "Prompt settings",
       "model": "Model",

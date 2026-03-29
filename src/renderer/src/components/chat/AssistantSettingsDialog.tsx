@@ -6,6 +6,7 @@ import { Label } from '@renderer/components/ui/label'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { Switch } from '@renderer/components/ui/switch'
 import { Slider } from '@renderer/components/ui/slider'
+import { Separator } from '@renderer/components/ui/separator'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
@@ -32,7 +33,7 @@ interface AssistantSettingsDialogProps {
   onCreate?: (data: Partial<Assistant> & { name: string }) => void
 }
 
-type TabId = 'model' | 'prompt'
+type TabId = 'assistant' | 'model' | 'prompt'
 
 interface FormState {
   name: string
@@ -104,7 +105,7 @@ export function AssistantSettingsDialog({
 
   const isCreateMode = mode === 'create'
   const assistant = assistants.find((a) => a.id === assistantId)
-  const [activeTab, setActiveTab] = useState<TabId>('model')
+  const [activeTab, setActiveTab] = useState<TabId>('assistant')
   const [form, setForm] = useState<FormState | null>(() =>
     isCreateMode ? defaultFormState() : assistant ? stateFromAssistant(assistant) : null,
   )
@@ -117,7 +118,7 @@ export function AssistantSettingsDialog({
       } else if (assistant) {
         setForm(stateFromAssistant(assistant))
       }
-      setActiveTab(initialTab ?? 'model')
+      setActiveTab(initialTab ?? 'assistant')
     }
   }, [open, assistantId, initialTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -128,7 +129,7 @@ export function AssistantSettingsDialog({
       } else if (assistant) {
         setForm(stateFromAssistant(assistant))
       }
-      setActiveTab(initialTab ?? 'model')
+      setActiveTab(initialTab ?? 'assistant')
     }
     onOpenChange(nextOpen)
   }
@@ -155,13 +156,7 @@ export function AssistantSettingsDialog({
 
   const isModelSelected = !!(form?.providerId && form?.model)
 
-  // Check if the current model is a known model in the list (for custom model input display)
-  const isKnownModel = useMemo(() => {
-    if (!form?.providerId || !form?.model) return true
-    return models.some(
-      (m) => m.providerId === form.providerId && m.name === form.model && m.enabled,
-    )
-  }, [form?.providerId, form?.model, models])
+
 
   if (!isCreateMode && (!assistant || !form)) {
     return (
@@ -323,6 +318,7 @@ export function AssistantSettingsDialog({
   const contextCountValue = parseInt(form.contextCount) || 10
 
   const tabs: { id: TabId; label: string }[] = [
+    { id: 'assistant', label: t('assistant.settings.assistantTab') },
     { id: 'model', label: t('assistant.settings.modelTab') },
     { id: 'prompt', label: t('assistant.settings.promptTab') },
   ]
@@ -357,6 +353,46 @@ export function AssistantSettingsDialog({
           {/* Right content */}
           <ScrollArea className="flex-1">
             <div className="space-y-4 p-5">
+              {activeTab === 'assistant' && (
+                <>
+                  {/* Name */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{t('assistant.settings.name')}</Label>
+                    <Input
+                      value={form.name}
+                      onChange={(e) => change('name', e.target.value)}
+                      onBlur={() => handleBlur('name')}
+                      placeholder={t('assistant.settings.namePlaceholder')}
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{t('assistant.settings.description')}</Label>
+                    <Input
+                      value={form.description}
+                      onChange={(e) => change('description', e.target.value)}
+                      onBlur={() => handleBlur('description')}
+                      placeholder={t('assistant.settings.descriptionPlaceholder')}
+                    />
+                  </div>
+
+                  {/* Group */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">{t('assistant.settings.group')}</Label>
+                    <Input
+                      value={form.group}
+                      onChange={(e) => change('group', e.target.value)}
+                      onBlur={() => handleBlur('group')}
+                      placeholder={t('assistant.settings.groupPlaceholder')}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t('assistant.settings.groupHint')}
+                    </p>
+                  </div>
+                </>
+              )}
+
               {activeTab === 'model' && (
                 <>
                   {/* Model selector (grouped by provider) */}
@@ -399,23 +435,6 @@ export function AssistantSettingsDialog({
                     )}
                   </div>
 
-                  {/* Custom model name input (shown when a provider is selected) */}
-                  {form.providerId && (
-                    <div className="space-y-1.5">
-                      <Label className="text-sm">{t('assistant.settings.customModelName')}</Label>
-                      <Input
-                        value={isKnownModel ? '' : form.model}
-                        onChange={(e) => {
-                          change('model', e.target.value)
-                        }}
-                        onBlur={() => handleBlur('model')}
-                        placeholder={t('assistant.settings.customModelPlaceholder')}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        {t('assistant.settings.customModelHint')}
-                      </p>
-                    </div>
-                  )}
 
                   {/* Temperature */}
                   <div className="space-y-2">
@@ -454,6 +473,8 @@ export function AssistantSettingsDialog({
                     )}
                   </div>
 
+                  <Separator />
+
                   {/* Max Tokens */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -491,6 +512,8 @@ export function AssistantSettingsDialog({
                     )}
                   </div>
 
+                  <Separator />
+
                   {/* Top P */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -524,6 +547,8 @@ export function AssistantSettingsDialog({
                       </div>
                     )}
                   </div>
+
+                  <Separator />
 
                   {/* Context Count */}
                   <div className="space-y-2">
@@ -569,47 +594,11 @@ export function AssistantSettingsDialog({
 
               {activeTab === 'prompt' && (
                 <>
-                  {/* Name */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">{t('assistant.settings.name')}</Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => change('name', e.target.value)}
-                      onBlur={() => handleBlur('name')}
-                      placeholder={t('assistant.settings.namePlaceholder')}
-                    />
-                  </div>
-
-                  {/* Description */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">{t('assistant.settings.description')}</Label>
-                    <Input
-                      value={form.description}
-                      onChange={(e) => change('description', e.target.value)}
-                      onBlur={() => handleBlur('description')}
-                      placeholder={t('assistant.settings.descriptionPlaceholder')}
-                    />
-                  </div>
-
-                  {/* Group */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">{t('assistant.settings.group')}</Label>
-                    <Input
-                      value={form.group}
-                      onChange={(e) => change('group', e.target.value)}
-                      onBlur={() => handleBlur('group')}
-                      placeholder={t('assistant.settings.groupPlaceholder')}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t('assistant.settings.groupHint')}
-                    </p>
-                  </div>
-
                   {/* System Prompt */}
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t('assistant.settings.systemPrompt')}</Label>
                     <Textarea
-                      rows={8}
+                      rows={14}
                       value={form.systemPrompt}
                       onChange={(e) => change('systemPrompt', e.target.value)}
                       onBlur={() => handleBlur('systemPrompt')}

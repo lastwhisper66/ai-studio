@@ -86,6 +86,7 @@
     "selectAssistant": "选择助手",
     "createAssistant": "新建助手",
     "settings": {
+      "assistantTab": "助手设置",
       "modelTab": "模型设置",
       "promptTab": "提示词设置",
       "model": "模型",

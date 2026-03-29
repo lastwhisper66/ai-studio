@@ -66,7 +66,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'model' | 'prompt'>('model')
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'assistant' | 'model' | 'prompt'>('assistant')
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
