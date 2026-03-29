@@ -223,7 +223,20 @@
     },
     "display": {
       "title": "Display",
-      "description": "Customize appearance and display options."
+      "description": "Customize appearance and display options.",
+      "mode": "Appearance Mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "colorTheme": "Color Theme",
+      "themes": {
+        "default": "Classic Gray",
+        "mint": "Mint Breeze",
+        "lavender": "Lavender",
+        "ocean": "Ocean Blue",
+        "amber": "Amber Glow",
+        "rose": "Rose Petal"
+      }
     },
     "language": {
       "title": "Language",

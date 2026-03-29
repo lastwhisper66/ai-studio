@@ -223,7 +223,20 @@
     },
     "display": {
       "title": "显示设置",
-      "description": "自定义外观和显示选项。"
+      "description": "自定义外观和显示选项。",
+      "mode": "外观模式",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统",
+      "colorTheme": "颜色主题",
+      "themes": {
+        "default": "经典灰",
+        "mint": "薄荷清风",
+        "lavender": "薰衣草紫",
+        "ocean": "深海蓝",
+        "amber": "琥珀暖阳",
+        "rose": "玫瑰粉黛"
+      }
     },
     "language": {
       "title": "语言设置",
