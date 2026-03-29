@@ -48,7 +48,7 @@ src/
 │   ├── main.tsx              # Entry point with ThemeProvider + TooltipProvider
 │   ├── assets/main.css       # Tailwind v4 config, CSS variables, themes
 │   ├── components/
-│   │   ├── chat/             # ChatView, MessageList, MessageInput, MessageBubble, MarkdownRenderer, CodeBlock, WelcomeScreen, AssistantPickerDialog, AssistantSettingsDialog, InputToolbar
+│   │   ├── chat/             # ChatView, MessageList, MessageInput, MessageBubble, MarkdownRenderer, CodeBlock, WelcomeScreen, AssistantPickerDialog, AssistantSettingsDialog, ModelPickerDialog
 │   │   ├── layout/           # AppLayout, ChatPanel, AssistantSidebar, TopicPanel, PrimaryNav, TitleBar
 │   │   ├── settings/         # SettingsPage, SettingsSidebar, ProviderList, ProviderDetail, ModelSection, GeneralSection, DisplaySection
 │   │   ├── translate/        # Translation feature components
@@ -66,7 +66,7 @@ data/                         # Runtime data (SQLite DB, window-state.json) - gi
 
 SQLite with WAL mode and foreign key constraints enabled:
 
-- **conversations**: `id` (TEXT PK), `title`, `created_at`, `updated_at`, `model`, `system_prompt`
+- **conversations**: `id` (TEXT PK), `title`, `created_at`, `updated_at`, `system_prompt`, `assistant_id`, `pinned`
 - **messages**: `id` (TEXT PK), `conversation_id` (FK), `role`, `content`, `created_at`, `token_count` — indexed on `(conversation_id, created_at)`
 - **settings**: `key` (TEXT PK), `value` — API key encrypted via Electron safeStorage
 - **providers**: `id` (TEXT PK), `type`, `name`, `api_key`, `base_url`, `model`, `endpoint`, `api_version`, `deployment_name`, `enabled`, `sort_order`

@@ -3,8 +3,6 @@ export interface Conversation {
   title: string
   createdAt: string // ISO 8601
   updatedAt: string
-  providerId: string | null
-  model: string | null
   systemPrompt: string | null
   assistantId: string | null
   pinned: boolean

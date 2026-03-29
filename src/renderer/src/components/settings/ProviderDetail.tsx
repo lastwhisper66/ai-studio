@@ -478,7 +478,9 @@ function ProviderForm({
                                     <TooltipTrigger asChild>
                                       <span
                                         className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
-                                        style={{ backgroundColor: config.color + '20' }}>
+                                        style={{
+                                          backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
+                                        }}>
                                         <Icon
                                           className="h-2.5 w-2.5"
                                           style={{ color: config.color }}

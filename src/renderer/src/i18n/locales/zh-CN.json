@@ -283,6 +283,12 @@
       "clearInput": "清空输入"
     }
   },
+  "modelPicker": {
+    "title": "选择模型",
+    "searchPlaceholder": "搜索模型...",
+    "noResults": "没有匹配的模型",
+    "noProviders": "未配置服务商"
+  },
   "modelManage": {
     "models": "模型",
     "searchPlaceholder": "搜索模型 ID 或名称",

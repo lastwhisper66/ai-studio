@@ -7,8 +7,6 @@ interface ConversationRow {
   title: string
   created_at: string
   updated_at: string
-  provider_id: string | null
-  model: string | null
   system_prompt: string | null
   assistant_id: string | null
   pinned: number
@@ -20,8 +18,6 @@ function rowToConversation(row: ConversationRow): Conversation {
     title: row.title,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    providerId: row.provider_id,
-    model: row.model,
     systemPrompt: row.system_prompt,
     assistantId: row.assistant_id,
     pinned: row.pinned === 1,
@@ -57,9 +53,7 @@ export function createConversation(title?: string, assistantId?: string): Conver
 
 export function updateConversation(
   id: string,
-  data: Partial<
-    Pick<Conversation, 'title' | 'providerId' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'>
-  >,
+  data: Partial<Pick<Conversation, 'title' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
 ): Conversation | undefined {
   const db = getDb()
   const now = new Date().toISOString()
@@ -70,14 +64,6 @@ export function updateConversation(
   if (data.title !== undefined) {
     fields.push('title = ?')
     values.push(data.title)
-  }
-  if (data.providerId !== undefined) {
-    fields.push('provider_id = ?')
-    values.push(data.providerId)
-  }
-  if (data.model !== undefined) {
-    fields.push('model = ?')
-    values.push(data.model)
   }
   if (data.systemPrompt !== undefined) {
     fields.push('system_prompt = ?')

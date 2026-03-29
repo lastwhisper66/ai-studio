@@ -21,15 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@renderer/components/ui/select'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@renderer/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import {
@@ -42,6 +33,7 @@ import {
   DialogTrigger,
 } from '@renderer/components/ui/dialog'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
+import { ModelPickerDialog } from '@renderer/components/chat/ModelPickerDialog'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { TranslateSettingsDialog, type TranslateSettings } from './TranslateSettingsDialog'
@@ -74,6 +66,7 @@ export function TranslateView(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [translateSettings, setTranslateSettings] = useState<TranslateSettings>({
     systemPrompt: '',
     temperature: 0.3,
@@ -145,7 +138,6 @@ export function TranslateView(): React.JSX.Element {
   const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
   const displayModel = activeModel?.name || activeProvider?.model || t('translate.noModelSelected')
-  const enabledProviders = providers.filter((p) => p.enabled)
 
   const handleSelectModel = useCallback(
     (modelId: string, providerId: string) => {
@@ -391,60 +383,26 @@ export function TranslateView(): React.JSX.Element {
         )}
 
         {/* Model selector */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors hover:bg-muted">
-              <span
-                className="inline-block h-2 w-2 shrink-0 rounded-full"
-                style={{ backgroundColor: template?.color ?? '#6b7280' }}
-              />
-              <span className="max-w-30 truncate">{displayModel}</span>
-              <ChevronDown className="h-3 w-3 opacity-50" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            {enabledProviders.map((provider, index) => {
-              const providerTemplate = getTemplateByType(provider.type)
-              const providerModels = models.filter((m) => m.providerId === provider.id && m.enabled)
-              return (
-                <div key={provider.id}>
-                  {index > 0 && <DropdownMenuSeparator />}
-                  <DropdownMenuGroup>
-                    <DropdownMenuLabel className="flex items-center gap-1.5">
-                      <span
-                        className="inline-block h-2 w-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: providerTemplate?.color ?? '#6b7280' }}
-                      />
-                      {provider.name}
-                    </DropdownMenuLabel>
-                    {providerModels.length > 0 ? (
-                      providerModels.map((m) => {
-                        const isSelected =
-                          provider.id === activeProviderId && m.id === activeModelId
-                        return (
-                          <DropdownMenuItem
-                            key={m.id}
-                            onClick={() => handleSelectModel(m.id, provider.id)}>
-                            <Check
-                              className={`mr-2 h-3.5 w-3.5 ${isSelected ? '' : 'invisible'}`}
-                            />
-                            <span>{m.name}</span>
-                          </DropdownMenuItem>
-                        )
-                      })
-                    ) : (
-                      <DropdownMenuItem disabled>
-                        <span className="text-muted-foreground">
-                          {t('translate.noModelConfigured')}
-                        </span>
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuGroup>
-                </div>
-              )
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <button
+          className="flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors hover:bg-muted"
+          onClick={() => setModelPickerOpen(true)}>
+          <span
+            className="inline-block h-2 w-2 shrink-0 rounded-full"
+            style={{ backgroundColor: template?.color ?? '#6b7280' }}
+          />
+          <span className="max-w-30 truncate">{displayModel}</span>
+          <ChevronDown className="h-3 w-3 opacity-50" />
+        </button>
+        <ModelPickerDialog
+          open={modelPickerOpen}
+          onOpenChange={setModelPickerOpen}
+          selectedProviderId={activeProviderId ?? null}
+          selectedModelId={activeModel?.name ?? ''}
+          onSelect={(providerId, modelId) => {
+            const model = models.find((m) => m.providerId === providerId && m.name === modelId)
+            if (model) handleSelectModel(model.id, providerId)
+          }}
+        />
 
         {/* Settings button */}
         <Tooltip>

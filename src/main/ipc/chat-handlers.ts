@@ -40,9 +40,9 @@ export function registerChatHandlers(): void {
           ? getAssistant(conversation.assistantId)
           : undefined
 
-        // Model resolution: conversation-level override → assistant-level (required)
-        const effectiveProviderId = conversation.providerId ?? assistant?.providerId ?? null
-        const effectiveModel = conversation.model ?? assistant?.model ?? ''
+        // Model resolution: assistant-level only
+        const effectiveProviderId = assistant?.providerId ?? null
+        const effectiveModel = assistant?.model ?? ''
 
         if (!effectiveProviderId) {
           return {

@@ -223,7 +223,9 @@ export function ModelManageDialog({
                                     <TooltipTrigger asChild>
                                       <span
                                         className="inline-flex h-5 w-5 items-center justify-center rounded-full"
-                                        style={{ backgroundColor: config.color + '20' }}>
+                                        style={{
+                                          backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
+                                        }}>
                                         <Icon className="h-3 w-3" style={{ color: config.color }} />
                                       </span>
                                     </TooltipTrigger>

@@ -283,6 +283,12 @@
       "clearInput": "Clear input"
     }
   },
+  "modelPicker": {
+    "title": "Select Model",
+    "searchPlaceholder": "Search models...",
+    "noResults": "No matching models",
+    "noProviders": "No providers configured"
+  },
   "modelManage": {
     "models": " Models",
     "searchPlaceholder": "Search model ID or name",

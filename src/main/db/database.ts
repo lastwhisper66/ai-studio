@@ -45,8 +45,6 @@ function createTables(): void {
       title TEXT NOT NULL DEFAULT 'New Chat',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      provider_id TEXT,
-      model TEXT,
       system_prompt TEXT,
       assistant_id TEXT,
       pinned INTEGER NOT NULL DEFAULT 0

@@ -1,16 +1,7 @@
 import { useState, useEffect } from 'react'
-import { X, ChevronRight, PanelRightClose, PanelRightOpen, Check, ChevronDown } from 'lucide-react'
+import { X, ChevronRight, PanelRightClose, PanelRightOpen, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@renderer/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
@@ -19,6 +10,7 @@ import { getTemplateByType } from '@renderer/components/settings/provider-templa
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { AssistantSettingsDialog } from './AssistantSettingsDialog'
+import { ModelPickerDialog } from './ModelPickerDialog'
 
 interface ChatViewProps {
   topicCollapsed: boolean
@@ -41,14 +33,13 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     stopGeneration,
     loadMoreMessages,
     clearError,
-    updateConversationModel,
   } = useConversationStore()
 
   const assistants = useAssistantStore((s) => s.assistants)
   const activeAssistantId = useAssistantStore((s) => s.activeAssistantId)
+  const updateAssistant = useAssistantStore((s) => s.updateAssistant)
 
   const providers = useProviderStore((s) => s.providers)
-  const models = useProviderStore((s) => s.models)
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
   const activeAssistant = activeAssistantId
@@ -57,16 +48,18 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       ? assistants.find((a) => a.id === activeConversation.assistantId)
       : undefined
 
-  // Provider / model display — conversation-level override → assistant-level
-  const enabledProviders = providers.filter((p) => p.enabled)
-  const resolvedProviderId = activeConversation?.providerId ?? activeAssistant?.providerId ?? null
-  const resolvedModelName = activeConversation?.model ?? activeAssistant?.model ?? ''
+  // Provider / model display — assistant-level only (no conversation override)
+  const resolvedProviderId = activeAssistant?.providerId ?? null
+  const resolvedModelName = activeAssistant?.model ?? ''
   const resolvedProvider = providers.find((p) => p.id === resolvedProviderId)
   const resolvedModel = resolvedModelName || resolvedProvider?.model || t('common.noModelSet')
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
 
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'assistant' | 'model' | 'prompt'>('assistant')
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'assistant' | 'model' | 'prompt'>(
+    'assistant',
+  )
+  const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
@@ -105,62 +98,28 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
 
           {/* Provider + Model selector */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-                <span
-                  className="inline-block h-2 w-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: template?.color ?? '#6b7280' }}
-                />
-                <span>{resolvedModel}</span>
-                <ChevronDown className="h-3 w-3 opacity-50" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {enabledProviders.map((provider, index) => {
-                const providerTemplate = getTemplateByType(provider.type)
-                const providerModels = models.filter(
-                  (m) => m.providerId === provider.id && m.enabled,
-                )
-                return (
-                  <div key={provider.id}>
-                    {index > 0 && <DropdownMenuSeparator />}
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel className="flex items-center gap-1.5">
-                        <span
-                          className="inline-block h-2 w-2 shrink-0 rounded-full"
-                          style={{ backgroundColor: providerTemplate?.color ?? '#6b7280' }}
-                        />
-                        {provider.name}
-                      </DropdownMenuLabel>
-                      {providerModels.length > 0 ? (
-                        providerModels.map((m) => {
-                          const isSelected =
-                            provider.id === resolvedProviderId && m.name === resolvedModelName
-                          return (
-                            <DropdownMenuItem
-                              key={m.id}
-                              onClick={() => updateConversationModel(provider.id, m.name)}>
-                              <Check
-                                className={`mr-2 h-3.5 w-3.5 ${isSelected ? '' : 'invisible'}`}
-                              />
-                              <span>{m.name}</span>
-                            </DropdownMenuItem>
-                          )
-                        })
-                      ) : (
-                        <DropdownMenuItem disabled>
-                          <span className="text-muted-foreground">
-                            {t('common.noModelConfigured')}
-                          </span>
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuGroup>
-                  </div>
-                )
-              })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <button
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+            disabled={!activeAssistant}
+            onClick={() => setModelPickerOpen(true)}>
+            <span
+              className="inline-block h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: template?.color ?? '#6b7280' }}
+            />
+            <span>{resolvedModel}</span>
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </button>
+          <ModelPickerDialog
+            open={modelPickerOpen}
+            onOpenChange={setModelPickerOpen}
+            selectedProviderId={resolvedProviderId}
+            selectedModelId={resolvedModelName}
+            onSelect={(providerId, modelId) => {
+              if (activeAssistant) {
+                updateAssistant(activeAssistant.id, { providerId, model: modelId })
+              }
+            }}
+          />
         </div>
 
         {/* Right: topic panel toggle */}

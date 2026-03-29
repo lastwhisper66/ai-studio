@@ -30,7 +30,6 @@ interface ConversationState {
   sendMessage: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
-  updateConversationModel: (providerId: string, model: string) => Promise<void>
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => ({
@@ -332,41 +331,6 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     const conversationId = get().activeConversationId
     if (conversationId) {
       window.api.stopGeneration(conversationId)
-    }
-  },
-
-  updateConversationModel: async (providerId: string, model: string) => {
-    const conversationId = get().activeConversationId
-    const assistantStore = useAssistantStore.getState()
-
-    if (!conversationId) {
-      const assistant = assistantStore.assistants.find(
-        (a) => a.id === assistantStore.activeAssistantId,
-      )
-      if (assistant) {
-        await assistantStore.updateAssistant(assistant.id, { providerId, model })
-      }
-      return
-    }
-
-    const result = await window.api.updateConversation(conversationId, { providerId, model })
-    if (result.success && result.data) {
-      set((state) => ({
-        conversations: state.conversations.map((c) =>
-          c.id === conversationId
-            ? { ...c, providerId: result.data!.providerId, model: result.data!.model }
-            : c,
-        ),
-      }))
-
-      // Auto-writeback to assistant:
-      // - Default assistant: always update (remember last selected model)
-      // - Other assistants: only if they have no model configured yet
-      const conversation = get().conversations.find((c) => c.id === conversationId)
-      const assistant = assistantStore.assistants.find((a) => a.id === conversation?.assistantId)
-      if (assistant && (assistant.isDefault || !assistant.providerId)) {
-        await assistantStore.updateAssistant(assistant.id, { providerId, model })
-      }
     }
   },
 }))

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useMemo } from 'react'
-import { RotateCcw, Save } from 'lucide-react'
+import { useState, useCallback, useEffect } from 'react'
+import { RotateCcw, Save, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
@@ -10,17 +10,10 @@ import { Separator } from '@renderer/components/ui/separator'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@renderer/components/ui/select'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
+import { getTemplateByType } from '@renderer/components/settings/provider-templates'
+import { ModelPickerDialog } from './ModelPickerDialog'
 import type { Assistant } from '@shared/types'
 import { cn } from '@renderer/lib/utils'
 
@@ -101,11 +94,11 @@ export function AssistantSettingsDialog({
   const { t } = useTranslation()
   const { assistants, updateAssistant } = useAssistantStore()
   const providers = useProviderStore((s) => s.providers)
-  const models = useProviderStore((s) => s.models)
 
   const isCreateMode = mode === 'create'
   const assistant = assistants.find((a) => a.id === assistantId)
   const [activeTab, setActiveTab] = useState<TabId>('assistant')
+  const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [form, setForm] = useState<FormState | null>(() =>
     isCreateMode ? defaultFormState() : assistant ? stateFromAssistant(assistant) : null,
   )
@@ -143,20 +136,11 @@ export function AssistantSettingsDialog({
     [isCreateMode, assistantId, updateAssistant],
   )
 
-  // Model selector: compute the select value from providerId + model
-  const enabledProviders = providers.filter((p) => p.enabled)
-
-  const modelSelectValue = useMemo(() => {
-    if (!form) return ''
-    if (!form.providerId && !form.model) return ''
-    if (form.providerId && form.model) return `${form.providerId}::${form.model}`
-    if (form.providerId) return `${form.providerId}::`
-    return ''
-  }, [form?.providerId, form?.model]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Model selector: compute display info from providerId + model
+  const selectedProvider = form ? providers.find((p) => p.id === form.providerId) : undefined
+  const selectedTemplate = selectedProvider ? getTemplateByType(selectedProvider.type) : undefined
 
   const isModelSelected = !!(form?.providerId && form?.model)
-
-
 
   if (!isCreateMode && (!assistant || !form)) {
     return (
@@ -242,15 +226,6 @@ export function AssistantSettingsDialog({
     const str = value.toString()
     change('contextCount', str)
     commit({ contextCount: str })
-  }
-
-  const handleModelSelect = (val: string): void => {
-    const sepIndex = val.indexOf('::')
-    const providerId = val.slice(0, sepIndex)
-    const modelName = val.slice(sepIndex + 2)
-    change('providerId', providerId)
-    change('model', modelName)
-    commit({ providerId: providerId || null, model: modelName })
   }
 
   const handleSave = (): void => {
@@ -398,43 +373,42 @@ export function AssistantSettingsDialog({
                   {/* Model selector (grouped by provider) */}
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t('assistant.settings.model')}</Label>
-                    {enabledProviders.length === 0 ? (
-                      <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
-                        {t('assistant.settings.noProviderHint')}
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-accent"
+                      onClick={() => setModelPickerOpen(true)}>
+                      {form.providerId && form.model ? (
+                        <>
+                          <span
+                            className="inline-block h-2 w-2 shrink-0 rounded-full"
+                            style={{ backgroundColor: selectedTemplate?.color ?? '#6b7280' }}
+                          />
+                          <span className="flex-1 truncate text-left">{form.model}</span>
+                        </>
+                      ) : (
+                        <span className="flex-1 text-left text-muted-foreground">
+                          {t('assistant.settings.selectModel')}
+                        </span>
+                      )}
+                      <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+                    </button>
+                    <ModelPickerDialog
+                      open={modelPickerOpen}
+                      onOpenChange={setModelPickerOpen}
+                      selectedProviderId={form.providerId || null}
+                      selectedModelId={form.model}
+                      onSelect={(providerId, modelId) => {
+                        change('providerId', providerId)
+                        change('model', modelId)
+                        commit({ providerId: providerId || null, model: modelId })
+                      }}
+                    />
+                    {!isModelSelected && (
+                      <p className="text-sm text-destructive">
+                        {t('assistant.settings.modelRequired')}
                       </p>
-                    ) : (
-                      <>
-                        <Select value={modelSelectValue} onValueChange={handleModelSelect}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={t('assistant.settings.selectModel')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {enabledProviders.map((provider) => {
-                              const providerModels = models.filter(
-                                (m) => m.providerId === provider.id && m.enabled,
-                              )
-                              return (
-                                <SelectGroup key={provider.id}>
-                                  <SelectLabel>{provider.name}</SelectLabel>
-                                  {providerModels.map((m) => (
-                                    <SelectItem key={m.id} value={`${provider.id}::${m.name}`}>
-                                      {m.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectGroup>
-                              )
-                            })}
-                          </SelectContent>
-                        </Select>
-                        {!isModelSelected && (
-                          <p className="text-sm text-destructive">
-                            {t('assistant.settings.modelRequired')}
-                          </p>
-                        )}
-                      </>
                     )}
                   </div>
-
 
                   {/* Temperature */}
                   <div className="space-y-2">
@@ -620,7 +594,7 @@ export function AssistantSettingsDialog({
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             {t('assistant.settings.resetButton')}
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={!isModelSelected}>
+          <Button size="sm" onClick={handleSave} disabled={isCreateMode && !isModelSelected}>
             <Save className="mr-1.5 h-3.5 w-3.5" />
             {t('assistant.settings.saveButton')}
           </Button>
