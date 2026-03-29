@@ -60,20 +60,16 @@ export function registerProviderHandlers(): void {
   ipcMain.handle(
     IpcChannels.PROVIDER_TEST_CONNECTION,
     (_, provider: Provider): Promise<IpcResult<string>> => {
-      console.log('[TestConnection] >>> handler called, provider:', provider.type, provider.name)
       return new Promise((resolve) => {
         const fallbackTimer = setTimeout(() => {
-          console.log('[TestConnection] !!! hard timeout (20s) reached')
           resolve({ success: false, error: 'Connection test timed out' })
         }, 20000)
 
         doTestConnection(provider)
           .then((result) => {
-            console.log('[TestConnection] <<< resolved:', result.success, result.error ?? '')
             resolve(result)
           })
           .catch((e) => {
-            console.log('[TestConnection] <<< caught error:', e)
             resolve({ success: false, error: 'Connection failed' })
           })
           .finally(() => clearTimeout(fallbackTimer))
@@ -101,13 +97,11 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       systemPrompt: '',
     }
 
-    console.log('[TestConnection] creating client...')
     const client = createAIClient(settings)
 
     const model =
       provider.type === 'azure' ? provider.deploymentName || provider.model : provider.model
 
-    console.log('[TestConnection] sending streaming request...')
     const stream = await client.chat.completions.create(
       {
         model,
@@ -118,7 +112,6 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       { signal: controller.signal },
     )
 
-    console.log('[TestConnection] stream created, consuming first chunk...')
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const _chunk of stream) {
@@ -128,10 +121,8 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       // Stream read error is irrelevant — create() succeeding already proved the connection
     }
 
-    console.log('[TestConnection] success!')
     return { success: true, data: 'Connection successful!' }
   } catch (e) {
-    console.log('[TestConnection] error caught:', e)
     if (controller.signal.aborted) {
       return { success: false, error: 'Connection timed out (15s)' }
     }

@@ -298,31 +298,32 @@ export function TopicPanel({
       {isMultiSelect && (
         <>
           <div className="mx-3 border-t" />
-          <div className="flex items-center justify-between gap-1 px-2 py-2">
+          <div className="flex items-center gap-1 px-2 py-2">
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 w-12 shrink-0 text-xs"
+              className="h-7 shrink-0 text-xs"
               onClick={handleSelectAll}>
               {selectedIds.size === topicConversations.length
-                ? t('common.cancel')
+                ? t('topic.cancelSelect')
                 : t('topic.selectAll')}
             </Button>
             <Button
               variant="destructive"
               size="sm"
-              className="h-7 flex-1 text-xs"
+              className="h-7 shrink-0 text-xs"
               disabled={selectedIds.size === 0 || isStreaming}
               onClick={handleDeleteMany}>
               {t('topic.deleteSelected')}
               {selectedIds.size > 0 && ` (${selectedIds.size})`}
             </Button>
+            <div className="flex-1" />
             <Button
               variant="outline"
               size="sm"
-              className="h-7 w-12 shrink-0 text-xs"
+              className="h-7 shrink-0 text-xs"
               onClick={handleToggleMultiSelect}>
-              {t('topic.cancelSelect')}
+              {t('common.cancel')}
             </Button>
           </div>
         </>
