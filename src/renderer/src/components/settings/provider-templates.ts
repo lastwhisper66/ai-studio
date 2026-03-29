@@ -43,6 +43,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     ],
   },
   {
+    type: 'newapi',
+    name: 'New API',
+    color: '#f97316',
+    defaultBaseUrl: '',
+    defaultModels: [],
+  },
+  {
     type: 'custom',
     name: 'OpenAI Compatible',
     color: '#6b7280',

@@ -16,6 +16,8 @@ import {
   ChevronRight,
   Minus,
   HelpCircle,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -173,6 +175,9 @@ function ProviderForm({
 
   const template = getTemplateByType(provider.type)
   const isAzure = provider.type === 'azure'
+  const supportsRemoteFetch = provider.type === 'newapi' || provider.type === 'custom'
+  const [isFetchingModels, setIsFetchingModels] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     setDraft({
@@ -212,6 +217,30 @@ function ProviderForm({
   }
 
   const hasCatalog = getModelCatalog(provider.type).length > 0
+
+  const handleFetchRemoteModels = async (): Promise<void> => {
+    if (!draft.apiKey || !draft.baseUrl) return
+    setIsFetchingModels(true)
+    setFetchError(null)
+    try {
+      // Save current draft first
+      await onUpdate(provider.id, draft)
+      const result = await window.api.fetchRemoteModels({ ...provider, ...draft })
+      if (result.success && result.data) {
+        // Add models that don't already exist
+        const existingNames = new Set(providerModels.map((m) => m.name))
+        for (const m of result.data) {
+          if (!existingNames.has(m.id)) {
+            await onAddModel(provider.id, m.id, m.owned_by || '')
+          }
+        }
+      } else if (!result.success) {
+        setFetchError(result.error || t('settings.provider.fetchModelsFailed'))
+      }
+    } finally {
+      setIsFetchingModels(false)
+    }
+  }
 
   const toggleGroup = (group: string): void => {
     setCollapsedGroups((prev) => {
@@ -552,6 +581,21 @@ function ProviderForm({
                 {t('settings.provider.manage')}
               </Button>
             )}
+            {supportsRemoteFetch && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleFetchRemoteModels}
+                disabled={isFetchingModels || !draft.apiKey || !draft.baseUrl}
+                className="gap-1.5">
+                {isFetchingModels ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {t('settings.provider.fetchModels')}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -561,6 +605,9 @@ function ProviderForm({
               {t('common.add')}
             </Button>
           </div>
+          {fetchError && (
+            <p className="text-xs text-destructive">{fetchError}</p>
+          )}
 
           {/* Model manage dialog (catalog browser) */}
           {hasCatalog && (

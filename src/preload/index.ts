@@ -147,6 +147,11 @@ const api = {
   deleteModel: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_DELETE, id),
 
+  fetchRemoteModels: (
+    provider: Provider,
+  ): Promise<IpcResult<{ id: string; owned_by?: string }[]>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_FETCH_REMOTE, provider),
+
   // Assistants
   listAssistants: (): Promise<IpcResult<Assistant[]>> =>
     ipcRenderer.invoke(IpcChannels.ASSISTANT_LIST),

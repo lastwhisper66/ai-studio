@@ -176,6 +176,8 @@
       "modelNamePlaceholder": "Enter model name, e.g. gpt-4o",
       "modelGroupPlaceholder": "Group name (optional)",
       "manage": "Manage",
+      "fetchModels": "Fetch Models",
+      "fetchModelsFailed": "Failed to fetch models",
       "save": "Save",
       "test": "Test",
       "testConnection": "Test Connection",

@@ -176,6 +176,8 @@
       "modelNamePlaceholder": "输入模型名称，如 gpt-4o",
       "modelGroupPlaceholder": "分组名称（可选）",
       "manage": "管理",
+      "fetchModels": "获取模型",
+      "fetchModelsFailed": "获取模型失败",
       "save": "保存",
       "test": "检测",
       "testConnection": "连接测试",

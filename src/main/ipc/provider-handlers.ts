@@ -69,7 +69,7 @@ export function registerProviderHandlers(): void {
           .then((result) => {
             resolve(result)
           })
-          .catch((e) => {
+          .catch(() => {
             resolve({ success: false, error: 'Connection failed' })
           })
           .finally(() => clearTimeout(fallbackTimer))
