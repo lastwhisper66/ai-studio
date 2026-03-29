@@ -17,7 +17,6 @@ import {
   Minus,
   HelpCircle,
   RefreshCw,
-  Loader2,
 } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -48,6 +47,7 @@ import { ModelManageDialog } from './ModelManageDialog'
 import { AddModelDialog } from './AddModelDialog'
 import { EditModelDialog } from './EditModelDialog'
 import { ConnectionTestDialog } from './ConnectionTestDialog'
+import { RemoteModelDialog, type RemoteModel } from './RemoteModelDialog'
 
 export function ProviderDetail(): React.JSX.Element {
   const { t } = useTranslation()
@@ -183,6 +183,8 @@ function ProviderForm({
   const supportsRemoteFetch = provider.type === 'newapi' || provider.type === 'custom'
   const [isFetchingModels, setIsFetchingModels] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
+  const [showRemoteModelDialog, setShowRemoteModelDialog] = useState(false)
+  const [remoteModels, setRemoteModels] = useState<RemoteModel[]>([])
 
   useEffect(() => {
     setDraft({
@@ -225,6 +227,9 @@ function ProviderForm({
 
   const handleFetchRemoteModels = async (): Promise<void> => {
     if (!draft.apiKey || !draft.baseUrl) return
+    // Open dialog immediately, show loading state inside
+    setShowRemoteModelDialog(true)
+    setRemoteModels([])
     setIsFetchingModels(true)
     setFetchError(null)
     try {
@@ -232,13 +237,7 @@ function ProviderForm({
       await onUpdate(provider.id, draft)
       const result = await window.api.fetchRemoteModels({ ...provider, ...draft })
       if (result.success && result.data) {
-        // Add models that don't already exist
-        const existingNames = new Set(providerModels.map((m) => m.name))
-        for (const m of result.data) {
-          if (!existingNames.has(m.id)) {
-            await onAddModel(provider.id, m.id, m.owned_by || '')
-          }
-        }
+        setRemoteModels(result.data)
       } else if (!result.success) {
         setFetchError(result.error || t('settings.provider.fetchModelsFailed'))
       }
@@ -600,13 +599,9 @@ function ProviderForm({
                 variant="default"
                 size="sm"
                 onClick={handleFetchRemoteModels}
-                disabled={isFetchingModels || !draft.apiKey || !draft.baseUrl}
+                disabled={!draft.apiKey || !draft.baseUrl}
                 className="gap-1.5">
-                {isFetchingModels ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
+                <RefreshCw className="h-3.5 w-3.5" />
                 {t('settings.provider.fetchModels')}
               </Button>
             )}
@@ -619,9 +614,6 @@ function ProviderForm({
               {t('common.add')}
             </Button>
           </div>
-          {fetchError && (
-            <p className="text-xs text-destructive">{fetchError}</p>
-          )}
 
           {/* Model manage dialog (catalog browser) */}
           {hasCatalog && (
@@ -648,6 +640,28 @@ function ProviderForm({
               onAddModel(provider.id, modelId, group, capabilities)
             }
           />
+
+          {/* Remote model dialog (fetch from API) */}
+          {supportsRemoteFetch && (
+            <RemoteModelDialog
+              open={showRemoteModelDialog}
+              onOpenChange={(open) => {
+                setShowRemoteModelDialog(open)
+                if (!open) setFetchError(null)
+              }}
+              providerName={provider.name}
+              providerColor={template?.color ?? '#6b7280'}
+              remoteModels={remoteModels}
+              loading={isFetchingModels}
+              error={fetchError}
+              addedModelNames={new Set(providerModels.map((m) => m.name))}
+              onAdd={(modelId, group) => onAddModel(provider.id, modelId, group)}
+              onRemove={async (modelName) => {
+                const dbModel = providerModels.find((m) => m.name === modelName)
+                if (dbModel) await onRemoveModel(dbModel.id)
+              }}
+            />
+          )}
 
           {/* Edit model dialog */}
           {editingModel && (

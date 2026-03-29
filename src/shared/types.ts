@@ -106,6 +106,15 @@ export interface Model {
   createdAt: string
 }
 
+export interface ModelDefinition {
+  id: string
+  name: string
+  group: string
+  capabilities: ModelCapability[]
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ApiSettings {
   provider: ProviderType
   apiKey: string

@@ -13,6 +13,7 @@ import type {
   TitleUpdatedData,
   Provider,
   Model,
+  ModelDefinition,
   Assistant,
   Phrase,
   FileData,
@@ -154,6 +155,26 @@ const api = {
     provider: Provider,
   ): Promise<IpcResult<{ id: string; owned_by?: string }[]>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_FETCH_REMOTE, provider),
+
+  // Model Definitions (global capability library)
+  listModelDefinitions: (): Promise<IpcResult<ModelDefinition[]>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_LIST),
+
+  createModelDefinition: (data: {
+    name: string
+    group?: string
+    capabilities?: ModelCapability[]
+  }): Promise<IpcResult<ModelDefinition>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_CREATE, data),
+
+  updateModelDefinition: (
+    id: string,
+    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+  ): Promise<IpcResult<ModelDefinition | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_UPDATE, id, data),
+
+  deleteModelDefinition: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_DELETE, id),
 
   // Assistants
   listAssistants: (): Promise<IpcResult<Assistant[]>> =>

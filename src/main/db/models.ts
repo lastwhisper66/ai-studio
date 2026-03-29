@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import type { Model, ModelCapability } from '@shared/types'
 import { getDb } from './database'
+import { getModelDefinitionByName } from './model-definitions'
 
 interface ModelRow {
   id: string
@@ -63,6 +64,18 @@ export interface CreateModelData {
 
 export function createModel(data: CreateModelData): Model {
   const id = randomUUID()
+
+  // Auto-fill from global model definitions if capabilities not provided
+  let capabilities = data.capabilities ?? []
+  let group = data.group ?? ''
+  if (capabilities.length === 0) {
+    const def = getModelDefinitionByName(data.name)
+    if (def) {
+      capabilities = def.capabilities
+      if (!group) group = def.group
+    }
+  }
+
   getDb()
     .prepare(
       `INSERT INTO models (id, provider_id, name, group_name, capabilities, enabled, sort_order)
@@ -72,8 +85,8 @@ export function createModel(data: CreateModelData): Model {
       id,
       data.providerId,
       data.name,
-      data.group ?? '',
-      JSON.stringify(data.capabilities ?? []),
+      group,
+      JSON.stringify(capabilities),
       data.enabled !== false ? 1 : 0,
       data.sortOrder ?? 0,
     )

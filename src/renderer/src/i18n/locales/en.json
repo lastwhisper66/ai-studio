@@ -141,6 +141,7 @@
     "title": "Settings",
     "sections": {
       "provider": "Providers",
+      "modelLibrary": "Model Library",
       "general": "General",
       "display": "Display",
       "language": "Language"
@@ -318,5 +319,26 @@
   "editModel": {
     "title": "Edit Model",
     "save": "Save"
+  },
+  "modelLibrary": {
+    "title": "Model Library",
+    "description": "Define model capabilities for auto-matching when adding models",
+    "addDefinition": "Add Model",
+    "editDefinition": "Edit Model",
+    "searchPlaceholder": "Search model name or group",
+    "empty": "Model library is empty. Click the button above to add a model definition.",
+    "noResults": "No matching models",
+    "modelName": "Model Name",
+    "group": "Group",
+    "capabilities": "Capabilities",
+    "ungrouped": "Ungrouped",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
+  },
+  "remoteModel": {
+    "title": "{{provider}} Models",
+    "searchPlaceholder": "Search model name",
+    "loading": "Fetching model list...",
+    "noModels": "No models found",
+    "noResults": "No matching models"
   }
 }

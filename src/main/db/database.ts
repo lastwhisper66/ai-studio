@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { app } from 'electron'
 import { existsSync, mkdirSync } from 'fs'
 import { dirname, join } from 'path'
+import { seedModelDefinitions } from './model-definitions'
 
 let db: Database.Database | null = null
 
@@ -143,6 +144,19 @@ function createTables(): void {
     );
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS model_definitions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      group_name TEXT NOT NULL DEFAULT '',
+      capabilities TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_model_definitions_name
+      ON model_definitions(name);
+  `)
+
   // Seed: ensure a default assistant exists
   const hasDefault = database
     .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
@@ -180,4 +194,7 @@ function createTables(): void {
         .run(firstModel.provider_id, firstModel.model_name)
     }
   }
+
+  // Seed: populate model definitions from static catalog
+  seedModelDefinitions()
 }

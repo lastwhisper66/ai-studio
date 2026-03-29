@@ -40,6 +40,11 @@ export const IpcChannels = {
   MODEL_DELETE: 'model:delete',
   MODEL_DELETE_BY_PROVIDER: 'model:delete-by-provider',
   MODEL_FETCH_REMOTE: 'model:fetch-remote',
+  // Model Definition (global capability library)
+  MODEL_DEFINITION_LIST: 'model-definition:list',
+  MODEL_DEFINITION_CREATE: 'model-definition:create',
+  MODEL_DEFINITION_UPDATE: 'model-definition:update',
+  MODEL_DEFINITION_DELETE: 'model-definition:delete',
   // Assistant
   ASSISTANT_LIST: 'assistant:list',
   ASSISTANT_GET: 'assistant:get',

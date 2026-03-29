@@ -1,8 +1,8 @@
-import { Cloud, Settings2, Monitor, Globe } from 'lucide-react'
+import { Cloud, Library, Settings2, Monitor, Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 
-export type SettingsSection = 'provider' | 'general' | 'display' | 'language'
+export type SettingsSection = 'provider' | 'model-library' | 'general' | 'display' | 'language'
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection
@@ -11,6 +11,7 @@ interface SettingsSidebarProps {
 
 const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType }[] = [
   { id: 'provider', labelKey: 'settings.sections.provider', icon: Cloud },
+  { id: 'model-library', labelKey: 'settings.sections.modelLibrary', icon: Library },
   { id: 'general', labelKey: 'settings.sections.general', icon: Settings2 },
   { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
   { id: 'language', labelKey: 'settings.sections.language', icon: Globe },

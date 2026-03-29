@@ -4,6 +4,7 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
+import { ModelLibrarySection } from './ModelLibrarySection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { LanguageSection } from './LanguageSection'
@@ -30,6 +31,8 @@ export function SettingsPage(): React.JSX.Element {
 
         {activeSection === 'provider' ? (
           <ProviderSection />
+        ) : activeSection === 'model-library' ? (
+          <ModelLibrarySection />
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6">
