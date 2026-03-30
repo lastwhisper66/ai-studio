@@ -331,6 +331,8 @@
     "modelName": "Model Name",
     "group": "Group",
     "capabilities": "Capabilities",
+    "providerTypes": "Provider Types",
+    "providerTypesHint": "Leave empty to make visible to all providers",
     "ungrouped": "Ungrouped",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
   },

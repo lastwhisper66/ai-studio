@@ -22,8 +22,18 @@ import {
   DialogFooter,
 } from '@renderer/components/ui/dialog'
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
-import type { ModelCapability, ModelDefinition } from '@shared/types'
+import type { ModelCapability, ModelDefinition, ProviderType } from '@shared/types'
 import { CAPABILITY_CONFIG, FULL_CAPABILITIES } from './capability-config'
+
+const ALL_PROVIDER_TYPES: { value: ProviderType; label: string }[] = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'azure', label: 'Azure' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'deepseek', label: 'DeepSeek' },
+  { value: 'silicon', label: 'Silicon Flow' },
+  { value: 'newapi', label: 'NewAPI' },
+  { value: 'custom', label: 'Custom' },
+]
 
 export function ModelLibrarySection(): React.JSX.Element {
   const { t } = useTranslation()
@@ -235,6 +245,7 @@ interface ModelDefinitionDialogProps {
     name: string
     group: string
     capabilities: ModelCapability[]
+    providerTypes: ProviderType[]
   }) => Promise<void>
 }
 
@@ -250,6 +261,9 @@ function ModelDefinitionDialog({
   const [capabilities, setCapabilities] = useState<ModelCapability[]>(
     initial?.capabilities ?? [],
   )
+  const [providerTypes, setProviderTypes] = useState<ProviderType[]>(
+    initial?.providerTypes ?? [],
+  )
 
   // Reset state when dialog opens
   useEffect(() => {
@@ -257,6 +271,7 @@ function ModelDefinitionDialog({
       setName(initial?.name ?? '')
       setGroup(initial?.group ?? '')
       setCapabilities(initial?.capabilities ?? [])
+      setProviderTypes(initial?.providerTypes ?? [])
     }
   }, [open, initial])
 
@@ -266,9 +281,15 @@ function ModelDefinitionDialog({
     )
   }
 
+  const toggleProviderType = (pt: ProviderType): void => {
+    setProviderTypes((prev) =>
+      prev.includes(pt) ? prev.filter((p) => p !== pt) : [...prev, pt],
+    )
+  }
+
   const handleSave = async (): Promise<void> => {
     if (!name.trim()) return
-    await onSave({ name: name.trim(), group: group.trim(), capabilities })
+    await onSave({ name: name.trim(), group: group.trim(), capabilities, providerTypes })
   }
 
   return (
@@ -325,6 +346,31 @@ function ModelDefinitionDialog({
                     }>
                     {isActive && <X className="h-3 w-3" />}
                     <Icon className="h-3 w-3" /> {t(cfg.labelKey)}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Provider Types */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">{t('modelLibrary.providerTypes')}</label>
+            <p className="text-muted-foreground text-xs">{t('modelLibrary.providerTypesHint')}</p>
+            <div className="flex flex-wrap gap-2">
+              {ALL_PROVIDER_TYPES.map(({ value, label }) => {
+                const isActive = providerTypes.includes(value)
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => toggleProviderType(value)}
+                    className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground border-transparent'
+                        : 'border-border text-muted-foreground hover:border-foreground/30'
+                    }`}>
+                    {isActive && <X className="h-3 w-3" />}
+                    {label}
                   </button>
                 )
               })}

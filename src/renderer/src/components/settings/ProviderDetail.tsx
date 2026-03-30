@@ -41,7 +41,6 @@ import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider, ModelCapability } from '@shared/types'
 import { normalizeBaseUrl } from '@shared/url'
 import { getTemplateByType } from './provider-templates'
-import { getModelCatalog } from './model-catalog'
 import { CAPABILITY_CONFIG } from './capability-config'
 import { ModelManageDialog } from './ModelManageDialog'
 import { AddModelDialog } from './AddModelDialog'
@@ -222,8 +221,6 @@ function ProviderForm({
   const handleConfirmDelete = async (): Promise<void> => {
     await onDelete(provider.id)
   }
-
-  const hasCatalog = getModelCatalog(provider.type).length > 0
 
   const handleFetchRemoteModels = async (): Promise<void> => {
     if (!draft.apiKey || !draft.baseUrl) return
@@ -584,16 +581,14 @@ function ProviderForm({
 
           {/* Add model buttons */}
           <div className="mt-3 flex items-center gap-2">
-            {hasCatalog && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setShowManageDialog(true)}
-                className="gap-1.5">
-                <Pencil className="h-3.5 w-3.5" />
-                {t('settings.provider.manage')}
-              </Button>
-            )}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setShowManageDialog(true)}
+              className="gap-1.5">
+              <Pencil className="h-3.5 w-3.5" />
+              {t('settings.provider.manage')}
+            </Button>
             {supportsRemoteFetch && (
               <Button
                 variant="default"
@@ -616,20 +611,18 @@ function ProviderForm({
           </div>
 
           {/* Model manage dialog (catalog browser) */}
-          {hasCatalog && (
-            <ModelManageDialog
-              open={showManageDialog}
-              onOpenChange={setShowManageDialog}
-              providerName={provider.name}
-              providerType={provider.type}
-              providerColor={template?.color ?? '#6b7280'}
-              addedModels={providerModels.map((m) => ({ id: m.id, name: m.name, group: m.group }))}
-              onAdd={(modelId, group, capabilities) =>
-                onAddModel(provider.id, modelId, group, capabilities)
-              }
-              onRemove={onRemoveModel}
-            />
-          )}
+          <ModelManageDialog
+            open={showManageDialog}
+            onOpenChange={setShowManageDialog}
+            providerName={provider.name}
+            providerType={provider.type}
+            providerColor={template?.color ?? '#6b7280'}
+            addedModels={providerModels.map((m) => ({ id: m.id, name: m.name, group: m.group }))}
+            onAdd={(modelId, group, capabilities) =>
+              onAddModel(provider.id, modelId, group, capabilities)
+            }
+            onRemove={onRemoveModel}
+          />
 
           {/* Add model dialog (manual input) */}
           <AddModelDialog

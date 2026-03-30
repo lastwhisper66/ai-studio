@@ -331,6 +331,8 @@
     "modelName": "模型名称",
     "group": "分组",
     "capabilities": "能力标签",
+    "providerTypes": "适用供应商",
+    "providerTypesHint": "留空表示对所有供应商可见",
     "ungrouped": "未分组",
     "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
   },

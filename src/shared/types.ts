@@ -66,7 +66,14 @@ export interface Message {
   attachments?: AttachmentMeta[]
 }
 
-export type ProviderType = 'openai' | 'azure' | 'deepseek' | 'silicon' | 'newapi' | 'custom'
+export type ProviderType =
+  | 'openai'
+  | 'azure'
+  | 'anthropic'
+  | 'deepseek'
+  | 'silicon'
+  | 'newapi'
+  | 'custom'
 
 export interface Provider {
   id: string
@@ -111,6 +118,7 @@ export interface ModelDefinition {
   name: string
   group: string
   capabilities: ModelCapability[]
+  providerTypes: ProviderType[]
   createdAt: string
   updatedAt: string
 }

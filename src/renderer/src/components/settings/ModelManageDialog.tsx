@@ -6,8 +6,8 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Tabs, TabsList, TabsTrigger } from '@renderer/components/ui/tabs'
 import { Search, ChevronDown, ChevronRight, Plus, Minus } from 'lucide-react'
-import type { ProviderType, ModelCapability } from '@shared/types'
-import { getModelCatalog, type CatalogModel } from './model-catalog'
+import type { ProviderType, ModelCapability, ModelDefinition } from '@shared/types'
+import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { CAPABILITY_CONFIG, ALL_CAPABILITIES } from './capability-config'
 
 interface ModelManageDialogProps {
@@ -37,7 +37,14 @@ export function ModelManageDialog({
   const [activeTab, setActiveTab] = useState('all')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
 
-  const catalog = useMemo(() => getModelCatalog(providerType), [providerType])
+  const { definitions } = useModelDefinitionStore()
+  const catalog = useMemo(
+    () =>
+      definitions.filter(
+        (d) => d.providerTypes.length === 0 || d.providerTypes.includes(providerType),
+      ),
+    [definitions, providerType],
+  )
   const addedNameSet = useMemo(() => new Set(addedModels.map((m) => m.name)), [addedModels])
 
   // Filter by tab and search
@@ -52,7 +59,7 @@ export function ModelManageDialog({
     // Filter by search keyword
     const q = search.trim().toLowerCase()
     if (q) {
-      result = result.filter((m) => m.id.toLowerCase().includes(q))
+      result = result.filter((m) => m.name.toLowerCase().includes(q))
     }
 
     return result
@@ -60,7 +67,7 @@ export function ModelManageDialog({
 
   // Group filtered models
   const groups = useMemo(() => {
-    const map = new Map<string, CatalogModel[]>()
+    const map = new Map<string, ModelDefinition[]>()
     for (const model of filteredModels) {
       const existing = map.get(model.group) || []
       existing.push(model)
@@ -78,10 +85,10 @@ export function ModelManageDialog({
     })
   }
 
-  const handleAddGroup = async (groupModels: CatalogModel[]): Promise<void> => {
+  const handleAddGroup = async (groupModels: ModelDefinition[]): Promise<void> => {
     for (const m of groupModels) {
-      if (!addedNameSet.has(m.id)) {
-        await onAdd(m.id, m.group, m.capabilities)
+      if (!addedNameSet.has(m.name)) {
+        await onAdd(m.name, m.group, m.capabilities)
       }
     }
   }
@@ -91,14 +98,14 @@ export function ModelManageDialog({
     if (dbModel) await onRemove(dbModel.id)
   }
 
-  const isGroupFullyAdded = (groupModels: CatalogModel[]): boolean =>
-    groupModels.every((m) => addedNameSet.has(m.id))
+  const isGroupFullyAdded = (groupModels: ModelDefinition[]): boolean =>
+    groupModels.every((m) => addedNameSet.has(m.name))
 
-  const handleGroupToggle = async (groupModels: CatalogModel[]): Promise<void> => {
+  const handleGroupToggle = async (groupModels: ModelDefinition[]): Promise<void> => {
     if (isGroupFullyAdded(groupModels)) {
       // Remove all in group
       for (const m of groupModels) {
-        await handleRemoveModel(m.id)
+        await handleRemoveModel(m.name)
       }
     } else {
       await handleAddGroup(groupModels)
@@ -151,7 +158,7 @@ export function ModelManageDialog({
               Array.from(groups.entries()).map(([groupName, groupModels], idx) => {
                 const isCollapsed = collapsedGroups.has(groupName)
                 const isLast = idx === groups.size - 1
-                const addedCount = groupModels.filter((m) => addedNameSet.has(m.id)).length
+                const addedCount = groupModels.filter((m) => addedNameSet.has(m.name)).length
                 const allAdded = isGroupFullyAdded(groupModels)
 
                 return (
@@ -196,10 +203,10 @@ export function ModelManageDialog({
                     {/* Model items */}
                     {!isCollapsed &&
                       groupModels.map((model) => {
-                        const isAdded = addedNameSet.has(model.id)
+                        const isAdded = addedNameSet.has(model.name)
                         return (
                           <div
-                            key={model.id}
+                            key={model.name}
                             className={`flex items-center gap-2.5 border-t border-border/40 px-3 py-2 pl-8 ${
                               isAdded ? 'bg-primary/5' : ''
                             }`}>
@@ -211,7 +218,7 @@ export function ModelManageDialog({
                             </span>
 
                             {/* Model name */}
-                            <span className="min-w-0 flex-1 truncate text-sm">{model.id}</span>
+                            <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
 
                             {/* Capability badges */}
                             <div className="flex shrink-0 items-center gap-1">
@@ -240,8 +247,8 @@ export function ModelManageDialog({
                               type="button"
                               onClick={() =>
                                 isAdded
-                                  ? handleRemoveModel(model.id)
-                                  : onAdd(model.id, model.group, model.capabilities)
+                                  ? handleRemoveModel(model.name)
+                                  : onAdd(model.name, model.group, model.capabilities)
                               }
                               className={`rounded p-1 transition-colors ${
                                 isAdded
