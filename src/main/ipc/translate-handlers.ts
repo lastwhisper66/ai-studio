@@ -2,16 +2,15 @@ import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { TranslateRequestPayload, IpcResult } from '@shared/types'
-import { createAIClient, loadApiSettings } from '../ai'
+import { createAIClient } from '../ai'
 import { getProvider } from '../db/providers'
 import { getModel, listModelsByProvider } from '../db/models'
 
 let activeController: AbortController | null = null
 
 function loadTranslateSettings(providerId?: string, modelId?: string) {
-  // If no specific provider requested, fall back to global active settings
   if (!providerId) {
-    return loadApiSettings()
+    throw new Error('No provider selected. Please select a model for translation.')
   }
 
   const provider = getProvider(providerId)

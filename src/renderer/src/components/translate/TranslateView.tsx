@@ -81,10 +81,8 @@ export function TranslateView(): React.JSX.Element {
   // Independent model selection for translate (separate from chat's global selection)
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
-  const globalProviderId = useProviderStore((s) => s.activeProviderId)
-  const globalModelId = useProviderStore((s) => s.activeModelId)
 
-  // Local override: null means "use global"
+  // Local model selection (user must pick explicitly)
   const [localProviderId, setLocalProviderId] = useState<string | null>(null)
   const [localModelId, setLocalModelId] = useState<string | null>(null)
 
@@ -132,8 +130,8 @@ export function TranslateView(): React.JSX.Element {
     window.api.setSetting('translate.targetLang', value)
   }, [])
 
-  const activeProviderId = localProviderId ?? globalProviderId
-  const activeModelId = localModelId ?? globalModelId
+  const activeProviderId = localProviderId
+  const activeModelId = localModelId
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
@@ -141,24 +139,14 @@ export function TranslateView(): React.JSX.Element {
 
   const handleSelectModel = useCallback(
     (modelId: string, providerId: string) => {
-      // If selecting same as global, clear local override
-      if (modelId === globalModelId && providerId === globalProviderId) {
-        setLocalProviderId(null)
-        setLocalModelId(null)
-        window.api.setSettingsBatch({
-          'translate.providerId': '',
-          'translate.modelId': '',
-        })
-      } else {
-        setLocalProviderId(providerId)
-        setLocalModelId(modelId)
-        window.api.setSettingsBatch({
-          'translate.providerId': providerId,
-          'translate.modelId': modelId,
-        })
-      }
+      setLocalProviderId(providerId)
+      setLocalModelId(modelId)
+      window.api.setSettingsBatch({
+        'translate.providerId': providerId,
+        'translate.modelId': modelId,
+      })
     },
-    [globalProviderId, globalModelId],
+    [],
   )
 
   // Register streaming listeners
@@ -363,7 +351,7 @@ export function TranslateView(): React.JSX.Element {
             {t('translate.stop')}
           </Button>
         ) : (
-          <Button size="sm" onClick={handleTranslate} disabled={!sourceText.trim()}>
+          <Button size="sm" onClick={handleTranslate} disabled={!sourceText.trim() || !activeModelId}>
             <Play className="mr-1.5 h-3.5 w-3.5" />
             {t('translate.translate')}
           </Button>

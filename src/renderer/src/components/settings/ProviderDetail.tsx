@@ -52,10 +52,8 @@ export function ProviderDetail(): React.JSX.Element {
     providers,
     models,
     selectedProviderId,
-    activeProviderId,
     updateProvider,
     deleteProvider,
-    setActiveProvider,
     addModel,
     updateModel,
     removeModel,
@@ -76,11 +74,9 @@ export function ProviderDetail(): React.JSX.Element {
     <ProviderForm
       key={provider.id}
       provider={provider}
-      isActive={activeProviderId === provider.id}
       providerModels={models.filter((m) => m.providerId === provider.id)}
       onUpdate={updateProvider}
       onDelete={deleteProvider}
-      onSetActive={setActiveProvider}
       onAddModel={addModel}
       onUpdateModel={updateModel}
       onRemoveModel={removeModel}
@@ -91,7 +87,6 @@ export function ProviderDetail(): React.JSX.Element {
 
 interface ProviderFormProps {
   provider: Provider
-  isActive: boolean
   providerModels: {
     id: string
     name: string
@@ -101,7 +96,6 @@ interface ProviderFormProps {
   }[]
   onUpdate: (id: string, data: Partial<Provider>) => Promise<void>
   onDelete: (id: string) => Promise<void>
-  onSetActive: (id: string) => Promise<void>
   onAddModel: (
     providerId: string,
     name: string,
@@ -137,11 +131,9 @@ function SectionHeader({
 
 function ProviderForm({
   provider,
-  isActive,
   providerModels,
   onUpdate,
   onDelete,
-  onSetActive,
   onAddModel,
   onUpdateModel,
   onRemoveModel,
@@ -652,18 +644,7 @@ function ProviderForm({
         />
 
         {/* Bottom actions */}
-        <div className="flex items-center gap-2 border-t pt-4">
-          {!isActive && (
-            <Button variant="outline" size="sm" onClick={() => onSetActive(provider.id)}>
-              {t('settings.provider.setDefault')}
-            </Button>
-          )}
-          {isActive && (
-            <span className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium">
-              {t('settings.provider.currentlyUsed')}
-            </span>
-          )}
-          <div className="flex-1" />
+        <div className="flex items-center justify-end border-t pt-4">
           <Button
             variant="ghost"
             size="sm"

@@ -510,13 +510,13 @@ export function MessageInput({
               placeholder={
                 isStreaming ? t('chat.streamingPlaceholder') : t('chat.inputPlaceholder')
               }
-              className={`w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground${isExpanded ? ' flex-1' : ''}`}
+              className={`w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground${isExpanded ? ' flex-1' : ''}${isStreaming ? ' opacity-50' : ''}`}
               rows={2}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
-              disabled={isStreaming}
+              readOnly={isStreaming}
               style={isExpanded ? undefined : { minHeight: '2.5rem' }}
             />
           </div>
@@ -561,6 +561,7 @@ export function MessageInput({
             <div className="flex items-center">
               {isStreaming ? (
                 <Button
+                  type="button"
                   size="icon"
                   variant="destructive"
                   className="h-8 w-8 rounded-lg"

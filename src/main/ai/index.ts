@@ -1,8 +1,6 @@
 import OpenAI from 'openai'
 import type { ApiSettings } from '@shared/types'
 import { getSetting } from '../db/settings'
-import { getProvider } from '../db/providers'
-import { getModel, listModelsByProvider } from '../db/models'
 import { createOpenAIClient } from './openai-client'
 import { createAzureClient } from './azure-client'
 
@@ -21,68 +19,6 @@ export function createAIClient(settings: ApiSettings): OpenAI {
     return createAzureClient(settings)
   }
   return createOpenAIClient(settings)
-}
-
-export function loadApiSettings(): ApiSettings {
-  const activeProviderId = getSetting('active.providerId')
-  if (!activeProviderId) {
-    throw new Error(
-      'No active provider configured. Please add and activate a provider in Settings.',
-    )
-  }
-
-  const provider = getProvider(activeProviderId)
-  if (!provider) {
-    throw new Error('Active provider not found. Please select a provider in Settings.')
-  }
-
-  if (!provider.apiKey) {
-    throw new Error(
-      `API key is not configured for provider "${provider.name}". Please set your API key in Settings.`,
-    )
-  }
-
-  // Resolve active model: active.modelId → first model of provider
-  let modelName = ''
-  const activeModelId = getSetting('active.modelId')
-  if (activeModelId) {
-    const activeModel = getModel(activeModelId)
-    if (activeModel && activeModel.providerId === activeProviderId) {
-      modelName = activeModel.name
-    }
-  }
-  if (!modelName) {
-    const models = listModelsByProvider(activeProviderId)
-    if (models.length > 0) {
-      modelName = models[0].name
-    }
-  }
-
-  if (!modelName) {
-    throw new Error(
-      `No model configured for provider "${provider.name}". Please add at least one model in Settings.`,
-    )
-  }
-
-  // Global model params from settings table
-  const temperature = parseFloat(getSetting('api.temperature') || '0.7')
-  const maxCompletionTokens = parseInt(getSetting('api.maxCompletionTokens') || '4096', 10)
-  const topP = parseFloat(getSetting('api.topP') || '1')
-  const systemPrompt = getSetting('api.systemPrompt') || ''
-
-  return {
-    provider: provider.type,
-    apiKey: provider.apiKey,
-    baseUrl: provider.baseUrl,
-    model: modelName,
-    endpoint: provider.endpoint,
-    apiVersion: provider.apiVersion,
-    deploymentName: provider.deploymentName,
-    temperature,
-    maxCompletionTokens,
-    topP,
-    systemPrompt,
-  }
 }
 
 export async function generateTitle(

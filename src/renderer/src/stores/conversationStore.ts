@@ -284,13 +284,21 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     cleanups.push(
       window.api.onStreamEnd((data) => {
         if (data.conversationId !== conversationId) return
+        const tempId = `_stopping_${conversationId}`
         if (data.message) {
-          set((state) => ({
-            messages: [...state.messages, data.message!],
-            isStreaming: false,
-            streamingContent: '',
-            streamStartTime: null,
-          }))
+          set((state) => {
+            // Replace the temporary stopping message if it exists, otherwise append
+            const hasTemp = state.messages.some((m) => m.id === tempId)
+            const filtered = hasTemp
+              ? state.messages.filter((m) => m.id !== tempId)
+              : state.messages
+            return {
+              messages: [...filtered, data.message!],
+              isStreaming: false,
+              streamingContent: '',
+              streamStartTime: null,
+            }
+          })
         } else {
           set({ isStreaming: false, streamingContent: '', streamStartTime: null })
         }
@@ -328,9 +336,31 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   },
 
   stopGeneration: () => {
-    const conversationId = get().activeConversationId
-    if (conversationId) {
-      window.api.stopGeneration(conversationId)
+    const { activeConversationId: conversationId, streamingContent } = get()
+    if (!conversationId) return
+
+    window.api.stopGeneration(conversationId)
+
+    // Immediately show partial content as a temporary message so the user
+    // sees the response so far while the main process finishes aborting.
+    if (streamingContent) {
+      const tempMessage: Message = {
+        id: `_stopping_${conversationId}`,
+        conversationId,
+        role: 'assistant',
+        content: streamingContent,
+        createdAt: new Date().toISOString(),
+        tokenCount: null,
+        duration: null,
+      }
+      set((state) => ({
+        messages: [...state.messages, tempMessage],
+        isStreaming: false,
+        streamingContent: '',
+        streamStartTime: null,
+      }))
+    } else {
+      set({ isStreaming: false, streamingContent: '', streamStartTime: null })
     }
   },
 }))
