@@ -131,6 +131,38 @@ export function deleteModelDefinition(id: string): void {
 }
 
 /**
+ * Resolve a ModelDefinition for a given model name using three-level fallback:
+ *   1. Exact match  (name = modelName)
+ *   2. Prefix match (modelName starts with def.name + '-') → longest name wins
+ *   3. Contains match (modelName includes def.name)        → longest name wins
+ */
+export function resolveModelDefinition(modelName: string): ModelDefinition | undefined {
+  // Level 1: exact
+  const exact = getModelDefinitionByName(modelName)
+  if (exact) return exact
+
+  const all = listModelDefinitions()
+
+  // Level 2: prefix — modelName starts with def.name + '-'
+  const prefixCandidates = all.filter((def) => modelName.startsWith(def.name + '-'))
+  if (prefixCandidates.length > 0) {
+    return prefixCandidates.reduce((best, cur) => (cur.name.length > best.name.length ? cur : best))
+  }
+
+  // Level 3: contains — modelName includes def.name
+  const containsCandidates = all.filter(
+    (def) => def.name.length > 0 && modelName.includes(def.name),
+  )
+  if (containsCandidates.length > 0) {
+    return containsCandidates.reduce((best, cur) =>
+      cur.name.length > best.name.length ? cur : best,
+    )
+  }
+
+  return undefined
+}
+
+/**
  * Seed the model_definitions table with built-in catalog data.
  * Uses a version number stored in the settings table so that new models
  * added in future app releases are merged in without overwriting user edits.
@@ -139,111 +171,16 @@ export function deleteModelDefinition(id: string): void {
 
 const SEED_VERSION = 1
 
-type SeedEntry = {
+interface SeedEntry {
   name: string
   group: string
   capabilities: ModelCapability[]
   providerTypes: ProviderType[]
 }
 
-const SEED_DATA: SeedEntry[] = [
-  // ── OpenAI ──────────────────────────────────────────
-  {
-    name: 'gpt-5.1',
-    group: 'GPT-5.1',
-    capabilities: ['reasoning', 'vision', 'tools', 'web'],
-    providerTypes: ['openai'],
-  },
-  {
-    name: 'gpt-5.4-mini',
-    group: 'GPT-5.4',
-    capabilities: ['reasoning', 'vision', 'tools', 'web'],
-    providerTypes: ['openai'],
-  },
-  {
-    name: 'gpt-5.4',
-    group: 'GPT-5.4',
-    capabilities: ['reasoning', 'vision', 'tools', 'web'],
-    providerTypes: ['openai'],
-  },
-  {
-    name: 'gpt-5.4-mini',
-    group: 'GPT-5.4',
-    capabilities: ['reasoning', 'vision', 'tools', 'web'],
-    providerTypes: ['openai'],
-  },
-  {
-    name: 'gpt-5.3-codex',
-    group: 'GPT-5',
-    capabilities: ['reasoning', 'vision', 'web', 'tools'],
-    providerTypes: ['openai'],
-  },
-  // ── DeepSeek ────────────────────────────────────────
-  {
-    name: 'deepseek-chat',
-    group: 'DeepSeek-V3.2',
-    capabilities: ['tools'],
-    providerTypes: ['deepseek'],
-  },
-  {
-    name: 'deepseek-reasoner',
-    group: 'DeepSeek-V3.2',
-    capabilities: ['reasoning'],
-    providerTypes: ['deepseek'],
-  },
-  // ── Claude ──────────────────────────────────────────
-  {
-    name: 'claude-opus-4-6',
-    group: 'Claude 4.6',
-    capabilities: ['reasoning', 'vision', 'tools'],
-    providerTypes: ['anthropic'],
-  },
-  {
-    name: 'claude-sonnet-4-6',
-    group: 'Claude 4.6',
-    capabilities: ['reasoning', 'vision', 'tools'],
-    providerTypes: ['anthropic'],
-  },
-  {
-    name: 'claude-haiku-4-5-20251015',
-    group: 'Claude 4.5',
-    capabilities: ['reasoning', 'vision', 'tools'],
-    providerTypes: ['anthropic'],
-  },
-  // ── Gemini ──────────────────────────────────────────
-  // providerTypes: [] → visible to all providers (no dedicated 'google' provider type yet)
-  {
-    name: 'gemini-3.1-pro-preview',
-    group: 'Gemini 3',
-    capabilities: ['reasoning', 'vision', 'tools'],
-    providerTypes: [],
-  },
-  {
-    name: 'gemini-3-flash-preview',
-    group: 'Gemini 3',
-    capabilities: ['reasoning', 'vision', 'tools'],
-    providerTypes: [],
-  },
-  // ── Silicon Flow ────────────────────────────────────
-  {
-    name: 'deepseek-ai/DeepSeek-V3.2',
-    group: 'DeepSeek',
-    capabilities: ['tools'],
-    providerTypes: ['silicon'],
-  },
-  {
-    name: 'deepseek-ai/DeepSeek-R1',
-    group: 'DeepSeek',
-    capabilities: ['reasoning'],
-    providerTypes: ['silicon'],
-  },
-  {
-    name: 'Pro/zai-org/GLM-5',
-    group: 'GLM (Pro)',
-    capabilities: ['tools'],
-    providerTypes: ['silicon'],
-  },
-]
+// Seed data lives in a standalone JSON file for easier maintenance
+import seedData from './seed-model-definitions.json'
+const SEED_DATA: SeedEntry[] = seedData as SeedEntry[]
 
 export function seedModelDefinitions(): void {
   const db = getDb()

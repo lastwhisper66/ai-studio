@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto'
 import type { Model, ModelCapability } from '@shared/types'
 import { getDb } from './database'
-import { getModelDefinitionByName } from './model-definitions'
+import { resolveModelDefinition } from './model-definitions'
 
 interface ModelRow {
   id: string
@@ -69,7 +69,7 @@ export function createModel(data: CreateModelData): Model {
   let capabilities = data.capabilities ?? []
   let group = data.group ?? ''
   if (capabilities.length === 0) {
-    const def = getModelDefinitionByName(data.name)
+    const def = resolveModelDefinition(data.name)
     if (def) {
       capabilities = def.capabilities
       if (!group) group = def.group

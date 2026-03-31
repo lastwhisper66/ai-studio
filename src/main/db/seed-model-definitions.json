@@ -1,0 +1,96 @@
+[
+  {
+    "name": "gpt-5.1",
+    "group": "GPT-5.1",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["openai"]
+  },
+  {
+    "name": "gpt-5.1-mini",
+    "group": "GPT-5.1",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["openai"]
+  },
+  {
+    "name": "gpt-5.4",
+    "group": "GPT-5.4",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["openai"]
+  },
+  {
+    "name": "gpt-5.4-mini",
+    "group": "GPT-5.4",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["openai"]
+  },
+  {
+    "name": "gpt-5.3-codex",
+    "group": "GPT-5",
+    "capabilities": ["reasoning", "vision", "web", "tools"],
+    "providerTypes": ["openai"]
+  },
+
+  {
+    "name": "deepseek-chat",
+    "group": "DeepSeek-V3.2",
+    "capabilities": ["tools"],
+    "providerTypes": ["deepseek"]
+  },
+  {
+    "name": "deepseek-reasoner",
+    "group": "DeepSeek-V3.2",
+    "capabilities": ["reasoning"],
+    "providerTypes": ["deepseek"]
+  },
+
+  {
+    "name": "claude-opus-4-6",
+    "group": "Claude 4.6",
+    "capabilities": ["reasoning", "vision", "tools"],
+    "providerTypes": ["anthropic"]
+  },
+  {
+    "name": "claude-sonnet-4-6",
+    "group": "Claude 4.6",
+    "capabilities": ["reasoning", "vision", "tools"],
+    "providerTypes": ["anthropic"]
+  },
+  {
+    "name": "claude-haiku-4-5-20251015",
+    "group": "Claude 4.5",
+    "capabilities": ["reasoning", "vision", "tools"],
+    "providerTypes": ["anthropic"]
+  },
+
+  {
+    "name": "gemini-3.1-pro-preview",
+    "group": "Gemini 3",
+    "capabilities": ["reasoning", "vision", "tools"],
+    "providerTypes": []
+  },
+  {
+    "name": "gemini-3-flash-preview",
+    "group": "Gemini 3",
+    "capabilities": ["reasoning", "vision", "tools"],
+    "providerTypes": []
+  },
+
+  {
+    "name": "deepseek-ai/DeepSeek-V3.2",
+    "group": "DeepSeek",
+    "capabilities": ["tools"],
+    "providerTypes": ["silicon"]
+  },
+  {
+    "name": "deepseek-ai/DeepSeek-R1",
+    "group": "DeepSeek",
+    "capabilities": ["reasoning"],
+    "providerTypes": ["silicon"]
+  },
+  {
+    "name": "Pro/zai-org/GLM-5",
+    "group": "GLM (Pro)",
+    "capabilities": ["tools"],
+    "providerTypes": ["silicon"]
+  }
+]
