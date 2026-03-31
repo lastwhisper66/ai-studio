@@ -149,10 +149,17 @@ export function resolveModelDefinition(modelName: string): ModelDefinition | und
     return prefixCandidates.reduce((best, cur) => (cur.name.length > best.name.length ? cur : best))
   }
 
-  // Level 3: contains — modelName includes def.name
-  const containsCandidates = all.filter(
-    (def) => def.name.length > 0 && modelName.includes(def.name),
-  )
+  // Level 3: contains with word boundary — modelName includes def.name at a separator boundary
+  const SEP = /[-_/.:]/
+  const containsCandidates = all.filter((def) => {
+    if (def.name.length < 2) return false
+    const idx = modelName.indexOf(def.name)
+    if (idx < 0) return false
+    const before = idx === 0 || SEP.test(modelName[idx - 1])
+    const afterIdx = idx + def.name.length
+    const after = afterIdx >= modelName.length || SEP.test(modelName[afterIdx])
+    return before && after
+  })
   if (containsCandidates.length > 0) {
     return containsCandidates.reduce((best, cur) =>
       cur.name.length > best.name.length ? cur : best,
@@ -169,7 +176,7 @@ export function resolveModelDefinition(modelName: string): ModelDefinition | und
  * INSERT OR IGNORE ensures existing (user-modified) rows are never touched.
  */
 
-const SEED_VERSION = 1
+const SEED_VERSION = 2
 
 interface SeedEntry {
   name: string
@@ -192,8 +199,14 @@ export function seedModelDefinitions(): void {
   if (currentVersion >= SEED_VERSION) return
 
   const insert = db.prepare(
-    `INSERT OR IGNORE INTO model_definitions (id, name, group_name, capabilities, provider_types)
-     VALUES (?, ?, ?, ?, ?)`,
+    `INSERT INTO model_definitions (id, name, group_name, capabilities, provider_types)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(name) DO UPDATE SET
+       group_name = excluded.group_name,
+       capabilities = excluded.capabilities,
+       provider_types = excluded.provider_types,
+       updated_at = datetime('now')
+     WHERE updated_at = created_at`,
   )
   const tx = db.transaction(() => {
     for (const s of SEED_DATA) {

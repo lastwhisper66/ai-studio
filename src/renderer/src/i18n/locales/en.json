@@ -142,6 +142,7 @@
     "sections": {
       "provider": "Providers",
       "modelLibrary": "Model Library",
+      "modelGroup": "Model Groups",
       "general": "General",
       "display": "Display",
       "language": "Language"
@@ -335,6 +336,20 @@
     "providerTypesHint": "Leave empty to make visible to all providers",
     "ungrouped": "Ungrouped",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
+  },
+  "modelGroup": {
+    "title": "Model Groups",
+    "description": "Define grouping rules for remote models by prefix matching",
+    "addGroup": "Add Group",
+    "editGroup": "Edit Group",
+    "empty": "No grouping rules yet. Click the button above to add one.",
+    "deleteTitle": "Delete Group",
+    "deleteDescription": "Are you sure you want to delete the \"{{name}}\" group rule? This cannot be undone.",
+    "pattern": "Pattern",
+    "patternPlaceholder": "e.g. claude-opus, gpt-5.1",
+    "patternHint": "Models whose name starts with this prefix will be grouped together (longest match wins)",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "e.g. Claude Opus, GPT-5.1"
   },
   "remoteModel": {
     "title": "{{provider}} Models",

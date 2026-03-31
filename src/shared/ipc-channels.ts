@@ -45,6 +45,11 @@ export const IpcChannels = {
   MODEL_DEFINITION_CREATE: 'model-definition:create',
   MODEL_DEFINITION_UPDATE: 'model-definition:update',
   MODEL_DEFINITION_DELETE: 'model-definition:delete',
+  // Model Group (grouping rules for remote models)
+  MODEL_GROUP_LIST: 'model-group:list',
+  MODEL_GROUP_CREATE: 'model-group:create',
+  MODEL_GROUP_UPDATE: 'model-group:update',
+  MODEL_GROUP_DELETE: 'model-group:delete',
   // Assistant
   ASSISTANT_LIST: 'assistant:list',
   ASSISTANT_GET: 'assistant:get',

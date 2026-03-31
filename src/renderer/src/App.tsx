@@ -6,6 +6,7 @@ import { useProviderStore } from '@renderer/stores/providerStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
+import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 
 function App(): React.JSX.Element {
@@ -15,6 +16,7 @@ function App(): React.JSX.Element {
   const loadAssistants = useAssistantStore((s) => s.loadAssistants)
   const loadPhrases = usePhraseStore((s) => s.loadPhrases)
   const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
+  const loadModelGroups = useModelGroupStore((s) => s.load)
 
   useEffect(() => {
     loadConversations()
@@ -23,6 +25,7 @@ function App(): React.JSX.Element {
     loadAssistants()
     loadPhrases()
     loadModelDefinitions()
+    loadModelGroups()
   }, [
     loadConversations,
     loadSettings,
@@ -30,6 +33,7 @@ function App(): React.JSX.Element {
     loadAssistants,
     loadPhrases,
     loadModelDefinitions,
+    loadModelGroups,
   ])
 
   useKeyboardShortcuts()

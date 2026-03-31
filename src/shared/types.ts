@@ -123,6 +123,15 @@ export interface ModelDefinition {
   updatedAt: string
 }
 
+export interface ModelGroup {
+  id: string
+  pattern: string
+  displayName: string
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface ApiSettings {
   provider: ProviderType
   apiKey: string

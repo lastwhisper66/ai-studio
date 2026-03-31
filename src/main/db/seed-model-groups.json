@@ -1,0 +1,82 @@
+[
+  {
+    "pattern": "claude-opus",
+    "displayName": "Claude Opus"
+  },
+  {
+    "pattern": "claude-sonnet",
+    "displayName": "Claude Sonnet"
+  },
+  {
+    "pattern": "claude-haiku",
+    "displayName": "Claude Haiku"
+  },
+  {
+    "pattern": "gpt-5.4",
+    "displayName": "GPT-5.4"
+  },
+  {
+    "pattern": "gpt-5.3",
+    "displayName": "GPT-5.3"
+  },
+  {
+    "pattern": "gpt-5.1",
+    "displayName": "GPT-5.1"
+  },
+  {
+    "pattern": "gpt-5",
+    "displayName": "GPT-5"
+  },
+  {
+    "pattern": "gpt-4.1",
+    "displayName": "GPT-4.1"
+  },
+  {
+    "pattern": "gpt-4.5",
+    "displayName": "GPT-4.5"
+  },
+  {
+    "pattern": "gpt-4o",
+    "displayName": "GPT-4o"
+  },
+  {
+    "pattern": "o3",
+    "displayName": "O3"
+  },
+  {
+    "pattern": "o4-mini",
+    "displayName": "O4-Mini"
+  },
+  {
+    "pattern": "deepseek-chat",
+    "displayName": "DeepSeek Chat"
+  },
+  {
+    "pattern": "deepseek-reasoner",
+    "displayName": "DeepSeek Reasoner"
+  },
+  {
+    "pattern": "deepseek-ai/DeepSeek-V3",
+    "displayName": "DeepSeek V3"
+  },
+  {
+    "pattern": "deepseek-ai/DeepSeek-R1",
+    "displayName": "DeepSeek R1"
+  },
+  {
+    "pattern": "gemini-3",
+    "displayName": "Gemini 3"
+  },
+  {
+    "pattern": "gemini-2.5",
+    "displayName": "Gemini 2.5"
+  },
+  {
+    "pattern": "text-embedding",
+    "displayName": "Text Embedding"
+  },
+  {
+    "pattern": "Pro/",
+    "displayName": "Silicon Pro"
+  }
+]

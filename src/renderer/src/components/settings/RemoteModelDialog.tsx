@@ -5,6 +5,11 @@ import { Input } from '@renderer/components/ui/input'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Search, ChevronDown, ChevronRight, Plus, Minus, Loader2 } from 'lucide-react'
+import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
+import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
+import { CAPABILITY_CONFIG } from './capability-config'
+
+import type { ModelCapability } from '@shared/types'
 
 /** A model entry returned by the remote /v1/models API */
 export interface RemoteModel {
@@ -44,6 +49,7 @@ export function RemoteModelDialog({
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const resolve = useModelDefinitionStore((s) => s.resolve)
 
   // Reset search when dialog opens
   const handleOpenChange = (nextOpen: boolean): void => {
@@ -61,17 +67,32 @@ export function RemoteModelDialog({
     return remoteModels.filter((m) => m.id.toLowerCase().includes(q))
   }, [remoteModels, search])
 
-  // Group by owned_by
+  // Resolve model definitions once per model (for capability badges)
+  const resolvedMap = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof resolve>>()
+    for (const model of filteredModels) {
+      map.set(model.id, resolve(model.id))
+    }
+    return map
+  }, [filteredModels, resolve])
+
+  // Group by model group rules (independent from model definitions)
+  const resolveGroup = useModelGroupStore((s) => s.resolve)
   const groups = useMemo(() => {
     const map = new Map<string, RemoteModel[]>()
     for (const model of filteredModels) {
-      const groupName = model.owned_by || model.id
+      const groupName = resolveGroup(model.id)
       const existing = map.get(groupName) || []
       existing.push(model)
       map.set(groupName, existing)
     }
-    return map
-  }, [filteredModels])
+    // Sort groups alphabetically, models within groups alphabetically
+    return new Map(
+      [...map.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([name, models]) => [name, [...models].sort((a, b) => a.id.localeCompare(b.id))]),
+    )
+  }, [filteredModels, resolveGroup])
 
   const toggleGroup = (group: string): void => {
     setCollapsedGroups((prev) => {
@@ -202,13 +223,16 @@ export function RemoteModelDialog({
                               {/* Model name */}
                               <span className="min-w-0 flex-1 truncate text-sm">{model.id}</span>
 
+                              {/* Capability badges (from local definition match) */}
+                              <CapabilityBadges capabilities={resolvedMap.get(model.id)?.capabilities} />
+
                               {/* Add/Remove button */}
                               <button
                                 type="button"
                                 onClick={() =>
                                   isAdded
                                     ? onRemove(model.id)
-                                    : onAdd(model.id, model.owned_by || '')
+                                    : onAdd(model.id, resolveGroup(model.id))
                                 }
                                 className={`rounded p-1 transition-colors ${
                                   isAdded
@@ -233,5 +257,39 @@ export function RemoteModelDialog({
         </ScrollArea>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/* ─── Capability Badges ─── */
+
+function CapabilityBadges({
+  capabilities,
+}: {
+  capabilities?: ModelCapability[]
+}): React.JSX.Element | null {
+  const { t } = useTranslation()
+  if (!capabilities || capabilities.length === 0) return null
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {capabilities.map((cap) => {
+        const config = CAPABILITY_CONFIG[cap]
+        if (!config) return null
+        const Icon = config.icon
+        return (
+          <Tooltip key={cap}>
+            <TooltipTrigger asChild>
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
+                }}>
+                <Icon className="h-3 w-3" style={{ color: config.color }} />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{t(config.labelKey)}</TooltipContent>
+          </Tooltip>
+        )
+      })}
+    </div>
   )
 }

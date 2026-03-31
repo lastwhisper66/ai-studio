@@ -45,19 +45,19 @@
 
   {
     "name": "claude-opus-4-6",
-    "group": "Claude 4.6",
+    "group": "Claude Opus",
     "capabilities": ["reasoning", "vision", "tools"],
     "providerTypes": ["anthropic"]
   },
   {
     "name": "claude-sonnet-4-6",
-    "group": "Claude 4.6",
+    "group": "Claude Sonnet",
     "capabilities": ["reasoning", "vision", "tools"],
     "providerTypes": ["anthropic"]
   },
   {
     "name": "claude-haiku-4-5-20251015",
-    "group": "Claude 4.5",
+    "group": "Claude Haiku",
     "capabilities": ["reasoning", "vision", "tools"],
     "providerTypes": ["anthropic"]
   },

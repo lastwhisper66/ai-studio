@@ -3,6 +3,7 @@ import { app } from 'electron'
 import { existsSync, mkdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { seedModelDefinitions } from './model-definitions'
+import { seedModelGroups } from './model-groups'
 
 let db: Database.Database | null = null
 
@@ -158,6 +159,19 @@ function createTables(): void {
       ON model_definitions(name);
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS model_groups (
+      id TEXT PRIMARY KEY,
+      pattern TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_model_groups_pattern
+      ON model_groups(pattern);
+  `)
+
   // Seed: ensure a default assistant exists
   const hasDefault = database
     .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
@@ -198,4 +212,7 @@ function createTables(): void {
 
   // Seed: populate model definitions from static catalog
   seedModelDefinitions()
+
+  // Seed: populate model groups from static catalog
+  seedModelGroups()
 }

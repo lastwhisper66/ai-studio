@@ -142,6 +142,7 @@
     "sections": {
       "provider": "模型服务",
       "modelLibrary": "模型库",
+      "modelGroup": "模型分组",
       "general": "通用设置",
       "display": "显示设置",
       "language": "语言设置"
@@ -335,6 +336,20 @@
     "providerTypesHint": "留空表示对所有供应商可见",
     "ungrouped": "未分组",
     "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
+  },
+  "modelGroup": {
+    "title": "模型分组",
+    "description": "定义远程模型的分组规则，按前缀匹配模型名称",
+    "addGroup": "添加分组",
+    "editGroup": "编辑分组",
+    "empty": "暂无分组规则，点击上方按钮添加",
+    "deleteTitle": "删除分组",
+    "deleteDescription": "确定要删除「{{name}}」分组规则吗？此操作不可撤销。",
+    "pattern": "匹配模式",
+    "patternPlaceholder": "例如: claude-opus, gpt-5.1",
+    "patternHint": "模型名称以此前缀开头时归入该分组（最长匹配优先）",
+    "displayName": "显示名称",
+    "displayNamePlaceholder": "例如: Claude Opus, GPT-5.1"
   },
   "remoteModel": {
     "title": "{{provider}} 模型",

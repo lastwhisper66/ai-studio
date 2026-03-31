@@ -9,7 +9,6 @@ import {
   EyeOff,
   Trash2,
   Plus,
-  Pencil,
   Settings,
   Search,
   ChevronDown,
@@ -42,7 +41,6 @@ import type { Provider, ModelCapability } from '@shared/types'
 import { normalizeBaseUrl } from '@shared/url'
 import { getTemplateByType } from './provider-templates'
 import { CAPABILITY_CONFIG } from './capability-config'
-import { ModelManageDialog } from './ModelManageDialog'
 import { AddModelDialog } from './AddModelDialog'
 import { EditModelDialog } from './EditModelDialog'
 import { ConnectionTestDialog } from './ConnectionTestDialog'
@@ -166,7 +164,6 @@ function ProviderForm({
   const [showModelSearch, setShowModelSearch] = useState(false)
   const [modelSearch, setModelSearch] = useState('')
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
-  const [showManageDialog, setShowManageDialog] = useState(false)
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [showRemoveAllModelsConfirm, setShowRemoveAllModelsConfirm] = useState(false)
@@ -179,7 +176,10 @@ function ProviderForm({
 
   const template = getTemplateByType(provider.type)
   const isAzure = provider.type === 'azure'
-  const supportsRemoteFetch = provider.type === 'newapi' || provider.type === 'custom'
+
+  const canFetchModels = isAzure
+    ? !!draft.apiKey && !!draft.endpoint
+    : !!draft.apiKey && !!(draft.baseUrl || template?.defaultBaseUrl)
   const [isFetchingModels, setIsFetchingModels] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [showRemoteModelDialog, setShowRemoteModelDialog] = useState(false)
@@ -223,7 +223,7 @@ function ProviderForm({
   }
 
   const handleFetchRemoteModels = async (): Promise<void> => {
-    if (!draft.apiKey || !draft.baseUrl) return
+    if (!canFetchModels) return
     // Open dialog immediately, show loading state inside
     setShowRemoteModelDialog(true)
     setRemoteModels([])
@@ -584,22 +584,12 @@ function ProviderForm({
             <Button
               variant="default"
               size="sm"
-              onClick={() => setShowManageDialog(true)}
+              onClick={handleFetchRemoteModels}
+              disabled={!canFetchModels}
               className="gap-1.5">
-              <Pencil className="h-3.5 w-3.5" />
-              {t('settings.provider.manage')}
+              <RefreshCw className="h-3.5 w-3.5" />
+              {t('settings.provider.fetchModels')}
             </Button>
-            {supportsRemoteFetch && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleFetchRemoteModels}
-                disabled={!draft.apiKey || !draft.baseUrl}
-                className="gap-1.5">
-                <RefreshCw className="h-3.5 w-3.5" />
-                {t('settings.provider.fetchModels')}
-              </Button>
-            )}
             <Button
               variant="outline"
               size="sm"
@@ -609,20 +599,6 @@ function ProviderForm({
               {t('common.add')}
             </Button>
           </div>
-
-          {/* Model manage dialog (catalog browser) */}
-          <ModelManageDialog
-            open={showManageDialog}
-            onOpenChange={setShowManageDialog}
-            providerName={provider.name}
-            providerType={provider.type}
-            providerColor={template?.color ?? '#6b7280'}
-            addedModels={providerModels.map((m) => ({ id: m.id, name: m.name, group: m.group }))}
-            onAdd={(modelId, group, capabilities) =>
-              onAddModel(provider.id, modelId, group, capabilities)
-            }
-            onRemove={onRemoveModel}
-          />
 
           {/* Add model dialog (manual input) */}
           <AddModelDialog
@@ -635,26 +611,24 @@ function ProviderForm({
           />
 
           {/* Remote model dialog (fetch from API) */}
-          {supportsRemoteFetch && (
-            <RemoteModelDialog
-              open={showRemoteModelDialog}
-              onOpenChange={(open) => {
-                setShowRemoteModelDialog(open)
-                if (!open) setFetchError(null)
-              }}
-              providerName={provider.name}
-              providerColor={template?.color ?? '#6b7280'}
-              remoteModels={remoteModels}
-              loading={isFetchingModels}
-              error={fetchError}
-              addedModelNames={new Set(providerModels.map((m) => m.name))}
-              onAdd={(modelId, group) => onAddModel(provider.id, modelId, group)}
-              onRemove={async (modelName) => {
-                const dbModel = providerModels.find((m) => m.name === modelName)
-                if (dbModel) await onRemoveModel(dbModel.id)
-              }}
-            />
-          )}
+          <RemoteModelDialog
+            open={showRemoteModelDialog}
+            onOpenChange={(open) => {
+              setShowRemoteModelDialog(open)
+              if (!open) setFetchError(null)
+            }}
+            providerName={provider.name}
+            providerColor={template?.color ?? '#6b7280'}
+            remoteModels={remoteModels}
+            loading={isFetchingModels}
+            error={fetchError}
+            addedModelNames={new Set(providerModels.map((m) => m.name))}
+            onAdd={(modelId, group) => onAddModel(provider.id, modelId, group)}
+            onRemove={async (modelName) => {
+              const dbModel = providerModels.find((m) => m.name === modelName)
+              if (dbModel) await onRemoveModel(dbModel.id)
+            }}
+          />
 
           {/* Edit model dialog */}
           {editingModel && (

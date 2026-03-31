@@ -14,6 +14,7 @@ import type {
   Provider,
   Model,
   ModelDefinition,
+  ModelGroup,
   Assistant,
   Phrase,
   FileData,
@@ -175,6 +176,26 @@ const api = {
 
   deleteModelDefinition: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_DELETE, id),
+
+  // Model Groups (grouping rules for remote models)
+  listModelGroups: (): Promise<IpcResult<ModelGroup[]>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_GROUP_LIST),
+
+  createModelGroup: (data: {
+    pattern: string
+    displayName: string
+    sortOrder?: number
+  }): Promise<IpcResult<ModelGroup>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_GROUP_CREATE, data),
+
+  updateModelGroup: (
+    id: string,
+    data: { pattern?: string; displayName?: string; sortOrder?: number },
+  ): Promise<IpcResult<ModelGroup | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_GROUP_UPDATE, id, data),
+
+  deleteModelGroup: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_GROUP_DELETE, id),
 
   // Assistants
   listAssistants: (): Promise<IpcResult<Assistant[]>> =>
