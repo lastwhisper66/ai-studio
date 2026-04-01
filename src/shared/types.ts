@@ -73,6 +73,7 @@ export type ProviderType =
   | 'deepseek'
   | 'silicon'
   | 'newapi'
+  | 'fujitsu'
   | 'custom'
 
 export interface Provider {

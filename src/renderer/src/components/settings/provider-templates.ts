@@ -50,6 +50,13 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultModels: [],
   },
   {
+    type: 'fujitsu',
+    name: 'Fujitsu Azure OpenAI',
+    color: '#e60012',
+    defaultBaseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
+    defaultModels: ['gpt-5.1', 'gpt-5.1-mini'],
+  },
+  {
     type: 'custom',
     name: 'OpenAI Compatible',
     color: '#6b7280',

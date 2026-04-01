@@ -3,6 +3,7 @@ import type { ProviderType } from './types'
 /** Return the default API path suffix for a given provider type. */
 export function getDefaultApiPath(provider: ProviderType): string {
   if (provider === 'azure') return '/openai/v1'
+  if (provider === 'fujitsu') return ''
   return '/v1'
 }
 
