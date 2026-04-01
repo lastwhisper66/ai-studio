@@ -51,17 +51,14 @@ export function registerModelHandlers(): void {
     }
   })
 
-  ipcMain.handle(
-    IpcChannels.MODEL_DELETE_BY_PROVIDER,
-    (_, providerId: string): IpcResult<void> => {
-      try {
-        deleteModelsByProvider(providerId)
-        return { success: true }
-      } catch (e) {
-        return { success: false, error: (e as Error).message }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.MODEL_DELETE_BY_PROVIDER, (_, providerId: string): IpcResult<void> => {
+    try {
+      deleteModelsByProvider(providerId)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
 
   /** Fetch models from a remote provider via GET /v1/models */
   ipcMain.handle(
@@ -87,9 +84,6 @@ async function doFetchRemoteModels(provider: Provider): Promise<IpcResult<Remote
       provider: provider.type,
       apiKey: provider.apiKey,
       baseUrl: provider.baseUrl,
-      endpoint: provider.endpoint,
-      apiVersion: provider.apiVersion,
-      deploymentName: provider.deploymentName,
       model: provider.model || 'gpt-3.5-turbo',
       temperature: 0,
       maxCompletionTokens: 1,

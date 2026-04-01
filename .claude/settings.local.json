@@ -27,7 +27,9 @@
       "Bash(find:*)",
       "Bash(npx tsc:*)",
       "Bash(npx prettier:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs"
     ]
   },
   "outputStyle": "Explanatory",

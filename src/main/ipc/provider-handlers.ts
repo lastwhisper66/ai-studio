@@ -87,9 +87,6 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       provider: provider.type,
       apiKey: provider.apiKey,
       baseUrl: provider.baseUrl,
-      endpoint: provider.endpoint,
-      apiVersion: provider.apiVersion,
-      deploymentName: provider.deploymentName,
       model: provider.model,
       temperature: 0,
       maxCompletionTokens: 1,
@@ -99,12 +96,9 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
 
     const client = createAIClient(settings)
 
-    const model =
-      provider.type === 'azure' ? provider.deploymentName || provider.model : provider.model
-
     const stream = await client.chat.completions.create(
       {
-        model,
+        model: provider.model,
         messages: [{ role: 'user', content: 'Hi' }],
         max_completion_tokens: 1,
         stream: true,

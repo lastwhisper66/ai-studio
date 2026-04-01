@@ -145,9 +145,6 @@ function ProviderForm({
     name: provider.name,
     apiKey: provider.apiKey,
     baseUrl: provider.baseUrl,
-    endpoint: provider.endpoint,
-    apiVersion: provider.apiVersion,
-    deploymentName: provider.deploymentName,
     enabled: provider.enabled,
   })
   const [showRenameDialog, setShowRenameDialog] = useState(false)
@@ -167,11 +164,8 @@ function ProviderForm({
   } | null>(null)
 
   const template = getTemplateByType(provider.type)
-  const isAzure = provider.type === 'azure'
 
-  const canFetchModels = isAzure
-    ? !!draft.apiKey && !!draft.endpoint
-    : !!draft.apiKey && !!(draft.baseUrl || template?.defaultBaseUrl)
+  const canFetchModels = !!draft.apiKey && !!(draft.baseUrl || template?.defaultBaseUrl)
   const [isFetchingModels, setIsFetchingModels] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [showRemoteModelDialog, setShowRemoteModelDialog] = useState(false)
@@ -182,9 +176,6 @@ function ProviderForm({
       name: provider.name,
       apiKey: provider.apiKey,
       baseUrl: provider.baseUrl,
-      endpoint: provider.endpoint,
-      apiVersion: provider.apiVersion,
-      deploymentName: provider.deploymentName,
       enabled: provider.enabled,
     })
   }, [provider])
@@ -370,67 +361,35 @@ function ProviderForm({
         </div>
 
         {/* API Address */}
-        {isAzure ? (
-          <div className="space-y-4">
-            <div>
-              <SectionHeader title={t('settings.provider.endpoint')} />
-              <Input
-                value={draft.endpoint}
-                onChange={(e) => change('endpoint', e.target.value)}
-                onBlur={() => handleBlurSave('endpoint')}
-                placeholder="https://your-resource.openai.azure.com"
-              />
-            </div>
-            <div>
-              <SectionHeader title={t('settings.provider.apiVersion')} />
-              <Input
-                value={draft.apiVersion}
-                onChange={(e) => change('apiVersion', e.target.value)}
-                onBlur={() => handleBlurSave('apiVersion')}
-                placeholder="2024-10-01-preview"
-              />
-            </div>
-            <div>
-              <SectionHeader title={t('settings.provider.deploymentName')} />
-              <Input
-                value={draft.deploymentName}
-                onChange={(e) => change('deploymentName', e.target.value)}
-                onBlur={() => handleBlurSave('deploymentName')}
-                placeholder="my-gpt4o-deployment"
-              />
-            </div>
-          </div>
-        ) : (
-          <div>
-            <SectionHeader
-              title={t('settings.provider.apiAddress')}
-              icon={
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="text-muted-foreground/50 h-3.5 w-3.5 cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent>{t('settings.provider.apiAddressTooltip')}</TooltipContent>
-                </Tooltip>
-              }
-            />
-            <Input
-              value={draft.baseUrl}
-              onChange={(e) => change('baseUrl', e.target.value)}
-              onBlur={() => handleBlurSave('baseUrl')}
-              placeholder={template?.defaultBaseUrl || 'https://api.openai.com'}
-            />
-            {(() => {
-              const raw = draft.baseUrl || template?.defaultBaseUrl || ''
-              if (!raw) return null
-              const resolved = normalizeBaseUrl(raw, provider.type)
-              return (
-                <p className="text-muted-foreground mt-1.5 truncate text-xs">
-                  {t('settings.provider.urlPreview')}：{resolved}/chat/completions
-                </p>
-              )
-            })()}
-          </div>
-        )}
+        <div>
+          <SectionHeader
+            title={t('settings.provider.apiAddress')}
+            icon={
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="text-muted-foreground/50 h-3.5 w-3.5 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent>{t('settings.provider.apiAddressTooltip')}</TooltipContent>
+              </Tooltip>
+            }
+          />
+          <Input
+            value={draft.baseUrl}
+            onChange={(e) => change('baseUrl', e.target.value)}
+            onBlur={() => handleBlurSave('baseUrl')}
+            placeholder={template?.defaultBaseUrl || 'https://api.openai.com'}
+          />
+          {(() => {
+            const raw = draft.baseUrl || template?.defaultBaseUrl || ''
+            if (!raw) return null
+            const resolved = normalizeBaseUrl(raw, provider.type)
+            return (
+              <p className="text-muted-foreground mt-1.5 truncate text-xs">
+                {t('settings.provider.urlPreview')}：{resolved}/chat/completions
+              </p>
+            )
+          })()}
+        </div>
 
         {/* Models section */}
         <div>

@@ -20,8 +20,8 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     type: 'azure',
     name: 'Azure OpenAI',
     color: '#0078d4',
-    defaultBaseUrl: '',
-    defaultModels: ['gpt-5.1', 'GPT-5-mini'],
+    defaultBaseUrl: 'https://your-resource.openai.azure.com/openai/v1',
+    defaultModels: ['gpt-4o', 'gpt-4o-mini'],
   },
   {
     type: 'deepseek',

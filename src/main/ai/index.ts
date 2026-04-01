@@ -2,7 +2,6 @@ import OpenAI from 'openai'
 import type { ApiSettings } from '@shared/types'
 import { getSetting } from '../db/settings'
 import { createOpenAIClient } from './openai-client'
-import { createAzureClient } from './azure-client'
 
 /** Sync the NODE_TLS_REJECT_UNAUTHORIZED env var with the user's SSL setting. */
 export function applySslSetting(skip?: boolean): void {
@@ -15,9 +14,6 @@ export function applySslSetting(skip?: boolean): void {
 }
 
 export function createAIClient(settings: ApiSettings): OpenAI {
-  if (settings.provider === 'azure') {
-    return createAzureClient(settings)
-  }
   return createOpenAIClient(settings)
 }
 

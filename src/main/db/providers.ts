@@ -10,9 +10,6 @@ interface ProviderRow {
   api_key: string
   base_url: string
   model: string
-  endpoint: string
-  api_version: string
-  deployment_name: string
   enabled: number
   sort_order: number
   created_at: string
@@ -27,9 +24,6 @@ function rowToProvider(row: ProviderRow): Provider {
     apiKey: row.api_key ? decrypt(row.api_key) : '',
     baseUrl: row.base_url,
     model: row.model,
-    endpoint: row.endpoint,
-    apiVersion: row.api_version,
-    deploymentName: row.deployment_name,
     enabled: row.enabled === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -58,9 +52,6 @@ export interface CreateProviderData {
   apiKey?: string
   baseUrl?: string
   model?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
   enabled?: boolean
   sortOrder?: number
 }
@@ -70,8 +61,8 @@ export function createProvider(data: CreateProviderData): Provider {
   const apiKey = data.apiKey ? encrypt(data.apiKey) : ''
   getDb()
     .prepare(
-      `INSERT INTO providers (id, type, name, api_key, base_url, model, endpoint, api_version, deployment_name, enabled, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO providers (id, type, name, api_key, base_url, model, enabled, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -80,9 +71,6 @@ export function createProvider(data: CreateProviderData): Provider {
       apiKey,
       data.baseUrl ?? '',
       data.model ?? '',
-      data.endpoint ?? '',
-      data.apiVersion ?? '',
-      data.deploymentName ?? '',
       data.enabled !== false ? 1 : 0,
       data.sortOrder ?? 0,
     )
@@ -94,9 +82,6 @@ export interface UpdateProviderData {
   apiKey?: string
   baseUrl?: string
   model?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
   enabled?: boolean
   sortOrder?: number
 }
@@ -120,18 +105,6 @@ export function updateProvider(id: string, data: UpdateProviderData): Provider |
   if (data.model !== undefined) {
     fields.push('model = ?')
     values.push(data.model)
-  }
-  if (data.endpoint !== undefined) {
-    fields.push('endpoint = ?')
-    values.push(data.endpoint)
-  }
-  if (data.apiVersion !== undefined) {
-    fields.push('api_version = ?')
-    values.push(data.apiVersion)
-  }
-  if (data.deploymentName !== undefined) {
-    fields.push('deployment_name = ?')
-    values.push(data.deploymentName)
   }
   if (data.enabled !== undefined) {
     fields.push('enabled = ?')

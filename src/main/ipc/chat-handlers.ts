@@ -77,15 +77,11 @@ export function registerChatHandlers(): void {
 
         // Build settings from provider + assistant params (defaults if unset)
         applySslSetting()
-        const temperature = assistant?.temperature
-          ? parseFloat(assistant.temperature)
-          : 0.7
+        const temperature = assistant?.temperature ? parseFloat(assistant.temperature) : 0.7
         const maxCompletionTokens = assistant?.maxCompletionTokens
           ? parseInt(assistant.maxCompletionTokens, 10)
           : 4096
-        const topP = assistant?.topP
-          ? parseFloat(assistant.topP)
-          : 1
+        const topP = assistant?.topP ? parseFloat(assistant.topP) : 1
         const systemPrompt = assistant?.systemPrompt || ''
 
         const settings: ApiSettings = {
@@ -93,9 +89,6 @@ export function registerChatHandlers(): void {
           apiKey: provider.apiKey,
           baseUrl: provider.baseUrl,
           model: modelName,
-          endpoint: provider.endpoint,
-          apiVersion: provider.apiVersion,
-          deploymentName: provider.deploymentName,
           temperature,
           maxCompletionTokens,
           topP,

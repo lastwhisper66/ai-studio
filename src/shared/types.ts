@@ -82,10 +82,6 @@ export interface Provider {
   apiKey: string
   baseUrl: string
   model: string // deprecated — use models table instead
-  // Azure-specific
-  endpoint: string
-  apiVersion: string
-  deploymentName: string
   // State
   enabled: boolean
   sortOrder: number
@@ -137,10 +133,6 @@ export interface ApiSettings {
   apiKey: string
   baseUrl: string
   model: string
-  // Azure-specific
-  endpoint: string
-  apiVersion: string
-  deploymentName: string
   // Global model params
   temperature: number
   maxCompletionTokens: number
