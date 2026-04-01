@@ -27,7 +27,11 @@ interface ConversationState {
   deleteMessage: (id: string) => Promise<void>
   clearMessages: (conversationId: string) => Promise<void>
   insertDivider: () => Promise<void>
-  sendMessage: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => Promise<void>
+  sendMessage: (
+    content: string,
+    files?: FileData[],
+    reasoningEffort?: ReasoningEffort,
+  ) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
 }
@@ -55,7 +59,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   },
 
   createConversation: async (title?: string, assistantId?: string) => {
-    const result = await window.api.createConversation(title, assistantId)
+    const effectiveAssistantId =
+      assistantId ?? useAssistantStore.getState().activeAssistantId ?? undefined
+    const result = await window.api.createConversation(title, effectiveAssistantId)
     if (result.success && result.data) {
       const conversation = result.data
       set((state) => ({
