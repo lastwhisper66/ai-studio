@@ -76,7 +76,11 @@ export function TranslateView(): React.JSX.Element {
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   // Track current translation params for saving history on stream end
-  const currentTranslationRef = useRef<{ sourceText: string; sourceLang: string; targetLang: string } | null>(null)
+  const currentTranslationRef = useRef<{
+    sourceText: string
+    sourceLang: string
+    targetLang: string
+  } | null>(null)
 
   // Independent model selection for translate (separate from chat's global selection)
   const providers = useProviderStore((s) => s.providers)
@@ -89,16 +93,23 @@ export function TranslateView(): React.JSX.Element {
   // Load persisted translate settings on mount
   useEffect(() => {
     async function load(): Promise<void> {
-      const [promptResult, tempResult, providerResult, modelResult, srcLangResult, tgtLangResult, wordWrapResult] =
-        await Promise.all([
-          window.api.getSetting('translate.systemPrompt'),
-          window.api.getSetting('translate.temperature'),
-          window.api.getSetting('translate.providerId'),
-          window.api.getSetting('translate.modelId'),
-          window.api.getSetting('translate.sourceLang'),
-          window.api.getSetting('translate.targetLang'),
-          window.api.getSetting('translate.wordWrap'),
-        ])
+      const [
+        promptResult,
+        tempResult,
+        providerResult,
+        modelResult,
+        srcLangResult,
+        tgtLangResult,
+        wordWrapResult,
+      ] = await Promise.all([
+        window.api.getSetting('translate.systemPrompt'),
+        window.api.getSetting('translate.temperature'),
+        window.api.getSetting('translate.providerId'),
+        window.api.getSetting('translate.modelId'),
+        window.api.getSetting('translate.sourceLang'),
+        window.api.getSetting('translate.targetLang'),
+        window.api.getSetting('translate.wordWrap'),
+      ])
       setTranslateSettings({
         systemPrompt: promptResult.data ?? '',
         temperature: tempResult.data ? parseFloat(tempResult.data) : 0.3,
@@ -137,17 +148,14 @@ export function TranslateView(): React.JSX.Element {
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
   const displayModel = activeModel?.name || activeProvider?.model || t('translate.noModelSelected')
 
-  const handleSelectModel = useCallback(
-    (modelId: string, providerId: string) => {
-      setLocalProviderId(providerId)
-      setLocalModelId(modelId)
-      window.api.setSettingsBatch({
-        'translate.providerId': providerId,
-        'translate.modelId': modelId,
-      })
-    },
-    [],
-  )
+  const handleSelectModel = useCallback((modelId: string, providerId: string) => {
+    setLocalProviderId(providerId)
+    setLocalModelId(modelId)
+    window.api.setSettingsBatch({
+      'translate.providerId': providerId,
+      'translate.modelId': modelId,
+    })
+  }, [])
 
   // Register streaming listeners
   useEffect(() => {
@@ -351,7 +359,10 @@ export function TranslateView(): React.JSX.Element {
             {t('translate.stop')}
           </Button>
         ) : (
-          <Button size="sm" onClick={handleTranslate} disabled={!sourceText.trim() || !activeModelId}>
+          <Button
+            size="sm"
+            onClick={handleTranslate}
+            disabled={!sourceText.trim() || !activeModelId}>
             <Play className="mr-1.5 h-3.5 w-3.5" />
             {t('translate.translate')}
           </Button>
@@ -359,7 +370,7 @@ export function TranslateView(): React.JSX.Element {
 
         <div className="flex-1" />
 
-        {sourceText && (
+        {(sourceText || translatedText) && (
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClear}>
@@ -463,8 +474,7 @@ export function TranslateView(): React.JSX.Element {
 
           <div className="flex-1 overflow-auto">
             <div
-              className={`p-4 ${translateSettings.wordWrap ? 'break-words' : 'translate-no-wrap w-max min-w-full'}`}
-            >
+              className={`p-4 ${translateSettings.wordWrap ? 'break-words' : 'translate-no-wrap w-max min-w-full'}`}>
               {error ? (
                 <p className="text-sm text-destructive">{error}</p>
               ) : translatedText ? (
