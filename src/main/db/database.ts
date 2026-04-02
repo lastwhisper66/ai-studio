@@ -182,31 +182,6 @@ function createTables(): void {
       .run()
   }
 
-  // Auto-fill: if the default assistant has no model, pick the first available provider+model
-  const defaultAssistant = database
-    .prepare('SELECT provider_id, model FROM assistants WHERE is_default = 1')
-    .get() as { provider_id: string | null; model: string } | undefined
-  if (defaultAssistant && !defaultAssistant.provider_id && !defaultAssistant.model) {
-    const firstModel = database
-      .prepare(
-        `SELECT p.id AS provider_id, m.name AS model_name
-         FROM providers p
-         JOIN models m ON m.provider_id = p.id AND m.enabled = 1
-         WHERE p.enabled = 1
-         ORDER BY p.sort_order ASC, m.sort_order ASC
-         LIMIT 1`,
-      )
-      .get() as { provider_id: string; model_name: string } | undefined
-    if (firstModel) {
-      database
-        .prepare(
-          `UPDATE assistants SET provider_id = ?, model = ?, updated_at = datetime('now')
-           WHERE is_default = 1`,
-        )
-        .run(firstModel.provider_id, firstModel.model_name)
-    }
-  }
-
   // Seed: populate model definitions from static catalog
   seedModelDefinitions()
 

@@ -146,7 +146,7 @@ export function TranslateView(): React.JSX.Element {
   const activeProvider = providers.find((p) => p.id === activeProviderId)
   const activeModel = activeModelId ? models.find((m) => m.id === activeModelId) : undefined
   const template = activeProvider ? getTemplateByType(activeProvider.type) : undefined
-  const displayModel = activeModel?.name || activeProvider?.model || t('translate.noModelSelected')
+  const displayModel = activeModel?.name || t('translate.noModelSelected')
 
   const handleSelectModel = useCallback((modelId: string, providerId: string) => {
     setLocalProviderId(providerId)

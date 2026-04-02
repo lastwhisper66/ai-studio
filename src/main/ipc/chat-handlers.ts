@@ -13,7 +13,6 @@ import { loadAttachmentBase64 } from '../db/attachments'
 import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
-import { listModelsByProvider } from '../db/models'
 import { createAIClient, generateTitle, applySslSetting } from '../ai'
 
 const activeStreams = new Map<string, AbortController>()
@@ -41,7 +40,7 @@ export function registerChatHandlers(): void {
 
         // Model resolution: assistant-level only
         const effectiveProviderId = assistant?.providerId ?? null
-        const effectiveModel = assistant?.model ?? ''
+        const modelName = assistant?.model ?? ''
 
         if (!effectiveProviderId) {
           return {
@@ -62,16 +61,11 @@ export function registerChatHandlers(): void {
           }
         }
 
-        // Resolve model name: explicit → first model of provider
-        let modelName = effectiveModel
-        if (!modelName) {
-          const providerModels = listModelsByProvider(provider.id)
-          modelName = providerModels[0]?.name || ''
-        }
         if (!modelName) {
           return {
             success: false,
-            error: `No model configured. Please set a model for the assistant or conversation.`,
+            error:
+              'No model configured. Please select a model for the assistant in Assistant Settings.',
           }
         }
 

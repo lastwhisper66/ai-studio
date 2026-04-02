@@ -82,12 +82,40 @@ export interface Provider {
   name: string
   apiKey: string
   baseUrl: string
-  model: string // deprecated — use models table instead
-  // State
   enabled: boolean
   sortOrder: number
   createdAt: string
   updatedAt: string
+}
+
+export interface CreateProviderPayload {
+  type: ProviderType
+  name: string
+  apiKey?: string
+  baseUrl?: string
+  enabled?: boolean
+  sortOrder?: number
+}
+
+export interface UpdateProviderPayload {
+  name?: string
+  apiKey?: string
+  baseUrl?: string
+  enabled?: boolean
+  sortOrder?: number
+}
+
+export interface ProviderConnectionTestPayload {
+  type: ProviderType
+  apiKey: string
+  baseUrl: string
+  modelName: string
+}
+
+export interface RemoteModelFetchPayload {
+  type: ProviderType
+  apiKey: string
+  baseUrl: string
 }
 
 export type ModelCapability =

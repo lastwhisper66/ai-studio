@@ -27,7 +27,6 @@ export function AddProviderDialog({ children }: AddProviderDialogProps): React.J
       type: template.type,
       name: template.name,
       baseUrl: template.defaultBaseUrl,
-      model: template.defaultModels[0] ?? '',
     })
   }
 

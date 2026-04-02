@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { IpcResult, Model, Provider, ApiSettings } from '@shared/types'
+import type { IpcResult, Model, ApiSettings, RemoteModelFetchPayload } from '@shared/types'
 import { listAllModels, createModel, updateModel, deleteModel, deleteModelsByProvider } from '../db'
 import type { CreateModelData, UpdateModelData } from '../db/models'
 import { createAIClient, applySslSetting } from '../ai'
@@ -63,9 +63,9 @@ export function registerModelHandlers(): void {
   /** Fetch models from a remote provider via GET /v1/models */
   ipcMain.handle(
     IpcChannels.MODEL_FETCH_REMOTE,
-    async (_, provider: Provider): Promise<IpcResult<RemoteModel[]>> => {
+    async (_, payload: RemoteModelFetchPayload): Promise<IpcResult<RemoteModel[]>> => {
       try {
-        return await doFetchRemoteModels(provider)
+        return await doFetchRemoteModels(payload)
       } catch {
         return { success: false, error: 'Failed to fetch models' }
       }
@@ -73,7 +73,9 @@ export function registerModelHandlers(): void {
   )
 }
 
-async function doFetchRemoteModels(provider: Provider): Promise<IpcResult<RemoteModel[]>> {
+async function doFetchRemoteModels(
+  payload: RemoteModelFetchPayload,
+): Promise<IpcResult<RemoteModel[]>> {
   const controller = new AbortController()
   const timerId = setTimeout(() => controller.abort(), 15000)
 
@@ -81,10 +83,10 @@ async function doFetchRemoteModels(provider: Provider): Promise<IpcResult<Remote
     applySslSetting()
 
     const settings: ApiSettings = {
-      provider: provider.type,
-      apiKey: provider.apiKey,
-      baseUrl: provider.baseUrl,
-      model: provider.model || 'gpt-3.5-turbo',
+      provider: payload.type,
+      apiKey: payload.apiKey,
+      baseUrl: payload.baseUrl,
+      model: 'placeholder-model',
       temperature: 0,
       maxCompletionTokens: 1,
       topP: 1,

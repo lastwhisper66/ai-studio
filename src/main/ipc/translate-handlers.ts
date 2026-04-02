@@ -1,14 +1,14 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { TranslateRequestPayload, IpcResult } from '@shared/types'
+import type { TranslateRequestPayload, IpcResult, ApiSettings } from '@shared/types'
 import { createAIClient } from '../ai'
 import { getProvider } from '../db/providers'
-import { getModel, listModelsByProvider } from '../db/models'
+import { getModel } from '../db/models'
 
 let activeController: AbortController | null = null
 
-function loadTranslateSettings(providerId?: string, modelId?: string) {
+function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettings {
   if (!providerId) {
     throw new Error('No provider selected. Please select a model for translation.')
   }
@@ -21,23 +21,17 @@ function loadTranslateSettings(providerId?: string, modelId?: string) {
     throw new Error(`API key is not configured for provider "${provider.name}".`)
   }
 
-  // Resolve model: specified modelId → first model of provider
-  let modelName = ''
-  if (modelId) {
-    const model = getModel(modelId)
-    if (model && model.providerId === providerId) {
-      modelName = model.name
-    }
+  // Resolve model: specified modelId only
+  if (!modelId) {
+    throw new Error('No model selected. Please select a translation model.')
   }
-  if (!modelName) {
-    const models = listModelsByProvider(providerId)
-    if (models.length > 0) {
-      modelName = models[0].name
-    }
+
+  const model = getModel(modelId)
+  if (!model || model.providerId !== providerId) {
+    throw new Error(`Selected translation model is invalid for provider "${provider.name}".`)
   }
-  if (!modelName) {
-    throw new Error(`No model configured for provider "${provider.name}".`)
-  }
+
+  const modelName = model.name
 
   return {
     provider: provider.type,

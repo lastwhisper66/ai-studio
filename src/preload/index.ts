@@ -12,6 +12,10 @@ import type {
   StreamErrorData,
   TitleUpdatedData,
   Provider,
+  CreateProviderPayload,
+  UpdateProviderPayload,
+  ProviderConnectionTestPayload,
+  RemoteModelFetchPayload,
   Model,
   ModelDefinition,
   ModelGroup,
@@ -120,18 +124,20 @@ const api = {
   getProvider: (id: string): Promise<IpcResult<Provider | undefined>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_GET, id),
 
-  createProvider: (
-    data: Partial<Provider> & { type: Provider['type']; name: string },
-  ): Promise<IpcResult<Provider>> => ipcRenderer.invoke(IpcChannels.PROVIDER_CREATE, data),
+  createProvider: (data: CreateProviderPayload): Promise<IpcResult<Provider>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_CREATE, data),
 
-  updateProvider: (id: string, data: Partial<Provider>): Promise<IpcResult<Provider | undefined>> =>
+  updateProvider: (
+    id: string,
+    data: UpdateProviderPayload,
+  ): Promise<IpcResult<Provider | undefined>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_UPDATE, id, data),
 
   deleteProvider: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_DELETE, id),
 
-  testProviderConnection: (provider: Provider): Promise<IpcResult<string>> =>
-    ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, provider),
+  testProviderConnection: (payload: ProviderConnectionTestPayload): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, payload),
 
   // Models
   listModels: (): Promise<IpcResult<Model[]>> => ipcRenderer.invoke(IpcChannels.MODEL_LIST),
@@ -153,9 +159,15 @@ const api = {
     ipcRenderer.invoke(IpcChannels.MODEL_DELETE_BY_PROVIDER, providerId),
 
   fetchRemoteModels: (
-    provider: Provider,
-  ): Promise<IpcResult<{ id: string; owned_by?: string }[]>> =>
-    ipcRenderer.invoke(IpcChannels.MODEL_FETCH_REMOTE, provider),
+    payload: RemoteModelFetchPayload,
+  ): Promise<
+    IpcResult<
+      {
+        id: string
+        owned_by?: string
+      }[]
+    >
+  > => ipcRenderer.invoke(IpcChannels.MODEL_FETCH_REMOTE, payload),
 
   // Model Definitions (global capability library)
   listModelDefinitions: (): Promise<IpcResult<ModelDefinition[]>> =>
@@ -185,8 +197,7 @@ const api = {
     pattern: string
     displayName: string
     sortOrder?: number
-  }): Promise<IpcResult<ModelGroup>> =>
-    ipcRenderer.invoke(IpcChannels.MODEL_GROUP_CREATE, data),
+  }): Promise<IpcResult<ModelGroup>> => ipcRenderer.invoke(IpcChannels.MODEL_GROUP_CREATE, data),
 
   updateModelGroup: (
     id: string,

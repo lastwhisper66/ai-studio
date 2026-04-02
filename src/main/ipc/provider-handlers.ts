@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { IpcResult, Provider, ApiSettings } from '@shared/types'
+import type { IpcResult, Provider, ApiSettings, ProviderConnectionTestPayload } from '@shared/types'
 import { listProviders, getProvider, createProvider, updateProvider, deleteProvider } from '../db'
 import type { CreateProviderData, UpdateProviderData } from '../db/providers'
 import { createAIClient } from '../ai'
@@ -59,13 +59,13 @@ export function registerProviderHandlers(): void {
 
   ipcMain.handle(
     IpcChannels.PROVIDER_TEST_CONNECTION,
-    (_, provider: Provider): Promise<IpcResult<string>> => {
+    (_, payload: ProviderConnectionTestPayload): Promise<IpcResult<string>> => {
       return new Promise((resolve) => {
         const fallbackTimer = setTimeout(() => {
           resolve({ success: false, error: 'Connection test timed out' })
         }, 20000)
 
-        doTestConnection(provider)
+        doTestConnection(payload)
           .then((result) => {
             resolve(result)
           })
@@ -78,16 +78,18 @@ export function registerProviderHandlers(): void {
   )
 }
 
-async function doTestConnection(provider: Provider): Promise<IpcResult<string>> {
+async function doTestConnection(
+  payload: ProviderConnectionTestPayload,
+): Promise<IpcResult<string>> {
   const controller = new AbortController()
   const timerId = setTimeout(() => controller.abort(), 15000)
 
   try {
     const settings: ApiSettings = {
-      provider: provider.type,
-      apiKey: provider.apiKey,
-      baseUrl: provider.baseUrl,
-      model: provider.model,
+      provider: payload.type,
+      apiKey: payload.apiKey,
+      baseUrl: payload.baseUrl,
+      model: payload.modelName,
       temperature: 0,
       maxCompletionTokens: 1,
       topP: 1,
@@ -98,7 +100,7 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
 
     const stream = await client.chat.completions.create(
       {
-        model: provider.model,
+        model: payload.modelName,
         messages: [{ role: 'user', content: 'Hi' }],
         max_completion_tokens: 1,
         stream: true,

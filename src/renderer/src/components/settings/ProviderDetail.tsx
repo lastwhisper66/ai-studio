@@ -215,7 +215,11 @@ function ProviderForm({
     try {
       // Save current draft first
       await onUpdate(provider.id, draft)
-      const result = await window.api.fetchRemoteModels({ ...provider, ...draft })
+      const result = await window.api.fetchRemoteModels({
+        type: provider.type,
+        apiKey: draft.apiKey,
+        baseUrl: draft.baseUrl,
+      })
       if (result.success && result.data) {
         setRemoteModels(result.data)
       } else if (!result.success) {

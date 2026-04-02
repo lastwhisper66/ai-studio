@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import type { Provider, Model, ModelCapability } from '@shared/types'
+import type {
+  Provider,
+  CreateProviderPayload,
+  UpdateProviderPayload,
+  Model,
+  ModelCapability,
+} from '@shared/types'
 
 interface ProviderStore {
   providers: Provider[]
@@ -10,10 +16,8 @@ interface ProviderStore {
   selectedProviderId: string | null
 
   loadProviders: () => Promise<void>
-  addProvider: (
-    data: Partial<Provider> & { type: Provider['type']; name: string },
-  ) => Promise<Provider | undefined>
-  updateProvider: (id: string, data: Partial<Provider>) => Promise<void>
+  addProvider: (data: CreateProviderPayload) => Promise<Provider | undefined>
+  updateProvider: (id: string, data: UpdateProviderPayload) => Promise<void>
   deleteProvider: (id: string) => Promise<void>
   setActiveProvider: (id: string) => Promise<void>
   setSelectedProviderId: (id: string | null) => void

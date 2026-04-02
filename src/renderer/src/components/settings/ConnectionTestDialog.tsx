@@ -10,12 +10,8 @@ import {
   DialogFooter,
 } from '@renderer/components/ui/dialog'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@renderer/components/ui/tooltip'
-import type { Provider } from '@shared/types'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import type { Provider, ProviderConnectionTestPayload } from '@shared/types'
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error'
 
@@ -48,19 +44,21 @@ export function ConnectionTestDialog({
   const [testStates, setTestStates] = useState<Record<string, ModelTestState>>({})
   const [isTestingAll, setIsTestingAll] = useState(false)
 
-  const updateModelState = useCallback(
-    (modelId: string, state: ModelTestState) => {
-      setTestStates((prev) => ({ ...prev, [modelId]: state }))
-    },
-    [],
-  )
+  const updateModelState = useCallback((modelId: string, state: ModelTestState) => {
+    setTestStates((prev) => ({ ...prev, [modelId]: state }))
+  }, [])
 
   const testModel = useCallback(
     async (modelName: string, modelId: string) => {
       updateModelState(modelId, { status: 'testing' })
       try {
-        const testProvider: Provider = { ...provider, model: modelName }
-        const res = await window.api.testProviderConnection(testProvider)
+        const payload: ProviderConnectionTestPayload = {
+          type: provider.type,
+          apiKey: provider.apiKey,
+          baseUrl: provider.baseUrl,
+          modelName,
+        }
+        const res = await window.api.testProviderConnection(payload)
         if (res.success) {
           updateModelState(modelId, {
             status: 'success',
@@ -133,19 +131,13 @@ export function ConnectionTestDialog({
           <>
             {/* Test All button */}
             <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                onClick={testAll}
-                disabled={isTestingAll}
-                className="gap-1.5">
+              <Button size="sm" onClick={testAll} disabled={isTestingAll} className="gap-1.5">
                 {isTestingAll ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <PlayCircle className="h-3.5 w-3.5" />
                 )}
-                {isTestingAll
-                  ? t('settings.provider.testing')
-                  : t('settings.provider.testAll')}
+                {isTestingAll ? t('settings.provider.testing') : t('settings.provider.testAll')}
               </Button>
               {hasResults && (
                 <span className="text-muted-foreground text-xs">
@@ -175,9 +167,7 @@ export function ConnectionTestDialog({
                               {t(STATUS_KEY[state.status])}
                             </span>
                           </TooltipTrigger>
-                          <TooltipContent
-                            side="left"
-                            className="max-w-[240px] break-words text-xs">
+                          <TooltipContent side="left" className="max-w-[240px] break-words text-xs">
                             {state.message}
                           </TooltipContent>
                         </Tooltip>
