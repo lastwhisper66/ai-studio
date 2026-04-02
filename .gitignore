@@ -11,3 +11,4 @@ out
 data
 plans
 .playwright-mcp
+.worktrees
