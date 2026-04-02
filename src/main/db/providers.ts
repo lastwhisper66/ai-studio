@@ -1,7 +1,12 @@
 import { randomUUID } from 'crypto'
 import type { Provider, ProviderType } from '@shared/types'
 import { getDb } from './database'
+import { createModel } from './models'
 import { encrypt, decrypt } from './settings'
+
+const DEFAULT_MODELS_BY_PROVIDER_TYPE: Partial<Record<ProviderType, string[]>> = {
+  fujitsu: ['gpt-5.1', 'gpt-5.1-mini'],
+}
 
 interface ProviderRow {
   id: string
@@ -74,6 +79,15 @@ export function createProvider(data: CreateProviderData): Provider {
       data.enabled !== false ? 1 : 0,
       data.sortOrder ?? 0,
     )
+
+  for (const [index, name] of (DEFAULT_MODELS_BY_PROVIDER_TYPE[data.type] ?? []).entries()) {
+    createModel({
+      providerId: id,
+      name,
+      sortOrder: index,
+    })
+  }
+
   return getProvider(id)!
 }
 

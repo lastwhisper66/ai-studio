@@ -71,8 +71,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     const result = await window.api.createProvider(data)
     if (result.success && result.data) {
       const provider = result.data
+      const modelsResult = await window.api.listModels()
       set((state) => ({
         providers: [...state.providers, provider],
+        models: modelsResult.success && modelsResult.data ? modelsResult.data : state.models,
         selectedProviderId: provider.id,
       }))
       // If this is the first provider, set it as active
