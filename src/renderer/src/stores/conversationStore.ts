@@ -14,7 +14,9 @@ interface ConversationState {
   isStreaming: boolean
   streamingContent: string
   streamStartTime: number | null
+  focusInputTrigger: number
 
+  requestInputFocus: () => void
   loadConversations: () => Promise<void>
   createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
@@ -46,6 +48,9 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   isStreaming: false,
   streamingContent: '',
   streamStartTime: null,
+  focusInputTrigger: 0,
+
+  requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
 
   clearError: () => set({ error: null }),
 
@@ -69,6 +74,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         activeConversationId: conversation.id,
         messages: [],
       }))
+      get().requestInputFocus()
       return true
     }
     set({ error: result.error ?? 'Failed to create conversation' })
@@ -183,6 +189,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         hasMoreMessages: result.data.hasMore,
         isLoading: false,
       })
+      get().requestInputFocus()
     } else {
       set({ isLoading: false, error: result.error ?? 'Failed to load messages' })
     }

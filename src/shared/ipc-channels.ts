@@ -79,4 +79,6 @@ export const IpcChannels = {
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
   WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
+  // Shortcuts (from main process before-input-event, bypasses IME)
+  SHORTCUT_TOGGLE_SETTINGS: 'shortcut:toggle-settings',
 } as const

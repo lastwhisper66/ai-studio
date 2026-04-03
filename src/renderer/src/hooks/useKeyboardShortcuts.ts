@@ -6,7 +6,18 @@ export function useKeyboardShortcuts(): void {
   const createConversation = useConversationStore((s) => s.createConversation)
   const stopGeneration = useConversationStore((s) => s.stopGeneration)
   const isStreaming = useConversationStore((s) => s.isStreaming)
+  const requestInputFocus = useConversationStore((s) => s.requestInputFocus)
   const setActiveView = useSettingsStore((s) => s.setActiveView)
+
+  // Ctrl+, toggle settings — handled via main process before-input-event to bypass IME
+  useEffect(() => {
+    return window.api.onToggleSettings(() => {
+      const current = useSettingsStore.getState().activeView
+      const next = current === 'settings' ? 'chat' : 'settings'
+      setActiveView(next)
+      if (next === 'chat') requestInputFocus()
+    })
+  }, [setActiveView, requestInputFocus])
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
@@ -14,14 +25,6 @@ export function useKeyboardShortcuts(): void {
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault()
         createConversation()
-        return
-      }
-
-      // Ctrl+, → Toggle settings
-      if (e.ctrlKey && e.key === ',') {
-        e.preventDefault()
-        const current = useSettingsStore.getState().activeView
-        setActiveView(current === 'settings' ? 'chat' : 'settings')
         return
       }
 
@@ -35,5 +38,5 @@ export function useKeyboardShortcuts(): void {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [createConversation, stopGeneration, isStreaming, setActiveView])
+  }, [createConversation, stopGeneration, isStreaming])
 }

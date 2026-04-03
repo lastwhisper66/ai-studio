@@ -145,20 +145,28 @@ function createWindow(): void {
     return { action: 'deny' }
   })
 
-  // Block DevTools and refresh shortcuts in production
-  if (!is.dev) {
-    mainWindow.webContents.on('before-input-event', (event, input) => {
-      const key = input.key.toLowerCase()
-      if (
-        input.key === 'F12' ||
+  // Intercept shortcuts before IME processing (works regardless of input method)
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    const key = input.key.toLowerCase()
+
+    // Ctrl+, → Toggle settings
+    if (input.control && !input.shift && !input.alt && key === ',') {
+      event.preventDefault()
+      mainWindow.webContents.send(IpcChannels.SHORTCUT_TOGGLE_SETTINGS)
+      return
+    }
+
+    // Block DevTools and refresh shortcuts in production
+    if (
+      !is.dev &&
+      (input.key === 'F12' ||
         input.key === 'F5' ||
         (input.control && input.shift && key === 'i') ||
-        (input.control && key === 'r')
-      ) {
-        event.preventDefault()
-      }
-    })
-  }
+        (input.control && key === 'r'))
+    ) {
+      event.preventDefault()
+    }
+  })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])

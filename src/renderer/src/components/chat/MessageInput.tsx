@@ -355,6 +355,14 @@ export function MessageInput({
   const clearMessages = useConversationStore((s) => s.clearMessages)
   const renameConversation = useConversationStore((s) => s.renameConversation)
   const insertDivider = useConversationStore((s) => s.insertDivider)
+  const focusInputTrigger = useConversationStore((s) => s.focusInputTrigger)
+
+  // Focus textarea when triggered by store signal
+  useEffect(() => {
+    if (focusInputTrigger === 0) return
+    if (isStreaming) return
+    textareaRef.current?.focus()
+  }, [focusInputTrigger, isStreaming])
 
   // Auto-resize textarea
   useEffect(() => {

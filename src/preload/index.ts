@@ -333,6 +333,13 @@ const api = {
     ipcRenderer.on(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
     return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
   },
+
+  // Shortcuts (from main process, bypasses IME)
+  onToggleSettings: (callback: () => void): (() => void) => {
+    const handler = (): void => callback()
+    ipcRenderer.on(IpcChannels.SHORTCUT_TOGGLE_SETTINGS, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SHORTCUT_TOGGLE_SETTINGS, handler)
+  },
 }
 
 export type ApiType = typeof api
