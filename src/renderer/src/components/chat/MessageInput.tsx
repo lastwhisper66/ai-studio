@@ -42,6 +42,8 @@ interface MessageInputProps {
   onSend: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => void
   onStop: () => void
   isStreaming: boolean
+  droppedFiles?: FileData[]
+  onDroppedFilesConsumed?: () => void
 }
 
 type ReasoningLevel = ReasoningEffort | 'off'
@@ -342,6 +344,8 @@ export function MessageInput({
   onSend,
   onStop,
   isStreaming,
+  droppedFiles,
+  onDroppedFilesConsumed,
 }: MessageInputProps): React.JSX.Element {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -363,6 +367,15 @@ export function MessageInput({
     if (isStreaming) return
     textareaRef.current?.focus()
   }, [focusInputTrigger, isStreaming])
+
+  // Consume files dropped from ChatView drag-and-drop overlay
+  useEffect(() => {
+    if (droppedFiles && droppedFiles.length > 0) {
+      setAttachedFiles((prev) => [...prev, ...droppedFiles])
+      onDroppedFilesConsumed?.()
+      textareaRef.current?.focus()
+    }
+  }, [droppedFiles, onDroppedFilesConsumed])
 
   // Auto-resize textarea
   useEffect(() => {

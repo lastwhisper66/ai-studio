@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { X, ChevronRight, PanelRightClose, PanelRightOpen, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { X, ChevronRight, PanelRightClose, PanelRightOpen, ChevronDown, ImagePlus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -11,6 +11,8 @@ import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { AssistantSettingsDialog } from './AssistantSettingsDialog'
 import { ModelPickerDialog } from './ModelPickerDialog'
+import type { FileData } from '@shared/types'
+import { isImageMime } from '@shared/types'
 
 interface ChatViewProps {
   topicCollapsed: boolean
@@ -61,6 +63,82 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   )
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
+  // Drag-and-drop state
+  const [isDragging, setIsDragging] = useState(false)
+  const [droppedFiles, setDroppedFiles] = useState<FileData[] | undefined>(undefined)
+  const dragCounter = useRef(0)
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current++
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true)
+    }
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current--
+    if (dragCounter.current === 0) {
+      setIsDragging(false)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    dragCounter.current = 0
+
+    const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB — matches file-handlers.ts
+
+    const files = Array.from(e.dataTransfer.files)
+    const imageFiles = files.filter((f) => isImageMime(f.type) && f.size <= MAX_FILE_SIZE)
+    if (imageFiles.length === 0) return
+
+    // Read each image file as base64, preserving drop order via index
+    let completed = 0
+    const results: (FileData | null)[] = new Array(imageFiles.length).fill(null)
+    const checkDone = (): void => {
+      completed++
+      if (completed === imageFiles.length) {
+        const valid = results.filter((r): r is FileData => r !== null)
+        if (valid.length > 0) setDroppedFiles(valid)
+      }
+    }
+    imageFiles.forEach((file, idx) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1]
+        results[idx] = { name: file.name, mimeType: file.type, base64, size: file.size }
+        checkDone()
+      }
+      reader.onerror = () => checkDone()
+      reader.readAsDataURL(file)
+    })
+  }, [])
+
+  const handleDroppedFilesConsumed = useCallback(() => {
+    setDroppedFiles(undefined)
+  }, [])
+
+  // Reset drag state when drag is cancelled (Escape, window switch, etc.)
+  useEffect(() => {
+    const reset = (): void => {
+      dragCounter.current = 0
+      setIsDragging(false)
+    }
+    window.addEventListener('dragend', reset)
+    return () => window.removeEventListener('dragend', reset)
+  }, [])
+
   // Auto-dismiss error after 5 seconds
   useEffect(() => {
     if (!error) return
@@ -84,7 +162,12 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   }
 
   return (
-    <div className="relative flex flex-1 flex-col bg-background text-foreground">
+    <div
+      className="relative flex flex-1 flex-col bg-background text-foreground"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}>
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div className="flex items-center gap-2">
@@ -165,7 +248,23 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       )}
 
       {/* Input area */}
-      <MessageInput onSend={sendMessage} onStop={stopGeneration} isStreaming={isStreaming} />
+      <MessageInput
+        onSend={sendMessage}
+        onStop={stopGeneration}
+        isStreaming={isStreaming}
+        droppedFiles={droppedFiles}
+        onDroppedFilesConsumed={handleDroppedFilesConsumed}
+      />
+
+      {/* Drag-and-drop overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/5 px-12 py-8">
+            <ImagePlus className="h-10 w-10 text-primary" />
+            <p className="text-sm font-medium text-primary">{t('chat.dropImageHere')}</p>
+          </div>
+        </div>
+      )}
 
       {/* Assistant Settings Dialog */}
       <AssistantSettingsDialog
