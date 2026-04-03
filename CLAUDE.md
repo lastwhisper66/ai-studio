@@ -69,7 +69,7 @@ SQLite with WAL mode and foreign key constraints enabled:
 - **conversations**: `id` (TEXT PK), `title`, `created_at`, `updated_at`, `system_prompt`, `assistant_id`, `pinned`
 - **messages**: `id` (TEXT PK), `conversation_id` (FK), `role`, `content`, `created_at`, `token_count` — indexed on `(conversation_id, created_at)`
 - **settings**: `key` (TEXT PK), `value` — API key encrypted via Electron safeStorage
-- **providers**: `id` (TEXT PK), `type`, `name`, `api_key`, `base_url`, `model`, `endpoint`, `api_version`, `deployment_name`, `enabled`, `sort_order`
+- **providers**: `id` (TEXT PK), `type`, `name`, `api_key`, `base_url`, `enabled`, `sort_order`, `created_at`, `updated_at`
 - **models**: `id` (TEXT PK), `provider_id` (FK → providers, CASCADE), `name`, `enabled`, `sort_order` — indexed on `provider_id`
 - **assistants**: `id` (TEXT PK), `name`, `description`, `system_prompt`, `provider_id` (FK), `model`, `temperature`, `max_completion_tokens`, `top_p`, `context_count`, `prompt_suggestions` (JSON array string), `is_default`, `group_name`, `sort_order`
 
