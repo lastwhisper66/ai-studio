@@ -3,11 +3,21 @@ import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@renderer/components/ui/dialog'
-import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import { Input } from '@renderer/components/ui/input'
+import { Label } from '@renderer/components/ui/label'
+import { Button } from '@renderer/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { PROVIDER_TEMPLATES } from './provider-templates'
 
@@ -18,39 +28,102 @@ interface AddProviderDialogProps {
 export function AddProviderDialog({ children }: AddProviderDialogProps): React.JSX.Element {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [selectedType, setSelectedType] = useState('')
   const addProvider = useProviderStore((s) => s.addProvider)
 
-  const handleAdd = async (templateIndex: number): Promise<void> => {
-    const template = PROVIDER_TEMPLATES[templateIndex]
+  const selectedTemplate = PROVIDER_TEMPLATES.find((tpl) => tpl.type === selectedType)
+  const isValid = name.trim().length > 0 && selectedType.length > 0
+
+  const resetForm = (): void => {
+    setName('')
+    setSelectedType('')
+  }
+
+  const handleOpenChange = (value: boolean): void => {
+    setOpen(value)
+    if (!value) resetForm()
+  }
+
+  const handleTypeChange = (type: string): void => {
+    setSelectedType(type)
+    const template = PROVIDER_TEMPLATES.find((tpl) => tpl.type === type)
+    if (template && !name.trim()) {
+      setName(template.name)
+    }
+  }
+
+  const handleConfirm = async (): Promise<void> => {
+    if (!isValid || !selectedTemplate) return
     setOpen(false)
     await addProvider({
-      type: template.type,
-      name: template.name,
-      baseUrl: template.defaultBaseUrl,
+      type: selectedTemplate.type,
+      name: name.trim(),
+      baseUrl: selectedTemplate.defaultBaseUrl,
     })
+    resetForm()
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('settings.provider.addProvider')}</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="-mx-2 max-h-72">
-          {PROVIDER_TEMPLATES.map((template, index) => (
-            <button
-              key={template.type}
-              onClick={() => handleAdd(index)}
-              className="hover:bg-accent flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors">
-              <span
-                className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/20"
-                style={{ backgroundColor: template.color }}
+
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleConfirm()
+          }}
+        >
+          <div className="grid gap-4 py-2">
+            {/* Provider name */}
+            <div className="grid gap-2">
+              <Label htmlFor="provider-name">{t('settings.provider.providerName')}</Label>
+              <Input
+                id="provider-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t('settings.provider.providerNamePlaceholder')}
+                autoFocus
               />
-              {template.name}
-            </button>
-          ))}
-        </ScrollArea>
+            </div>
+
+            {/* Provider type */}
+            <div className="grid gap-2">
+              <Label>{t('settings.provider.providerType')}</Label>
+              <Select value={selectedType} onValueChange={handleTypeChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('settings.provider.selectTypePlaceholder')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROVIDER_TEMPLATES.map((template) => (
+                    <SelectItem key={template.type} value={template.type}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: template.color }}
+                        />
+                        {template.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" disabled={!isValid}>
+              {t('common.confirm')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

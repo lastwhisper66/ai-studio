@@ -162,6 +162,8 @@
       "providerSettings": "服务商设置",
       "providerName": "服务商名称",
       "providerType": "供应商类型",
+      "providerNamePlaceholder": "请输入供应商名称",
+      "selectTypePlaceholder": "请选择供应商类型",
       "name": "名称",
       "apiConfig": "API 配置",
       "apiKey": "API 密钥",

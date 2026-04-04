@@ -4,6 +4,7 @@ import { existsSync, mkdirSync } from 'fs'
 import { dirname, join } from 'path'
 import { seedModelDefinitions } from './model-definitions'
 import { seedModelGroups } from './model-groups'
+import { seedDefaultProviders } from './providers'
 
 let db: Database.Database | null = null
 
@@ -186,4 +187,7 @@ function createTables(): void {
 
   // Seed: populate model groups from static catalog
   seedModelGroups()
+
+  // Seed: populate default providers on first launch
+  seedDefaultProviders()
 }

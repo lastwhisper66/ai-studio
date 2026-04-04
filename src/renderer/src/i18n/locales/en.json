@@ -162,6 +162,8 @@
       "providerSettings": "Provider Settings",
       "providerName": "Provider Name",
       "providerType": "Provider Type",
+      "providerNamePlaceholder": "Enter provider name",
+      "selectTypePlaceholder": "Select provider type",
       "name": "Name",
       "apiConfig": "API Configuration",
       "apiKey": "API Key",
