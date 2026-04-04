@@ -296,20 +296,26 @@ export function AssistantSidebar({
           onDragEnd={handleDragEnd}>
           <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-2 pb-2">
-              {groups.map((group) => (
+              {groups.map((group, groupIndex) => (
                 <div key={group.name || '__ungrouped__'}>
                   {/* Group header */}
                   {group.name && (
                     <button
-                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      className={cn(
+                        'flex w-full items-center gap-1.5 px-2 py-1.5 transition-colors hover:text-foreground',
+                        groupIndex > 0 && 'mt-1',
+                      )}
                       onClick={() => toggleGroup(group.name)}>
                       {collapsedGroups[group.name] ? (
-                        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                        <ChevronRight className="h-3 w-3 shrink-0 text-foreground" />
                       ) : (
-                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                        <ChevronDown className="h-3 w-3 shrink-0 text-foreground" />
                       )}
-                      <span className="truncate">{group.name}</span>
-                      <span className="ml-auto text-[11px] text-muted-foreground/60">
+                      <span className="shrink-0 truncate text-sm font-medium text-foreground">
+                        {group.name}
+                      </span>
+                      <span className="mx-2 h-px min-w-4 flex-1 bg-foreground/15" />
+                      <span className="shrink-0 rounded-full bg-muted/50 px-1.5 text-[10px] tabular-nums text-foreground/60">
                         {group.assistants.length}
                       </span>
                     </button>
