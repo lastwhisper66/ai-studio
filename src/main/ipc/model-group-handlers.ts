@@ -1,26 +1,18 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, ModelGroup } from '@shared/types'
-import {
-  listModelGroups,
-  createModelGroup,
-  updateModelGroup,
-  deleteModelGroup,
-} from '../db'
+import { listModelGroups, createModelGroup, updateModelGroup, deleteModelGroup } from '../db'
 import type { CreateModelGroupData, UpdateModelGroupData } from '../db/model-groups'
 
 export function registerModelGroupHandlers(): void {
-  ipcMain.handle(
-    IpcChannels.MODEL_GROUP_LIST,
-    (): IpcResult<ModelGroup[]> => {
-      try {
-        const data = listModelGroups()
-        return { success: true, data }
-      } catch (e) {
-        return { success: false, error: (e as Error).message }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.MODEL_GROUP_LIST, (): IpcResult<ModelGroup[]> => {
+    try {
+      const data = listModelGroups()
+      return { success: true, data }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
 
   ipcMain.handle(
     IpcChannels.MODEL_GROUP_CREATE,
@@ -46,15 +38,12 @@ export function registerModelGroupHandlers(): void {
     },
   )
 
-  ipcMain.handle(
-    IpcChannels.MODEL_GROUP_DELETE,
-    (_, id: string): IpcResult<void> => {
-      try {
-        deleteModelGroup(id)
-        return { success: true }
-      } catch (e) {
-        return { success: false, error: (e as Error).message }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.MODEL_GROUP_DELETE, (_, id: string): IpcResult<void> => {
+    try {
+      deleteModelGroup(id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
 }

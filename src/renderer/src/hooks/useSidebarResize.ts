@@ -4,7 +4,10 @@ const MIN_WIDTH = 160
 const MAX_WIDTH = 400
 const DEFAULT_WIDTH = 224
 
-export function useSidebarResize(storageKey: string, side: 'left' | 'right') {
+export function useSidebarResize(
+  storageKey: string,
+  side: 'left' | 'right',
+): { width: number; isResizing: boolean; handleMouseDown: (e: React.MouseEvent) => void } {
   const [width, setWidth] = useState(() => {
     const stored = localStorage.getItem(storageKey)
     const n = stored ? parseInt(stored, 10) : NaN
@@ -29,15 +32,14 @@ export function useSidebarResize(storageKey: string, side: 'left' | 'right') {
   useEffect(() => {
     if (!isResizing) return
 
-    const onMouseMove = (e: MouseEvent) => {
-      const delta =
-        side === 'left' ? e.clientX - startXRef.current : startXRef.current - e.clientX
+    const onMouseMove = (e: MouseEvent): void => {
+      const delta = side === 'left' ? e.clientX - startXRef.current : startXRef.current - e.clientX
       const next = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidthRef.current + delta))
       widthRef.current = next
       setWidth(next)
     }
 
-    const onMouseUp = () => {
+    const onMouseUp = (): void => {
       setIsResizing(false)
       localStorage.setItem(storageKey, String(widthRef.current))
     }

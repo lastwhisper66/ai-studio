@@ -45,6 +45,7 @@ export function TranslateSettingsDialog({
   // Sync local state when dialog opens or settings change from outside
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open reset
       setPrompt(settings.systemPrompt)
       setTemperature(settings.temperature)
       setWordWrap(settings.wordWrap)

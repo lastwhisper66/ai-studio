@@ -37,8 +37,7 @@ export function DisplaySection(): React.JSX.Element {
                 theme === value
                   ? 'border-primary bg-primary/10 text-primary font-medium'
                   : 'border-border hover:bg-accent text-muted-foreground',
-              )}
-            >
+              )}>
               <Icon className="h-4 w-4" />
               {t(`settings.display.${value}`)}
             </button>
@@ -65,8 +64,7 @@ export function DisplaySection(): React.JSX.Element {
                   isActive
                     ? 'border-primary bg-primary/5 ring-primary/20 ring-2'
                     : 'border-border hover:border-primary/40 hover:bg-accent/50',
-                )}
-              >
+                )}>
                 {/* Color preview dots */}
                 <div className="flex gap-1.5">
                   <span
@@ -82,9 +80,7 @@ export function DisplaySection(): React.JSX.Element {
                     style={{ background: accent }}
                   />
                 </div>
-                <span className="text-xs font-medium">
-                  {t(`settings.display.themes.${ct.id}`)}
-                </span>
+                <span className="text-xs font-medium">{t(`settings.display.themes.${ct.id}`)}</span>
                 {isActive && (
                   <span className="bg-primary text-primary-foreground absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full">
                     <Check className="h-3 w-3" />

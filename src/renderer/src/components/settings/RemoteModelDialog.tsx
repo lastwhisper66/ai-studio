@@ -106,7 +106,10 @@ export function RemoteModelDialog({
   const isGroupFullyAdded = (groupModels: RemoteModel[]): boolean =>
     groupModels.every((m) => addedModelNames.has(m.id))
 
-  const handleGroupToggle = async (groupName: string, groupModels: RemoteModel[]): Promise<void> => {
+  const handleGroupToggle = async (
+    groupName: string,
+    groupModels: RemoteModel[],
+  ): Promise<void> => {
     if (isGroupFullyAdded(groupModels)) {
       await Promise.all(groupModels.map((m) => onRemove(m.id)))
     } else {
@@ -120,9 +123,7 @@ export function RemoteModelDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex h-[80vh] flex-col sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {t('remoteModel.title', { provider: providerName })}
-          </DialogTitle>
+          <DialogTitle>{t('remoteModel.title', { provider: providerName })}</DialogTitle>
         </DialogHeader>
 
         {/* Search bar */}
@@ -196,9 +197,7 @@ export function RemoteModelDialog({
                             </button>
                           </TooltipTrigger>
                           <TooltipContent>
-                            {allAdded
-                              ? t('modelManage.removeGroup')
-                              : t('modelManage.addGroup')}
+                            {allAdded ? t('modelManage.removeGroup') : t('modelManage.addGroup')}
                           </TooltipContent>
                         </Tooltip>
                       </div>
@@ -224,7 +223,9 @@ export function RemoteModelDialog({
                               <span className="min-w-0 flex-1 truncate text-sm">{model.id}</span>
 
                               {/* Capability badges (from local definition match) */}
-                              <CapabilityBadges capabilities={resolvedMap.get(model.id)?.capabilities} />
+                              <CapabilityBadges
+                                capabilities={resolvedMap.get(model.id)?.capabilities}
+                              />
 
                               {/* Add/Remove button */}
                               <button

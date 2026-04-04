@@ -30,6 +30,7 @@ export function EditModelDialog({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open reset
       setName(model.name)
       setGroup(model.group)
       setSelectedCaps([...model.capabilities])
@@ -56,9 +57,7 @@ export function EditModelDialog({
   }
 
   const toggleCap = (cap: ModelCapability): void => {
-    setSelectedCaps((prev) =>
-      prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap],
-    )
+    setSelectedCaps((prev) => (prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]))
   }
 
   return (

@@ -107,7 +107,7 @@ export function AssistantSettingsDialog({
   useEffect(() => {
     if (open) {
       if (isCreateMode) {
-        setForm(defaultFormState())
+        setForm(defaultFormState()) // eslint-disable-line react-hooks/set-state-in-effect -- dialog open reset
       } else if (assistant) {
         setForm(stateFromAssistant(assistant))
       }

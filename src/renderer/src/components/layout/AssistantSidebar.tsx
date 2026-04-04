@@ -113,7 +113,9 @@ export function AssistantSidebar({
     setSettingsOpen(true)
   }
 
-  const handleCreate = async (data: Partial<import('@shared/types').Assistant> & { name: string }): Promise<void> => {
+  const handleCreate = async (
+    data: Partial<import('@shared/types').Assistant> & { name: string },
+  ): Promise<void> => {
     const assistant = await addAssistant(data)
     if (assistant) {
       setActiveAssistantId(assistant.id)

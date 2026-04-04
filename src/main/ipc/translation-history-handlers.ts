@@ -37,15 +37,12 @@ export function registerTranslationHistoryHandlers(): void {
     },
   )
 
-  ipcMain.handle(
-    IpcChannels.TRANSLATION_HISTORY_CLEAR,
-    async (): Promise<IpcResult<void>> => {
-      try {
-        clearTranslationHistory()
-        return { success: true }
-      } catch (error) {
-        return { success: false, error: (error as Error).message }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.TRANSLATION_HISTORY_CLEAR, async (): Promise<IpcResult<void>> => {
+    try {
+      clearTranslationHistory()
+      return { success: true }
+    } catch (error) {
+      return { success: false, error: (error as Error).message }
+    }
+  })
 }

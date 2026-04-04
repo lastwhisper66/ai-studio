@@ -117,9 +117,7 @@ export function ModelLibrarySection(): React.JSX.Element {
         <div className="p-6">
           {groups.size === 0 ? (
             <div className="text-muted-foreground py-12 text-center text-sm">
-              {definitions.length === 0
-                ? t('modelLibrary.empty')
-                : t('modelLibrary.noResults')}
+              {definitions.length === 0 ? t('modelLibrary.empty') : t('modelLibrary.noResults')}
             </div>
           ) : (
             <div className="space-y-1">
@@ -138,9 +136,7 @@ export function ModelLibrarySection(): React.JSX.Element {
                         <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
                       )}
                       <span className="font-medium">{groupName}</span>
-                      <span className="text-muted-foreground text-xs">
-                        ({groupDefs.length})
-                      </span>
+                      <span className="text-muted-foreground text-xs">({groupDefs.length})</span>
                     </button>
 
                     {/* Items */}
@@ -217,7 +213,11 @@ export function ModelLibrarySection(): React.JSX.Element {
       )}
 
       {/* Delete confirmation */}
-      <AlertDialog open={!!deletingDef} onOpenChange={(open) => { if (!open) setDeletingDef(null) }}>
+      <AlertDialog
+        open={!!deletingDef}
+        onOpenChange={(open) => {
+          if (!open) setDeletingDef(null)
+        }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('common.delete')}</AlertDialogTitle>
@@ -258,16 +258,13 @@ function ModelDefinitionDialog({
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
   const [group, setGroup] = useState(initial?.group ?? '')
-  const [capabilities, setCapabilities] = useState<ModelCapability[]>(
-    initial?.capabilities ?? [],
-  )
-  const [providerTypes, setProviderTypes] = useState<ProviderType[]>(
-    initial?.providerTypes ?? [],
-  )
+  const [capabilities, setCapabilities] = useState<ModelCapability[]>(initial?.capabilities ?? [])
+  const [providerTypes, setProviderTypes] = useState<ProviderType[]>(initial?.providerTypes ?? [])
 
   // Reset state when dialog opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open reset
       setName(initial?.name ?? '')
       setGroup(initial?.group ?? '')
       setCapabilities(initial?.capabilities ?? [])
@@ -276,15 +273,11 @@ function ModelDefinitionDialog({
   }, [open, initial])
 
   const toggleCapability = (cap: ModelCapability): void => {
-    setCapabilities((prev) =>
-      prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap],
-    )
+    setCapabilities((prev) => (prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]))
   }
 
   const toggleProviderType = (pt: ProviderType): void => {
-    setProviderTypes((prev) =>
-      prev.includes(pt) ? prev.filter((p) => p !== pt) : [...prev, pt],
-    )
+    setProviderTypes((prev) => (prev.includes(pt) ? prev.filter((p) => p !== pt) : [...prev, pt]))
   }
 
   const handleSave = async (): Promise<void> => {
@@ -341,9 +334,7 @@ function ModelDefinitionDialog({
                         ? 'border-transparent text-white'
                         : 'border-border text-muted-foreground hover:border-foreground/30'
                     }`}
-                    style={
-                      isActive ? { backgroundColor: cfg.color } : undefined
-                    }>
+                    style={isActive ? { backgroundColor: cfg.color } : undefined}>
                     {isActive && <X className="h-3 w-3" />}
                     <Icon className="h-3 w-3" /> {t(cfg.labelKey)}
                   </button>

@@ -10,17 +10,14 @@ import {
 import type { CreateModelDefinitionData, UpdateModelDefinitionData } from '../db/model-definitions'
 
 export function registerModelDefinitionHandlers(): void {
-  ipcMain.handle(
-    IpcChannels.MODEL_DEFINITION_LIST,
-    (): IpcResult<ModelDefinition[]> => {
-      try {
-        const data = listModelDefinitions()
-        return { success: true, data }
-      } catch (e) {
-        return { success: false, error: (e as Error).message }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.MODEL_DEFINITION_LIST, (): IpcResult<ModelDefinition[]> => {
+    try {
+      const data = listModelDefinitions()
+      return { success: true, data }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
 
   ipcMain.handle(
     IpcChannels.MODEL_DEFINITION_CREATE,
@@ -46,15 +43,12 @@ export function registerModelDefinitionHandlers(): void {
     },
   )
 
-  ipcMain.handle(
-    IpcChannels.MODEL_DEFINITION_DELETE,
-    (_, id: string): IpcResult<void> => {
-      try {
-        deleteModelDefinition(id)
-        return { success: true }
-      } catch (e) {
-        return { success: false, error: (e as Error).message }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.MODEL_DEFINITION_DELETE, (_, id: string): IpcResult<void> => {
+    try {
+      deleteModelDefinition(id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
 }

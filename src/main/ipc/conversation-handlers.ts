@@ -58,9 +58,7 @@ export function registerConversationHandlers(): void {
     (
       _,
       id: string,
-      data: Partial<
-        Pick<Conversation, 'title' | 'systemPrompt' | 'assistantId' | 'pinned'>
-      >,
+      data: Partial<Pick<Conversation, 'title' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
     ): IpcResult<Conversation | undefined> => {
       try {
         const result = updateConversation(id, data)

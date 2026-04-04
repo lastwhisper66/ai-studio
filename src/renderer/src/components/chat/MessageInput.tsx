@@ -49,7 +49,7 @@ interface MessageInputProps {
 type ReasoningLevel = ReasoningEffort | 'off'
 
 // ── Phrase Popover ──────────────────────────────────────────────
-function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
+function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }): React.JSX.Element {
   const { t } = useTranslation()
   const { phrases, createPhrase, updatePhrase, deletePhrase } = usePhraseStore()
   const [open, setOpen] = useState(false)
@@ -58,7 +58,7 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
   const [newTitle, setNewTitle] = useState('')
   const [newContent, setNewContent] = useState('')
 
-  const handleAdd = async () => {
+  const handleAdd = async (): Promise<void> => {
     if (!newContent.trim()) return
     await createPhrase(newTitle.trim() || newContent.slice(0, 20), newContent.trim())
     setNewTitle('')
@@ -66,7 +66,7 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
     setAdding(false)
   }
 
-  const handleEdit = async (id: string) => {
+  const handleEdit = async (id: string): Promise<void> => {
     if (!newContent.trim()) return
     await updatePhrase(id, {
       title: newTitle.trim() || newContent.slice(0, 20),
@@ -77,7 +77,7 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }) {
     setNewContent('')
   }
 
-  const startEdit = (id: string, title: string, content: string) => {
+  const startEdit = (id: string, title: string, content: string): void => {
     setEditingId(id)
     setNewTitle(title)
     setNewContent(content)
@@ -223,7 +223,7 @@ function ReasoningPopover({
 }: {
   value: ReasoningLevel
   onChange: (v: ReasoningLevel) => void
-}) {
+}): React.JSX.Element {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const levels: { value: ReasoningLevel; label: string }[] = [
@@ -285,7 +285,7 @@ function ToolButton({
   active?: boolean
   onClick?: () => void
   className?: string
-}) {
+}): React.JSX.Element {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -312,7 +312,7 @@ function AttachmentPreview({
 }: {
   files: AttachedFile[]
   onRemove: (index: number) => void
-}) {
+}): React.JSX.Element | null {
   if (files.length === 0) return null
   return (
     <div className="flex flex-wrap gap-1.5 px-4 pt-2">
@@ -371,6 +371,7 @@ export function MessageInput({
   // Consume files dropped from ChatView drag-and-drop overlay
   useEffect(() => {
     if (droppedFiles && droppedFiles.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing external prop to local state
       setAttachedFiles((prev) => [...prev, ...droppedFiles])
       onDroppedFilesConsumed?.()
       textareaRef.current?.focus()

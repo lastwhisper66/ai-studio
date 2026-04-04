@@ -63,10 +63,7 @@ export function ModelGroupSection(): React.JSX.Element {
           ) : (
             <div className="space-y-1">
               {groups.map((group) => (
-                <div
-                  key={group.id}
-                  className="flex items-center gap-3 rounded-lg border px-4 py-3"
-                >
+                <div key={group.id} className="flex items-center gap-3 rounded-lg border px-4 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{group.displayName}</div>
                     <div className="text-muted-foreground truncate text-xs font-mono">
@@ -76,15 +73,13 @@ export function ModelGroupSection(): React.JSX.Element {
                   <button
                     type="button"
                     onClick={() => setEditingGroup(group)}
-                    className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors"
-                  >
+                    className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setDeletingGroup(group)}
-                    className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors"
-                  >
+                    className="text-muted-foreground hover:text-destructive rounded p-1 transition-colors">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>

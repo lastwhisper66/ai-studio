@@ -13,7 +13,9 @@ function getStoredTheme(): Theme {
 
 function getStoredColorTheme(): ColorThemeId {
   const stored = localStorage.getItem('colorTheme')
-  return colorThemes.some((t) => t.id === stored) ? (stored as ColorThemeId) : DEFAULT_COLOR_THEME_ID
+  return colorThemes.some((t) => t.id === stored)
+    ? (stored as ColorThemeId)
+    : DEFAULT_COLOR_THEME_ID
 }
 
 function getSystemTheme(): ResolvedTheme {
@@ -29,7 +31,7 @@ function applyColorVariables(colors: ThemeColors): void {
   }
 }
 
-function findTheme(id: string) {
+function findTheme(id: string): ColorTheme {
   return colorThemes.find((t) => t.id === id) ?? colorThemes[0]
 }
 
@@ -74,9 +76,7 @@ export function ThemeProvider({ children }: { children: ReactNode }): React.JSX.
   }, [theme, colorThemeId])
 
   return (
-    <ThemeContext.Provider
-      value={{ theme, resolvedTheme, setTheme, colorThemeId, setColorTheme }}
-    >
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, colorThemeId, setColorTheme }}>
       {children}
     </ThemeContext.Provider>
   )

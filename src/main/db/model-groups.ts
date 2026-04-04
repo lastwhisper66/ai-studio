@@ -60,10 +60,7 @@ export interface UpdateModelGroupData {
   sortOrder?: number
 }
 
-export function updateModelGroup(
-  id: string,
-  data: UpdateModelGroupData,
-): ModelGroup | undefined {
+export function updateModelGroup(id: string, data: UpdateModelGroupData): ModelGroup | undefined {
   const fields: string[] = []
   const values: unknown[] = []
 
