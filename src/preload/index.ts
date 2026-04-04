@@ -136,6 +136,9 @@ const api = {
   deleteProvider: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_DELETE, id),
 
+  reorderProviders: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.PROVIDER_REORDER, ids),
+
   testProviderConnection: (payload: ProviderConnectionTestPayload): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, payload),
 
@@ -157,6 +160,9 @@ const api = {
 
   deleteModelsByProvider: (providerId: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_DELETE_BY_PROVIDER, providerId),
+
+  reorderModels: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MODEL_REORDER, ids),
 
   fetchRemoteModels: (
     payload: RemoteModelFetchPayload,
@@ -226,6 +232,9 @@ const api = {
 
   deleteAssistant: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.ASSISTANT_DELETE, id),
+
+  reorderAssistants: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.ASSISTANT_REORDER, ids),
 
   // Chat (streaming)
   sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>

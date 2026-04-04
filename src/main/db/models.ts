@@ -143,3 +143,11 @@ export function deleteModel(id: string): void {
 export function deleteModelsByProvider(providerId: string): void {
   getDb().prepare('DELETE FROM models WHERE provider_id = ?').run(providerId)
 }
+
+export function reorderModels(ids: string[]): void {
+  const db = getDb()
+  const update = db.prepare('UPDATE models SET sort_order = ? WHERE id = ?')
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id))
+  })()
+}

@@ -12,6 +12,7 @@ interface AssistantStore {
   deleteAssistant: (id: string) => Promise<void>
   duplicateAssistant: (id: string) => Promise<void>
   pinAssistant: (id: string) => Promise<void>
+  reorderAssistants: (orderedIds: string[]) => Promise<void>
   setActiveAssistantId: (id: string | null) => void
 }
 
@@ -100,6 +101,25 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           .map((a) => (a.id === id ? updated : a))
           .sort((a, b) => a.sortOrder - b.sortOrder),
       }))
+    }
+  },
+
+  reorderAssistants: async (orderedIds) => {
+    // Optimistic: reorder in-memory immediately
+    set((state) => {
+      const idToIndex = new Map(orderedIds.map((id, i) => [id, i]))
+      return {
+        assistants: [...state.assistants].sort((a, b) => {
+          const ai = idToIndex.get(a.id) ?? Infinity
+          const bi = idToIndex.get(b.id) ?? Infinity
+          return ai - bi
+        }),
+      }
+    })
+    // Persist async
+    const result = await window.api.reorderAssistants(orderedIds)
+    if (!result.success) {
+      await get().loadAssistants()
     }
   },
 

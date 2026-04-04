@@ -19,6 +19,7 @@ interface ProviderStore {
   addProvider: (data: CreateProviderPayload) => Promise<Provider | undefined>
   updateProvider: (id: string, data: UpdateProviderPayload) => Promise<void>
   deleteProvider: (id: string) => Promise<void>
+  reorderProviders: (orderedIds: string[]) => Promise<void>
   setActiveProvider: (id: string) => Promise<void>
   setSelectedProviderId: (id: string | null) => void
 
@@ -35,6 +36,7 @@ interface ProviderStore {
   ) => Promise<void>
   removeModel: (id: string) => Promise<void>
   removeAllModels: (providerId: string) => Promise<void>
+  reorderModels: (orderedIds: string[]) => Promise<void>
   setActiveModel: (modelId: string, providerId: string) => Promise<void>
 }
 
@@ -129,6 +131,21 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
 
   setSelectedProviderId: (id) => set({ selectedProviderId: id }),
 
+  reorderProviders: async (orderedIds) => {
+    set((state) => {
+      const idToIndex = new Map(orderedIds.map((id, i) => [id, i]))
+      return {
+        providers: [...state.providers].sort(
+          (a, b) => (idToIndex.get(a.id) ?? Infinity) - (idToIndex.get(b.id) ?? Infinity),
+        ),
+      }
+    })
+    const result = await window.api.reorderProviders(orderedIds)
+    if (!result.success) {
+      await get().loadProviders()
+    }
+  },
+
   addModel: async (providerId, name, group, capabilities) => {
     const result = await window.api.createModel({ providerId, name, group, capabilities })
     if (result.success && result.data) {
@@ -185,5 +202,28 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
       window.api.setSetting('active.modelId', modelId),
     ])
     set({ activeProviderId: providerId, activeModelId: modelId })
+  },
+
+  reorderModels: async (orderedIds) => {
+    set((state) => {
+      const idToIndex = new Map(orderedIds.map((id, i) => [id, i]))
+      return {
+        models: [...state.models].sort((a, b) => {
+          const ai = idToIndex.get(a.id)
+          const bi = idToIndex.get(b.id)
+          if (ai !== undefined && bi !== undefined) return ai - bi
+          if (ai !== undefined) return -1
+          if (bi !== undefined) return 1
+          return 0
+        }),
+      }
+    })
+    const result = await window.api.reorderModels(orderedIds)
+    if (!result.success) {
+      const modelsResult = await window.api.listModels()
+      if (modelsResult.success && modelsResult.data) {
+        set({ models: modelsResult.data })
+      }
+    }
   },
 }))

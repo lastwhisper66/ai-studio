@@ -1,7 +1,14 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, Provider, ApiSettings, ProviderConnectionTestPayload } from '@shared/types'
-import { listProviders, getProvider, createProvider, updateProvider, deleteProvider } from '../db'
+import {
+  listProviders,
+  getProvider,
+  createProvider,
+  updateProvider,
+  deleteProvider,
+  reorderProviders,
+} from '../db'
 import type { CreateProviderData, UpdateProviderData } from '../db/providers'
 import { createAIClient } from '../ai'
 
@@ -51,6 +58,15 @@ export function registerProviderHandlers(): void {
   ipcMain.handle(IpcChannels.PROVIDER_DELETE, (_, id: string): IpcResult<void> => {
     try {
       deleteProvider(id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.PROVIDER_REORDER, (_, ids: string[]): IpcResult<void> => {
+    try {
+      reorderProviders(ids)
       return { success: true }
     } catch (e) {
       return { success: false, error: (e as Error).message }

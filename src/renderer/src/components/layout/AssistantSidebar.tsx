@@ -1,6 +1,34 @@
-import { useState, useMemo } from 'react'
-import { Plus, ChevronDown, ChevronRight, Pencil, Trash2, Copy, Pin } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
+import {
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  Trash2,
+  Copy,
+  Pin,
+  GripVertical,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { cn } from '@renderer/lib/utils'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import {
@@ -37,6 +65,7 @@ interface GroupedAssistants {
     description: string
     isDefault: boolean
     sortOrder: number
+    group: string
   }>
 }
 
@@ -55,6 +84,8 @@ export function AssistantSidebar({
     deleteAssistant,
     duplicateAssistant,
     pinAssistant,
+    reorderAssistants,
+    updateAssistant,
   } = useAssistantStore()
   const { conversations, createConversation, setActiveConversation } = useConversationStore()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -63,10 +94,17 @@ export function AssistantSidebar({
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const defaultAssistant = assistants.find((a) => a.isDefault)
   const nonDefaultAssistants = assistants.filter((a) => !a.isDefault)
 
+  // Build flat sortable list of non-default assistants (preserving group order)
   const groups = useMemo(() => {
     const grouped = new Map<string, GroupedAssistants>()
     const ungrouped: GroupedAssistants = { name: '', assistants: [] }
@@ -92,13 +130,15 @@ export function AssistantSidebar({
     return result
   }, [nonDefaultAssistants])
 
+  // Flat list of all non-default assistant IDs for DnD
+  const sortableIds = useMemo(() => nonDefaultAssistants.map((a) => a.id), [nonDefaultAssistants])
+
   const toggleGroup = (name: string): void => {
     setCollapsedGroups((prev) => ({ ...prev, [name]: !prev[name] }))
   }
 
   const handleAssistantClick = async (assistantId: string): Promise<void> => {
     setActiveAssistantId(assistantId)
-    // Find the most recent conversation for this assistant
     const existing = conversations.find((c) => c.assistantId === assistantId)
     if (existing) {
       await setActiveConversation(existing.id)
@@ -127,7 +167,6 @@ export function AssistantSidebar({
     setSettingsOpen(open)
     if (!open) {
       if (!createMode && editAssistantId) {
-        // Edit mode: if this was a newly created assistant, switch to it
         const isNew = !conversations.some((c) => c.assistantId === editAssistantId)
         if (isNew) {
           setActiveAssistantId(editAssistantId)
@@ -152,7 +191,6 @@ export function AssistantSidebar({
   const handleDeleteConfirm = async (): Promise<void> => {
     if (deleteId) {
       await deleteAssistant(deleteId)
-      // If deleted assistant was active, switch to default
       if (deleteId === activeAssistantId && defaultAssistant) {
         await handleAssistantClick(defaultAssistant.id)
       }
@@ -164,54 +202,54 @@ export function AssistantSidebar({
   const isPinned = (a: { sortOrder: number; isDefault: boolean }): boolean =>
     a.sortOrder < 0 && !a.isDefault
 
-  const renderAssistantItem = (a: {
-    id: string
-    name: string
-    isDefault: boolean
-    sortOrder: number
-  }): React.JSX.Element => (
-    <ContextMenu key={a.id}>
-      <ContextMenuTrigger asChild>
-        <div
-          className={`group flex cursor-pointer items-center rounded-xl px-3 transition-all py-2.5 ${
-            activeAssistantId === a.id
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
-              : 'text-foreground hover:bg-sidebar-accent/40'
-          }`}
-          onClick={() => handleAssistantClick(a.id)}>
-          {isPinned(a) && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
-          <span className={`min-w-0 truncate text-sm ${a.isDefault ? 'font-medium' : ''}`}>
-            {a.name}
-          </span>
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent>
-        <ContextMenuItem onClick={() => handleEdit(a.id)}>
-          <Pencil className="h-4 w-4" />
-          {t('assistant.editAssistant')}
-        </ContextMenuItem>
-        <ContextMenuItem onClick={() => duplicateAssistant(a.id)}>
-          <Copy className="h-4 w-4" />
-          {t('assistant.duplicateAssistant')}
-        </ContextMenuItem>
-        {!a.isDefault && (
-          <ContextMenuItem onClick={() => pinAssistant(a.id)}>
-            <Pin className="h-4 w-4" />
-            {isPinned(a) ? t('common.unpin') : t('common.pin')}
-          </ContextMenuItem>
-        )}
-        {!a.isDefault && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuItem variant="destructive" onClick={() => handleDeleteOpen(a.id)}>
-              <Trash2 className="h-4 w-4" />
-              {t('common.delete')}
-            </ContextMenuItem>
-          </>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+  const handleDragStart = (event: DragStartEvent): void => {
+    setDraggingId(event.active.id as string)
+  }
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      setDraggingId(null)
+      const { active, over } = event
+      if (!over || active.id === over.id) return
+
+      const oldIndex = nonDefaultAssistants.findIndex((a) => a.id === active.id)
+      const newIndex = nonDefaultAssistants.findIndex((a) => a.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const draggedAssistant = nonDefaultAssistants[oldIndex]
+      const targetAssistant = nonDefaultAssistants[newIndex]
+
+      // Build new order: default assistant first, then reordered non-defaults
+      const reordered = [...nonDefaultAssistants]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+
+      const allIds = [
+        ...(defaultAssistant ? [defaultAssistant.id] : []),
+        ...reordered.map((a) => a.id),
+      ]
+
+      // Cross-group drag: update group first, then reorder
+      if (draggedAssistant.group !== targetAssistant.group) {
+        void (async (): Promise<void> => {
+          try {
+            await updateAssistant(draggedAssistant.id, { group: targetAssistant.group })
+            await reorderAssistants(allIds)
+          } catch {
+            // Rollback: reload assistants to restore consistent state
+            await useAssistantStore.getState().loadAssistants()
+          }
+        })()
+      } else {
+        reorderAssistants(allIds)
+      }
+    },
+    [nonDefaultAssistants, defaultAssistant, reorderAssistants, updateAssistant],
   )
+
+  const draggingAssistant = draggingId
+    ? nonDefaultAssistants.find((a) => a.id === draggingId)
+    : null
 
   return (
     <aside
@@ -239,43 +277,84 @@ export function AssistantSidebar({
 
       {/* Default Assistant */}
       {defaultAssistant && (
-        <div className="px-2 py-0.5">{renderAssistantItem(defaultAssistant)}</div>
+        <div className="px-2 py-0.5">
+          <AssistantItem
+            assistant={defaultAssistant}
+            isActive={activeAssistantId === defaultAssistant.id}
+            isPinnedItem={false}
+            onClick={() => handleAssistantClick(defaultAssistant.id)}
+            onEdit={() => handleEdit(defaultAssistant.id)}
+            onDuplicate={() => duplicateAssistant(defaultAssistant.id)}
+            onPin={() => {}}
+            onDelete={() => {}}
+            showPin={false}
+            showDelete={false}
+          />
+        </div>
       )}
 
       {/* Divider */}
       <div className="mx-3 my-1.5 border-b" />
 
-      {/* Grouped Assistants */}
+      {/* Grouped Assistants with DnD */}
       <ScrollArea className="flex-1 px-2">
-        <div className="space-y-2 pb-2">
-          {groups.map((group) => (
-            <div key={group.name || '__ungrouped__'}>
-              {/* Group header — only for named groups */}
-              {group.name && (
-                <button
-                  className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => toggleGroup(group.name)}>
-                  {collapsedGroups[group.name] ? (
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}>
+          <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+            <div className="space-y-2 pb-2">
+              {groups.map((group) => (
+                <div key={group.name || '__ungrouped__'}>
+                  {/* Group header */}
+                  {group.name && (
+                    <button
+                      className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      onClick={() => toggleGroup(group.name)}>
+                      {collapsedGroups[group.name] ? (
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="truncate">{group.name}</span>
+                      <span className="ml-auto text-[11px] text-muted-foreground/60">
+                        {group.assistants.length}
+                      </span>
+                    </button>
                   )}
-                  <span className="truncate">{group.name}</span>
-                  <span className="ml-auto text-[11px] text-muted-foreground/60">
-                    {group.assistants.length}
-                  </span>
-                </button>
-              )}
 
-              {/* Group items */}
-              {(!group.name || !collapsedGroups[group.name]) && (
-                <div className="flex flex-col gap-2">
-                  {group.assistants.map((a) => renderAssistantItem(a))}
+                  {/* Group items */}
+                  {(!group.name || !collapsedGroups[group.name]) && (
+                    <div className="flex flex-col gap-0.5">
+                      {group.assistants.map((a) => (
+                        <SortableAssistantItem
+                          key={a.id}
+                          assistant={a}
+                          isActive={activeAssistantId === a.id}
+                          isPinnedItem={isPinned(a)}
+                          onClick={() => handleAssistantClick(a.id)}
+                          onEdit={() => handleEdit(a.id)}
+                          onDuplicate={() => duplicateAssistant(a.id)}
+                          onPin={() => pinAssistant(a.id)}
+                          onDelete={() => handleDeleteOpen(a.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+
+          <DragOverlay>
+            {draggingAssistant && (
+              <div className="rounded-xl bg-sidebar-accent px-3 py-2.5 text-sm shadow-lg ring-1 ring-primary/30">
+                {draggingAssistant.name}
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       </ScrollArea>
 
       {/* Assistant Settings Dialog */}
@@ -305,5 +384,129 @@ export function AssistantSidebar({
         </DialogContent>
       </Dialog>
     </aside>
+  )
+}
+
+// --- Sub-components ---
+
+interface AssistantItemProps {
+  assistant: { id: string; name: string; isDefault: boolean; sortOrder: number }
+  isActive: boolean
+  isPinnedItem: boolean
+  onClick: () => void
+  onEdit: () => void
+  onDuplicate: () => void
+  onPin: () => void
+  onDelete: () => void
+  showPin?: boolean
+  showDelete?: boolean
+  dragHandle?: React.ReactNode
+}
+
+function AssistantItem({
+  assistant: a,
+  isActive,
+  isPinnedItem,
+  onClick,
+  onEdit,
+  onDuplicate,
+  onPin,
+  onDelete,
+  showPin = true,
+  showDelete = true,
+  dragHandle,
+}: AssistantItemProps): React.JSX.Element {
+  const { t } = useTranslation()
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={cn(
+            'group flex cursor-pointer items-center rounded-xl px-1 transition-all',
+            isActive
+              ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
+              : 'text-foreground hover:bg-sidebar-accent/40',
+          )}
+          onClick={onClick}>
+          {dragHandle}
+          <div className="flex min-w-0 flex-1 items-center px-2 py-2.5">
+            {isPinnedItem && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
+            <span className={cn('min-w-0 truncate text-sm', a.isDefault && 'font-medium')}>
+              {a.name}
+            </span>
+          </div>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={onEdit}>
+          <Pencil className="h-4 w-4" />
+          {t('assistant.editAssistant')}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={onDuplicate}>
+          <Copy className="h-4 w-4" />
+          {t('assistant.duplicateAssistant')}
+        </ContextMenuItem>
+        {showPin && (
+          <ContextMenuItem onClick={onPin}>
+            <Pin className="h-4 w-4" />
+            {isPinnedItem ? t('common.unpin') : t('common.pin')}
+          </ContextMenuItem>
+        )}
+        {showDelete && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem variant="destructive" onClick={onDelete}>
+              <Trash2 className="h-4 w-4" />
+              {t('common.delete')}
+            </ContextMenuItem>
+          </>
+        )}
+      </ContextMenuContent>
+    </ContextMenu>
+  )
+}
+
+function SortableAssistantItem({
+  assistant,
+  isActive,
+  isPinnedItem,
+  onClick,
+  onEdit,
+  onDuplicate,
+  onPin,
+  onDelete,
+}: Omit<AssistantItemProps, 'dragHandle' | 'showPin' | 'showDelete'>): React.JSX.Element {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: assistant.id,
+  })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(isDragging && 'z-50 rounded-lg opacity-50 shadow-lg ring-1 ring-primary/30')}>
+      <AssistantItem
+        assistant={assistant}
+        isActive={isActive}
+        isPinnedItem={isPinnedItem}
+        onClick={onClick}
+        onEdit={onEdit}
+        onDuplicate={onDuplicate}
+        onPin={onPin}
+        onDelete={onDelete}
+        dragHandle={
+          <div
+            {...attributes}
+            {...listeners}
+            className="flex shrink-0 cursor-grab touch-none items-center text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 active:cursor-grabbing">
+            <GripVertical className="h-4 w-4" />
+          </div>
+        }
+      />
+    </div>
   )
 }

@@ -1,7 +1,14 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, Model, ApiSettings, RemoteModelFetchPayload } from '@shared/types'
-import { listAllModels, createModel, updateModel, deleteModel, deleteModelsByProvider } from '../db'
+import {
+  listAllModels,
+  createModel,
+  updateModel,
+  deleteModel,
+  deleteModelsByProvider,
+  reorderModels,
+} from '../db'
 import type { CreateModelData, UpdateModelData } from '../db/models'
 import { createAIClient, applySslSetting } from '../ai'
 
@@ -54,6 +61,15 @@ export function registerModelHandlers(): void {
   ipcMain.handle(IpcChannels.MODEL_DELETE_BY_PROVIDER, (_, providerId: string): IpcResult<void> => {
     try {
       deleteModelsByProvider(providerId)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.MODEL_REORDER, (_, ids: string[]): IpcResult<void> => {
+    try {
+      reorderModels(ids)
       return { success: true }
     } catch (e) {
       return { success: false, error: (e as Error).message }

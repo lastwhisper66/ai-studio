@@ -136,6 +136,14 @@ export function deleteProvider(id: string): void {
   getDb().prepare('DELETE FROM providers WHERE id = ?').run(id)
 }
 
+export function reorderProviders(ids: string[]): void {
+  const db = getDb()
+  const update = db.prepare('UPDATE providers SET sort_order = ? WHERE id = ?')
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id))
+  })()
+}
+
 /** Default provider templates to seed on first launch */
 const DEFAULT_PROVIDER_SEEDS: CreateProviderData[] = [
   { type: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com' },

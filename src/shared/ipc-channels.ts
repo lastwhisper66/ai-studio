@@ -32,6 +32,7 @@ export const IpcChannels = {
   PROVIDER_CREATE: 'provider:create',
   PROVIDER_UPDATE: 'provider:update',
   PROVIDER_DELETE: 'provider:delete',
+  PROVIDER_REORDER: 'provider:reorder',
   PROVIDER_TEST_CONNECTION: 'provider:test-connection',
   // Model
   MODEL_LIST: 'model:list',
@@ -39,6 +40,7 @@ export const IpcChannels = {
   MODEL_UPDATE: 'model:update',
   MODEL_DELETE: 'model:delete',
   MODEL_DELETE_BY_PROVIDER: 'model:delete-by-provider',
+  MODEL_REORDER: 'model:reorder',
   MODEL_FETCH_REMOTE: 'model:fetch-remote',
   // Model Definition (global capability library)
   MODEL_DEFINITION_LIST: 'model-definition:list',
@@ -56,6 +58,7 @@ export const IpcChannels = {
   ASSISTANT_CREATE: 'assistant:create',
   ASSISTANT_UPDATE: 'assistant:update',
   ASSISTANT_DELETE: 'assistant:delete',
+  ASSISTANT_REORDER: 'assistant:reorder',
   // Chat (streaming)
   CHAT_SEND_MESSAGE: 'chat:send-message',
   CHAT_STREAM_CHUNK: 'chat:stream-chunk',

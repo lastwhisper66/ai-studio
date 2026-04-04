@@ -1,5 +1,23 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { cn } from '@renderer/lib/utils'
 import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
@@ -16,6 +34,7 @@ import {
   Minus,
   HelpCircle,
   RefreshCw,
+  GripVertical,
 } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -58,6 +77,7 @@ export function ProviderDetail(): React.JSX.Element {
     updateModel,
     removeModel,
     removeAllModels,
+    reorderModels,
   } = useProviderStore()
 
   const provider = providers.find((p) => p.id === selectedProviderId)
@@ -81,6 +101,7 @@ export function ProviderDetail(): React.JSX.Element {
       onUpdateModel={updateModel}
       onRemoveModel={removeModel}
       onRemoveAllModels={removeAllModels}
+      onReorderModels={reorderModels}
     />
   )
 }
@@ -108,6 +129,7 @@ interface ProviderFormProps {
   ) => Promise<void>
   onRemoveModel: (id: string) => Promise<void>
   onRemoveAllModels: (providerId: string) => Promise<void>
+  onReorderModels: (orderedIds: string[]) => Promise<void>
 }
 
 function SectionHeader({
@@ -138,6 +160,7 @@ function ProviderForm({
   onUpdateModel,
   onRemoveModel,
   onRemoveAllModels,
+  onReorderModels,
 }: ProviderFormProps): React.JSX.Element {
   const { t } = useTranslation()
   const [showApiKey, setShowApiKey] = useState(false)
@@ -164,6 +187,23 @@ function ProviderForm({
   } | null>(null)
 
   const template = getTemplateByType(provider.type)
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const isModelSearching = showModelSearch && modelSearch.trim().length > 0
+
+  const handleModelDragEnd = (event: DragEndEvent): void => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = sortedModelIds.indexOf(active.id as string)
+    const newIndex = sortedModelIds.indexOf(over.id as string)
+    if (oldIndex === -1 || newIndex === -1) return
+    const reordered = arrayMove(sortedModelIds, oldIndex, newIndex)
+    onReorderModels(reordered)
+  }
 
   const canFetchModels = !!draft.apiKey && !!(draft.baseUrl || template?.defaultBaseUrl)
   const [isFetchingModels, setIsFetchingModels] = useState(false)
@@ -257,6 +297,18 @@ function ProviderForm({
     }
     return groups
   }, [providerModels, modelSearch])
+
+  // Build flat id list matching the grouped render order for SortableContext
+  // Only include models from expanded (non-collapsed) groups so DnD nodes match DOM
+  const sortedModelIds = useMemo(() => {
+    const ids: string[] = []
+    for (const [groupName, models] of modelGroups.entries()) {
+      if (!collapsedGroups.has(groupName)) {
+        for (const m of models) ids.push(m.id)
+      }
+    }
+    return ids
+  }, [modelGroups, collapsedGroups])
 
   return (
     <ScrollArea className="flex-1">
@@ -445,92 +497,47 @@ function ProviderForm({
                   : t('settings.provider.noSearchResults')}
               </div>
             ) : (
-              Array.from(modelGroups.entries()).map(([groupName, groupModels], idx) => {
-                const isCollapsed = collapsedGroups.has(groupName)
-                const isLast = idx === modelGroups.size - 1
-                return (
-                  <div key={groupName} className={isLast ? '' : 'border-b'}>
-                    {/* Group header */}
-                    <button
-                      type="button"
-                      onClick={() => toggleGroup(groupName)}
-                      className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent/30">
-                      {isCollapsed ? (
-                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                      ) : (
-                        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
-                      )}
-                      <span className="font-medium">{groupName}</span>
-                    </button>
-
-                    {/* Model items */}
-                    {!isCollapsed &&
-                      groupModels.map((model) => (
-                        <div
-                          key={model.id}
-                          className="flex items-center gap-2.5 border-t border-border/40 px-3 py-2 pl-8">
-                          <span
-                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                            style={{ backgroundColor: template?.color ?? '#6b7280' }}>
-                            {provider.name.charAt(0).toUpperCase()}
-                          </span>
-                          <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
-                          {/* Capability badges */}
-                          {model.capabilities.length > 0 && (
-                            <div className="flex shrink-0 items-center gap-0.5">
-                              {model.capabilities.map((cap) => {
-                                const config = CAPABILITY_CONFIG[cap]
-                                if (!config) return null
-                                const Icon = config.icon
-                                return (
-                                  <Tooltip key={cap}>
-                                    <TooltipTrigger asChild>
-                                      <span
-                                        className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
-                                        style={{
-                                          backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
-                                        }}>
-                                        <Icon
-                                          className="h-2.5 w-2.5"
-                                          style={{ color: config.color }}
-                                        />
-                                      </span>
-                                    </TooltipTrigger>
-                                    <TooltipContent>{t(config.labelKey)}</TooltipContent>
-                                  </Tooltip>
-                                )
-                              })}
-                            </div>
+              <DndContext
+                sensors={dndSensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleModelDragEnd}>
+                <SortableContext items={sortedModelIds} strategy={verticalListSortingStrategy}>
+                  {Array.from(modelGroups.entries()).map(([groupName, groupModels], idx) => {
+                    const isCollapsed = collapsedGroups.has(groupName)
+                    const isLast = idx === modelGroups.size - 1
+                    return (
+                      <div key={groupName} className={isLast ? '' : 'border-b'}>
+                        {/* Group header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(groupName)}
+                          className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent/30">
+                          {isCollapsed ? (
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
-                          <div className="flex shrink-0 items-center gap-1">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingModel(model)}
-                                  className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
-                                  <Settings className="h-3 w-3" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>{t('editModel.title')}</TooltipContent>
-                            </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={() => onRemoveModel(model.id)}
-                                  className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive">
-                                  <Minus className="h-3.5 w-3.5" />
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>{t('settings.provider.delete')}</TooltipContent>
-                            </Tooltip>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )
-              })
+                          <span className="font-medium">{groupName}</span>
+                        </button>
+
+                        {/* Model items */}
+                        {!isCollapsed &&
+                          groupModels.map((model) => (
+                            <SortableModelItem
+                              key={model.id}
+                              model={model}
+                              providerName={provider.name}
+                              providerColor={template?.color ?? '#6b7280'}
+                              disabled={isModelSearching}
+                              onEdit={() => setEditingModel(model)}
+                              onRemove={() => onRemoveModel(model.id)}
+                            />
+                          ))}
+                      </div>
+                    )
+                  })}
+                </SortableContext>
+              </DndContext>
             )}
           </div>
 
@@ -660,5 +667,103 @@ function ProviderForm({
         </AlertDialog>
       </div>
     </ScrollArea>
+  )
+}
+
+function SortableModelItem({
+  model,
+  providerName,
+  providerColor,
+  disabled,
+  onEdit,
+  onRemove,
+}: {
+  model: { id: string; name: string; capabilities: ModelCapability[] }
+  providerName: string
+  providerColor: string
+  disabled: boolean
+  onEdit: () => void
+  onRemove: () => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: model.id,
+    disabled,
+  })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'group flex items-center gap-2.5 border-t border-border/40 px-3 py-2 pl-4',
+        isDragging && 'z-50 rounded-lg opacity-50 shadow-lg ring-1 ring-primary/30',
+      )}>
+      {!disabled && (
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex shrink-0 cursor-grab touch-none items-center text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 active:cursor-grabbing">
+          <GripVertical className="h-3.5 w-3.5" />
+        </div>
+      )}
+      <span
+        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+        style={{ backgroundColor: providerColor }}>
+        {providerName.charAt(0).toUpperCase()}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
+      {model.capabilities.length > 0 && (
+        <div className="flex shrink-0 items-center gap-0.5">
+          {model.capabilities.map((cap) => {
+            const config = CAPABILITY_CONFIG[cap]
+            if (!config) return null
+            const Icon = config.icon
+            return (
+              <Tooltip key={cap}>
+                <TooltipTrigger asChild>
+                  <span
+                    className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
+                    }}>
+                    <Icon className="h-2.5 w-2.5" style={{ color: config.color }} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{t(config.labelKey)}</TooltipContent>
+              </Tooltip>
+            )
+          })}
+        </div>
+      )}
+      <div className="flex shrink-0 items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
+              <Settings className="h-3 w-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{t('editModel.title')}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onRemove}
+              className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive">
+              <Minus className="h-3.5 w-3.5" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{t('settings.provider.delete')}</TooltipContent>
+        </Tooltip>
+      </div>
+    </div>
   )
 }

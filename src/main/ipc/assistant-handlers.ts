@@ -7,6 +7,7 @@ import {
   createAssistant,
   updateAssistant,
   deleteAssistant,
+  reorderAssistants,
 } from '../db'
 import type { CreateAssistantData, UpdateAssistantData } from '../db/assistants'
 
@@ -56,6 +57,15 @@ export function registerAssistantHandlers(): void {
   ipcMain.handle(IpcChannels.ASSISTANT_DELETE, (_, id: string): IpcResult<void> => {
     try {
       deleteAssistant(id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.ASSISTANT_REORDER, (_, ids: string[]): IpcResult<void> => {
+    try {
+      reorderAssistants(ids)
       return { success: true }
     } catch (e) {
       return { success: false, error: (e as Error).message }

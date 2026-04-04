@@ -193,3 +193,11 @@ export function deleteAssistant(id: string): void {
   }
   getDb().prepare('DELETE FROM assistants WHERE id = ?').run(id)
 }
+
+export function reorderAssistants(ids: string[]): void {
+  const db = getDb()
+  const update = db.prepare('UPDATE assistants SET sort_order = ? WHERE id = ?')
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id))
+  })()
+}
