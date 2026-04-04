@@ -1,8 +1,7 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
-import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { TranslateRequestPayload, IpcResult, ApiSettings } from '@shared/types'
-import { createAIClient } from '../ai'
+import { streamChat } from '../ai'
 import { getProvider } from '../db/providers'
 import { getModel } from '../db/models'
 
@@ -74,34 +73,29 @@ export function registerTranslateHandlers(): void {
 
       try {
         const settings = loadTranslateSettings(providerId, modelId)
-        const client = createAIClient(settings)
         const controller = new AbortController()
         activeController = controller
 
         const prompt = buildSystemPrompt(systemPrompt, sourceLang, targetLang)
 
-        const stream = await client.chat.completions.create(
+        await streamChat(
           {
-            model: settings.model,
+            settings: { ...settings, temperature: temperature ?? 0.3 },
             messages: [
               { role: 'system', content: prompt },
               { role: 'user', content: text },
             ],
-            stream: true,
-            temperature: temperature ?? 0.3,
+            signal: controller.signal,
           },
-          { signal: controller.signal },
+          {
+            onChunk: (delta) => {
+              fullText += delta
+              if (!sender.isDestroyed()) {
+                sender.send(IpcChannels.TRANSLATE_CHUNK, { delta })
+              }
+            },
+          },
         )
-
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content
-          if (delta) {
-            fullText += delta
-            if (!sender.isDestroyed()) {
-              sender.send(IpcChannels.TRANSLATE_CHUNK, { delta })
-            }
-          }
-        }
 
         if (!sender.isDestroyed()) {
           sender.send(IpcChannels.TRANSLATE_END, { fullText })
@@ -112,8 +106,8 @@ export function registerTranslateHandlers(): void {
         activeController = null
 
         const isAborted =
-          error instanceof APIUserAbortError ||
-          (error instanceof Error && error.name === 'AbortError')
+          error instanceof Error &&
+          (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
           if (!sender.isDestroyed()) {
             sender.send(IpcChannels.TRANSLATE_END, { fullText })

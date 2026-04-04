@@ -15,10 +15,28 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     defaultBaseUrl: 'https://api.openai.com',
   },
   {
+    type: 'openai-response',
+    name: 'OpenAI Response',
+    color: '#0ea5e9',
+    defaultBaseUrl: 'https://api.openai.com',
+  },
+  {
     type: 'azure',
     name: 'Azure OpenAI',
     color: '#0078d4',
     defaultBaseUrl: 'https://your-resource.openai.azure.com/openai/v1',
+  },
+  {
+    type: 'gemini',
+    name: 'Gemini',
+    color: '#4285f4',
+    defaultBaseUrl: 'https://generativelanguage.googleapis.com',
+  },
+  {
+    type: 'claude',
+    name: 'Claude',
+    color: '#d97757',
+    defaultBaseUrl: 'https://api.anthropic.com',
   },
   {
     type: 'deepseek',
@@ -43,12 +61,6 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     name: 'Fujitsu Azure OpenAI',
     color: '#e60012',
     defaultBaseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
-  },
-  {
-    type: 'custom',
-    name: 'OpenAI Compatible',
-    color: '#6b7280',
-    defaultBaseUrl: '',
   },
 ]
 

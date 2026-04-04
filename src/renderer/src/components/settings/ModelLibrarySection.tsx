@@ -27,12 +27,14 @@ import { CAPABILITY_CONFIG, FULL_CAPABILITIES } from './capability-config'
 
 const ALL_PROVIDER_TYPES: { value: ProviderType; label: string }[] = [
   { value: 'openai', label: 'OpenAI' },
+  { value: 'openai-response', label: 'OpenAI Response' },
   { value: 'azure', label: 'Azure' },
+  { value: 'gemini', label: 'Gemini' },
+  { value: 'claude', label: 'Claude' },
   { value: 'anthropic', label: 'Anthropic' },
   { value: 'deepseek', label: 'DeepSeek' },
   { value: 'silicon', label: 'Silicon Flow' },
   { value: 'newapi', label: 'NewAPI' },
-  { value: 'custom', label: 'Custom' },
 ]
 
 export function ModelLibrarySection(): React.JSX.Element {

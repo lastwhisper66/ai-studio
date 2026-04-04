@@ -68,13 +68,15 @@ export interface Message {
 
 export type ProviderType =
   | 'openai'
+  | 'openai-response'
   | 'azure'
   | 'anthropic'
+  | 'gemini'
+  | 'claude'
   | 'deepseek'
   | 'silicon'
   | 'newapi'
   | 'fujitsu'
-  | 'custom'
 
 export interface Provider {
   id: string

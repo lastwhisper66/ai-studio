@@ -20,7 +20,9 @@
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "@electron-toolkit/utils": "^4.0.0",
+    "@google/genai": "^1.48.0",
     "better-sqlite3": "^12.6.2",
     "openai": "^6.27.0",
     "uuid": "^13.0.0"

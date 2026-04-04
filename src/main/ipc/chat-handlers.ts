@@ -1,8 +1,6 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
-import { APIUserAbortError } from 'openai'
 import type {
   ChatCompletionContentPart,
-  ChatCompletionCreateParamsStreaming,
   ChatCompletionMessageParam,
 } from 'openai/resources/chat/completions'
 import { IpcChannels } from '@shared/ipc-channels'
@@ -13,7 +11,7 @@ import { loadAttachmentBase64 } from '../db/attachments'
 import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
-import { createAIClient, generateTitle, applySslSetting } from '../ai'
+import { streamChat, generateTitle, applySslSetting } from '../ai'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -178,33 +176,25 @@ export function registerChatHandlers(): void {
           }
         }
 
-        const client = createAIClient(settings)
         const controller = new AbortController()
         activeStreams.set(conversationId, controller)
 
-        const createParams: ChatCompletionCreateParamsStreaming = {
-          model: settings.model,
-          messages: apiMessages,
-          stream: true,
-          max_completion_tokens: settings.maxCompletionTokens,
-          temperature: settings.temperature,
-          top_p: settings.topP,
-          ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
-        }
-
-        const stream = await client.chat.completions.create(createParams, {
-          signal: controller.signal,
-        })
-
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content
-          if (delta) {
-            fullContent += delta
-            if (!sender.isDestroyed()) {
-              sender.send(IpcChannels.CHAT_STREAM_CHUNK, { conversationId, delta })
-            }
-          }
-        }
+        await streamChat(
+          {
+            settings,
+            messages: apiMessages,
+            signal: controller.signal,
+            reasoningEffort,
+          },
+          {
+            onChunk: (delta) => {
+              fullContent += delta
+              if (!sender.isDestroyed()) {
+                sender.send(IpcChannels.CHAT_STREAM_CHUNK, { conversationId, delta })
+              }
+            },
+          },
+        )
 
         // Stream completed — save assistant message
         const duration = Date.now() - streamStartTime
@@ -224,12 +214,7 @@ export function registerChatHandlers(): void {
         // Auto-generate title for first conversation turn (skip on resend)
         const userMessages = messages.filter((m) => m.role === 'user')
         if (!resendMessageId && userMessages.length === 1 && fullContent) {
-          const title = await generateTitle(
-            client,
-            settings.model,
-            userMessages[0].content,
-            fullContent,
-          )
+          const title = await generateTitle(settings, userMessages[0].content, fullContent)
           updateConversation(conversationId, { title })
           if (!sender.isDestroyed()) {
             sender.send(IpcChannels.CHAT_TITLE_UPDATED, { conversationId, title })
@@ -241,8 +226,8 @@ export function registerChatHandlers(): void {
         activeStreams.delete(conversationId)
 
         const isAborted =
-          error instanceof APIUserAbortError ||
-          (error instanceof Error && error.name === 'AbortError')
+          error instanceof Error &&
+          (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
           // User stopped generation — save partial content if any
           const duration = Date.now() - streamStartTime

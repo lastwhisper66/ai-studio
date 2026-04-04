@@ -4,6 +4,8 @@ import type { ProviderType } from './types'
 export function getDefaultApiPath(provider: ProviderType): string {
   if (provider === 'azure') return '/openai/v1'
   if (provider === 'fujitsu') return ''
+  if (provider === 'gemini') return '/v1beta'
+  if (provider === 'claude') return ''
   return '/v1'
 }
 

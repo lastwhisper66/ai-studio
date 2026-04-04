@@ -3,31 +3,31 @@
     "name": "gpt-5.1",
     "group": "GPT-5.1",
     "capabilities": ["reasoning", "vision", "tools", "web"],
-    "providerTypes": ["openai"]
+    "providerTypes": ["openai", "openai-response"]
   },
   {
     "name": "gpt-5.1-mini",
     "group": "GPT-5.1",
     "capabilities": ["reasoning", "vision", "tools", "web"],
-    "providerTypes": ["openai"]
+    "providerTypes": ["openai", "openai-response"]
   },
   {
     "name": "gpt-5.4",
     "group": "GPT-5.4",
     "capabilities": ["reasoning", "vision", "tools", "web"],
-    "providerTypes": ["openai"]
+    "providerTypes": ["openai", "openai-response"]
   },
   {
     "name": "gpt-5.4-mini",
     "group": "GPT-5.4",
     "capabilities": ["reasoning", "vision", "tools", "web"],
-    "providerTypes": ["openai"]
+    "providerTypes": ["openai", "openai-response"]
   },
   {
     "name": "gpt-5.3-codex",
     "group": "GPT-5",
     "capabilities": ["reasoning", "vision", "web", "tools"],
-    "providerTypes": ["openai"]
+    "providerTypes": ["openai", "openai-response"]
   },
 
   {
@@ -47,32 +47,32 @@
     "name": "claude-opus-4-6",
     "group": "Claude Opus",
     "capabilities": ["reasoning", "vision", "tools"],
-    "providerTypes": ["anthropic"]
+    "providerTypes": ["anthropic", "claude"]
   },
   {
     "name": "claude-sonnet-4-6",
     "group": "Claude Sonnet",
     "capabilities": ["reasoning", "vision", "tools"],
-    "providerTypes": ["anthropic"]
+    "providerTypes": ["anthropic", "claude"]
   },
   {
     "name": "claude-haiku-4-5-20251015",
     "group": "Claude Haiku",
     "capabilities": ["reasoning", "vision", "tools"],
-    "providerTypes": ["anthropic"]
+    "providerTypes": ["anthropic", "claude"]
   },
 
   {
     "name": "gemini-3.1-pro-preview",
     "group": "Gemini 3",
     "capabilities": ["reasoning", "vision", "tools"],
-    "providerTypes": []
+    "providerTypes": ["gemini"]
   },
   {
     "name": "gemini-3-flash-preview",
     "group": "Gemini 3",
     "capabilities": ["reasoning", "vision", "tools"],
-    "providerTypes": []
+    "providerTypes": ["gemini"]
   },
 
   {
