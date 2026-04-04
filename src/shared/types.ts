@@ -183,6 +183,8 @@ export interface SendMessagePayload {
   conversationId: string
   files?: FileData[]
   reasoningEffort?: ReasoningEffort
+  /** When resending, the ID of the user message to resend from — context is truncated up to (inclusive) this message */
+  resendMessageId?: string
 }
 
 /** chat:stream-chunk push data */

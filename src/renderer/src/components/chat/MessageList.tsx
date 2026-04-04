@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
@@ -39,12 +39,34 @@ export function MessageList({
 }: MessageListProps): React.JSX.Element {
   const { t } = useTranslation()
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
+  const resendMessage = useConversationStore((s) => s.resendMessage)
+  const resendTargetId = useConversationStore((s) => s.resendTargetId)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
 
   const { scrollRef, sentinelRef, isAtBottom, scrollToBottom } = useAutoScroll([
     messages,
     throttledContent,
   ])
+
+  // Unified resend handler — stable reference for both user and assistant messages
+  const handleResend = useCallback(
+    (messageId: string) => {
+      const idx = messages.findIndex((m) => m.id === messageId)
+      if (idx === -1) return
+      const msg = messages[idx]
+      if (msg.role === 'user') {
+        resendMessage(messageId)
+      } else if (msg.role === 'assistant') {
+        for (let i = idx - 1; i >= 0; i--) {
+          if (messages[i].role === 'user') {
+            resendMessage(messages[i].id)
+            return
+          }
+        }
+      }
+    },
+    [messages, resendMessage],
+  )
 
   // Show assistant prompt suggestions when conversation has an assistant but no messages yet
   const showAssistantSuggestions =
@@ -111,18 +133,30 @@ export function MessageList({
                   <div className="h-px flex-1 bg-border" />
                 </div>
               ) : (
-                <MessageBubble
-                  key={msg.id}
-                  role={msg.role}
-                  content={msg.content}
-                  messageId={msg.id}
-                  attachments={msg.attachments}
-                  duration={msg.duration}
-                  onDelete={deleteMessage}
-                />
+                <React.Fragment key={msg.id}>
+                  <MessageBubble
+                    role={msg.role}
+                    content={msg.content}
+                    messageId={msg.id}
+                    attachments={msg.attachments}
+                    duration={msg.duration}
+                    onDelete={deleteMessage}
+                    onResend={handleResend}
+                  />
+                  {/* Show streaming bubble right after the resend target user message */}
+                  {isStreaming && resendTargetId === msg.id && (
+                    <MessageBubble
+                      role="assistant"
+                      content={throttledContent}
+                      isStreaming
+                      streamStartTime={streamStartTime}
+                    />
+                  )}
+                </React.Fragment>
               ),
             )}
-            {isStreaming && (
+            {/* Normal streaming (non-resend) — append at end */}
+            {isStreaming && !resendTargetId && (
               <MessageBubble
                 role="assistant"
                 content={throttledContent}

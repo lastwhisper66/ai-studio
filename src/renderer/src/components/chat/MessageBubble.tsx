@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
-import { Copy, Check, Trash2, User, Bot, Clock } from 'lucide-react'
+import { Copy, Check, Trash2, User, Bot, Clock, RefreshCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
@@ -16,6 +16,7 @@ interface MessageBubbleProps {
   duration?: number | null
   streamStartTime?: number | null
   onDelete?: (id: string) => void
+  onResend?: (messageId: string) => void
 }
 
 function formatDuration(ms: number): string {
@@ -107,6 +108,7 @@ export const MessageBubble = memo(function MessageBubble({
   duration,
   streamStartTime,
   onDelete,
+  onResend,
 }: MessageBubbleProps) {
   const { t } = useTranslation()
   const isUser = role === 'user'
@@ -130,6 +132,12 @@ export const MessageBubble = memo(function MessageBubble({
       onDelete(messageId)
     }
   }, [messageId, onDelete])
+
+  const handleResend = useCallback(() => {
+    if (messageId && onResend) {
+      onResend(messageId)
+    }
+  }, [messageId, onResend])
 
   const showActions = !isStreaming && messageId
   const hasImages = attachments && attachments.some((a) => isImageMime(a.mimeType))
@@ -189,6 +197,16 @@ export const MessageBubble = memo(function MessageBubble({
                   aria-label={t('chat.copyMessage')}>
                   {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
                 </Button>
+                {onResend && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={handleResend}
+                    aria-label={t('chat.resendMessage')}>
+                    <RefreshCcw className="h-3 w-3" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

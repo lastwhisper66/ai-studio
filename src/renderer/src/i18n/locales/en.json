@@ -42,6 +42,7 @@
     "streamingPlaceholder": "AI is generating...",
     "copyMessage": "Copy message",
     "deleteMessage": "Delete message",
+    "resendMessage": "Resend message",
     "scrollToBottom": "Scroll to bottom",
     "addAttachment": "Add attachment",
     "reasoning": "Reasoning",

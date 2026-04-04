@@ -1,5 +1,12 @@
 import { create } from 'zustand'
-import type { Conversation, Message, MessageRole, FileData, ReasoningEffort } from '@shared/types'
+import type {
+  Conversation,
+  Message,
+  MessageRole,
+  FileData,
+  ReasoningEffort,
+  SendMessagePayload,
+} from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 import { useAssistantStore } from './assistantStore'
@@ -14,6 +21,8 @@ interface ConversationState {
   isStreaming: boolean
   streamingContent: string
   streamStartTime: number | null
+  /** When resending, the ID of the message being replaced (the old AI response) */
+  resendTargetId: string | null
   focusInputTrigger: number
 
   requestInputFocus: () => void
@@ -34,11 +43,130 @@ interface ConversationState {
     files?: FileData[],
     reasoningEffort?: ReasoningEffort,
   ) => Promise<void>
+  resendMessage: (userMessageId: string) => Promise<void>
   stopGeneration: () => void
   clearError: () => void
 }
 
-export const useConversationStore = create<ConversationState>((set, get) => ({
+export const useConversationStore = create<ConversationState>((set, get) => {
+  // ── Private streaming helper shared by sendMessage & resendMessage ──
+  async function startStream(opts: {
+    conversationId: string
+    apiPayload: SendMessagePayload
+    resendTargetId: string | null
+    registerTitleListener: boolean
+  }): Promise<void> {
+    const { conversationId, resendTargetId } = opts
+
+    window.api.removeAllStreamListeners()
+    set({
+      isStreaming: true,
+      streamingContent: '',
+      streamStartTime: Date.now(),
+      resendTargetId,
+    })
+
+    const cleanups: (() => void)[] = []
+    const cleanup = (): void => {
+      for (const fn of cleanups) fn()
+      cleanups.length = 0
+    }
+
+    cleanups.push(
+      window.api.onStreamChunk((data) => {
+        if (data.conversationId !== conversationId) return
+        set((state) => ({ streamingContent: state.streamingContent + data.delta }))
+      }),
+    )
+
+    cleanups.push(
+      window.api.onStreamEnd((data) => {
+        if (data.conversationId !== conversationId) return
+        const targetId = resendTargetId // captured from closure
+        const tempId = `_stopping_${conversationId}`
+        if (data.message) {
+          set((state) => {
+            const hasTemp = state.messages.some((m) => m.id === tempId)
+            const filtered = hasTemp
+              ? state.messages.filter((m) => m.id !== tempId)
+              : state.messages
+
+            let newMessages: Message[]
+            if (targetId) {
+              const targetIdx = filtered.findIndex((m) => m.id === targetId)
+              if (targetIdx !== -1) {
+                newMessages = [...filtered]
+                newMessages.splice(targetIdx + 1, 0, data.message!)
+              } else {
+                newMessages = [...filtered, data.message!]
+              }
+            } else {
+              newMessages = [...filtered, data.message!]
+            }
+
+            return {
+              messages: newMessages,
+              isStreaming: false,
+              streamingContent: '',
+              streamStartTime: null,
+              resendTargetId: null,
+            }
+          })
+        } else {
+          set({
+            isStreaming: false,
+            streamingContent: '',
+            streamStartTime: null,
+            resendTargetId: null,
+          })
+        }
+        cleanup()
+      }),
+    )
+
+    cleanups.push(
+      window.api.onStreamError((data) => {
+        if (data.conversationId !== conversationId) return
+        set({
+          isStreaming: false,
+          streamingContent: '',
+          streamStartTime: null,
+          resendTargetId: null,
+          error: data.error,
+        })
+        cleanup()
+      }),
+    )
+
+    // Title listener registered separately — must NOT be cleaned up by stream
+    // end/error, because title generation happens asynchronously AFTER the
+    // stream completes. It will be cleaned up by removeAllStreamListeners()
+    // at the start of the next call.
+    if (opts.registerTitleListener) {
+      window.api.onTitleUpdated((data) => {
+        if (data.conversationId !== conversationId) return
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === data.conversationId ? { ...c, title: data.title } : c,
+          ),
+        }))
+      })
+    }
+
+    const result = await window.api.sendMessage(opts.apiPayload)
+    if (!result.success) {
+      set({
+        isStreaming: false,
+        streamingContent: '',
+        streamStartTime: null,
+        resendTargetId: null,
+        error: result.error,
+      })
+      cleanup()
+    }
+  }
+
+  return {
   conversations: [],
   activeConversationId: null,
   messages: [],
@@ -48,6 +176,7 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
   isStreaming: false,
   streamingContent: '',
   streamStartTime: null,
+  resendTargetId: null,
   focusInputTrigger: 0,
 
   requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
@@ -275,81 +404,48 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
     // Save user message to DB and update local state (also persists images to disk)
     await get().addMessage('user', content, files)
 
-    // Clean up any leftover listeners before registering new ones
-    window.api.removeAllStreamListeners()
-
-    set({ isStreaming: true, streamingContent: '', streamStartTime: Date.now() })
-
-    // Register listeners BEFORE invoke to prevent race condition
-    const cleanups: (() => void)[] = []
-    const cleanup = (): void => {
-      for (const fn of cleanups) fn()
-      cleanups.length = 0
-    }
-
-    cleanups.push(
-      window.api.onStreamChunk((data) => {
-        if (data.conversationId !== conversationId) return
-        set((state) => ({ streamingContent: state.streamingContent + data.delta }))
-      }),
-    )
-
-    cleanups.push(
-      window.api.onStreamEnd((data) => {
-        if (data.conversationId !== conversationId) return
-        const tempId = `_stopping_${conversationId}`
-        if (data.message) {
-          set((state) => {
-            // Replace the temporary stopping message if it exists, otherwise append
-            const hasTemp = state.messages.some((m) => m.id === tempId)
-            const filtered = hasTemp
-              ? state.messages.filter((m) => m.id !== tempId)
-              : state.messages
-            return {
-              messages: [...filtered, data.message!],
-              isStreaming: false,
-              streamingContent: '',
-              streamStartTime: null,
-            }
-          })
-        } else {
-          set({ isStreaming: false, streamingContent: '', streamStartTime: null })
-        }
-        cleanup()
-      }),
-    )
-
-    cleanups.push(
-      window.api.onStreamError((data) => {
-        if (data.conversationId !== conversationId) return
-        set({ isStreaming: false, streamingContent: '', streamStartTime: null, error: data.error })
-        cleanup()
-      }),
-    )
-
-    // Title listener registered separately — must NOT be cleaned up by stream
-    // end/error, because title generation happens asynchronously AFTER the
-    // stream completes. It will be cleaned up by removeAllStreamListeners()
-    // at the start of the next sendMessage() call.
-    window.api.onTitleUpdated((data) => {
-      if (data.conversationId !== conversationId) return
-      set((state) => ({
-        conversations: state.conversations.map((c) =>
-          c.id === data.conversationId ? { ...c, title: data.title } : c,
-        ),
-      }))
+    await startStream({
+      conversationId,
+      apiPayload: { conversationId, files, reasoningEffort },
+      resendTargetId: null,
+      registerTitleListener: true,
     })
+  },
 
-    // Invoke the streaming request
-    const result = await window.api.sendMessage({ conversationId, files, reasoningEffort })
-    if (!result.success) {
-      set({ isStreaming: false, streamingContent: '', streamStartTime: null, error: result.error })
-      cleanup()
+  resendMessage: async (userMessageId: string) => {
+    if (get().isStreaming) return
+    const { messages, activeConversationId } = get()
+    if (!activeConversationId) return
+
+    const userMsgIndex = messages.findIndex((m) => m.id === userMessageId)
+    if (userMsgIndex === -1) return
+
+    // Lock immediately to prevent double-click races
+    set({ isStreaming: true })
+
+    // Delete the AI response right after this user message (if any)
+    const nextMsg = messages[userMsgIndex + 1]
+    if (nextMsg && nextMsg.role === 'assistant') {
+      const deleteResult = await window.api.deleteMessage(nextMsg.id)
+      if (!deleteResult.success) {
+        set({ isStreaming: false, error: deleteResult.error ?? 'Failed to delete old response' })
+        return
+      }
+      set((state) => ({
+        messages: state.messages.filter((m) => m.id !== nextMsg.id),
+      }))
     }
+
+    await startStream({
+      conversationId: activeConversationId,
+      apiPayload: { conversationId: activeConversationId, resendMessageId: userMessageId },
+      resendTargetId: userMessageId,
+      registerTitleListener: false,
+    })
   },
 
   stopGeneration: () => {
-    const { activeConversationId: conversationId, streamingContent } = get()
+    const { activeConversationId: conversationId, streamingContent, resendTargetId } = get()
     if (!conversationId) return
 
     window.api.stopGeneration(conversationId)
@@ -366,14 +462,37 @@ export const useConversationStore = create<ConversationState>((set, get) => ({
         tokenCount: null,
         duration: null,
       }
-      set((state) => ({
-        messages: [...state.messages, tempMessage],
+      set((state) => {
+        // For resend: insert temp message after the target user message
+        if (resendTargetId) {
+          const targetIdx = state.messages.findIndex((m) => m.id === resendTargetId)
+          if (targetIdx !== -1) {
+            const newMessages = [...state.messages]
+            newMessages.splice(targetIdx + 1, 0, tempMessage)
+            return {
+              messages: newMessages,
+              isStreaming: false,
+              streamingContent: '',
+              streamStartTime: null,
+              resendTargetId: null,
+            }
+          }
+        }
+        return {
+          messages: [...state.messages, tempMessage],
+          isStreaming: false,
+          streamingContent: '',
+          streamStartTime: null,
+          resendTargetId: null,
+        }
+      })
+    } else {
+      set({
         isStreaming: false,
         streamingContent: '',
         streamStartTime: null,
-      }))
-    } else {
-      set({ isStreaming: false, streamingContent: '', streamStartTime: null })
+        resendTargetId: null,
+      })
     }
   },
-}))
+}})

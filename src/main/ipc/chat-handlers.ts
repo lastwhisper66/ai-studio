@@ -21,13 +21,23 @@ export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,
     async (event: IpcMainInvokeEvent, payload: SendMessagePayload): Promise<IpcResult<void>> => {
-      const { conversationId, files, reasoningEffort } = payload
+      const { conversationId, files, reasoningEffort, resendMessageId } = payload
       const sender = event.sender
       let fullContent = ''
       const streamStartTime = Date.now()
 
       try {
-        const messages = listMessages(conversationId)
+        const allMessages = listMessages(conversationId)
+
+        // When resending, truncate context up to (inclusive) the target user message
+        let messages = allMessages
+        if (resendMessageId) {
+          const idx = allMessages.findIndex((m) => m.id === resendMessageId)
+          if (idx === -1) {
+            return { success: false, error: 'Resend target message not found.' }
+          }
+          messages = allMessages.slice(0, idx + 1)
+        }
 
         // Resolve conversation and assistant
         const conversation = getConversation(conversationId)
@@ -211,9 +221,9 @@ export function registerChatHandlers(): void {
 
         activeStreams.delete(conversationId)
 
-        // Auto-generate title for first conversation turn
+        // Auto-generate title for first conversation turn (skip on resend)
         const userMessages = messages.filter((m) => m.role === 'user')
-        if (userMessages.length === 1 && fullContent) {
+        if (!resendMessageId && userMessages.length === 1 && fullContent) {
           const title = await generateTitle(
             client,
             settings.model,

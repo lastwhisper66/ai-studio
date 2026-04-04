@@ -42,6 +42,7 @@
     "streamingPlaceholder": "AI 正在生成中...",
     "copyMessage": "复制消息",
     "deleteMessage": "删除消息",
+    "resendMessage": "重新发送",
     "scrollToBottom": "滚动到底部",
     "addAttachment": "添加附件",
     "reasoning": "思维链",
