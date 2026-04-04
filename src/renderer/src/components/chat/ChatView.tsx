@@ -164,7 +164,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   }
 
   const handleOpenSettings = (): void => {
-    setSettingsInitialTab('model')
+    setSettingsInitialTab('assistant')
     setSettingsOpen(true)
   }
 

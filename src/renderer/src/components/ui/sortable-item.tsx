@@ -8,6 +8,7 @@ interface SortableItemProps {
   children: React.ReactNode
   className?: string
   handleClassName?: string
+  handleIconSize?: string
   disabled?: boolean
 }
 
@@ -16,6 +17,7 @@ export function SortableItem({
   children,
   className,
   handleClassName,
+  handleIconSize = 'h-4 w-4',
   disabled,
 }: SortableItemProps): React.JSX.Element {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -30,20 +32,20 @@ export function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
+      {...(disabled ? {} : { ...attributes, ...listeners })}
       className={cn(
         'group flex items-center',
+        !disabled && 'cursor-grab active:cursor-grabbing',
         isDragging && 'z-50 rounded-lg opacity-50 shadow-lg ring-1 ring-primary/30',
         className,
       )}>
       {!disabled && (
         <div
-          {...attributes}
-          {...listeners}
           className={cn(
-            'flex shrink-0 cursor-grab touch-none items-center text-muted-foreground transition-colors hover:text-foreground active:cursor-grabbing',
+            'flex shrink-0 touch-none items-center text-muted-foreground transition-colors hover:text-foreground',
             handleClassName,
           )}>
-          <GripVertical className="h-4 w-4" />
+          <GripVertical className={handleIconSize} />
         </div>
       )}
       {children}

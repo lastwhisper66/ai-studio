@@ -1,14 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import {
-  Plus,
-  ChevronDown,
-  ChevronRight,
-  Pencil,
-  Trash2,
-  Copy,
-  Pin,
-  GripVertical,
-} from 'lucide-react'
+import { Plus, ChevronDown, ChevronRight, Pencil, Trash2, Copy, Pin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   DndContext,
@@ -25,12 +16,11 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
-  useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import { cn } from '@renderer/lib/utils'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import { SortableItem } from '@renderer/components/ui/sortable-item'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -231,15 +221,16 @@ export function AssistantSidebar({
 
       // Cross-group drag: update group first, then reorder
       if (draggedAssistant.group !== targetAssistant.group) {
-        void (async (): Promise<void> => {
+        const performCrossGroupDrag = async (): Promise<void> => {
           try {
             await updateAssistant(draggedAssistant.id, { group: targetAssistant.group })
             await reorderAssistants(allIds)
-          } catch {
-            // Rollback: reload assistants to restore consistent state
-            await useAssistantStore.getState().loadAssistants()
+          } catch (e) {
+            console.error('Cross-group drag failed, rolling back:', e)
+            await useAssistantStore.getState().loadAssistants().catch(console.error)
           }
-        })()
+        }
+        performCrossGroupDrag().catch(console.error)
       } else {
         reorderAssistants(allIds)
       }
@@ -328,17 +319,22 @@ export function AssistantSidebar({
                   {(!group.name || !collapsedGroups[group.name]) && (
                     <div className="flex flex-col gap-0.5">
                       {group.assistants.map((a) => (
-                        <SortableAssistantItem
+                        <SortableItem
                           key={a.id}
-                          assistant={a}
-                          isActive={activeAssistantId === a.id}
-                          isPinnedItem={isPinned(a)}
-                          onClick={() => handleAssistantClick(a.id)}
-                          onEdit={() => handleEdit(a.id)}
-                          onDuplicate={() => duplicateAssistant(a.id)}
-                          onPin={() => pinAssistant(a.id)}
-                          onDelete={() => handleDeleteOpen(a.id)}
-                        />
+                          id={a.id}
+                          className="cursor-grab active:cursor-grabbing"
+                          handleClassName="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <AssistantItem
+                            assistant={a}
+                            isActive={activeAssistantId === a.id}
+                            isPinnedItem={isPinned(a)}
+                            onClick={() => handleAssistantClick(a.id)}
+                            onEdit={() => handleEdit(a.id)}
+                            onDuplicate={() => duplicateAssistant(a.id)}
+                            onPin={() => pinAssistant(a.id)}
+                            onDelete={() => handleDeleteOpen(a.id)}
+                          />
+                        </SortableItem>
                       ))}
                     </div>
                   )}
@@ -400,7 +396,6 @@ interface AssistantItemProps {
   onDelete: () => void
   showPin?: boolean
   showDelete?: boolean
-  dragHandle?: React.ReactNode
 }
 
 function AssistantItem({
@@ -414,7 +409,6 @@ function AssistantItem({
   onDelete,
   showPin = true,
   showDelete = true,
-  dragHandle,
 }: AssistantItemProps): React.JSX.Element {
   const { t } = useTranslation()
   return (
@@ -428,7 +422,6 @@ function AssistantItem({
               : 'text-foreground hover:bg-sidebar-accent/40',
           )}
           onClick={onClick}>
-          {dragHandle}
           <div className="flex min-w-0 flex-1 items-center px-2 py-2.5">
             {isPinnedItem && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
             <span className={cn('min-w-0 truncate text-sm', a.isDefault && 'font-medium')}>
@@ -463,50 +456,5 @@ function AssistantItem({
         )}
       </ContextMenuContent>
     </ContextMenu>
-  )
-}
-
-function SortableAssistantItem({
-  assistant,
-  isActive,
-  isPinnedItem,
-  onClick,
-  onEdit,
-  onDuplicate,
-  onPin,
-  onDelete,
-}: Omit<AssistantItemProps, 'dragHandle' | 'showPin' | 'showDelete'>): React.JSX.Element {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: assistant.id,
-  })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(isDragging && 'z-50 rounded-lg opacity-50 shadow-lg ring-1 ring-primary/30')}>
-      <AssistantItem
-        assistant={assistant}
-        isActive={isActive}
-        isPinnedItem={isPinnedItem}
-        onClick={onClick}
-        onEdit={onEdit}
-        onDuplicate={onDuplicate}
-        onPin={onPin}
-        onDelete={onDelete}
-        dragHandle={
-          <div
-            {...attributes}
-            {...listeners}
-            className="flex shrink-0 cursor-grab touch-none items-center text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 active:cursor-grabbing">
-            <GripVertical className="h-4 w-4" />
-          </div>
-        }
-      />
-    </div>
   )
 }

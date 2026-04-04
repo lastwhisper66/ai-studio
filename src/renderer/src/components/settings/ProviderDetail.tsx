@@ -14,10 +14,8 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   arrayMove,
-  useSortable,
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { cn } from '@renderer/lib/utils'
+import { SortableItem } from '@renderer/components/ui/sortable-item'
 import { Label } from '@renderer/components/ui/label'
 import { Input } from '@renderer/components/ui/input'
 import { Button } from '@renderer/components/ui/button'
@@ -34,7 +32,6 @@ import {
   Minus,
   HelpCircle,
   RefreshCw,
-  GripVertical,
 } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -299,16 +296,13 @@ function ProviderForm({
   }, [providerModels, modelSearch])
 
   // Build flat id list matching the grouped render order for SortableContext
-  // Only include models from expanded (non-collapsed) groups so DnD nodes match DOM
   const sortedModelIds = useMemo(() => {
     const ids: string[] = []
-    for (const [groupName, models] of modelGroups.entries()) {
-      if (!collapsedGroups.has(groupName)) {
-        for (const m of models) ids.push(m.id)
-      }
+    for (const [, models] of modelGroups.entries()) {
+      for (const m of models) ids.push(m.id)
     }
     return ids
-  }, [modelGroups, collapsedGroups])
+  }, [modelGroups])
 
   return (
     <ScrollArea className="flex-1">
@@ -523,15 +517,70 @@ function ProviderForm({
                         {/* Model items */}
                         {!isCollapsed &&
                           groupModels.map((model) => (
-                            <SortableModelItem
+                            <SortableItem
                               key={model.id}
-                              model={model}
-                              providerName={provider.name}
-                              providerColor={template?.color ?? '#6b7280'}
+                              id={model.id}
                               disabled={isModelSearching}
-                              onEdit={() => setEditingModel(model)}
-                              onRemove={() => onRemoveModel(model.id)}
-                            />
+                              className="gap-2.5 border-t border-border/40 px-3 py-2 pl-4"
+                              handleClassName="opacity-0 group-hover:opacity-100 transition-opacity"
+                              handleIconSize="h-3.5 w-3.5">
+                              <span
+                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                                style={{ backgroundColor: template?.color ?? '#6b7280' }}>
+                                {provider.name.charAt(0).toUpperCase()}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
+                              {model.capabilities.length > 0 && (
+                                <div className="flex shrink-0 items-center gap-0.5">
+                                  {model.capabilities.map((cap) => {
+                                    const config = CAPABILITY_CONFIG[cap]
+                                    if (!config) return null
+                                    const Icon = config.icon
+                                    return (
+                                      <Tooltip key={cap}>
+                                        <TooltipTrigger asChild>
+                                          <span
+                                            className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
+                                            style={{
+                                              backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
+                                            }}>
+                                            <Icon
+                                              className="h-2.5 w-2.5"
+                                              style={{ color: config.color }}
+                                            />
+                                          </span>
+                                        </TooltipTrigger>
+                                        <TooltipContent>{t(config.labelKey)}</TooltipContent>
+                                      </Tooltip>
+                                    )
+                                  })}
+                                </div>
+                              )}
+                              <div className="flex shrink-0 items-center gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingModel(model)}
+                                      className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
+                                      <Settings className="h-3 w-3" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{t('editModel.title')}</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      type="button"
+                                      onClick={() => onRemoveModel(model.id)}
+                                      className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive">
+                                      <Minus className="h-3.5 w-3.5" />
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{t('settings.provider.delete')}</TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </SortableItem>
                           ))}
                       </div>
                     )
@@ -667,103 +716,5 @@ function ProviderForm({
         </AlertDialog>
       </div>
     </ScrollArea>
-  )
-}
-
-function SortableModelItem({
-  model,
-  providerName,
-  providerColor,
-  disabled,
-  onEdit,
-  onRemove,
-}: {
-  model: { id: string; name: string; capabilities: ModelCapability[] }
-  providerName: string
-  providerColor: string
-  disabled: boolean
-  onEdit: () => void
-  onRemove: () => void
-}): React.JSX.Element {
-  const { t } = useTranslation()
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: model.id,
-    disabled,
-  })
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        'group flex items-center gap-2.5 border-t border-border/40 px-3 py-2 pl-4',
-        isDragging && 'z-50 rounded-lg opacity-50 shadow-lg ring-1 ring-primary/30',
-      )}>
-      {!disabled && (
-        <div
-          {...attributes}
-          {...listeners}
-          className="flex shrink-0 cursor-grab touch-none items-center text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 active:cursor-grabbing">
-          <GripVertical className="h-3.5 w-3.5" />
-        </div>
-      )}
-      <span
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-        style={{ backgroundColor: providerColor }}>
-        {providerName.charAt(0).toUpperCase()}
-      </span>
-      <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
-      {model.capabilities.length > 0 && (
-        <div className="flex shrink-0 items-center gap-0.5">
-          {model.capabilities.map((cap) => {
-            const config = CAPABILITY_CONFIG[cap]
-            if (!config) return null
-            const Icon = config.icon
-            return (
-              <Tooltip key={cap}>
-                <TooltipTrigger asChild>
-                  <span
-                    className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full"
-                    style={{
-                      backgroundColor: `color-mix(in srgb, ${config.color} 12%, transparent)`,
-                    }}>
-                    <Icon className="h-2.5 w-2.5" style={{ color: config.color }} />
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>{t(config.labelKey)}</TooltipContent>
-              </Tooltip>
-            )
-          })}
-        </div>
-      )}
-      <div className="flex shrink-0 items-center gap-1">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={onEdit}
-              className="rounded p-1 text-muted-foreground transition-colors hover:text-foreground">
-              <Settings className="h-3 w-3" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('editModel.title')}</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              onClick={onRemove}
-              className="rounded p-1 text-muted-foreground transition-colors hover:text-destructive">
-              <Minus className="h-3.5 w-3.5" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{t('settings.provider.delete')}</TooltipContent>
-        </Tooltip>
-      </div>
-    </div>
   )
 }
