@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X, ChevronRight, PanelRightClose, PanelRightOpen, ChevronDown, ImagePlus } from 'lucide-react'
+import {
+  X,
+  ChevronRight,
+  PanelRightClose,
+  PanelRightOpen,
+  ChevronDown,
+  ImagePlus,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -258,7 +265,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
 
       {/* Drag-and-drop overlay */}
       {isDragging && (
-        <div className="absolute inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-60 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary/50 bg-primary/5 px-12 py-8">
             <ImagePlus className="h-10 w-10 text-primary" />
             <p className="text-sm font-medium text-primary">{t('chat.dropImageHere')}</p>
