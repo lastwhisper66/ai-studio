@@ -32,17 +32,17 @@ export function SortableItem({
     <div
       ref={setNodeRef}
       style={style}
-      {...(disabled ? {} : { ...attributes, ...listeners })}
+      {...(disabled ? {} : attributes)}
       className={cn(
         'group flex items-center',
-        !disabled && 'cursor-grab active:cursor-grabbing',
         isDragging && 'z-50 rounded-lg opacity-50 shadow-lg ring-1 ring-primary/30',
         className,
       )}>
       {!disabled && (
         <div
+          {...listeners}
           className={cn(
-            'flex shrink-0 touch-none items-center text-muted-foreground transition-colors hover:text-foreground',
+            'flex shrink-0 cursor-grab touch-none items-center text-muted-foreground transition-colors hover:text-foreground active:cursor-grabbing',
             handleClassName,
           )}>
           <GripVertical className={handleIconSize} />

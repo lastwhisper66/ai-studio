@@ -259,7 +259,7 @@ export function AssistantSidebar({
       <div className="mx-2 mt-2 mb-1">
         <Button
           variant="ghost"
-          className="h-10 w-full justify-start gap-2 rounded-xl text-sm hover:bg-sidebar-accent/40"
+          className="h-10 w-full justify-start gap-2 rounded-lg text-sm hover:bg-sidebar-accent/40"
           onClick={handleAddAssistant}>
           <Plus className="h-4 w-4" />
           {t('assistant.addAssistant')}
@@ -269,18 +269,25 @@ export function AssistantSidebar({
       {/* Default Assistant */}
       {defaultAssistant && (
         <div className="px-2 py-0.5">
-          <AssistantItem
-            assistant={defaultAssistant}
-            isActive={activeAssistantId === defaultAssistant.id}
-            isPinnedItem={false}
-            onClick={() => handleAssistantClick(defaultAssistant.id)}
-            onEdit={() => handleEdit(defaultAssistant.id)}
-            onDuplicate={() => duplicateAssistant(defaultAssistant.id)}
-            onPin={() => {}}
-            onDelete={() => {}}
-            showPin={false}
-            showDelete={false}
-          />
+          <div
+            className={cn(
+              'flex items-center rounded-lg text-sm transition-colors',
+              activeAssistantId === defaultAssistant.id
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'hover:bg-sidebar-accent/40',
+            )}>
+            <AssistantItem
+              assistant={defaultAssistant}
+              isPinnedItem={false}
+              onClick={() => handleAssistantClick(defaultAssistant.id)}
+              onEdit={() => handleEdit(defaultAssistant.id)}
+              onDuplicate={() => duplicateAssistant(defaultAssistant.id)}
+              onPin={() => {}}
+              onDelete={() => {}}
+              showPin={false}
+              showDelete={false}
+            />
+          </div>
         </div>
       )}
 
@@ -328,11 +335,15 @@ export function AssistantSidebar({
                         <SortableItem
                           key={a.id}
                           id={a.id}
-                          className="cursor-grab active:cursor-grabbing"
+                          className={cn(
+                            'rounded-lg text-left text-sm transition-colors',
+                            activeAssistantId === a.id
+                              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                              : 'hover:bg-sidebar-accent/40',
+                          )}
                           handleClassName="opacity-0 group-hover:opacity-100 transition-opacity">
                           <AssistantItem
                             assistant={a}
-                            isActive={activeAssistantId === a.id}
                             isPinnedItem={isPinned(a)}
                             onClick={() => handleAssistantClick(a.id)}
                             onEdit={() => handleEdit(a.id)}
@@ -351,7 +362,7 @@ export function AssistantSidebar({
 
           <DragOverlay>
             {draggingAssistant && (
-              <div className="rounded-xl bg-sidebar-accent px-3 py-2.5 text-sm shadow-lg ring-1 ring-primary/30">
+              <div className="rounded-lg bg-sidebar-accent px-3 py-2 text-sm shadow-lg ring-1 ring-primary/30">
                 {draggingAssistant.name}
               </div>
             )}
@@ -393,7 +404,6 @@ export function AssistantSidebar({
 
 interface AssistantItemProps {
   assistant: { id: string; name: string; isDefault: boolean; sortOrder: number }
-  isActive: boolean
   isPinnedItem: boolean
   onClick: () => void
   onEdit: () => void
@@ -406,7 +416,6 @@ interface AssistantItemProps {
 
 function AssistantItem({
   assistant: a,
-  isActive,
   isPinnedItem,
   onClick,
   onEdit,
@@ -420,15 +429,8 @@ function AssistantItem({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div
-          className={cn(
-            'group flex cursor-pointer items-center rounded-xl px-1 transition-all',
-            isActive
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm'
-              : 'text-foreground hover:bg-sidebar-accent/40',
-          )}
-          onClick={onClick}>
-          <div className="flex min-w-0 flex-1 items-center px-2 py-2.5">
+        <div className="flex flex-1 cursor-pointer items-center" onClick={onClick}>
+          <div className="flex min-w-0 flex-1 items-center px-2 py-2">
             {isPinnedItem && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
             <span className={cn('min-w-0 truncate text-sm', a.isDefault && 'font-medium')}>
               {a.name}
