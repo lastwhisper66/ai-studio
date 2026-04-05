@@ -20,6 +20,7 @@ import {
 } from '@renderer/components/ui/select'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { PROVIDER_TEMPLATES } from './provider-templates'
+import { ProviderIcon } from './ProviderIcon'
 
 interface AddProviderDialogProps {
   children: React.ReactNode
@@ -76,8 +77,7 @@ export function AddProviderDialog({ children }: AddProviderDialogProps): React.J
           onSubmit={(e) => {
             e.preventDefault()
             handleConfirm()
-          }}
-        >
+          }}>
           <div className="grid gap-4 py-2">
             {/* Provider name */}
             <div className="grid gap-2">
@@ -102,9 +102,11 @@ export function AddProviderDialog({ children }: AddProviderDialogProps): React.J
                   {PROVIDER_TEMPLATES.map((template) => (
                     <SelectItem key={template.type} value={template.type}>
                       <span className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2.5 w-2.5 shrink-0 rounded-full"
-                          style={{ backgroundColor: template.color }}
+                        <ProviderIcon
+                          type={template.type}
+                          name={template.name}
+                          color={template.color}
+                          size="sm"
                         />
                         {template.name}
                       </span>

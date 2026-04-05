@@ -12,7 +12,8 @@ import {
   CAPABILITY_CONFIG,
   ALL_CAPABILITIES,
 } from '@renderer/components/settings/capability-config'
-import type { ModelCapability } from '@shared/types'
+import type { ModelCapability, ProviderType } from '@shared/types'
+import { ProviderIcon } from '@renderer/components/settings/ProviderIcon'
 
 interface ModelPickerDialogProps {
   open: boolean
@@ -68,6 +69,7 @@ export function ModelPickerDialog({
     const groups: {
       providerId: string
       providerName: string
+      providerType: ProviderType
       color: string
       models: typeof filteredModels
     }[] = []
@@ -78,6 +80,7 @@ export function ModelPickerDialog({
       groups.push({
         providerId: provider.id,
         providerName: provider.name,
+        providerType: provider.type,
         color: template?.color ?? '#6b7280',
         models: providerModels,
       })
@@ -138,9 +141,11 @@ export function ModelPickerDialog({
                   className={idx < providerGroups.length - 1 ? 'border-b' : ''}>
                   {/* Provider header */}
                   <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                    <span
-                      className="inline-block h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: group.color }}
+                    <ProviderIcon
+                      type={group.providerType}
+                      name={group.providerName}
+                      color={group.color}
+                      size="sm"
                     />
                     {group.providerName}
                   </div>
@@ -158,11 +163,12 @@ export function ModelPickerDialog({
                           isSelected ? 'bg-accent/60' : ''
                         }`}>
                         {/* Provider icon */}
-                        <span
-                          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                          style={{ backgroundColor: group.color }}>
-                          {group.providerName.charAt(0).toUpperCase()}
-                        </span>
+                        <ProviderIcon
+                          type={group.providerType}
+                          name={group.providerName}
+                          color={group.color}
+                          size="md"
+                        />
 
                         {/* Model name */}
                         <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>

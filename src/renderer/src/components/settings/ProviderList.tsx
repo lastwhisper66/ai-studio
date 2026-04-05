@@ -23,17 +23,7 @@ import { SortableItem } from '@renderer/components/ui/sortable-item'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from './provider-templates'
 import { AddProviderDialog } from './AddProviderDialog'
-
-function ProviderAvatar({ name, color }: { name: string; color: string }): React.JSX.Element {
-  const letter = name.charAt(0).toUpperCase()
-  return (
-    <span
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-      style={{ backgroundColor: color }}>
-      {letter}
-    </span>
-  )
-}
+import { ProviderIcon } from './ProviderIcon'
 
 export function ProviderList(): React.JSX.Element {
   const { t } = useTranslation()
@@ -112,15 +102,18 @@ export function ProviderList(): React.JSX.Element {
                         disabled={isSearching}
                         className={cn(
                           'rounded-lg text-left text-sm transition-colors',
-                          isSelected
-                            ? 'bg-accent text-accent-foreground'
-                            : 'hover:bg-accent/50',
+                          isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
                         )}
                         handleClassName="pl-1 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => setSelectedProviderId(provider.id)}
                           className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left">
-                          <ProviderAvatar name={provider.name} color={color} />
+                          <ProviderIcon
+                            type={provider.type}
+                            name={provider.name}
+                            color={color}
+                            size="lg"
+                          />
                           <span className="min-w-0 flex-1 truncate">{provider.name}</span>
                           <button
                             type="button"

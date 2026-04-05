@@ -61,6 +61,7 @@ import { AddModelDialog } from './AddModelDialog'
 import { EditModelDialog } from './EditModelDialog'
 import { ConnectionTestDialog } from './ConnectionTestDialog'
 import { RemoteModelDialog, type RemoteModel } from './RemoteModelDialog'
+import { ProviderIcon } from './ProviderIcon'
 
 export function ProviderDetail(): React.JSX.Element {
   const { t } = useTranslation()
@@ -524,11 +525,12 @@ function ProviderForm({
                               className="gap-2.5 border-t border-border/40 px-3 py-2 pl-4"
                               handleClassName="opacity-0 group-hover:opacity-100 transition-opacity"
                               handleIconSize="h-3.5 w-3.5">
-                              <span
-                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                style={{ backgroundColor: template?.color ?? '#6b7280' }}>
-                                {provider.name.charAt(0).toUpperCase()}
-                              </span>
+                              <ProviderIcon
+                                type={provider.type}
+                                name={provider.name}
+                                color={template?.color ?? '#6b7280'}
+                                size="md"
+                              />
                               <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
                               {model.capabilities.length > 0 && (
                                 <div className="flex shrink-0 items-center gap-0.5">
@@ -628,6 +630,7 @@ function ProviderForm({
               setShowRemoteModelDialog(open)
               if (!open) setFetchError(null)
             }}
+            providerType={provider.type}
             providerName={provider.name}
             providerColor={template?.color ?? '#6b7280'}
             remoteModels={remoteModels}

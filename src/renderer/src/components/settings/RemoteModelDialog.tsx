@@ -8,8 +8,9 @@ import { Search, ChevronDown, ChevronRight, Plus, Minus, Loader2 } from 'lucide-
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { CAPABILITY_CONFIG } from './capability-config'
+import { ProviderIcon } from './ProviderIcon'
 
-import type { ModelCapability } from '@shared/types'
+import type { ModelCapability, ProviderType } from '@shared/types'
 
 /** A model entry returned by the remote /v1/models API */
 export interface RemoteModel {
@@ -20,6 +21,7 @@ export interface RemoteModel {
 interface RemoteModelDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  providerType: ProviderType
   providerName: string
   providerColor: string
   /** Remote models fetched from the API */
@@ -37,6 +39,7 @@ interface RemoteModelDialogProps {
 export function RemoteModelDialog({
   open,
   onOpenChange,
+  providerType,
   providerName,
   providerColor,
   remoteModels,
@@ -213,11 +216,12 @@ export function RemoteModelDialog({
                                 isAdded ? 'bg-primary/5' : ''
                               }`}>
                               {/* Provider icon */}
-                              <span
-                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                                style={{ backgroundColor: providerColor }}>
-                                {providerName.charAt(0).toUpperCase()}
-                              </span>
+                              <ProviderIcon
+                                type={providerType}
+                                name={providerName}
+                                color={providerColor}
+                                size="md"
+                              />
 
                               {/* Model name */}
                               <span className="min-w-0 flex-1 truncate text-sm">{model.id}</span>
