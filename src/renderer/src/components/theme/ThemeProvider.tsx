@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { ThemeContext, type ResolvedTheme, type Theme } from './ThemeContext'
 import { colorThemes, DEFAULT_COLOR_THEME_ID } from './themes'
-import type { ColorThemeId, ThemeColors } from './themes'
+import type { ColorTheme, ColorThemeId, ThemeColors } from './themes'
 
 /** All CSS variable keys that color themes may set — used for cleanup on switch. */
 const COLOR_VAR_KEYS = Object.keys(colorThemes[0].light) as (keyof ThemeColors)[]

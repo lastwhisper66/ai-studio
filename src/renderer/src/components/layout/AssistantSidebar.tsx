@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Plus, ChevronDown, ChevronRight, Pencil, Trash2, Copy, Pin } from 'lucide-react'
+import { Plus, Pencil, Trash2, Copy, Pin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
   DndContext,
@@ -303,60 +303,67 @@ export function AssistantSidebar({
           onDragEnd={handleDragEnd}>
           <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
             <div className="space-y-2 pb-2">
-              {groups.map((group, groupIndex) => (
-                <div key={group.name || '__ungrouped__'}>
-                  {/* Group header */}
-                  {group.name && (
-                    <button
-                      className={cn(
-                        'flex w-full items-center gap-1.5 px-2 py-1.5 transition-colors hover:text-foreground',
-                        groupIndex > 0 && 'mt-1',
-                      )}
-                      onClick={() => toggleGroup(group.name)}>
-                      {collapsedGroups[group.name] ? (
-                        <ChevronRight className="h-3 w-3 shrink-0 text-foreground" />
-                      ) : (
-                        <ChevronDown className="h-3 w-3 shrink-0 text-foreground" />
-                      )}
-                      <span className="shrink-0 truncate text-sm font-medium text-foreground">
-                        {group.name}
-                      </span>
-                      <span className="mx-2 h-px min-w-4 flex-1 bg-foreground/15" />
-                      <span className="shrink-0 rounded-full bg-muted/50 px-1.5 text-[10px] tabular-nums text-foreground/60">
-                        {group.assistants.length}
-                      </span>
-                    </button>
-                  )}
+              {groups.map((group, groupIndex) => {
+                const isNamedGroup = Boolean(group.name)
+                const isCollapsed = isNamedGroup && Boolean(collapsedGroups[group.name])
+                const groupItems = group.assistants.map((a) => (
+                  <SortableItem
+                    key={a.id}
+                    id={a.id}
+                    className={cn(
+                      'rounded-lg text-left text-sm transition-colors',
+                      activeAssistantId === a.id
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'hover:bg-sidebar-accent/40',
+                    )}
+                    handleClassName="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <AssistantItem
+                      assistant={a}
+                      isPinnedItem={isPinned(a)}
+                      onClick={() => handleAssistantClick(a.id)}
+                      onEdit={() => handleEdit(a.id)}
+                      onDuplicate={() => duplicateAssistant(a.id)}
+                      onPin={() => pinAssistant(a.id)}
+                      onDelete={() => handleDeleteOpen(a.id)}
+                    />
+                  </SortableItem>
+                ))
 
-                  {/* Group items */}
-                  {(!group.name || !collapsedGroups[group.name]) && (
-                    <div className="flex flex-col gap-0.5">
-                      {group.assistants.map((a) => (
-                        <SortableItem
-                          key={a.id}
-                          id={a.id}
-                          className={cn(
-                            'rounded-lg text-left text-sm transition-colors',
-                            activeAssistantId === a.id
-                              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                              : 'hover:bg-sidebar-accent/40',
-                          )}
-                          handleClassName="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <AssistantItem
-                            assistant={a}
-                            isPinnedItem={isPinned(a)}
-                            onClick={() => handleAssistantClick(a.id)}
-                            onEdit={() => handleEdit(a.id)}
-                            onDuplicate={() => duplicateAssistant(a.id)}
-                            onPin={() => pinAssistant(a.id)}
-                            onDelete={() => handleDeleteOpen(a.id)}
+                return (
+                  <div key={group.name || '__ungrouped__'}>
+                    {isNamedGroup && (
+                      <button
+                        className={cn(
+                          'flex w-full items-center gap-2 px-2 py-1 text-left transition-colors hover:text-foreground',
+                          groupIndex > 0 && 'mt-2',
+                        )}
+                        onClick={() => toggleGroup(group.name)}>
+                        <span className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90">
+                          {group.name}
+                        </span>
+                        <span className="ml-auto shrink-0 rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium tabular-nums text-muted-foreground">
+                          {group.assistants.length}
+                        </span>
+                      </button>
+                    )}
+
+                    {(!isNamedGroup || !isCollapsed) &&
+                      (isNamedGroup ? (
+                        <div className="flex gap-2 pl-2">
+                          <div
+                            className="ml-0.5 w-px shrink-0 rounded-full bg-border/70"
+                            aria-hidden="true"
                           />
-                        </SortableItem>
+                          <div className="flex min-w-0 flex-1 flex-col gap-1">{groupItems}</div>
+                        </div>
+                      ) : (
+                        <div className={cn('flex flex-col gap-0.5', groupIndex > 0 && 'mt-3')}>
+                          {groupItems}
+                        </div>
                       ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                )
+              })}
             </div>
           </SortableContext>
 
