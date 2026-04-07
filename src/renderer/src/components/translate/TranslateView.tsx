@@ -389,7 +389,7 @@ export function TranslateView(): React.JSX.Element {
             className="inline-block h-2 w-2 shrink-0 rounded-full"
             style={{ backgroundColor: template?.color ?? '#6b7280' }}
           />
-          <span className="max-w-30 truncate">{displayModel}</span>
+          <span className="max-w-100 truncate">{displayModel}</span>
           <ChevronDown className="h-3 w-3 opacity-50" />
         </button>
         <ModelPickerDialog
