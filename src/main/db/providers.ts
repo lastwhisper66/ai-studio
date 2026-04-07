@@ -5,7 +5,7 @@ import { createModel } from './models'
 import { encrypt, decrypt } from './settings'
 
 const DEFAULT_MODELS_BY_PROVIDER_TYPE: Partial<Record<ProviderType, string[]>> = {
-  fujitsu: ['gpt-5.1', 'gpt-5.1-mini'],
+  fujitsu: ['gpt-5.1', 'gpt-5-mini'],
 }
 
 interface ProviderRow {

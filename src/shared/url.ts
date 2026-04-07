@@ -10,6 +10,19 @@ export function getDefaultApiPath(provider: ProviderType): string {
 }
 
 /**
+ * For providers that require the model name in the URL path (e.g. Fujitsu),
+ * append the model segment to the base URL if not already present.
+ */
+export function buildProviderBaseUrl(
+  baseUrl: string,
+  provider: ProviderType,
+  model: string,
+): string {
+  if (provider !== 'fujitsu' || !model) return baseUrl
+  return baseUrl.replace(/\/+$/, '') + '/' + model
+}
+
+/**
  * Normalize a base URL by auto-appending the provider's standard API path
  * when the user only entered a domain (no path component).
  *

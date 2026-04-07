@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import type { ApiSettings } from '@shared/types'
-import { normalizeBaseUrl } from '@shared/url'
+import { normalizeBaseUrl, buildProviderBaseUrl } from '@shared/url'
 
 const DEFAULT_HEADERS = {
   'User-Agent':
@@ -9,7 +9,11 @@ const DEFAULT_HEADERS = {
 
 export function createOpenAIClient(settings: ApiSettings): OpenAI {
   const baseURL = settings.baseUrl
-    ? normalizeBaseUrl(settings.baseUrl, settings.provider)
+    ? buildProviderBaseUrl(
+        normalizeBaseUrl(settings.baseUrl, settings.provider),
+        settings.provider,
+        settings.model,
+      )
     : undefined
   return new OpenAI({
     apiKey: settings.apiKey,
