@@ -8,6 +8,7 @@ import type {
   IpcResult,
   SendMessagePayload,
   StreamChunkData,
+  StreamReasoningChunkData,
   StreamEndData,
   StreamErrorData,
   TitleUpdatedData,
@@ -249,6 +250,13 @@ const api = {
     return () => ipcRenderer.removeListener(IpcChannels.CHAT_STREAM_CHUNK, handler)
   },
 
+  onStreamReasoningChunk: (callback: (data: StreamReasoningChunkData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: StreamReasoningChunkData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_STREAM_REASONING_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_STREAM_REASONING_CHUNK, handler)
+  },
+
   onStreamEnd: (callback: (data: StreamEndData) => void): (() => void) => {
     const handler = (_e: Electron.IpcRendererEvent, data: StreamEndData): void => callback(data)
     ipcRenderer.on(IpcChannels.CHAT_STREAM_END, handler)
@@ -269,6 +277,7 @@ const api = {
 
   removeAllStreamListeners: (): void => {
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_CHUNK)
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_REASONING_CHUNK)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_END)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_ERROR)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_TITLE_UPDATED)

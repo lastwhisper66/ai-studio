@@ -13,6 +13,7 @@ import type { Message, Assistant } from '@shared/types'
 interface MessageListProps {
   messages: Message[]
   streamingContent: string
+  streamingReasoningContent: string
   isStreaming: boolean
   isLoading: boolean
   hasActiveConversation: boolean
@@ -27,6 +28,7 @@ interface MessageListProps {
 export function MessageList({
   messages,
   streamingContent,
+  streamingReasoningContent,
   isStreaming,
   isLoading,
   hasActiveConversation,
@@ -42,6 +44,7 @@ export function MessageList({
   const resendMessage = useConversationStore((s) => s.resendMessage)
   const resendTargetId = useConversationStore((s) => s.resendTargetId)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
+  const throttledReasoning = useThrottledValue(streamingReasoningContent, isStreaming)
 
   const { scrollRef, sentinelRef, isAtBottom, scrollToBottom } = useAutoScroll([
     messages,
@@ -137,9 +140,11 @@ export function MessageList({
                   <MessageBubble
                     role={msg.role}
                     content={msg.content}
+                    reasoningContent={msg.reasoningContent}
                     messageId={msg.id}
                     attachments={msg.attachments}
                     duration={msg.duration}
+                    thinkingDuration={msg.thinkingDuration}
                     onDelete={deleteMessage}
                     onResend={handleResend}
                   />
@@ -148,7 +153,9 @@ export function MessageList({
                     <MessageBubble
                       role="assistant"
                       content={throttledContent}
+                      reasoningContent={throttledReasoning}
                       isStreaming
+                      isStreamingReasoning={!!throttledReasoning && !throttledContent}
                       streamStartTime={streamStartTime}
                     />
                   )}
@@ -160,7 +167,9 @@ export function MessageList({
               <MessageBubble
                 role="assistant"
                 content={throttledContent}
+                reasoningContent={throttledReasoning}
                 isStreaming
+                isStreamingReasoning={!!streamingReasoningContent && !streamingContent}
                 streamStartTime={streamStartTime}
               />
             )}

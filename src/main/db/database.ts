@@ -58,10 +58,12 @@ function createTables(): void {
       conversation_id TEXT NOT NULL,
       role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'divider')),
       content TEXT NOT NULL,
+      reasoning_content TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       token_count INTEGER,
       attachments TEXT,
       duration INTEGER,
+      thinking_duration INTEGER,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
 

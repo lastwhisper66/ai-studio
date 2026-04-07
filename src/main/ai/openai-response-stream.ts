@@ -35,6 +35,14 @@ export async function streamOpenAIResponse(
     ) {
       callbacks.onChunk(event.delta)
     }
+    // reasoning events may not be in the SDK types yet — use type assertion
+    const eventType = (event as { type: string }).type
+    if (eventType === 'response.reasoning.delta') {
+      const delta = (event as { delta?: string }).delta
+      if (typeof delta === 'string') {
+        callbacks.onChunk(delta, true)
+      }
+    }
   }
 
   callbacks.onEnd?.()

@@ -4,16 +4,21 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
 import { MarkdownRenderer } from './MarkdownRenderer'
+import { ThinkingBlock } from './ThinkingBlock'
+import { useElapsedTime } from '@renderer/hooks/useElapsedTime'
 import type { MessageRole, AttachmentMeta } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 interface MessageBubbleProps {
   role: MessageRole
   content: string
+  reasoningContent?: string | null
   isStreaming?: boolean
+  isStreamingReasoning?: boolean
   messageId?: string
   attachments?: AttachmentMeta[]
   duration?: number | null
+  thinkingDuration?: number | null
   streamStartTime?: number | null
   onDelete?: (id: string) => void
   onResend?: (messageId: string) => void
@@ -25,18 +30,6 @@ function formatDuration(ms: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = Math.round(seconds % 60)
   return `${mins}m ${secs}s`
-}
-
-function useElapsedTime(startTime: number | null | undefined): number {
-  const [elapsed, setElapsed] = useState(0)
-  useEffect(() => {
-    if (!startTime) return
-    const update = (): void => setElapsed(Date.now() - startTime)
-    update()
-    const timer = setInterval(update, 100)
-    return () => clearInterval(timer)
-  }, [startTime])
-  return startTime ? elapsed : 0
 }
 
 function AttachmentImages({
@@ -102,10 +95,13 @@ function AttachmentImage({ attachment }: { attachment: AttachmentMeta }): React.
 export const MessageBubble = memo(function MessageBubble({
   role,
   content,
+  reasoningContent,
   isStreaming,
+  isStreamingReasoning,
   messageId,
   attachments,
   duration,
+  thinkingDuration,
   streamStartTime,
   onDelete,
   onResend,
@@ -143,7 +139,7 @@ export const MessageBubble = memo(function MessageBubble({
   const showActions = !isStreaming && messageId
   const hasImages = attachments && attachments.some((a) => isImageMime(a.mimeType))
   const showDuration = !isUser && (isStreaming || (duration ?? 0) > 0)
-  const isWaiting = isStreaming && !content
+  const isWaiting = isStreaming && !content && !reasoningContent
 
   return (
     <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -172,9 +168,19 @@ export const MessageBubble = memo(function MessageBubble({
           ) : isUser ? (
             content
           ) : (
-            <MarkdownRenderer content={content} />
+            <>
+              {reasoningContent && (
+                <ThinkingBlock
+                  content={reasoningContent}
+                  isStreaming={isStreamingReasoning}
+                  thinkingStartTime={isStreamingReasoning ? streamStartTime : null}
+                  thinkingDuration={thinkingDuration}
+                />
+              )}
+              <MarkdownRenderer content={content} />
+            </>
           )}
-          {isStreaming && !isWaiting && (
+          {isStreaming && !isWaiting && !isStreamingReasoning && (
             <span className="ml-0.5 inline-block h-4 w-1.5 animate-pulse rounded-sm bg-current align-text-bottom" />
           )}
         </div>

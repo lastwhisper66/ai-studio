@@ -44,6 +44,10 @@ export async function streamClaudeChat(
     callbacks.onChunk(text)
   })
 
+  stream.on('thinking', (thinking) => {
+    callbacks.onChunk(thinking, true)
+  })
+
   // Wait for the stream to complete
   await stream.finalMessage()
 

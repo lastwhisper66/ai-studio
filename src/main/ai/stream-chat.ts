@@ -7,7 +7,7 @@ import { streamClaudeChat } from './claude-stream'
 
 /** Callbacks for streaming chat responses. */
 export interface StreamCallbacks {
-  onChunk: (delta: string) => void
+  onChunk: (delta: string, isReasoning?: boolean) => void
   onEnd?: () => void
 }
 

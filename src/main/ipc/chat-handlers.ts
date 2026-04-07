@@ -22,7 +22,10 @@ export function registerChatHandlers(): void {
       const { conversationId, files, reasoningEffort, resendMessageId } = payload
       const sender = event.sender
       let fullContent = ''
+      let fullReasoning = ''
       const streamStartTime = Date.now()
+      let reasoningStartTime: number | null = null
+      let thinkingDuration: number | null = null
 
       try {
         const allMessages = listMessages(conversationId)
@@ -187,10 +190,23 @@ export function registerChatHandlers(): void {
             reasoningEffort,
           },
           {
-            onChunk: (delta) => {
-              fullContent += delta
-              if (!sender.isDestroyed()) {
-                sender.send(IpcChannels.CHAT_STREAM_CHUNK, { conversationId, delta })
+            onChunk: (delta, isReasoning) => {
+              if (isReasoning) {
+                if (!reasoningStartTime) {
+                  reasoningStartTime = Date.now()
+                }
+                fullReasoning += delta
+                if (!sender.isDestroyed()) {
+                  sender.send(IpcChannels.CHAT_STREAM_REASONING_CHUNK, { conversationId, delta })
+                }
+              } else {
+                if (reasoningStartTime && thinkingDuration === null) {
+                  thinkingDuration = Date.now() - reasoningStartTime
+                }
+                fullContent += delta
+                if (!sender.isDestroyed()) {
+                  sender.send(IpcChannels.CHAT_STREAM_CHUNK, { conversationId, delta })
+                }
               }
             },
           },
@@ -198,13 +214,14 @@ export function registerChatHandlers(): void {
 
         // Stream completed — save assistant message
         const duration = Date.now() - streamStartTime
-        const savedMessage = createMessage(
-          conversationId,
-          'assistant',
-          fullContent,
-          undefined,
+        if (reasoningStartTime && thinkingDuration === null) {
+          thinkingDuration = Date.now() - reasoningStartTime
+        }
+        const savedMessage = createMessage(conversationId, 'assistant', fullContent, {
           duration,
-        )
+          reasoningContent: fullReasoning || undefined,
+          thinkingDuration: thinkingDuration ?? undefined,
+        })
         if (!sender.isDestroyed()) {
           sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })
         }
@@ -231,15 +248,16 @@ export function registerChatHandlers(): void {
         if (isAborted) {
           // User stopped generation — save partial content if any
           const duration = Date.now() - streamStartTime
+          if (reasoningStartTime && thinkingDuration === null) {
+            thinkingDuration = Date.now() - reasoningStartTime
+          }
           let savedMessage: Message | null = null
-          if (fullContent) {
-            savedMessage = createMessage(
-              conversationId,
-              'assistant',
-              fullContent,
-              undefined,
+          if (fullContent || fullReasoning) {
+            savedMessage = createMessage(conversationId, 'assistant', fullContent, {
               duration,
-            )
+              reasoningContent: fullReasoning || undefined,
+              thinkingDuration: thinkingDuration ?? undefined,
+            })
           }
           if (!sender.isDestroyed()) {
             sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })

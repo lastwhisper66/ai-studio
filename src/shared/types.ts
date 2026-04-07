@@ -60,9 +60,11 @@ export interface Message {
   conversationId: string
   role: MessageRole
   content: string
+  reasoningContent: string | null
   createdAt: string
   tokenCount: number | null
   duration: number | null // response time in milliseconds
+  thinkingDuration: number | null // reasoning phase duration in milliseconds
   attachments?: AttachmentMeta[]
 }
 
@@ -191,6 +193,12 @@ export interface SendMessagePayload {
 
 /** chat:stream-chunk push data */
 export interface StreamChunkData {
+  conversationId: string
+  delta: string
+}
+
+/** chat:stream-reasoning-chunk push data */
+export interface StreamReasoningChunkData {
   conversationId: string
   delta: string
 }

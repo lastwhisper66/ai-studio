@@ -8,9 +8,11 @@ interface MessageRow {
   conversation_id: string
   role: string
   content: string
+  reasoning_content: string | null
   created_at: string
   token_count: number | null
   duration: number | null
+  thinking_duration: number | null
   attachments: string | null
 }
 
@@ -20,9 +22,11 @@ function rowToMessage(row: MessageRow): Message {
     conversationId: row.conversation_id,
     role: row.role as MessageRole,
     content: row.content,
+    reasoningContent: row.reasoning_content,
     createdAt: row.created_at,
     tokenCount: row.token_count,
     duration: row.duration,
+    thinkingDuration: row.thinking_duration,
   }
   if (row.attachments) {
     try {
@@ -70,22 +74,39 @@ export function listMessagesPaginated(
   }
 }
 
+interface CreateMessageOptions {
+  attachments?: AttachmentMeta[]
+  duration?: number
+  reasoningContent?: string
+  thinkingDuration?: number
+}
+
 export function createMessage(
   conversationId: string,
   role: MessageRole,
   content: string,
-  attachments?: AttachmentMeta[],
-  duration?: number,
+  options?: CreateMessageOptions,
 ): Message {
+  const { attachments, duration, reasoningContent, thinkingDuration } = options ?? {}
   const id = uuidv4()
   const now = new Date().toISOString()
   const db = getDb()
   const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null
 
   db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, created_at, attachments, duration)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-  ).run(id, conversationId, role, content, now, attachmentsJson, duration ?? null)
+    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, attachments, duration, thinking_duration)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    id,
+    conversationId,
+    role,
+    content,
+    reasoningContent || null,
+    now,
+    attachmentsJson,
+    duration ?? null,
+    thinkingDuration ?? null,
+  )
 
   // Update conversation's updated_at timestamp
   touchConversation(conversationId)

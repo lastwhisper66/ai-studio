@@ -28,9 +28,19 @@ export async function streamOpenAIChat(
   const stream = await client.chat.completions.create(createParams, { signal })
 
   for await (const chunk of stream) {
-    const delta = chunk.choices[0]?.delta?.content
+    const delta = chunk.choices[0]?.delta
     if (delta) {
-      callbacks.onChunk(delta)
+      // DeepSeek / compatible providers include `reasoning_content` on the delta;
+      // the openai SDK types don't include this field, so we use a type assertion.
+      const reasoningContent = (delta as Record<string, unknown>)?.reasoning_content as
+        | string
+        | undefined
+      if (reasoningContent) {
+        callbacks.onChunk(reasoningContent, true)
+      }
+      if (delta.content) {
+        callbacks.onChunk(delta.content)
+      }
     }
   }
 

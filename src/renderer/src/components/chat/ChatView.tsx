@@ -37,6 +37,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     isLoading,
     isStreaming,
     streamingContent,
+    streamingReasoningContent,
     streamStartTime,
     sendMessage,
     stopGeneration,
@@ -241,6 +242,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       <MessageList
         messages={messages}
         streamingContent={streamingContent}
+        streamingReasoningContent={streamingReasoningContent}
         isStreaming={isStreaming}
         isLoading={isLoading}
         hasActiveConversation={!!activeConversationId}

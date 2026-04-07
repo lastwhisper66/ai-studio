@@ -47,9 +47,15 @@ export async function streamGeminiChat(
   })
 
   for await (const chunk of response) {
-    const text = chunk.text
-    if (text) {
-      callbacks.onChunk(text)
+    const parts = chunk.candidates?.[0]?.content?.parts
+    if (parts) {
+      for (const part of parts) {
+        if (part.text) {
+          // Gemini thinking models include a `thought` boolean on reasoning parts;
+          // the SDK types don't expose it yet, so we use a type assertion.
+          callbacks.onChunk(part.text, (part as Record<string, unknown>).thought === true)
+        }
+      }
     }
   }
 

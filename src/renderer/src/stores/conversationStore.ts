@@ -20,6 +20,7 @@ interface ConversationState {
   error: string | null
   isStreaming: boolean
   streamingContent: string
+  streamingReasoningContent: string
   streamStartTime: number | null
   /** When resending, the ID of the message being replaced (the old AI response) */
   resendTargetId: string | null
@@ -62,6 +63,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     set({
       isStreaming: true,
       streamingContent: '',
+      streamingReasoningContent: '',
       streamStartTime: Date.now(),
       resendTargetId,
     })
@@ -76,6 +78,15 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       window.api.onStreamChunk((data) => {
         if (data.conversationId !== conversationId) return
         set((state) => ({ streamingContent: state.streamingContent + data.delta }))
+      }),
+    )
+
+    cleanups.push(
+      window.api.onStreamReasoningChunk((data) => {
+        if (data.conversationId !== conversationId) return
+        set((state) => ({
+          streamingReasoningContent: state.streamingReasoningContent + data.delta,
+        }))
       }),
     )
 
@@ -108,6 +119,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
               messages: newMessages,
               isStreaming: false,
               streamingContent: '',
+              streamingReasoningContent: '',
               streamStartTime: null,
               resendTargetId: null,
             }
@@ -116,6 +128,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           set({
             isStreaming: false,
             streamingContent: '',
+            streamingReasoningContent: '',
             streamStartTime: null,
             resendTargetId: null,
           })
@@ -130,6 +143,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         set({
           isStreaming: false,
           streamingContent: '',
+          streamingReasoningContent: '',
           streamStartTime: null,
           resendTargetId: null,
           error: data.error,
@@ -158,6 +172,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       set({
         isStreaming: false,
         streamingContent: '',
+        streamingReasoningContent: '',
         streamStartTime: null,
         resendTargetId: null,
         error: result.error,
@@ -175,6 +190,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   error: null,
   isStreaming: false,
   streamingContent: '',
+  streamingReasoningContent: '',
   streamStartTime: null,
   resendTargetId: null,
   focusInputTrigger: 0,
@@ -445,7 +461,12 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   },
 
   stopGeneration: () => {
-    const { activeConversationId: conversationId, streamingContent, resendTargetId } = get()
+    const {
+      activeConversationId: conversationId,
+      streamingContent,
+      streamingReasoningContent,
+      resendTargetId,
+    } = get()
     if (!conversationId) return
 
     window.api.stopGeneration(conversationId)
@@ -458,9 +479,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         conversationId,
         role: 'assistant',
         content: streamingContent,
+        reasoningContent: streamingReasoningContent || null,
         createdAt: new Date().toISOString(),
         tokenCount: null,
         duration: null,
+        thinkingDuration: null,
       }
       set((state) => {
         // For resend: insert temp message after the target user message
@@ -473,6 +496,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
               messages: newMessages,
               isStreaming: false,
               streamingContent: '',
+              streamingReasoningContent: '',
               streamStartTime: null,
               resendTargetId: null,
             }
@@ -482,6 +506,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           messages: [...state.messages, tempMessage],
           isStreaming: false,
           streamingContent: '',
+          streamingReasoningContent: '',
           streamStartTime: null,
           resendTargetId: null,
         }
@@ -490,6 +515,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       set({
         isStreaming: false,
         streamingContent: '',
+        streamingReasoningContent: '',
         streamStartTime: null,
         resendTargetId: null,
       })
