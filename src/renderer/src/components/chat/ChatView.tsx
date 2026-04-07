@@ -196,7 +196,15 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
               className="inline-block h-2 w-2 shrink-0 rounded-full"
               style={{ backgroundColor: template?.color ?? '#6b7280' }}
             />
-            <span>{resolvedModel}</span>
+            <span>
+              {resolvedModel}
+              {resolvedProvider && (
+                <span className="text-muted-foreground/60">
+                  {' '}
+                  | {resolvedProvider.name}
+                </span>
+              )}
+            </span>
             <ChevronDown className="h-3 w-3 opacity-50" />
           </button>
           <ModelPickerDialog
