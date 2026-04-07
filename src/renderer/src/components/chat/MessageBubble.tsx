@@ -121,7 +121,8 @@ export const MessageBubble = memo(function MessageBubble({
   }, [])
 
   const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(content).catch(() => {})
+    const cleaned = content.replace(/ +$/gm, '')
+    navigator.clipboard.writeText(cleaned).catch(() => {})
     setCopied(true)
     clearTimeout(copyTimerRef.current)
     copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
