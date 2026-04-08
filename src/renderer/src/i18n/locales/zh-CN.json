@@ -149,6 +149,7 @@
       "modelLibrary": "模型库",
       "modelGroup": "模型分组",
       "general": "通用设置",
+      "security": "安全设置",
       "display": "显示设置",
       "language": "语言设置"
     },
@@ -208,7 +209,11 @@
       "description": "应用程序通用配置。",
       "window": "窗口",
       "closeToTray": "关闭时最小化到系统托盘",
-      "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。",
+      "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。"
+    },
+    "security": {
+      "title": "安全设置",
+      "description": "网络安全与证书相关配置。",
       "network": "网络",
       "skipSsl": "跳过 SSL 证书验证",
       "skipSslDescription": "在企业 VPN 或代理环境下，如果遇到自签名证书导致连接失败，可以开启此选项。"

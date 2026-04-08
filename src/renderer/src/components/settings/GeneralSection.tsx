@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ShieldAlert, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
@@ -8,18 +8,11 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 export function GeneralSection(): React.JSX.Element {
   const { t } = useTranslation()
   const { settings, saveSettings } = useSettingsStore()
-  const [skipSsl, setSkipSsl] = useState(false)
   const [closeToTray, setCloseToTray] = useState(true)
 
   useEffect(() => {
-    setSkipSsl(settings['app.skipSslVerify'] === 'true')
     setCloseToTray(settings['app.closeToTray'] !== 'false')
   }, [settings])
-
-  const handleToggle = (checked: boolean): void => {
-    setSkipSsl(checked)
-    saveSettings({ 'app.skipSslVerify': String(checked) })
-  }
 
   const handleCloseToTrayToggle = (checked: boolean): void => {
     setCloseToTray(checked)
@@ -47,23 +40,6 @@ export function GeneralSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={closeToTray} onCheckedChange={handleCloseToTrayToggle} />
-        </div>
-      </div>
-
-      <div className="rounded-xl border bg-card/50 p-5">
-        <h3 className="text-sm font-semibold">{t('settings.general.network')}</h3>
-
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <ShieldAlert className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-            <div>
-              <Label className="text-sm font-medium">{t('settings.general.skipSsl')}</Label>
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                {t('settings.general.skipSslDescription')}
-              </p>
-            </div>
-          </div>
-          <Switch checked={skipSsl} onCheckedChange={handleToggle} />
         </div>
       </div>
     </div>

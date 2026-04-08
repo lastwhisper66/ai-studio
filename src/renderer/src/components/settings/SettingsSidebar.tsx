@@ -1,4 +1,4 @@
-import { Cloud, Library, FolderTree, Settings2, Monitor, Globe } from 'lucide-react'
+import { Cloud, Library, FolderTree, Settings2, ShieldCheck, Monitor, Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 
@@ -7,6 +7,7 @@ export type SettingsSection =
   | 'model-library'
   | 'model-group'
   | 'general'
+  | 'security'
   | 'display'
   | 'language'
 
@@ -20,6 +21,7 @@ const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType
   { id: 'model-library', labelKey: 'settings.sections.modelLibrary', icon: Library },
   { id: 'model-group', labelKey: 'settings.sections.modelGroup', icon: FolderTree },
   { id: 'general', labelKey: 'settings.sections.general', icon: Settings2 },
+  { id: 'security', labelKey: 'settings.sections.security', icon: ShieldCheck },
   { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
   { id: 'language', labelKey: 'settings.sections.language', icon: Globe },
 ]

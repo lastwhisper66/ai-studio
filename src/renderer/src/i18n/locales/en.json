@@ -149,6 +149,7 @@
       "modelLibrary": "Model Library",
       "modelGroup": "Model Groups",
       "general": "General",
+      "security": "Security",
       "display": "Display",
       "language": "Language"
     },
@@ -208,7 +209,11 @@
       "description": "General application settings.",
       "window": "Window",
       "closeToTray": "Minimize to system tray on close",
-      "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application.",
+      "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application."
+    },
+    "security": {
+      "title": "Security",
+      "description": "Network security and certificate settings.",
       "network": "Network",
       "skipSsl": "Skip SSL certificate verification",
       "skipSslDescription": "In enterprise VPN or proxy environments, enable this option if self-signed certificates cause connection failures."

@@ -9,6 +9,7 @@ import { ModelGroupSection } from './ModelGroupSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { LanguageSection } from './LanguageSection'
+import { SecuritySection } from './SecuritySection'
 
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
@@ -40,6 +41,7 @@ export function SettingsPage(): React.JSX.Element {
           <ScrollArea className="flex-1">
             <div className="p-6">
               {activeSection === 'general' && <GeneralSection />}
+              {activeSection === 'security' && <SecuritySection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'language' && <LanguageSection />}
             </div>
