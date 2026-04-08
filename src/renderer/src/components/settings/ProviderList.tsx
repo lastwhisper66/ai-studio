@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Plus, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import {
@@ -8,7 +8,9 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
   type DragEndEvent,
+  type DragStartEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -28,6 +30,7 @@ import { ProviderIcon } from './ProviderIcon'
 export function ProviderList(): React.JSX.Element {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  const [draggingId, setDraggingId] = useState<string | null>(null)
   const { providers, selectedProviderId, setSelectedProviderId, updateProvider, reorderProviders } =
     useProviderStore()
 
@@ -35,6 +38,16 @@ export function ProviderList(): React.JSX.Element {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
+
+  const draggingProvider = useMemo(() => {
+    return draggingId ? providers.find((p) => p.id === draggingId) : null
+  }, [draggingId, providers])
+
+  useEffect(() => {
+    return () => {
+      setDraggingId(null)
+    }
+  }, [])
 
   const handleToggle = async (e: React.MouseEvent, id: string, enabled: boolean): Promise<void> => {
     e.stopPropagation()
@@ -46,7 +59,12 @@ export function ProviderList(): React.JSX.Element {
     ? providers.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     : providers
 
+  const handleDragStart = (event: DragStartEvent): void => {
+    setDraggingId(event.active.id as string)
+  }
+
   const handleDragEnd = (event: DragEndEvent): void => {
+    setDraggingId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = providers.findIndex((p) => p.id === active.id)
@@ -72,7 +90,7 @@ export function ProviderList(): React.JSX.Element {
 
       {/* Provider list */}
       <ScrollArea className="flex-1">
-        <div className="p-1.5">
+        <div className="p-1">
           {filtered.length === 0 ? (
             <div className="text-muted-foreground flex flex-col items-center gap-2 py-8 text-center text-sm">
               <p>
@@ -85,6 +103,7 @@ export function ProviderList(): React.JSX.Element {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}>
               <SortableContext
                 items={filtered.map((p) => p.id)}
@@ -104,10 +123,10 @@ export function ProviderList(): React.JSX.Element {
                           'rounded-lg text-left text-sm transition-colors',
                           isSelected ? 'bg-accent text-accent-foreground' : 'hover:bg-accent/50',
                         )}
-                        handleClassName="pl-1 py-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        handleClassName="pl-0.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => setSelectedProviderId(provider.id)}
-                          className="flex min-w-0 flex-1 items-center gap-2.5 px-2 py-2 text-left">
+                          className="flex min-w-0 flex-1 items-center gap-2 px-1.5 py-1.5 text-left">
                           <ProviderIcon
                             type={provider.type}
                             name={provider.name}
@@ -134,6 +153,19 @@ export function ProviderList(): React.JSX.Element {
                   })}
                 </div>
               </SortableContext>
+              <DragOverlay>
+                {draggingProvider && (
+                  <div className="flex items-center gap-2.5 rounded-lg bg-accent px-3 py-2 text-sm shadow-lg ring-1 ring-primary/30">
+                    <ProviderIcon
+                      type={draggingProvider.type}
+                      name={draggingProvider.name}
+                      color={getTemplateByType(draggingProvider.type)?.color ?? '#6b7280'}
+                      size="lg"
+                    />
+                    <span className="truncate">{draggingProvider.name}</span>
+                  </div>
+                )}
+              </DragOverlay>
             </DndContext>
           )}
         </div>
