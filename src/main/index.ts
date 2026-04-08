@@ -149,13 +149,6 @@ function createWindow(): void {
   mainWindow.webContents.on('before-input-event', (event, input) => {
     const key = input.key.toLowerCase()
 
-    // Ctrl+, → Toggle settings
-    if (input.control && !input.shift && !input.alt && key === ',') {
-      event.preventDefault()
-      mainWindow.webContents.send(IpcChannels.SHORTCUT_TOGGLE_SETTINGS)
-      return
-    }
-
     // Block DevTools and refresh shortcuts in production
     if (
       !is.dev &&

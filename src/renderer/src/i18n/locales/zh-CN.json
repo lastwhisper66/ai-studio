@@ -151,7 +151,8 @@
       "general": "通用设置",
       "security": "安全设置",
       "display": "显示设置",
-      "language": "语言设置"
+      "language": "语言设置",
+      "keyboardShortcuts": "快捷键"
     },
     "provider": {
       "list": "服务商列表",
@@ -364,5 +365,24 @@
     "loading": "正在获取模型列表...",
     "noModels": "未获取到模型",
     "noResults": "没有匹配的模型"
+  },
+  "keybindings": {
+    "title": "快捷键",
+    "description": "自定义常用操作的键盘快捷键。",
+    "pressShortcut": "请按下快捷键...",
+    "resetAll": "全部重置",
+    "conflictTitle": "快捷键冲突",
+    "conflictDescription": "「{{shortcut}}」已被「{{action}}」占用，是否重新分配？",
+    "conflictReadOnly": "「{{shortcut}}」已被系统快捷键「{{action}}」占用，无法使用。",
+    "newConversation": "新建对话",
+    "toggleSettings": "切换设置",
+    "toggleSidebar": "切换侧边栏",
+    "stopGeneration": "停止生成",
+    "summonWindow": "唤醒窗口",
+    "category": {
+      "app": "应用",
+      "chat": "聊天",
+      "window": "窗口"
+    }
   }
 }

@@ -200,10 +200,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
             <span>
               {resolvedModel}
               {resolvedProvider && (
-                <span className="text-muted-foreground/60">
-                  {' '}
-                  | {resolvedProvider.name}
-                </span>
+                <span className="text-muted-foreground/60"> | {resolvedProvider.name}</span>
               )}
             </span>
             <ChevronDown className="h-3 w-3 opacity-50" />

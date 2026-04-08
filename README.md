@@ -73,18 +73,18 @@
 
 ## 技术栈
 
-| 类别     | 技术                                         |
-| -------- | -------------------------------------------- |
-| 运行时   | Electron 39 + React 19                       |
-| 语言     | TypeScript（strict mode）                    |
-| 构建     | electron-vite（Vite）                        |
-| UI 框架  | Shadcn/UI (Radix UI) + Tailwind CSS v4 + Lucide Icons |
-| 状态管理 | Zustand 5                                    |
-| 数据库   | better-sqlite3（WAL 模式）                   |
+| 类别     | 技术                                                            |
+| -------- | --------------------------------------------------------------- |
+| 运行时   | Electron 39 + React 19                                          |
+| 语言     | TypeScript（strict mode）                                       |
+| 构建     | electron-vite（Vite）                                           |
+| UI 框架  | Shadcn/UI (Radix UI) + Tailwind CSS v4 + Lucide Icons           |
+| 状态管理 | Zustand 5                                                       |
+| 数据库   | better-sqlite3（WAL 模式）                                      |
 | AI SDK   | openai（兼容 OpenAI / Azure / Anthropic / DeepSeek 等多服务商） |
-| Markdown | react-markdown + remark-gfm + Shiki 语法高亮 |
-| 国际化   | i18next + react-i18next                      |
-| 包管理   | npm                                          |
+| Markdown | react-markdown + remark-gfm + Shiki 语法高亮                    |
+| 国际化   | i18next + react-i18next                                         |
+| 包管理   | npm                                                             |
 
 ## 快速开始
 

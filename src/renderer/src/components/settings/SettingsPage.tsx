@@ -10,6 +10,7 @@ import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { LanguageSection } from './LanguageSection'
 import { SecuritySection } from './SecuritySection'
+import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
@@ -44,6 +45,7 @@ export function SettingsPage(): React.JSX.Element {
               {activeSection === 'security' && <SecuritySection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'language' && <LanguageSection />}
+              {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
             </div>
           </ScrollArea>
         )}

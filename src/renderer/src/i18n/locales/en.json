@@ -151,7 +151,8 @@
       "general": "General",
       "security": "Security",
       "display": "Display",
-      "language": "Language"
+      "language": "Language",
+      "keyboardShortcuts": "Shortcuts"
     },
     "provider": {
       "list": "Provider list",
@@ -364,5 +365,24 @@
     "loading": "Fetching model list...",
     "noModels": "No models found",
     "noResults": "No matching models"
+  },
+  "keybindings": {
+    "title": "Keyboard Shortcuts",
+    "description": "Customize keyboard shortcuts for common actions.",
+    "pressShortcut": "Press shortcut...",
+    "resetAll": "Reset All",
+    "conflictTitle": "Shortcut Conflict",
+    "conflictDescription": "\"{{shortcut}}\" is already assigned to \"{{action}}\". Reassign it?",
+    "conflictReadOnly": "\"{{shortcut}}\" is reserved by the system shortcut \"{{action}}\" and cannot be used.",
+    "newConversation": "New Conversation",
+    "toggleSettings": "Toggle Settings",
+    "toggleSidebar": "Toggle Sidebar",
+    "stopGeneration": "Stop Generation",
+    "summonWindow": "Summon Window",
+    "category": {
+      "app": "Application",
+      "chat": "Chat",
+      "window": "Window"
+    }
   }
 }

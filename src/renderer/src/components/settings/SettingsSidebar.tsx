@@ -1,4 +1,13 @@
-import { Cloud, Library, FolderTree, Settings2, ShieldCheck, Monitor, Globe } from 'lucide-react'
+import {
+  Cloud,
+  Library,
+  FolderTree,
+  Settings2,
+  ShieldCheck,
+  Monitor,
+  Globe,
+  Keyboard,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 
@@ -10,6 +19,7 @@ export type SettingsSection =
   | 'security'
   | 'display'
   | 'language'
+  | 'keyboard-shortcuts'
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection
@@ -24,6 +34,7 @@ const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType
   { id: 'security', labelKey: 'settings.sections.security', icon: ShieldCheck },
   { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
   { id: 'language', labelKey: 'settings.sections.language', icon: Globe },
+  { id: 'keyboard-shortcuts', labelKey: 'settings.sections.keyboardShortcuts', icon: Keyboard },
 ]
 
 export function SettingsSidebar({

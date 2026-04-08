@@ -7,6 +7,7 @@ import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
+import { useKeybindingStore } from '@renderer/stores/keybindingStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 
 function App(): React.JSX.Element {
@@ -17,6 +18,8 @@ function App(): React.JSX.Element {
   const loadPhrases = usePhraseStore((s) => s.loadPhrases)
   const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
   const loadModelGroups = useModelGroupStore((s) => s.load)
+  const initKeybindings = useKeybindingStore((s) => s.init)
+  const settingsLoaded = useSettingsStore((s) => s.isLoaded)
 
   useEffect(() => {
     loadConversations()
@@ -35,6 +38,11 @@ function App(): React.JSX.Element {
     loadModelDefinitions,
     loadModelGroups,
   ])
+
+  // Initialize keybinding store after settings are loaded
+  useEffect(() => {
+    if (settingsLoaded) initKeybindings()
+  }, [settingsLoaded, initKeybindings])
 
   useKeyboardShortcuts()
 

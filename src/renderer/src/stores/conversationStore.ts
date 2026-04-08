@@ -182,343 +182,348 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   }
 
   return {
-  conversations: [],
-  activeConversationId: null,
-  messages: [],
-  hasMoreMessages: false,
-  isLoading: false,
-  error: null,
-  isStreaming: false,
-  streamingContent: '',
-  streamingReasoningContent: '',
-  streamStartTime: null,
-  resendTargetId: null,
-  focusInputTrigger: 0,
+    conversations: [],
+    activeConversationId: null,
+    messages: [],
+    hasMoreMessages: false,
+    isLoading: false,
+    error: null,
+    isStreaming: false,
+    streamingContent: '',
+    streamingReasoningContent: '',
+    streamStartTime: null,
+    resendTargetId: null,
+    focusInputTrigger: 0,
 
-  requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
+    requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
 
-  clearError: () => set({ error: null }),
+    clearError: () => set({ error: null }),
 
-  loadConversations: async () => {
-    const result = await window.api.listConversations()
-    if (result.success && result.data) {
-      set({ conversations: result.data })
-    } else {
-      set({ error: result.error ?? 'Failed to load conversations' })
-    }
-  },
-
-  createConversation: async (title?: string, assistantId?: string) => {
-    const effectiveAssistantId =
-      assistantId ?? useAssistantStore.getState().activeAssistantId ?? undefined
-    const result = await window.api.createConversation(title, effectiveAssistantId)
-    if (result.success && result.data) {
-      const conversation = result.data
-      set((state) => ({
-        conversations: [conversation, ...state.conversations],
-        activeConversationId: conversation.id,
-        messages: [],
-      }))
-      get().requestInputFocus()
-      return true
-    }
-    set({ error: result.error ?? 'Failed to create conversation' })
-    return false
-  },
-
-  deleteConversation: async (id: string) => {
-    const result = await window.api.deleteConversation(id)
-    if (result.success) {
-      const { activeConversationId, conversations } = get()
-      const deletedConversation = conversations.find((c) => c.id === id)
-      const remaining = conversations.filter((c) => c.id !== id)
-
-      if (activeConversationId === id) {
-        const currentAssistantId =
-          deletedConversation?.assistantId ?? useAssistantStore.getState().activeAssistantId
-        const sameAssistantRemaining = remaining.filter((c) => c.assistantId === currentAssistantId)
-        const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
-        set({
-          conversations: remaining,
-          activeConversationId: nextId,
-          messages: [],
-          hasMoreMessages: false,
-        })
-        if (nextId) {
-          const msgResult = await window.api.listMessagesPaginated(nextId)
-          if (msgResult.success && msgResult.data) {
-            set({ messages: msgResult.data.messages, hasMoreMessages: msgResult.data.hasMore })
-          }
-        }
+    loadConversations: async () => {
+      const result = await window.api.listConversations()
+      if (result.success && result.data) {
+        set({ conversations: result.data })
       } else {
-        set({ conversations: remaining })
+        set({ error: result.error ?? 'Failed to load conversations' })
       }
-    } else {
-      set({ error: result.error ?? 'Failed to delete conversation' })
-    }
-  },
+    },
 
-  deleteConversations: async (ids: string[]) => {
-    if (ids.length === 0) return
-    const result = await window.api.deleteConversations(ids)
-    if (result.success) {
-      const { activeConversationId, conversations } = get()
-      const idSet = new Set(ids)
-      const activeConversation = activeConversationId
-        ? conversations.find((c) => c.id === activeConversationId)
-        : undefined
-      const remaining = conversations.filter((c) => !idSet.has(c.id))
-
-      if (activeConversationId && idSet.has(activeConversationId)) {
-        const currentAssistantId =
-          activeConversation?.assistantId ?? useAssistantStore.getState().activeAssistantId
-        const sameAssistantRemaining = remaining.filter((c) => c.assistantId === currentAssistantId)
-        const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
-        set({
-          conversations: remaining,
-          activeConversationId: nextId,
+    createConversation: async (title?: string, assistantId?: string) => {
+      const effectiveAssistantId =
+        assistantId ?? useAssistantStore.getState().activeAssistantId ?? undefined
+      const result = await window.api.createConversation(title, effectiveAssistantId)
+      if (result.success && result.data) {
+        const conversation = result.data
+        set((state) => ({
+          conversations: [conversation, ...state.conversations],
+          activeConversationId: conversation.id,
           messages: [],
-          hasMoreMessages: false,
-        })
-        if (nextId) {
-          const msgResult = await window.api.listMessagesPaginated(nextId)
-          if (msgResult.success && msgResult.data) {
-            set({ messages: msgResult.data.messages, hasMoreMessages: msgResult.data.hasMore })
-          }
-        }
-      } else {
-        set({ conversations: remaining })
+        }))
+        get().requestInputFocus()
+        return true
       }
-    } else {
-      set({ error: result.error ?? 'Failed to delete conversations' })
-    }
-  },
+      set({ error: result.error ?? 'Failed to create conversation' })
+      return false
+    },
 
-  renameConversation: async (id: string, title: string) => {
-    const result = await window.api.updateConversation(id, { title })
-    if (result.success && result.data) {
-      set((state) => ({
-        conversations: state.conversations.map((c) =>
-          c.id === id ? { ...c, title: result.data!.title } : c,
-        ),
-      }))
-    } else {
-      set({ error: result.error ?? 'Failed to rename conversation' })
-    }
-  },
+    deleteConversation: async (id: string) => {
+      const result = await window.api.deleteConversation(id)
+      if (result.success) {
+        const { activeConversationId, conversations } = get()
+        const deletedConversation = conversations.find((c) => c.id === id)
+        const remaining = conversations.filter((c) => c.id !== id)
 
-  pinConversation: async (id: string) => {
-    const conv = get().conversations.find((c) => c.id === id)
-    if (!conv) return
-    const result = await window.api.updateConversation(id, { pinned: !conv.pinned })
-    if (result.success && result.data) {
-      set((state) => ({
-        conversations: state.conversations
-          .map((c) => (c.id === id ? { ...c, pinned: result.data!.pinned } : c))
-          .sort((a, b) => {
-            if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
-            return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          }),
-      }))
-    } else {
-      set({ error: result.error ?? 'Failed to pin conversation' })
-    }
-  },
-
-  setActiveConversation: async (id: string) => {
-    set({ activeConversationId: id, isLoading: true })
-    const result = await window.api.listMessagesPaginated(id)
-    if (result.success && result.data) {
-      set({
-        messages: result.data.messages,
-        hasMoreMessages: result.data.hasMore,
-        isLoading: false,
-      })
-      get().requestInputFocus()
-    } else {
-      set({ isLoading: false, error: result.error ?? 'Failed to load messages' })
-    }
-  },
-
-  loadMoreMessages: async () => {
-    const { activeConversationId, messages, hasMoreMessages } = get()
-    if (!activeConversationId || !hasMoreMessages || messages.length === 0) return
-
-    const oldest = messages[0].createdAt
-    const result = await window.api.listMessagesPaginated(activeConversationId, undefined, oldest)
-    if (result.success && result.data) {
-      const loaded = result.data
-      set((state) => ({
-        messages: [...loaded.messages, ...state.messages],
-        hasMoreMessages: loaded.hasMore,
-      }))
-    }
-  },
-
-  addMessage: async (role: MessageRole, content: string, files?: FileData[]) => {
-    const activeConversationId = get().activeConversationId
-    if (!activeConversationId) return
-
-    const imageFiles = files?.filter((f) => isImageMime(f.mimeType))
-    const result = await window.api.createMessage(
-      activeConversationId,
-      role,
-      content,
-      imageFiles && imageFiles.length > 0 ? imageFiles : undefined,
-    )
-    if (result.success && result.data) {
-      set((state) => ({ messages: [...state.messages, result.data!] }))
-    } else {
-      set({ error: result.error ?? 'Failed to send message' })
-    }
-  },
-
-  deleteMessage: async (id: string) => {
-    const result = await window.api.deleteMessage(id)
-    if (result.success) {
-      set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
-    } else {
-      set({ error: result.error ?? 'Failed to delete message' })
-    }
-  },
-
-  clearMessages: async (conversationId: string) => {
-    const result = await window.api.clearMessages(conversationId)
-    if (result.success) {
-      const { activeConversationId } = get()
-      if (activeConversationId === conversationId) {
-        set({ messages: [], hasMoreMessages: false })
-      }
-    } else {
-      set({ error: result.error ?? 'Failed to clear messages' })
-    }
-  },
-
-  insertDivider: async () => {
-    const { activeConversationId } = get()
-    if (!activeConversationId) return
-    const result = await window.api.insertDivider(activeConversationId)
-    if (result.success && result.data) {
-      set((state) => ({ messages: [...state.messages, result.data!] }))
-    }
-  },
-
-  sendMessage: async (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => {
-    if (get().isStreaming) return
-
-    let conversationId = get().activeConversationId
-
-    // Auto-create conversation if none is active
-    if (!conversationId) {
-      const assistantId = useAssistantStore.getState().activeAssistantId ?? undefined
-      const ok = await get().createConversation(undefined, assistantId)
-      if (!ok) return
-      conversationId = get().activeConversationId
-      if (!conversationId) return
-    }
-
-    // Save user message to DB and update local state (also persists images to disk)
-    await get().addMessage('user', content, files)
-
-    await startStream({
-      conversationId,
-      apiPayload: { conversationId, files, reasoningEffort },
-      resendTargetId: null,
-      registerTitleListener: true,
-    })
-  },
-
-  resendMessage: async (userMessageId: string) => {
-    if (get().isStreaming) return
-    const { messages, activeConversationId } = get()
-    if (!activeConversationId) return
-
-    const userMsgIndex = messages.findIndex((m) => m.id === userMessageId)
-    if (userMsgIndex === -1) return
-
-    // Lock immediately to prevent double-click races
-    set({ isStreaming: true })
-
-    // Delete the AI response right after this user message (if any)
-    const nextMsg = messages[userMsgIndex + 1]
-    if (nextMsg && nextMsg.role === 'assistant') {
-      const deleteResult = await window.api.deleteMessage(nextMsg.id)
-      if (!deleteResult.success) {
-        set({ isStreaming: false, error: deleteResult.error ?? 'Failed to delete old response' })
-        return
-      }
-      set((state) => ({
-        messages: state.messages.filter((m) => m.id !== nextMsg.id),
-      }))
-    }
-
-    await startStream({
-      conversationId: activeConversationId,
-      apiPayload: { conversationId: activeConversationId, resendMessageId: userMessageId },
-      resendTargetId: userMessageId,
-      registerTitleListener: false,
-    })
-  },
-
-  stopGeneration: () => {
-    const {
-      activeConversationId: conversationId,
-      streamingContent,
-      streamingReasoningContent,
-      resendTargetId,
-    } = get()
-    if (!conversationId) return
-
-    window.api.stopGeneration(conversationId)
-
-    // Immediately show partial content as a temporary message so the user
-    // sees the response so far while the main process finishes aborting.
-    if (streamingContent) {
-      const tempMessage: Message = {
-        id: `_stopping_${conversationId}`,
-        conversationId,
-        role: 'assistant',
-        content: streamingContent,
-        reasoningContent: streamingReasoningContent || null,
-        createdAt: new Date().toISOString(),
-        tokenCount: null,
-        duration: null,
-        thinkingDuration: null,
-      }
-      set((state) => {
-        // For resend: insert temp message after the target user message
-        if (resendTargetId) {
-          const targetIdx = state.messages.findIndex((m) => m.id === resendTargetId)
-          if (targetIdx !== -1) {
-            const newMessages = [...state.messages]
-            newMessages.splice(targetIdx + 1, 0, tempMessage)
-            return {
-              messages: newMessages,
-              isStreaming: false,
-              streamingContent: '',
-              streamingReasoningContent: '',
-              streamStartTime: null,
-              resendTargetId: null,
+        if (activeConversationId === id) {
+          const currentAssistantId =
+            deletedConversation?.assistantId ?? useAssistantStore.getState().activeAssistantId
+          const sameAssistantRemaining = remaining.filter(
+            (c) => c.assistantId === currentAssistantId,
+          )
+          const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
+          set({
+            conversations: remaining,
+            activeConversationId: nextId,
+            messages: [],
+            hasMoreMessages: false,
+          })
+          if (nextId) {
+            const msgResult = await window.api.listMessagesPaginated(nextId)
+            if (msgResult.success && msgResult.data) {
+              set({ messages: msgResult.data.messages, hasMoreMessages: msgResult.data.hasMore })
             }
           }
+        } else {
+          set({ conversations: remaining })
         }
-        return {
-          messages: [...state.messages, tempMessage],
+      } else {
+        set({ error: result.error ?? 'Failed to delete conversation' })
+      }
+    },
+
+    deleteConversations: async (ids: string[]) => {
+      if (ids.length === 0) return
+      const result = await window.api.deleteConversations(ids)
+      if (result.success) {
+        const { activeConversationId, conversations } = get()
+        const idSet = new Set(ids)
+        const activeConversation = activeConversationId
+          ? conversations.find((c) => c.id === activeConversationId)
+          : undefined
+        const remaining = conversations.filter((c) => !idSet.has(c.id))
+
+        if (activeConversationId && idSet.has(activeConversationId)) {
+          const currentAssistantId =
+            activeConversation?.assistantId ?? useAssistantStore.getState().activeAssistantId
+          const sameAssistantRemaining = remaining.filter(
+            (c) => c.assistantId === currentAssistantId,
+          )
+          const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
+          set({
+            conversations: remaining,
+            activeConversationId: nextId,
+            messages: [],
+            hasMoreMessages: false,
+          })
+          if (nextId) {
+            const msgResult = await window.api.listMessagesPaginated(nextId)
+            if (msgResult.success && msgResult.data) {
+              set({ messages: msgResult.data.messages, hasMoreMessages: msgResult.data.hasMore })
+            }
+          }
+        } else {
+          set({ conversations: remaining })
+        }
+      } else {
+        set({ error: result.error ?? 'Failed to delete conversations' })
+      }
+    },
+
+    renameConversation: async (id: string, title: string) => {
+      const result = await window.api.updateConversation(id, { title })
+      if (result.success && result.data) {
+        set((state) => ({
+          conversations: state.conversations.map((c) =>
+            c.id === id ? { ...c, title: result.data!.title } : c,
+          ),
+        }))
+      } else {
+        set({ error: result.error ?? 'Failed to rename conversation' })
+      }
+    },
+
+    pinConversation: async (id: string) => {
+      const conv = get().conversations.find((c) => c.id === id)
+      if (!conv) return
+      const result = await window.api.updateConversation(id, { pinned: !conv.pinned })
+      if (result.success && result.data) {
+        set((state) => ({
+          conversations: state.conversations
+            .map((c) => (c.id === id ? { ...c, pinned: result.data!.pinned } : c))
+            .sort((a, b) => {
+              if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
+              return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            }),
+        }))
+      } else {
+        set({ error: result.error ?? 'Failed to pin conversation' })
+      }
+    },
+
+    setActiveConversation: async (id: string) => {
+      set({ activeConversationId: id, isLoading: true })
+      const result = await window.api.listMessagesPaginated(id)
+      if (result.success && result.data) {
+        set({
+          messages: result.data.messages,
+          hasMoreMessages: result.data.hasMore,
+          isLoading: false,
+        })
+        get().requestInputFocus()
+      } else {
+        set({ isLoading: false, error: result.error ?? 'Failed to load messages' })
+      }
+    },
+
+    loadMoreMessages: async () => {
+      const { activeConversationId, messages, hasMoreMessages } = get()
+      if (!activeConversationId || !hasMoreMessages || messages.length === 0) return
+
+      const oldest = messages[0].createdAt
+      const result = await window.api.listMessagesPaginated(activeConversationId, undefined, oldest)
+      if (result.success && result.data) {
+        const loaded = result.data
+        set((state) => ({
+          messages: [...loaded.messages, ...state.messages],
+          hasMoreMessages: loaded.hasMore,
+        }))
+      }
+    },
+
+    addMessage: async (role: MessageRole, content: string, files?: FileData[]) => {
+      const activeConversationId = get().activeConversationId
+      if (!activeConversationId) return
+
+      const imageFiles = files?.filter((f) => isImageMime(f.mimeType))
+      const result = await window.api.createMessage(
+        activeConversationId,
+        role,
+        content,
+        imageFiles && imageFiles.length > 0 ? imageFiles : undefined,
+      )
+      if (result.success && result.data) {
+        set((state) => ({ messages: [...state.messages, result.data!] }))
+      } else {
+        set({ error: result.error ?? 'Failed to send message' })
+      }
+    },
+
+    deleteMessage: async (id: string) => {
+      const result = await window.api.deleteMessage(id)
+      if (result.success) {
+        set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
+      } else {
+        set({ error: result.error ?? 'Failed to delete message' })
+      }
+    },
+
+    clearMessages: async (conversationId: string) => {
+      const result = await window.api.clearMessages(conversationId)
+      if (result.success) {
+        const { activeConversationId } = get()
+        if (activeConversationId === conversationId) {
+          set({ messages: [], hasMoreMessages: false })
+        }
+      } else {
+        set({ error: result.error ?? 'Failed to clear messages' })
+      }
+    },
+
+    insertDivider: async () => {
+      const { activeConversationId } = get()
+      if (!activeConversationId) return
+      const result = await window.api.insertDivider(activeConversationId)
+      if (result.success && result.data) {
+        set((state) => ({ messages: [...state.messages, result.data!] }))
+      }
+    },
+
+    sendMessage: async (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => {
+      if (get().isStreaming) return
+
+      let conversationId = get().activeConversationId
+
+      // Auto-create conversation if none is active
+      if (!conversationId) {
+        const assistantId = useAssistantStore.getState().activeAssistantId ?? undefined
+        const ok = await get().createConversation(undefined, assistantId)
+        if (!ok) return
+        conversationId = get().activeConversationId
+        if (!conversationId) return
+      }
+
+      // Save user message to DB and update local state (also persists images to disk)
+      await get().addMessage('user', content, files)
+
+      await startStream({
+        conversationId,
+        apiPayload: { conversationId, files, reasoningEffort },
+        resendTargetId: null,
+        registerTitleListener: true,
+      })
+    },
+
+    resendMessage: async (userMessageId: string) => {
+      if (get().isStreaming) return
+      const { messages, activeConversationId } = get()
+      if (!activeConversationId) return
+
+      const userMsgIndex = messages.findIndex((m) => m.id === userMessageId)
+      if (userMsgIndex === -1) return
+
+      // Lock immediately to prevent double-click races
+      set({ isStreaming: true })
+
+      // Delete the AI response right after this user message (if any)
+      const nextMsg = messages[userMsgIndex + 1]
+      if (nextMsg && nextMsg.role === 'assistant') {
+        const deleteResult = await window.api.deleteMessage(nextMsg.id)
+        if (!deleteResult.success) {
+          set({ isStreaming: false, error: deleteResult.error ?? 'Failed to delete old response' })
+          return
+        }
+        set((state) => ({
+          messages: state.messages.filter((m) => m.id !== nextMsg.id),
+        }))
+      }
+
+      await startStream({
+        conversationId: activeConversationId,
+        apiPayload: { conversationId: activeConversationId, resendMessageId: userMessageId },
+        resendTargetId: userMessageId,
+        registerTitleListener: false,
+      })
+    },
+
+    stopGeneration: () => {
+      const {
+        activeConversationId: conversationId,
+        streamingContent,
+        streamingReasoningContent,
+        resendTargetId,
+      } = get()
+      if (!conversationId) return
+
+      window.api.stopGeneration(conversationId)
+
+      // Immediately show partial content as a temporary message so the user
+      // sees the response so far while the main process finishes aborting.
+      if (streamingContent) {
+        const tempMessage: Message = {
+          id: `_stopping_${conversationId}`,
+          conversationId,
+          role: 'assistant',
+          content: streamingContent,
+          reasoningContent: streamingReasoningContent || null,
+          createdAt: new Date().toISOString(),
+          tokenCount: null,
+          duration: null,
+          thinkingDuration: null,
+        }
+        set((state) => {
+          // For resend: insert temp message after the target user message
+          if (resendTargetId) {
+            const targetIdx = state.messages.findIndex((m) => m.id === resendTargetId)
+            if (targetIdx !== -1) {
+              const newMessages = [...state.messages]
+              newMessages.splice(targetIdx + 1, 0, tempMessage)
+              return {
+                messages: newMessages,
+                isStreaming: false,
+                streamingContent: '',
+                streamingReasoningContent: '',
+                streamStartTime: null,
+                resendTargetId: null,
+              }
+            }
+          }
+          return {
+            messages: [...state.messages, tempMessage],
+            isStreaming: false,
+            streamingContent: '',
+            streamingReasoningContent: '',
+            streamStartTime: null,
+            resendTargetId: null,
+          }
+        })
+      } else {
+        set({
           isStreaming: false,
           streamingContent: '',
           streamingReasoningContent: '',
           streamStartTime: null,
           resendTargetId: null,
-        }
-      })
-    } else {
-      set({
-        isStreaming: false,
-        streamingContent: '',
-        streamingReasoningContent: '',
-        streamStartTime: null,
-        resendTargetId: null,
-      })
-    }
-  },
-}})
+        })
+      }
+    },
+  }
+})
