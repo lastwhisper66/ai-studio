@@ -81,7 +81,7 @@ export function MessageList({
 
   return (
     <ScrollArea className="flex-1" viewportRef={scrollRef}>
-      <div className="space-y-6 p-6">
+      <div className="min-w-0 space-y-6 p-6">
         {/* System prompt banner — only when no messages yet */}
         {activeAssistant && onEditSystemPrompt && messages.length === 0 && !isStreaming && (
           <SystemPromptBanner

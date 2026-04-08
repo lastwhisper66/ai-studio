@@ -142,7 +142,8 @@ export const MessageBubble = memo(function MessageBubble({
   const isWaiting = isStreaming && !content && !reasoningContent
 
   return (
-    <div className={`group flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div
+      className={`group flex min-w-0 items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       <Avatar className="h-8 w-8 shrink-0">
         <AvatarFallback
           className={
@@ -152,9 +153,9 @@ export const MessageBubble = memo(function MessageBubble({
         </AvatarFallback>
       </Avatar>
 
-      <div className="relative max-w-[80%]">
+      <div className="relative min-w-0 max-w-[60%]">
         <div
-          className={`rounded-2xl px-4 py-3 text-sm ${
+          className={`wrap-anywhere overflow-hidden rounded-2xl px-4 py-3 text-sm ${
             isUser
               ? 'whitespace-pre-wrap bg-chat-user text-chat-user-foreground'
               : 'text-foreground'

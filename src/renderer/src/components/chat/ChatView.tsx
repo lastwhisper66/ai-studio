@@ -171,7 +171,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
 
   return (
     <div
-      className="relative flex flex-1 flex-col bg-background text-foreground"
+      className="relative flex min-w-0 flex-1 flex-col overflow-x-hidden bg-background text-foreground"
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}

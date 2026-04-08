@@ -167,7 +167,7 @@ export function ConnectionTestDialog({
                               {t(STATUS_KEY[state.status])}
                             </span>
                           </TooltipTrigger>
-                          <TooltipContent side="left" className="max-w-[240px] break-words text-xs">
+                          <TooltipContent side="left" className="max-w-60 break-words text-xs">
                             {state.message}
                           </TooltipContent>
                         </Tooltip>

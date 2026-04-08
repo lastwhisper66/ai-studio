@@ -154,6 +154,13 @@ pre.shiki code {
   margin-bottom: 0;
 }
 
+/* ── Chat bubble overflow control ── */
+/* overflow-wrap: anywhere behaves like break-word but also affects
+   min-content sizing, allowing flex children to shrink properly */
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
 /* ── Translate: no-wrap mode ── */
 /* Forces all text to not wrap; code blocks keep original formatting */
 .translate-no-wrap * {
