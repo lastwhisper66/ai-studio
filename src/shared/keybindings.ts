@@ -4,6 +4,7 @@ export type KeybindingActionId =
   | 'new-conversation'
   | 'toggle-settings'
   | 'toggle-sidebar'
+  | 'toggle-topic'
   | 'stop-generation'
   | 'summon-window'
 
@@ -28,6 +29,11 @@ export const DEFAULT_KEYBINDINGS: Record<KeybindingActionId, KeybindingDef> = {
   'toggle-sidebar': {
     defaultAccelerator: 'Ctrl+B',
     labelKey: 'keybindings.toggleSidebar',
+    category: 'window',
+  },
+  'toggle-topic': {
+    defaultAccelerator: 'Ctrl+Shift+B',
+    labelKey: 'keybindings.toggleTopic',
     category: 'window',
   },
   'stop-generation': {

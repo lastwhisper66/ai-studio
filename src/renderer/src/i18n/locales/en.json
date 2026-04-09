@@ -377,6 +377,7 @@
     "newConversation": "New Conversation",
     "toggleSettings": "Toggle Settings",
     "toggleSidebar": "Toggle Sidebar",
+    "toggleTopic": "Toggle Topic Panel",
     "stopGeneration": "Stop Generation",
     "summonWindow": "Summon Window",
     "category": {

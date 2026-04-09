@@ -78,6 +78,20 @@ export function AppLayout(): React.JSX.Element {
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [toggleSidebar, getAccelerator])
 
+  // Configurable topic panel toggle shortcut — only active on chat view
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (useSettingsStore.getState().activeView !== 'chat') return
+      const accel = getAccelerator('toggle-topic')
+      if (matchesShortcut(e, accel)) {
+        e.preventDefault()
+        toggleTopic()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [toggleTopic, getAccelerator])
+
   return (
     <div
       className={`flex h-screen w-screen flex-col overflow-hidden${sidebarResizing || topicResizing ? ' cursor-col-resize select-none' : ''}`}>

@@ -377,6 +377,7 @@
     "newConversation": "新建对话",
     "toggleSettings": "切换设置",
     "toggleSidebar": "切换侧边栏",
+    "toggleTopic": "切换话题面板",
     "stopGeneration": "停止生成",
     "summonWindow": "唤醒窗口",
     "category": {
