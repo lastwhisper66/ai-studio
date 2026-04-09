@@ -351,7 +351,6 @@ const api = {
     ipcRenderer.on(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
     return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
   },
-
 }
 
 export type ApiType = typeof api

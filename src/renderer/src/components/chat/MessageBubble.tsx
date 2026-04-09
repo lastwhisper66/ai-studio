@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
+import React, { useState, useCallback, useEffect, memo } from 'react'
 import { Copy, Check, Trash2, User, Bot, Clock, RefreshCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { ThinkingBlock } from './ThinkingBlock'
 import { useElapsedTime } from '@renderer/hooks/useElapsedTime'
+import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
 import type { MessageRole, AttachmentMeta } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
@@ -108,21 +109,13 @@ export const MessageBubble = memo(function MessageBubble({
 }: MessageBubbleProps) {
   const { t } = useTranslation()
   const isUser = role === 'user'
-  const [copied, setCopied] = useState(false)
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const { copied, copy } = useCopyToClipboard()
   const elapsed = useElapsedTime(isStreaming ? streamStartTime : null)
-
-  useEffect(() => {
-    return () => clearTimeout(copyTimerRef.current)
-  }, [])
 
   const handleCopy = useCallback(() => {
     const cleaned = content.replace(/ +$/gm, '')
-    navigator.clipboard.writeText(cleaned).catch(() => {})
-    setCopied(true)
-    clearTimeout(copyTimerRef.current)
-    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
-  }, [content])
+    copy(cleaned)
+  }, [content, copy])
 
   const handleDelete = useCallback(() => {
     if (messageId && onDelete) {

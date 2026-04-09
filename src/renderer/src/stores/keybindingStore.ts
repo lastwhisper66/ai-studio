@@ -67,7 +67,6 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     const next = { ...get().overrides, [actionId]: accelerator }
     set({ overrides: next })
     await persistOverrides(next)
-
   },
 
   removeOverride: async (actionId) => {
@@ -75,7 +74,6 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     delete next[actionId]
     set({ overrides: next })
     await persistOverrides(next)
-
   },
 
   resetAction: async (actionId) => {

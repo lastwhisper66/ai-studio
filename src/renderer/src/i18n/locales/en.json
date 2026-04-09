@@ -15,7 +15,8 @@
     "saving": "Saving...",
     "comingSoon": "Coming soon",
     "noModelSet": "No model set",
-    "noModelConfigured": "No models configured"
+    "noModelConfigured": "No models configured",
+    "copied": "Copied"
   },
   "titleBar": {
     "expandSidebar": "Expand sidebar",

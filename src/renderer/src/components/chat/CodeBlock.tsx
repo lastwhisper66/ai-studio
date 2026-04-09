@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef, memo } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { useTheme } from '@renderer/hooks/useTheme'
 import { highlightCode } from '@renderer/lib/shiki'
+import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
 
 interface CodeBlockProps {
   code: string
@@ -12,8 +13,7 @@ interface CodeBlockProps {
 export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockProps) {
   const { resolvedTheme } = useTheme()
   const [highlightedHtml, setHighlightedHtml] = useState<string>('')
-  const [copied, setCopied] = useState(false)
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const { copied, copy } = useCopyToClipboard()
 
   const shikiTheme = resolvedTheme === 'light' ? 'github-light' : 'github-dark'
 
@@ -31,17 +31,6 @@ export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockPr
     }
   }, [code, language, shikiTheme])
 
-  useEffect(() => {
-    return () => clearTimeout(copyTimerRef.current)
-  }, [])
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(code).catch(() => {})
-    setCopied(true)
-    clearTimeout(copyTimerRef.current)
-    copyTimerRef.current = setTimeout(() => setCopied(false), 2000)
-  }, [code])
-
   return (
     <div className="my-3 overflow-hidden rounded-lg border bg-muted">
       {/* Header bar */}
@@ -51,7 +40,7 @@ export const CodeBlock = memo(function CodeBlock({ code, language }: CodeBlockPr
           variant="ghost"
           size="icon"
           className="h-6 w-6"
-          onClick={handleCopy}
+          onClick={() => copy(code)}
           aria-label="Copy code">
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
         </Button>

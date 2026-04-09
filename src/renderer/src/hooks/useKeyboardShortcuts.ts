@@ -41,5 +41,12 @@ export function useKeyboardShortcuts(): void {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [createConversation, stopGeneration, isStreaming, getAccelerator, setActiveView, requestInputFocus])
+  }, [
+    createConversation,
+    stopGeneration,
+    isStreaming,
+    getAccelerator,
+    setActiveView,
+    requestInputFocus,
+  ])
 }
