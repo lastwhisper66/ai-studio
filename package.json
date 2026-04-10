@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "description": "AI Studio - Windows desktop AI chat application",
   "main": "./out/main/index.js",
-  "author": "",
+  "author": {
+    "name": "lastwhisper",
+    "email": "lastwhisper66@gmail.com"
+  },
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",
