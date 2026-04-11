@@ -42,6 +42,10 @@ export function MessageList({
   const { t } = useTranslation()
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
   const resendMessage = useConversationStore((s) => s.resendMessage)
+  const editMessage = useConversationStore((s) => s.editMessage)
+  const editAndResendMessage = useConversationStore((s) => s.editAndResendMessage)
+  const editingMessageId = useConversationStore((s) => s.editingMessageId)
+  const setEditingMessageId = useConversationStore((s) => s.setEditingMessageId)
   const resendTargetId = useConversationStore((s) => s.resendTargetId)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
   const throttledReasoning = useThrottledValue(streamingReasoningContent, isStreaming)
@@ -145,8 +149,13 @@ export function MessageList({
                     attachments={msg.attachments}
                     duration={msg.duration}
                     thinkingDuration={msg.thinkingDuration}
+                    isEditing={editingMessageId === msg.id}
                     onDelete={deleteMessage}
                     onResend={handleResend}
+                    onEdit={(id) => setEditingMessageId(id)}
+                    onEditSave={editMessage}
+                    onEditSaveAndResend={editAndResendMessage}
+                    onEditCancel={() => setEditingMessageId(null)}
                   />
                   {/* Show streaming bubble right after the resend target user message */}
                   {isStreaming && resendTargetId === msg.id && (

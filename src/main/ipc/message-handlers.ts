@@ -8,6 +8,7 @@ import {
   listMessagesPaginated,
   createMessage,
   deleteMessage,
+  updateMessageContent,
   clearConversationMessages,
   getMessageAttachments,
   insertDivider,
@@ -81,6 +82,18 @@ export function registerMessageHandlers(): void {
       return { success: false, error: (e as Error).message }
     }
   })
+
+  ipcMain.handle(
+    IpcChannels.MESSAGE_UPDATE,
+    (_, id: string, content: string): IpcResult<Message> => {
+      try {
+        const data = updateMessageContent(id, content)
+        return { success: true, data }
+      } catch (e) {
+        return { success: false, error: (e as Error).message }
+      }
+    },
+  )
 
   ipcMain.handle(IpcChannels.MESSAGE_CLEAR, (_, conversationId: string): IpcResult<void> => {
     try {

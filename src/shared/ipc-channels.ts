@@ -11,6 +11,7 @@ export const IpcChannels = {
   MESSAGE_LIST_PAGINATED: 'message:list-paginated',
   MESSAGE_CREATE: 'message:create',
   MESSAGE_DELETE: 'message:delete',
+  MESSAGE_UPDATE: 'message:update',
   MESSAGE_CLEAR: 'message:clear',
   MESSAGE_INSERT_DIVIDER: 'message:insert-divider',
   // Phrase

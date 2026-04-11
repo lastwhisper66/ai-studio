@@ -1,8 +1,11 @@
-import React, { useState, useCallback, useEffect, memo } from 'react'
-import { Copy, Check, Trash2, User, Bot, Clock, RefreshCcw } from 'lucide-react'
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
+import { Copy, Check, Trash2, User, Bot, Clock, RefreshCcw, Pencil } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
+import { Textarea } from '@renderer/components/ui/textarea'
+import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { ThinkingBlock } from './ThinkingBlock'
 import { useElapsedTime } from '@renderer/hooks/useElapsedTime'
@@ -21,8 +24,13 @@ interface MessageBubbleProps {
   duration?: number | null
   thinkingDuration?: number | null
   streamStartTime?: number | null
+  isEditing?: boolean
   onDelete?: (id: string) => void
   onResend?: (messageId: string) => void
+  onEdit?: (messageId: string) => void
+  onEditSave?: (messageId: string, newContent: string) => void
+  onEditSaveAndResend?: (messageId: string, newContent: string) => void
+  onEditCancel?: () => void
 }
 
 function formatDuration(ms: number): string {
@@ -104,13 +112,46 @@ export const MessageBubble = memo(function MessageBubble({
   duration,
   thinkingDuration,
   streamStartTime,
+  isEditing,
   onDelete,
   onResend,
+  onEdit,
+  onEditSave,
+  onEditSaveAndResend,
+  onEditCancel,
 }: MessageBubbleProps) {
   const { t } = useTranslation()
   const isUser = role === 'user'
   const { copied, copy } = useCopyToClipboard()
   const elapsed = useElapsedTime(isStreaming ? streamStartTime : null)
+
+  // ── Inline edit state ──
+  const [editDraft, setEditDraft] = useState('')
+  const [resendConfirmOpen, setResendConfirmOpen] = useState(false)
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Sync draft + auto-resize when entering edit mode or typing
+  useEffect(() => {
+    if (!isEditing) return
+    setEditDraft(content)
+    requestAnimationFrame(() => {
+      const el = editTextareaRef.current
+      if (el) {
+        el.focus()
+        el.style.height = 'auto'
+        el.style.height = `${Math.min(el.scrollHeight, 320)}px`
+      }
+    })
+  }, [isEditing, content])
+
+  useEffect(() => {
+    if (!isEditing) return
+    const el = editTextareaRef.current
+    if (el) {
+      el.style.height = 'auto'
+      el.style.height = `${Math.min(el.scrollHeight, 320)}px`
+    }
+  }, [editDraft, isEditing])
 
   const handleCopy = useCallback(() => {
     const cleaned = content.replace(/ +$/gm, '')
@@ -129,6 +170,46 @@ export const MessageBubble = memo(function MessageBubble({
     }
   }, [messageId, onResend])
 
+  const handleEdit = useCallback(() => {
+    if (messageId && onEdit) {
+      onEdit(messageId)
+    }
+  }, [messageId, onEdit])
+
+  const handleEditSave = useCallback(() => {
+    const trimmed = editDraft.trim()
+    if (messageId && trimmed && trimmed !== content && onEditSave) {
+      onEditSave(messageId, trimmed)
+    } else {
+      onEditCancel?.()
+    }
+  }, [editDraft, content, messageId, onEditSave, onEditCancel])
+
+  const handleEditSaveAndResend = useCallback(() => {
+    if (!messageId) return
+    const trimmed = editDraft.trim()
+    if (trimmed && trimmed !== content && onEditSaveAndResend) {
+      onEditSaveAndResend(messageId, trimmed)
+    } else {
+      // Content unchanged — just cancel edit and resend
+      onEditCancel?.()
+      onResend?.(messageId)
+    }
+  }, [editDraft, content, messageId, onEditSaveAndResend, onEditCancel, onResend])
+
+  const handleEditKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault()
+        handleEditSave()
+      }
+      if (e.key === 'Escape') {
+        onEditCancel?.()
+      }
+    },
+    [handleEditSave, onEditCancel],
+  )
+
   const showActions = !isStreaming && messageId
   const hasImages = attachments && attachments.some((a) => isImageMime(a.mimeType))
   const showDuration = !isUser && (isStreaming || (duration ?? 0) > 0)
@@ -146,7 +227,7 @@ export const MessageBubble = memo(function MessageBubble({
         </AvatarFallback>
       </Avatar>
 
-      <div className="relative min-w-0 max-w-[60%]">
+      <div className={`relative min-w-0 max-w-[60%] ${isEditing ? 'w-[60%]' : ''}`}>
         <div
           className={`wrap-anywhere overflow-hidden rounded-2xl px-4 py-3 text-sm ${
             isUser
@@ -160,7 +241,47 @@ export const MessageBubble = memo(function MessageBubble({
               <div className="h-3 w-24 animate-pulse rounded bg-muted" />
             </div>
           ) : isUser ? (
-            content
+            isEditing ? (
+              <div className="space-y-2">
+                <Textarea
+                  ref={editTextareaRef}
+                  className="field-sizing-fixed min-h-[40px] max-h-[320px] resize-none border-0 bg-transparent p-0 text-sm text-chat-user-foreground shadow-none focus-visible:ring-0"
+                  value={editDraft}
+                  onChange={(e) => setEditDraft(e.target.value)}
+                  onKeyDown={handleEditKeyDown}
+                  rows={1}
+                />
+                <div className="flex justify-end gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs text-chat-user-foreground/70 hover:bg-chat-user-foreground/15 dark:hover:bg-chat-user-foreground/20 hover:text-chat-user-foreground"
+                    onClick={onEditCancel}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs text-chat-user-foreground/70 hover:bg-chat-user-foreground/15 dark:hover:bg-chat-user-foreground/20 hover:text-chat-user-foreground"
+                    disabled={!editDraft.trim() || editDraft.trim() === content}
+                    onClick={handleEditSave}>
+                    <Check className="mr-1 h-3 w-3" />
+                    {t('common.save')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-xs text-chat-user-foreground hover:bg-chat-user-foreground/15 dark:hover:bg-chat-user-foreground/20 hover:text-chat-user-foreground"
+                    disabled={!editDraft.trim()}
+                    onClick={handleEditSaveAndResend}>
+                    <RefreshCcw className="mr-1 h-3 w-3" />
+                    {t('chat.resend')}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              content
+            )
           ) : (
             <>
               {reasoningContent && (
@@ -188,34 +309,93 @@ export const MessageBubble = memo(function MessageBubble({
             className={`mt-1 flex items-center gap-0.5 ${
               isUser ? 'justify-end' : 'justify-start'
             }`}>
-            {showActions && (
+            {showActions && !isEditing && (
               <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={handleCopy}
-                  aria-label={t('chat.copyMessage')}>
-                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                </Button>
-                {onResend && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6"
-                    onClick={handleResend}
-                    aria-label={t('chat.resendMessage')}>
-                    <RefreshCcw className="h-3 w-3" />
-                  </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={handleCopy}
+                      aria-label={t('chat.copyMessage')}>
+                      {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t('chat.copyMessage')}</TooltipContent>
+                </Tooltip>
+                {isUser && onEdit && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={handleEdit}
+                        aria-label={t('chat.editMessage')}>
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">{t('chat.editMessage')}</TooltipContent>
+                  </Tooltip>
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-destructive hover:text-destructive"
-                  onClick={handleDelete}
-                  aria-label={t('chat.deleteMessage')}>
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                {onResend && (
+                  <Tooltip>
+                    <Popover open={resendConfirmOpen} onOpenChange={setResendConfirmOpen}>
+                      <TooltipTrigger asChild>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            aria-label={t('chat.resendMessage')}>
+                            <RefreshCcw className="h-3 w-3" />
+                          </Button>
+                        </PopoverTrigger>
+                      </TooltipTrigger>
+                      <PopoverContent
+                        className="w-auto max-w-56 p-3"
+                        side="bottom"
+                        align={isUser ? 'end' : 'start'}>
+                        <p className="mb-2 text-xs text-muted-foreground">
+                          {t('chat.resendConfirmDescription')}
+                        </p>
+                        <div className="flex justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setResendConfirmOpen(false)}>
+                            {t('common.cancel')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => {
+                              setResendConfirmOpen(false)
+                              handleResend()
+                            }}>
+                            {t('common.confirm')}
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <TooltipContent side="bottom">{t('chat.resendMessage')}</TooltipContent>
+                  </Tooltip>
+                )}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      onClick={handleDelete}
+                      aria-label={t('chat.deleteMessage')}>
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">{t('chat.deleteMessage')}</TooltipContent>
+                </Tooltip>
               </>
             )}
             {showDuration && (

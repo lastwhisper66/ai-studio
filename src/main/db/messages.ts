@@ -119,6 +119,26 @@ export function deleteMessage(id: string): void {
   getDb().prepare('DELETE FROM messages WHERE id = ?').run(id)
 }
 
+export function updateMessageContent(id: string, content: string): Message {
+  const db = getDb()
+  const updateMessage = db.transaction(() => {
+    const info = db.prepare('UPDATE messages SET content = ? WHERE id = ?').run(content, id)
+    if (info.changes === 0) return null
+
+    // Touch conversation to update updated_at
+    const row = db.prepare('SELECT conversation_id FROM messages WHERE id = ?').get(id) as
+      | { conversation_id: string }
+      | undefined
+    if (row) touchConversation(row.conversation_id)
+
+    return db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as MessageRow
+  })
+
+  const updated = updateMessage()
+  if (!updated) throw new Error(`Message not found: ${id}`)
+  return rowToMessage(updated)
+}
+
 export function getMessageAttachments(
   conversationId: string,
 ): { id: string; attachments: string }[] {

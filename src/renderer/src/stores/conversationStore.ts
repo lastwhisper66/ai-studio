@@ -24,6 +24,8 @@ interface ConversationState {
   streamStartTime: number | null
   /** When resending, the ID of the message being replaced (the old AI response) */
   resendTargetId: string | null
+  /** ID of the user message currently being edited; null = no edit active */
+  editingMessageId: string | null
   focusInputTrigger: number
 
   requestInputFocus: () => void
@@ -45,6 +47,9 @@ interface ConversationState {
     reasoningEffort?: ReasoningEffort,
   ) => Promise<void>
   resendMessage: (userMessageId: string) => Promise<void>
+  editMessage: (messageId: string, newContent: string) => Promise<void>
+  editAndResendMessage: (messageId: string, newContent: string) => Promise<void>
+  setEditingMessageId: (id: string | null) => void
   stopGeneration: () => void
   clearError: () => void
 }
@@ -193,6 +198,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     streamingReasoningContent: '',
     streamStartTime: null,
     resendTargetId: null,
+    editingMessageId: null,
     focusInputTrigger: 0,
 
     requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
@@ -330,7 +336,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     },
 
     setActiveConversation: async (id: string) => {
-      set({ activeConversationId: id, isLoading: true })
+      set({ activeConversationId: id, isLoading: true, editingMessageId: null })
       const result = await window.api.listMessagesPaginated(id)
       if (result.success && result.data) {
         set({
@@ -463,6 +469,38 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         registerTitleListener: false,
       })
     },
+
+    editMessage: async (messageId: string, newContent: string) => {
+      if (get().isStreaming) return
+      if (!newContent.trim()) return
+      const { messages, activeConversationId } = get()
+      if (!activeConversationId) return
+
+      const msgIndex = messages.findIndex((m) => m.id === messageId)
+      if (msgIndex === -1 || messages[msgIndex].role !== 'user') return
+
+      // 1. Persist content update to DB
+      const updateResult = await window.api.updateMessage(messageId, newContent)
+      if (!updateResult.success) {
+        set({ error: updateResult.error ?? 'Failed to update message' })
+        return
+      }
+
+      // 2. Update local state with new content and clear edit mode
+      set((state) => ({
+        messages: state.messages.map((m) =>
+          m.id === messageId ? { ...m, content: newContent } : m,
+        ),
+        editingMessageId: null,
+      }))
+    },
+
+    editAndResendMessage: async (messageId: string, newContent: string) => {
+      await get().editMessage(messageId, newContent)
+      await get().resendMessage(messageId)
+    },
+
+    setEditingMessageId: (id: string | null) => set({ editingMessageId: id }),
 
     stopGeneration: () => {
       const {
