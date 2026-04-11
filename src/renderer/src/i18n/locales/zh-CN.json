@@ -155,7 +155,7 @@
       "general": "通用设置",
       "security": "安全设置",
       "display": "显示设置",
-      "language": "语言设置",
+      "data": "数据",
       "keyboardShortcuts": "快捷键"
     },
     "provider": {
@@ -212,9 +212,23 @@
     "general": {
       "title": "通用设置",
       "description": "应用程序通用配置。",
+      "language": "语言",
+      "startup": "启动",
+      "autoLaunch": "开机自动启动",
+      "autoLaunchDescription": "登录计算机时自动启动应用程序。",
+      "startMinimized": "启动时最小化到托盘",
+      "startMinimizedDescription": "开启后，应用启动时将隐藏到系统托盘而非显示主窗口。",
       "window": "窗口",
       "closeToTray": "关闭时最小化到系统托盘",
       "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。",
+      "spellCheck": "拼写检查",
+      "spellCheckDescription": "为文本输入框启用内置拼写检查器。",
+      "languageLabel": "显示语言",
+      "languageHint": "语言更改立即生效。"
+    },
+    "data": {
+      "title": "数据",
+      "description": "管理应用程序数据和存储。",
       "dataManagement": "数据管理",
       "clearData": "清除所有数据",
       "clearDataDescription": "删除所有对话记录、设置和附件，应用将自动重启。",
@@ -245,15 +259,6 @@
         "amber": "琥珀暖阳",
         "rose": "玫瑰粉黛"
       }
-    },
-    "language": {
-      "title": "语言设置",
-      "description": "选择你偏好的显示语言。",
-      "label": "显示语言",
-      "auto": "自动（跟随系统）",
-      "en": "English",
-      "zhCN": "简体中文",
-      "restartHint": "语言更改立即生效。"
     }
   },
   "translate": {

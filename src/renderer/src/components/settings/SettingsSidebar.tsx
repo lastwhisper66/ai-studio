@@ -5,8 +5,8 @@ import {
   Settings2,
   ShieldCheck,
   Monitor,
-  Globe,
   Keyboard,
+  Database,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -18,7 +18,7 @@ export type SettingsSection =
   | 'general'
   | 'security'
   | 'display'
-  | 'language'
+  | 'data'
   | 'keyboard-shortcuts'
 
 interface SettingsSidebarProps {
@@ -33,7 +33,7 @@ const sections: { id: SettingsSection; labelKey: string; icon: React.ElementType
   { id: 'general', labelKey: 'settings.sections.general', icon: Settings2 },
   { id: 'security', labelKey: 'settings.sections.security', icon: ShieldCheck },
   { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
-  { id: 'language', labelKey: 'settings.sections.language', icon: Globe },
+  { id: 'data', labelKey: 'settings.sections.data', icon: Database },
   { id: 'keyboard-shortcuts', labelKey: 'settings.sections.keyboardShortcuts', icon: Keyboard },
 ]
 

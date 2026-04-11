@@ -155,7 +155,7 @@
       "general": "General",
       "security": "Security",
       "display": "Display",
-      "language": "Language",
+      "data": "Data",
       "keyboardShortcuts": "Shortcuts"
     },
     "provider": {
@@ -212,9 +212,23 @@
     "general": {
       "title": "General",
       "description": "General application settings.",
+      "language": "Language",
+      "startup": "Startup",
+      "autoLaunch": "Launch at system startup",
+      "autoLaunchDescription": "Automatically start the application when you log in to your computer.",
+      "startMinimized": "Start minimized to tray",
+      "startMinimizedDescription": "When enabled, the application starts hidden in the system tray instead of showing the main window.",
       "window": "Window",
       "closeToTray": "Minimize to system tray on close",
       "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application.",
+      "spellCheck": "Spell check",
+      "spellCheckDescription": "Enable the built-in spell checker for text input fields.",
+      "languageLabel": "Display Language",
+      "languageHint": "Language changes take effect immediately."
+    },
+    "data": {
+      "title": "Data",
+      "description": "Manage application data and storage.",
       "dataManagement": "Data Management",
       "clearData": "Clear All Data",
       "clearDataDescription": "Delete all conversations, settings, and attachments. The app will restart automatically.",
@@ -245,15 +259,6 @@
         "amber": "Amber Glow",
         "rose": "Rose Petal"
       }
-    },
-    "language": {
-      "title": "Language",
-      "description": "Choose your preferred display language.",
-      "label": "Display Language",
-      "auto": "Auto (System)",
-      "en": "English",
-      "zhCN": "Simplified Chinese",
-      "restartHint": "Language changes take effect immediately."
     }
   },
   "translate": {

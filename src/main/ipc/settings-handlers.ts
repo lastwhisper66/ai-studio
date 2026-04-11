@@ -3,7 +3,24 @@ import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult } from '@shared/types'
 import { getSetting, setSetting, setSettingsBatch, getAllSettings } from '../db'
 import { applySslSetting } from '../ai'
-import { applyCloseToTraySetting } from '../app-state'
+import {
+  applyCloseToTraySetting,
+  applyAutoLaunchSetting,
+  applySpellCheckSetting,
+  applyStartMinimizedSetting,
+} from '../app-state'
+
+const settingSideEffects: Record<string, (value: string) => void> = {
+  'app.skipSslVerify': (v) => applySslSetting(v === 'true'),
+  'app.closeToTray': applyCloseToTraySetting,
+  'app.autoLaunch': applyAutoLaunchSetting,
+  'app.spellCheck': applySpellCheckSetting,
+  'app.startMinimized': applyStartMinimizedSetting,
+}
+
+function applySideEffects(key: string, value: string): void {
+  settingSideEffects[key]?.(value)
+}
 
 export function registerSettingsHandlers(): void {
   ipcMain.handle(IpcChannels.SETTINGS_GET, (_, key: string): IpcResult<string | undefined> => {
@@ -18,12 +35,7 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle(IpcChannels.SETTINGS_SET, (_, key: string, value: string): IpcResult<void> => {
     try {
       setSetting(key, value)
-      if (key === 'app.skipSslVerify') {
-        applySslSetting(value === 'true')
-      }
-      if (key === 'app.closeToTray') {
-        applyCloseToTraySetting(value)
-      }
+      applySideEffects(key, value)
       return { success: true }
     } catch (e) {
       return { success: false, error: (e as Error).message }
@@ -44,11 +56,8 @@ export function registerSettingsHandlers(): void {
     (_, entries: Record<string, string>): IpcResult<void> => {
       try {
         setSettingsBatch(entries)
-        if ('app.skipSslVerify' in entries) {
-          applySslSetting(entries['app.skipSslVerify'] === 'true')
-        }
-        if ('app.closeToTray' in entries) {
-          applyCloseToTraySetting(entries['app.closeToTray'])
+        for (const [key, value] of Object.entries(entries)) {
+          applySideEffects(key, value)
         }
         return { success: true }
       } catch (e) {

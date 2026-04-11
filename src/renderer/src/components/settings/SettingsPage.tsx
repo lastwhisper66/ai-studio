@@ -8,8 +8,8 @@ import { ModelLibrarySection } from './ModelLibrarySection'
 import { ModelGroupSection } from './ModelGroupSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
-import { LanguageSection } from './LanguageSection'
 import { SecuritySection } from './SecuritySection'
+import { DataSection } from './DataSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 
 export function SettingsPage(): React.JSX.Element {
@@ -44,7 +44,7 @@ export function SettingsPage(): React.JSX.Element {
               {activeSection === 'general' && <GeneralSection />}
               {activeSection === 'security' && <SecuritySection />}
               {activeSection === 'display' && <DisplaySection />}
-              {activeSection === 'language' && <LanguageSection />}
+              {activeSection === 'data' && <DataSection />}
               {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
             </div>
           </ScrollArea>

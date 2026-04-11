@@ -16,7 +16,14 @@ import { IpcChannels } from '@shared/ipc-channels'
 import { initDatabase, closeDatabase } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
-import { initCloseToTray, getCloseToTray } from './app-state'
+import {
+  initCloseToTray,
+  getCloseToTray,
+  getStartMinimized,
+  initStartMinimized,
+  initAutoLaunch,
+  initSpellCheck,
+} from './app-state'
 import { getDataDir } from './utils/paths'
 
 // ── Window state persistence ────────────────────────────────────
@@ -104,10 +111,12 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    if (restored.isMaximized) {
-      mainWindow.maximize()
+    if (!getStartMinimized()) {
+      if (restored.isMaximized) {
+        mainWindow.maximize()
+      }
+      mainWindow.show()
     }
-    mainWindow.show()
   })
 
   // Close behavior: hide to tray or quit, controlled by app.closeToTray setting
@@ -186,6 +195,9 @@ if (!gotTheLock) {
     initDatabase()
     applySslSetting()
     initCloseToTray()
+    initStartMinimized()
+    initAutoLaunch()
+    initSpellCheck()
     registerAllIpcHandlers()
 
     app.on('browser-window-created', (_, window) => {

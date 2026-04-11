@@ -1,29 +1,35 @@
 import { useEffect, useState } from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { X, Globe, SpellCheck, Power, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
-import { Button } from '@renderer/components/ui/button'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@renderer/components/ui/alert-dialog'
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 
+const LANGUAGES = [
+  { value: 'en', label: 'English' },
+  { value: 'zh-CN', label: '简体中文' },
+]
+
 export function GeneralSection(): React.JSX.Element {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { settings, saveSettings } = useSettingsStore()
   const [closeToTray, setCloseToTray] = useState(true)
+  const [spellCheck, setSpellCheck] = useState(true)
+  const [autoLaunch, setAutoLaunch] = useState(false)
+  const [startMinimized, setStartMinimized] = useState(false)
 
   useEffect(() => {
     setCloseToTray(settings['app.closeToTray'] !== 'false')
+    setSpellCheck(settings['app.spellCheck'] !== 'false')
+    setAutoLaunch(settings['app.autoLaunch'] === 'true')
+    setStartMinimized(settings['app.startMinimized'] === 'true')
   }, [settings])
 
   const handleCloseToTrayToggle = (checked: boolean): void => {
@@ -31,19 +37,23 @@ export function GeneralSection(): React.JSX.Element {
     saveSettings({ 'app.closeToTray': String(checked) })
   }
 
-  const [clearError, setClearError] = useState<string | null>(null)
+  const handleSpellCheckToggle = (checked: boolean): void => {
+    setSpellCheck(checked)
+    saveSettings({ 'app.spellCheck': String(checked) })
+  }
 
-  const handleClearData = async (): Promise<void> => {
-    try {
-      setClearError(null)
-      const result = await window.api.clearAppData()
-      // On success the app restarts, so this line only runs on failure
-      if (!result.success) {
-        setClearError(result.error || 'Failed to clear data')
-      }
-    } catch (e) {
-      setClearError((e as Error).message)
-    }
+  const handleAutoLaunchToggle = (checked: boolean): void => {
+    setAutoLaunch(checked)
+    saveSettings({ 'app.autoLaunch': String(checked) })
+  }
+
+  const handleStartMinimizedToggle = (checked: boolean): void => {
+    setStartMinimized(checked)
+    saveSettings({ 'app.startMinimized': String(checked) })
+  }
+
+  const handleLanguageChange = (value: string): void => {
+    i18n.changeLanguage(value)
   }
 
   return (
@@ -53,6 +63,67 @@ export function GeneralSection(): React.JSX.Element {
         <p className="text-muted-foreground mt-1 text-sm">{t('settings.general.description')}</p>
       </div>
 
+      {/* Language */}
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-sm font-semibold">{t('settings.general.language')}</h3>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Globe className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">{t('settings.general.languageLabel')}</Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.general.languageHint')}
+              </p>
+            </div>
+          </div>
+          <Select value={i18n.resolvedLanguage} onValueChange={handleLanguageChange}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((lang) => (
+                <SelectItem key={lang.value} value={lang.value}>
+                  {lang.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Startup */}
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-sm font-semibold">{t('settings.general.startup')}</h3>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Power className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">{t('settings.general.autoLaunch')}</Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.general.autoLaunchDescription')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={autoLaunch} onCheckedChange={handleAutoLaunchToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <EyeOff className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">{t('settings.general.startMinimized')}</Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.general.startMinimizedDescription')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={startMinimized} onCheckedChange={handleStartMinimizedToggle} />
+        </div>
+      </div>
+
+      {/* Window */}
       <div className="rounded-xl border bg-card/50 p-5">
         <h3 className="text-sm font-semibold">{t('settings.general.window')}</h3>
 
@@ -68,46 +139,19 @@ export function GeneralSection(): React.JSX.Element {
           </div>
           <Switch checked={closeToTray} onCheckedChange={handleCloseToTrayToggle} />
         </div>
-      </div>
-
-      <div className="rounded-xl border bg-card/50 p-5">
-        <h3 className="text-sm font-semibold">{t('settings.general.dataManagement')}</h3>
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <Trash2 className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <SpellCheck className="text-muted-foreground mt-0.5 size-4 shrink-0" />
             <div>
-              <Label className="text-sm font-medium">{t('settings.general.clearData')}</Label>
+              <Label className="text-sm font-medium">{t('settings.general.spellCheck')}</Label>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {t('settings.general.clearDataDescription')}
+                {t('settings.general.spellCheckDescription')}
               </p>
             </div>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                {t('settings.general.clearData')}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings.general.clearDataConfirmTitle')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('settings.general.clearDataConfirmDescription')}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleClearData}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  {t('settings.general.clearDataConfirmButton')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Switch checked={spellCheck} onCheckedChange={handleSpellCheckToggle} />
         </div>
-        {clearError && <p className="mt-2 text-xs text-destructive">{clearError}</p>}
       </div>
     </div>
   )
