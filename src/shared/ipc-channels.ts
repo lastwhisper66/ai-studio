@@ -84,4 +84,6 @@ export const IpcChannels = {
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
   WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
+  // App
+  APP_CLEAR_DATA: 'app:clear-data',
 } as const

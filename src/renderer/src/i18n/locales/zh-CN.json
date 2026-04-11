@@ -214,7 +214,13 @@
       "description": "应用程序通用配置。",
       "window": "窗口",
       "closeToTray": "关闭时最小化到系统托盘",
-      "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。"
+      "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。",
+      "dataManagement": "数据管理",
+      "clearData": "清除所有数据",
+      "clearDataDescription": "删除所有对话记录、设置和附件，应用将自动重启。",
+      "clearDataConfirmTitle": "确认清除数据",
+      "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
+      "clearDataConfirmButton": "确认清除"
     },
     "security": {
       "title": "安全设置",

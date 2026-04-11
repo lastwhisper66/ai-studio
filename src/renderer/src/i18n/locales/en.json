@@ -214,7 +214,13 @@
       "description": "General application settings.",
       "window": "Window",
       "closeToTray": "Minimize to system tray on close",
-      "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application."
+      "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application.",
+      "dataManagement": "Data Management",
+      "clearData": "Clear All Data",
+      "clearDataDescription": "Delete all conversations, settings, and attachments. The app will restart automatically.",
+      "clearDataConfirmTitle": "Confirm Clear Data",
+      "clearDataConfirmDescription": "This action cannot be undone. All conversations, settings, provider configurations, and attachment files will be deleted. The app will restart automatically.",
+      "clearDataConfirmButton": "Confirm Clear"
     },
     "security": {
       "title": "Security",

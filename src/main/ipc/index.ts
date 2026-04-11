@@ -12,6 +12,7 @@ import { registerTranslateHandlers } from './translate-handlers'
 import { registerPhraseHandlers } from './phrase-handlers'
 import { registerFileHandlers } from './file-handlers'
 import { registerTranslationHistoryHandlers } from './translation-history-handlers'
+import { registerAppHandlers } from './app-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -28,4 +29,5 @@ export function registerAllIpcHandlers(): void {
   registerPhraseHandlers()
   registerFileHandlers()
   registerTranslationHistoryHandlers()
+  registerAppHandlers()
 }

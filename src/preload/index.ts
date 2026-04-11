@@ -339,6 +339,9 @@ const api = {
   clearTranslationHistory: (): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.TRANSLATION_HISTORY_CLEAR),
 
+  // App
+  clearAppData: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_DATA),
+
   // Window controls
   windowMinimize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),
 

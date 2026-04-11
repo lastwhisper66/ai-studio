@@ -1,11 +1,10 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs'
-import { join, resolve, sep, dirname } from 'path'
-import { app } from 'electron'
+import { join, resolve, sep } from 'path'
 import type { FileData, AttachmentMeta } from '@shared/types'
+import { getDataDir } from '../utils/paths'
 
 function getAttachmentsDir(): string {
-  const appDir = app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()
-  return join(appDir, 'data', 'attachments')
+  return join(getDataDir(), 'attachments')
 }
 
 export function saveAttachments(messageId: string, files: FileData[]): AttachmentMeta[] {

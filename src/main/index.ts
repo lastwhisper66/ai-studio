@@ -17,6 +17,7 @@ import { initDatabase, closeDatabase } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
 import { initCloseToTray, getCloseToTray } from './app-state'
+import { getDataDir } from './utils/paths'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -31,8 +32,7 @@ interface WindowState {
 const defaultState: WindowState = { width: 1200, height: 800, isMaximized: false }
 
 function getWindowStatePath(): string {
-  const appDir = app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()
-  return join(appDir, 'data', 'window-state.json')
+  return join(getDataDir(), 'window-state.json')
 }
 
 function loadWindowState(): WindowState {

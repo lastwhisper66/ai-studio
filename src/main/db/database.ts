@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
-import { app } from 'electron'
 import { existsSync, mkdirSync } from 'fs'
-import { dirname, join } from 'path'
+import { join } from 'path'
+import { getDataDir } from '../utils/paths'
 import { seedModelDefinitions } from './model-definitions'
 import { seedModelGroups } from './model-groups'
 import { seedDefaultProviders } from './providers'
@@ -9,8 +9,7 @@ import { seedDefaultProviders } from './providers'
 let db: Database.Database | null = null
 
 export function initDatabase(): void {
-  const appDir = app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()
-  const dataDir = join(appDir, 'data')
+  const dataDir = getDataDir()
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
   }
@@ -172,6 +171,20 @@ function createTables(): void {
   `)
 
   // Seed: ensure a default assistant exists
+  seedDefaultAssistant()
+
+  // Seed: populate model definitions from static catalog
+  seedModelDefinitions()
+
+  // Seed: populate model groups from static catalog
+  seedModelGroups()
+
+  // Seed: populate default providers on first launch
+  seedDefaultProviders()
+}
+
+export function seedDefaultAssistant(): void {
+  const database = getDb()
   const hasDefault = database
     .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
     .get() as { cnt: number }
@@ -183,13 +196,4 @@ function createTables(): void {
       )
       .run()
   }
-
-  // Seed: populate model definitions from static catalog
-  seedModelDefinitions()
-
-  // Seed: populate model groups from static catalog
-  seedModelGroups()
-
-  // Seed: populate default providers on first launch
-  seedDefaultProviders()
 }
