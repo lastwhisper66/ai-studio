@@ -71,7 +71,8 @@
     "contextDivider": "上下文已清除",
     "phraseTitle": "短语标题（可选）",
     "phraseContent": "短语内容",
-    "noPhrasesYet": "暂无快捷短语，点击 + 添加",
+    "noPhrasesYet": "暂无快捷短语，前往设置添加",
+    "managePhrases": "管理快捷短语",
     "systemPromptPlaceholder": "点击设置助手提示词"
   },
   "welcome": {
@@ -156,7 +157,8 @@
       "security": "安全设置",
       "display": "显示设置",
       "data": "数据设置",
-      "keyboardShortcuts": "快捷键"
+      "keyboardShortcuts": "快捷键",
+      "phrases": "快捷短语"
     },
     "provider": {
       "list": "服务商列表",
@@ -269,6 +271,20 @@
       "codeFontFamilyHint": "设置代码块的显示字体。",
       "fontDefault": "系统默认",
       "fontNotFound": "未找到字体。"
+    },
+    "phrases": {
+      "title": "快捷短语",
+      "description": "管理聊天输入框中可快速插入的短语模板。",
+      "addPhrase": "添加短语",
+      "editPhrase": "编辑短语",
+      "empty": "暂无快捷短语，点击上方按钮添加。",
+      "deleteTitle": "删除短语",
+      "deleteDescription": "确定要删除「{{name}}」吗？此操作不可撤销。",
+      "titleLabel": "标题",
+      "titlePlaceholder": "短语标题",
+      "contentLabel": "内容",
+      "contentPlaceholder": "短语内容，支持 ${变量名} 占位符",
+      "contentHint": "使用 ${变量名} 插入占位符，选择短语后按 Tab 键可在占位符间跳转编辑。"
     }
   },
   "translate": {

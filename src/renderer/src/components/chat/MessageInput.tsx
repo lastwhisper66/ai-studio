@@ -11,13 +11,11 @@ import {
   Send,
   Square,
   X,
-  Plus,
-  Pencil,
   Check,
+  Settings,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
-import { Textarea } from '@renderer/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -28,10 +26,10 @@ import {
 } from '@renderer/components/ui/dialog'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
-import { Input } from '@renderer/components/ui/input'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { cn } from '@renderer/lib/utils'
 import type { FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
@@ -51,38 +49,9 @@ type ReasoningLevel = ReasoningEffort | 'off'
 // ── Phrase Popover ──────────────────────────────────────────────
 function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }): React.JSX.Element {
   const { t } = useTranslation()
-  const { phrases, createPhrase, updatePhrase, deletePhrase } = usePhraseStore()
+  const { phrases } = usePhraseStore()
+  const navigateToSettings = useSettingsStore((s) => s.navigateToSettings)
   const [open, setOpen] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [newTitle, setNewTitle] = useState('')
-  const [newContent, setNewContent] = useState('')
-
-  const handleAdd = async (): Promise<void> => {
-    if (!newContent.trim()) return
-    await createPhrase(newTitle.trim() || newContent.slice(0, 20), newContent.trim())
-    setNewTitle('')
-    setNewContent('')
-    setAdding(false)
-  }
-
-  const handleEdit = async (id: string): Promise<void> => {
-    if (!newContent.trim()) return
-    await updatePhrase(id, {
-      title: newTitle.trim() || newContent.slice(0, 20),
-      content: newContent.trim(),
-    })
-    setEditingId(null)
-    setNewTitle('')
-    setNewContent('')
-  }
-
-  const startEdit = (id: string, title: string, content: string): void => {
-    setEditingId(id)
-    setNewTitle(title)
-    setNewContent(content)
-    setAdding(false)
-  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -98,119 +67,39 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }): R
         </TooltipTrigger>
         <TooltipContent side="top">{t('chat.quickPhrases')}</TooltipContent>
       </Tooltip>
-      <PopoverContent side="top" align="start" className="w-80 p-0">
-        <div className="flex items-center justify-between border-b px-3 py-2">
+      <PopoverContent side="top" align="start" className="w-72 p-0">
+        <div className="border-b px-3 py-2">
           <span className="text-sm font-medium">{t('chat.quickPhrases')}</span>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={() => {
-              setAdding(true)
-              setEditingId(null)
-            }}>
-            <Plus className="h-3.5 w-3.5" />
-          </Button>
         </div>
-        {adding && (
-          <div className="space-y-2 border-b p-3">
-            <Input
-              placeholder={t('chat.phraseTitle')}
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              className="h-7 text-xs"
-            />
-            <Textarea
-              placeholder={t('chat.phraseContent')}
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              className="min-h-16 resize-none text-xs"
-            />
-            <div className="flex justify-end gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-xs"
-                onClick={() => setAdding(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button size="sm" className="h-6 text-xs" onClick={handleAdd}>
-                {t('common.save')}
-              </Button>
-            </div>
-          </div>
-        )}
         <ScrollArea className="max-h-64">
-          {phrases.length === 0 && !adding && (
+          {phrases.length === 0 ? (
             <p className="text-muted-foreground px-3 py-4 text-center text-xs">
               {t('chat.noPhrasesYet')}
             </p>
-          )}
-          {phrases.map((phrase) =>
-            editingId === phrase.id ? (
-              <div key={phrase.id} className="space-y-2 border-b p-3">
-                <Input
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="h-7 text-xs"
-                />
-                <Textarea
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  className="min-h-16 resize-none text-xs"
-                />
-                <div className="flex justify-end gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-xs"
-                    onClick={() => setEditingId(null)}>
-                    {t('common.cancel')}
-                  </Button>
-                  <Button size="sm" className="h-6 text-xs" onClick={() => handleEdit(phrase.id)}>
-                    <Check className="mr-1 h-3 w-3" />
-                    {t('common.save')}
-                  </Button>
-                </div>
-              </div>
-            ) : (
+          ) : (
+            phrases.map((phrase) => (
               <div
                 key={phrase.id}
-                className="hover:bg-accent group flex cursor-pointer items-start justify-between gap-2 px-3 py-2"
+                className="hover:bg-accent cursor-pointer px-3 py-2"
                 onClick={() => {
                   onSelect(phrase.content)
                   setOpen(false)
                 }}>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-medium">{phrase.title}</p>
-                  <p className="text-muted-foreground truncate text-xs">{phrase.content}</p>
-                </div>
-                <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-5 w-5"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startEdit(phrase.id, phrase.title, phrase.content)
-                    }}>
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-destructive h-5 w-5"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deletePhrase(phrase.id)
-                    }}>
-                    <X className="h-3 w-3" />
-                  </Button>
-                </div>
+                <p className="truncate text-xs font-medium">{phrase.title}</p>
+                <p className="text-muted-foreground truncate text-xs">{phrase.content}</p>
               </div>
-            ),
+            ))
           )}
         </ScrollArea>
+        <div
+          className="hover:bg-accent text-muted-foreground flex cursor-pointer items-center gap-1.5 border-t px-3 py-2 text-xs transition-colors"
+          onClick={() => {
+            setOpen(false)
+            navigateToSettings('phrases')
+          }}>
+          <Settings className="h-3.5 w-3.5" />
+          {t('chat.managePhrases')}
+        </div>
       </PopoverContent>
     </Popover>
   )
@@ -355,6 +244,7 @@ export function MessageInput({
   const [reasoning, setReasoning] = useState<ReasoningLevel>('off')
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const placeholderModeRef = useRef(false)
   const activeConversationId = useConversationStore((s) => s.activeConversationId)
   const clearMessages = useConversationStore((s) => s.clearMessages)
   const renameConversation = useConversationStore((s) => s.renameConversation)
@@ -425,6 +315,7 @@ export function MessageInput({
     const effort = reasoning !== 'off' ? reasoning : undefined
     setInput('')
     setAttachedFiles([])
+    placeholderModeRef.current = false
     onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort)
   }
 
@@ -435,6 +326,33 @@ export function MessageInput({
     }
     if (e.key === 'Escape' && isExpanded) {
       setIsExpanded(false)
+    }
+    // Tab: jump to next ${...} placeholder
+    if (e.key === 'Tab' && placeholderModeRef.current) {
+      const el = textareaRef.current
+      if (!el) return
+      const text = el.value
+      const cursor = el.selectionEnd
+      const regex = /\$\{[^}]+\}/g
+      let match: RegExpExecArray | null
+      // Find the first placeholder after the current cursor position
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index >= cursor) {
+          e.preventDefault()
+          el.setSelectionRange(match.index, match.index + match[0].length)
+          return
+        }
+      }
+      // No more placeholders after cursor — wrap around to the first one
+      regex.lastIndex = 0
+      match = regex.exec(text)
+      if (match) {
+        e.preventDefault()
+        el.setSelectionRange(match.index, match.index + match[0].length)
+        return
+      }
+      // No placeholders left at all — exit placeholder mode
+      placeholderModeRef.current = false
     }
   }
 
@@ -559,7 +477,41 @@ export function MessageInput({
                 active={webSearch}
                 onClick={() => setWebSearch((v) => !v)}
               />
-              <PhrasePopover onSelect={(c) => setInput((prev) => prev + c)} />
+              <PhrasePopover
+                onSelect={(c) => {
+                  const el = textareaRef.current
+                  // Insert at cursor position (or append)
+                  if (el) {
+                    const start = el.selectionStart
+                    const end = el.selectionEnd
+                    const before = input.slice(0, start)
+                    const after = input.slice(end)
+                    const newValue = before + c + after
+                    setInput(newValue)
+                    // Check for placeholders and select the first one
+                    const regex = /\$\{[^}]+\}/g
+                    const match = regex.exec(c)
+                    if (match) {
+                      placeholderModeRef.current = true
+                      const phStart = start + match.index
+                      const phEnd = phStart + match[0].length
+                      requestAnimationFrame(() => {
+                        el.focus()
+                        el.setSelectionRange(phStart, phEnd)
+                      })
+                    } else {
+                      placeholderModeRef.current = false
+                      const cursorPos = start + c.length
+                      requestAnimationFrame(() => {
+                        el.focus()
+                        el.setSelectionRange(cursorPos, cursorPos)
+                      })
+                    }
+                  } else {
+                    setInput((prev) => prev + c)
+                  }
+                }}
+              />
               <ToolButton
                 icon={<Trash2 className="h-4 w-4" />}
                 label={t('chat.clearMessages')}

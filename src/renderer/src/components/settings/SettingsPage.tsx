@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
 import { ModelLibrarySection } from './ModelLibrarySection'
@@ -10,16 +11,24 @@ import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { SecuritySection } from './SecuritySection'
 import { DataSection } from './DataSection'
+import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
   const loadProviders = useProviderStore((s) => s.loadProviders)
+  const consumePendingSection = useSettingsStore((s) => s.consumePendingSection)
   const [activeSection, setActiveSection] = useState<SettingsSection>('provider')
 
   useEffect(() => {
     loadProviders()
   }, [loadProviders])
+
+  useEffect(() => {
+    const pending = consumePendingSection()
+    if (pending) setActiveSection(pending)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -45,6 +54,7 @@ export function SettingsPage(): React.JSX.Element {
               {activeSection === 'security' && <SecuritySection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'data' && <DataSection />}
+              {activeSection === 'phrases' && <PhrasesSection />}
               {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
             </div>
           </ScrollArea>

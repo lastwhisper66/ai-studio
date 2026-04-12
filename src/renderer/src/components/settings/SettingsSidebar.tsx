@@ -7,6 +7,7 @@ import {
   Monitor,
   Keyboard,
   Database,
+  TextQuote,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -20,6 +21,7 @@ export type SettingsSection =
   | 'security'
   | 'display'
   | 'data'
+  | 'phrases'
   | 'keyboard-shortcuts'
 
 interface SettingsSidebarProps {
@@ -41,7 +43,10 @@ const sectionGroups: SectionItem[][] = [
     { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
     { id: 'data', labelKey: 'settings.sections.data', icon: Database },
   ],
-  [{ id: 'keyboard-shortcuts', labelKey: 'settings.sections.keyboardShortcuts', icon: Keyboard }],
+  [
+    { id: 'phrases', labelKey: 'settings.sections.phrases', icon: TextQuote },
+    { id: 'keyboard-shortcuts', labelKey: 'settings.sections.keyboardShortcuts', icon: Keyboard },
+  ],
 ]
 
 export function SettingsSidebar({

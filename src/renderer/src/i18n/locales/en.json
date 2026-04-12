@@ -71,7 +71,8 @@
     "contextDivider": "Context cleared",
     "phraseTitle": "Phrase title (optional)",
     "phraseContent": "Phrase content",
-    "noPhrasesYet": "No phrases yet, click + to add",
+    "noPhrasesYet": "No phrases yet. Go to Settings to add.",
+    "managePhrases": "Manage Quick Phrases",
     "systemPromptPlaceholder": "Click to set assistant system prompt"
   },
   "welcome": {
@@ -156,7 +157,8 @@
       "security": "Security",
       "display": "Display",
       "data": "Data",
-      "keyboardShortcuts": "Shortcuts"
+      "keyboardShortcuts": "Shortcuts",
+      "phrases": "Quick Phrases"
     },
     "provider": {
       "list": "Provider list",
@@ -269,6 +271,20 @@
       "codeFontFamilyHint": "Set the display font for code blocks.",
       "fontDefault": "System Default",
       "fontNotFound": "No fonts found."
+    },
+    "phrases": {
+      "title": "Quick Phrases",
+      "description": "Manage quick-insert phrase templates for the chat input.",
+      "addPhrase": "Add Phrase",
+      "editPhrase": "Edit Phrase",
+      "empty": "No phrases yet. Click the button above to add one.",
+      "deleteTitle": "Delete Phrase",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Phrase title",
+      "contentLabel": "Content",
+      "contentPlaceholder": "Phrase content, supports ${variable} placeholders",
+      "contentHint": "Use ${variable} to insert placeholders. After selecting a phrase, press Tab to jump between placeholders."
     }
   },
   "translate": {
