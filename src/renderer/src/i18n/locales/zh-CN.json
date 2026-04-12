@@ -155,7 +155,7 @@
       "general": "通用设置",
       "security": "安全设置",
       "display": "显示设置",
-      "data": "数据",
+      "data": "数据设置",
       "keyboardShortcuts": "快捷键"
     },
     "provider": {
@@ -227,7 +227,7 @@
       "languageHint": "语言更改立即生效。"
     },
     "data": {
-      "title": "数据",
+      "title": "数据设置",
       "description": "管理应用程序数据和存储。",
       "dataManagement": "数据管理",
       "clearData": "清除所有数据",

@@ -66,9 +66,7 @@ export function DataSection(): React.JSX.Element {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleClearData}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <AlertDialogAction onClick={handleClearData} variant="destructive">
                   {t('settings.data.clearDataConfirmButton')}
                 </AlertDialogAction>
               </AlertDialogFooter>
