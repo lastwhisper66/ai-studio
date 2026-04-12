@@ -342,6 +342,20 @@ const api = {
   // App
   clearAppData: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_DATA),
 
+  getSystemFonts: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke(IpcChannels.APP_GET_FONTS),
+
+  // Zoom
+  setZoom: (factor: number): Promise<void> =>
+    ipcRenderer.invoke(IpcChannels.WINDOW_SET_ZOOM, factor),
+
+  getZoom: (): Promise<number> => ipcRenderer.invoke(IpcChannels.WINDOW_GET_ZOOM),
+
+  onZoomChanged: (callback: (factor: number) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, factor: number): void => callback(factor)
+    ipcRenderer.on(IpcChannels.WINDOW_ZOOM_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_ZOOM_CHANGED, handler)
+  },
+
   // Window controls
   windowMinimize: (): Promise<void> => ipcRenderer.invoke(IpcChannels.WINDOW_MINIMIZE),
 

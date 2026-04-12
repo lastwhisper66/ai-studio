@@ -1,5 +1,6 @@
-import { ipcMain } from 'electron'
+import { ipcMain, BrowserWindow } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
+import { clampZoom } from '@shared/zoom'
 import type { IpcResult } from '@shared/types'
 import { getSetting, setSetting, setSettingsBatch, getAllSettings } from '../db'
 import { applySslSetting } from '../ai'
@@ -10,12 +11,24 @@ import {
   applyStartMinimizedSetting,
 } from '../app-state'
 
+function applyZoomSetting(value: string): void {
+  const factor = parseFloat(value)
+  if (isNaN(factor)) return
+  const clamped = clampZoom(factor)
+  const win = BrowserWindow.getAllWindows()[0]
+  if (win) {
+    win.webContents.setZoomFactor(clamped)
+    win.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, clamped)
+  }
+}
+
 const settingSideEffects: Record<string, (value: string) => void> = {
   'app.skipSslVerify': (v) => applySslSetting(v === 'true'),
   'app.closeToTray': applyCloseToTraySetting,
   'app.autoLaunch': applyAutoLaunchSetting,
   'app.spellCheck': applySpellCheckSetting,
   'app.startMinimized': applyStartMinimizedSetting,
+  'display.zoomFactor': applyZoomSetting,
 }
 
 function applySideEffects(key: string, value: string): void {

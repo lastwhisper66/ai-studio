@@ -30,6 +30,8 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.48.0",
     "better-sqlite3": "^12.6.2",
+    "cmdk": "^1.1.1",
+    "font-list": "^2.0.2",
     "openai": "^6.27.0",
     "uuid": "^13.0.0"
   },

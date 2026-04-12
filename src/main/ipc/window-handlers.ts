@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
+import { clampZoom } from '@shared/zoom'
 
 export function registerWindowHandlers(): void {
   ipcMain.handle(IpcChannels.WINDOW_MINIMIZE, (event) => {
@@ -22,5 +23,18 @@ export function registerWindowHandlers(): void {
 
   ipcMain.handle(IpcChannels.WINDOW_IS_MAXIMIZED, (event): boolean => {
     return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false
+  })
+
+  ipcMain.handle(IpcChannels.WINDOW_SET_ZOOM, (event, factor: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    const clamped = clampZoom(factor)
+    win.webContents.setZoomFactor(clamped)
+    win.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, clamped)
+  })
+
+  ipcMain.handle(IpcChannels.WINDOW_GET_ZOOM, (event): number => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return win?.webContents.getZoomFactor() ?? 1.0
   })
 }

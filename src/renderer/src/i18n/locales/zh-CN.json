@@ -258,7 +258,17 @@
         "ocean": "深海蓝",
         "amber": "琥珀暖阳",
         "rose": "玫瑰粉黛"
-      }
+      },
+      "zoom": "缩放",
+      "zoomReset": "重置缩放",
+      "zoomHint": "使用 Ctrl+滚轮、Ctrl+/Ctrl- 调整缩放，Ctrl+0 重置。",
+      "fonts": "字体",
+      "fontFamily": "全局字体",
+      "fontFamilyHint": "设置应用程序的默认显示字体。",
+      "codeFontFamily": "代码字体",
+      "codeFontFamilyHint": "设置代码块的显示字体。",
+      "fontDefault": "系统默认",
+      "fontNotFound": "未找到字体。"
     }
   },
   "translate": {

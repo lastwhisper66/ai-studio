@@ -258,7 +258,17 @@
         "ocean": "Ocean Blue",
         "amber": "Amber Glow",
         "rose": "Rose Petal"
-      }
+      },
+      "zoom": "Zoom",
+      "zoomReset": "Reset Zoom",
+      "zoomHint": "Use Ctrl+Scroll, Ctrl+/Ctrl- to adjust zoom, Ctrl+0 to reset.",
+      "fonts": "Fonts",
+      "fontFamily": "Global Font",
+      "fontFamilyHint": "Set the default display font for the application.",
+      "codeFontFamily": "Code Font",
+      "codeFontFamilyHint": "Set the display font for code blocks.",
+      "fontDefault": "System Default",
+      "fontNotFound": "No fonts found."
     }
   },
   "translate": {

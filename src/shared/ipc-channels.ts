@@ -84,6 +84,12 @@ export const IpcChannels = {
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
   WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
+  // Zoom
+  WINDOW_SET_ZOOM: 'window:set-zoom',
+  WINDOW_GET_ZOOM: 'window:get-zoom',
+  WINDOW_ZOOM_CHANGED: 'window:zoom-changed',
+  // Fonts
+  APP_GET_FONTS: 'app:get-fonts',
   // App
   APP_CLEAR_DATA: 'app:clear-data',
 } as const

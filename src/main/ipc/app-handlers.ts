@@ -1,6 +1,7 @@
 import { app, ipcMain } from 'electron'
 import { existsSync, rmSync, unlinkSync } from 'fs'
 import { join } from 'path'
+import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult } from '@shared/types'
 import { getDb, seedDefaultAssistant } from '../db/database'
@@ -55,6 +56,17 @@ export function registerAppHandlers(): void {
       app.exit(0)
 
       return { success: true }
+    } catch (e) {
+      return { success: false, error: (e as Error).message }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.APP_GET_FONTS, async (): Promise<IpcResult<string[]>> => {
+    try {
+      const fonts = await fontList.getFonts()
+      // font-list returns names wrapped in quotes on some platforms — strip them
+      const cleaned = fonts.map((f) => f.replace(/^"|"$/g, '')).sort()
+      return { success: true, data: cleaned }
     } catch (e) {
       return { success: false, error: (e as Error).message }
     }

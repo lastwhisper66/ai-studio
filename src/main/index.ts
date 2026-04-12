@@ -13,7 +13,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
+import { ZOOM_STEP, ZOOM_DEFAULT, clampZoom } from '@shared/zoom'
 import { initDatabase, closeDatabase } from './db'
+import { getSetting, setSetting } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
 import {
@@ -65,6 +67,22 @@ function saveWindowState(win: BrowserWindow): void {
   }
 }
 
+// ── Zoom helpers ───────────────────────────────────────────────
+
+function changeZoom(win: BrowserWindow, delta: number): void {
+  const current = win.webContents.getZoomFactor()
+  const next = clampZoom(current + delta)
+  win.webContents.setZoomFactor(next)
+  win.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, next)
+  setSetting('display.zoomFactor', String(next))
+}
+
+function resetZoom(win: BrowserWindow): void {
+  win.webContents.setZoomFactor(ZOOM_DEFAULT)
+  win.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, ZOOM_DEFAULT)
+  setSetting('display.zoomFactor', String(ZOOM_DEFAULT))
+}
+
 // ── Window creation ─────────────────────────────────────────────
 
 let isQuitting = false
@@ -111,6 +129,17 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
+    // Restore saved zoom factor
+    const savedZoom = getSetting('display.zoomFactor')
+    if (savedZoom) {
+      const factor = parseFloat(savedZoom)
+      if (!isNaN(factor)) {
+        const clamped = clampZoom(factor)
+        mainWindow.webContents.setZoomFactor(clamped)
+        mainWindow.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, clamped)
+      }
+    }
+
     if (!getStartMinimized()) {
       if (restored.isMaximized) {
         mainWindow.maximize()
@@ -157,6 +186,25 @@ function createWindow(): void {
   // Intercept shortcuts before IME processing (works regardless of input method)
   mainWindow.webContents.on('before-input-event', (event, input) => {
     const key = input.key.toLowerCase()
+
+    // Zoom shortcuts: Ctrl+Plus, Ctrl+Minus, Ctrl+0
+    if (input.control && !input.shift && !input.alt) {
+      if (key === '+' || key === '=') {
+        event.preventDefault()
+        changeZoom(mainWindow, ZOOM_STEP)
+        return
+      }
+      if (key === '-') {
+        event.preventDefault()
+        changeZoom(mainWindow, -ZOOM_STEP)
+        return
+      }
+      if (key === '0') {
+        event.preventDefault()
+        resetZoom(mainWindow)
+        return
+      }
+    }
 
     // Block DevTools and refresh shortcuts in production
     if (

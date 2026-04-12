@@ -53,6 +53,16 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-sans: var(--font-family-sans);
+  --font-mono: var(
+    --font-family-mono,
+    ui-monospace,
+    SFMono-Regular,
+    'SF Mono',
+    Menlo,
+    Consolas,
+    'Liberation Mono',
+    monospace
+  );
 }
 
 /* ── Light theme (default fallback — overridden by ThemeProvider at runtime) ── */
@@ -143,6 +153,7 @@ body {
 pre.shiki,
 pre.shiki code {
   background-color: transparent !important;
+  font-family: var(--font-mono) !important;
 }
 
 /* ── Markdown prose spacing ── */
