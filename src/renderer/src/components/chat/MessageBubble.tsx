@@ -129,11 +129,19 @@ export const MessageBubble = memo(function MessageBubble({
   const [editDraft, setEditDraft] = useState('')
   const [resendConfirmOpen, setResendConfirmOpen] = useState(false)
   const editTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const [prevIsEditing, setPrevIsEditing] = useState(false)
 
-  // Sync draft + auto-resize when entering edit mode or typing
+  // Sync draft when entering edit mode (React-recommended "adjust state during render" pattern)
+  if (!!isEditing !== prevIsEditing) {
+    setPrevIsEditing(!!isEditing)
+    if (isEditing) {
+      setEditDraft(content)
+    }
+  }
+
+  // Auto-focus + resize when entering edit mode
   useEffect(() => {
     if (!isEditing) return
-    setEditDraft(content)
     requestAnimationFrame(() => {
       const el = editTextareaRef.current
       if (el) {
@@ -142,7 +150,7 @@ export const MessageBubble = memo(function MessageBubble({
         el.style.height = `${Math.min(el.scrollHeight, 320)}px`
       }
     })
-  }, [isEditing, content])
+  }, [isEditing])
 
   useEffect(() => {
     if (!isEditing) return
