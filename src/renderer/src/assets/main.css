@@ -176,6 +176,14 @@ pre.shiki {
   overflow-wrap: anywhere;
 }
 
+/* Radix ScrollArea wraps children in a div[style="display:table;min-width:100%"]
+   which causes wide content (code blocks, long lines) to expand the container,
+   breaking percentage-based max-width on message bubbles.
+   Switching to display:block keeps the wrapper at viewport width. */
+.chat-scroll-area [data-slot='scroll-area-viewport'] > div {
+  display: block !important;
+}
+
 /* ── Translate: no-wrap mode ── */
 /* Forces all text to not wrap; code blocks keep original formatting */
 .translate-no-wrap * {

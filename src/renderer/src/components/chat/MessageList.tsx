@@ -84,7 +84,7 @@ export function MessageList({
     !isStreaming
 
   return (
-    <ScrollArea className="flex-1" viewportRef={scrollRef}>
+    <ScrollArea className="chat-scroll-area flex-1" viewportRef={scrollRef}>
       <div className="min-w-0 space-y-6 p-6">
         {/* System prompt banner — only when no messages yet */}
         {activeAssistant && onEditSystemPrompt && messages.length === 0 && !isStreaming && (
