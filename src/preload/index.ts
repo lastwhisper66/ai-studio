@@ -29,6 +29,11 @@ import type {
   TranslateErrorData,
   ModelCapability,
   TranslationHistoryItem,
+  QuickAction,
+  QuickActionRequestPayload,
+  QuickActionChunkData,
+  QuickActionEndData,
+  QuickActionErrorData,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -371,6 +376,70 @@ const api = {
     ipcRenderer.on(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
     return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
   },
+
+  // Quick Actions (CRUD)
+  listQuickActions: (): Promise<IpcResult<QuickAction[]>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ACTION_LIST),
+
+  createQuickAction: (data: {
+    name: string
+    description?: string
+    systemPrompt?: string
+    icon?: string
+  }): Promise<IpcResult<QuickAction>> => ipcRenderer.invoke(IpcChannels.QUICK_ACTION_CREATE, data),
+
+  updateQuickAction: (
+    id: string,
+    data: Partial<Pick<QuickAction, 'name' | 'description' | 'systemPrompt' | 'icon' | 'enabled'>>,
+  ): Promise<IpcResult<QuickAction | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ACTION_UPDATE, id, data),
+
+  deleteQuickAction: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ACTION_DELETE, id),
+
+  reorderQuickActions: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ACTION_REORDER, ids),
+
+  // Quick Assistant (streaming)
+  quickAssistantRequest: (payload: QuickActionRequestPayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_REQUEST, payload),
+
+  stopQuickAssistant: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_STOP),
+
+  onQuickAssistantChunk: (callback: (data: QuickActionChunkData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: QuickActionChunkData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.QUICK_ASSISTANT_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.QUICK_ASSISTANT_CHUNK, handler)
+  },
+
+  onQuickAssistantEnd: (callback: (data: QuickActionEndData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: QuickActionEndData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.QUICK_ASSISTANT_END, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.QUICK_ASSISTANT_END, handler)
+  },
+
+  onQuickAssistantError: (callback: (data: QuickActionErrorData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: QuickActionErrorData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.QUICK_ASSISTANT_ERROR, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.QUICK_ASSISTANT_ERROR, handler)
+  },
+
+  removeAllQuickAssistantListeners: (): void => {
+    ipcRenderer.removeAllListeners(IpcChannels.QUICK_ASSISTANT_CHUNK)
+    ipcRenderer.removeAllListeners(IpcChannels.QUICK_ASSISTANT_END)
+    ipcRenderer.removeAllListeners(IpcChannels.QUICK_ASSISTANT_ERROR)
+  },
+
+  closeQuickAssistant: (): void => ipcRenderer.send(IpcChannels.QUICK_ASSISTANT_CLOSE),
+
+  quickAssistantReady: (): void => ipcRenderer.send(IpcChannels.QUICK_ASSISTANT_READY),
+
+  updateQuickAssistantShortcut: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT),
 }
 
 export type ApiType = typeof api

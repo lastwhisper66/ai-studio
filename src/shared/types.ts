@@ -250,6 +250,44 @@ export interface TranslateErrorData {
   error: string
 }
 
+// ── Quick Assistant ─────────────────────────────────────────────
+
+export interface QuickAction {
+  id: string
+  name: string
+  description: string
+  systemPrompt: string
+  icon: string
+  isBuiltin: boolean
+  sortOrder: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** quick-assistant:request payload */
+export interface QuickActionRequestPayload {
+  text: string
+  actionId: string
+  providerId?: string
+  modelId?: string
+}
+
+/** quick-assistant:chunk push data */
+export interface QuickActionChunkData {
+  delta: string
+}
+
+/** quick-assistant:end push data */
+export interface QuickActionEndData {
+  fullText: string
+}
+
+/** quick-assistant:error push data */
+export interface QuickActionErrorData {
+  error: string
+}
+
 /** Translation history item */
 export interface TranslationHistoryItem {
   id: string

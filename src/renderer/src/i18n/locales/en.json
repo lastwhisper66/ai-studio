@@ -160,7 +160,8 @@
       "display": "Display",
       "data": "Data",
       "keyboardShortcuts": "Shortcuts",
-      "phrases": "Quick Phrases"
+      "phrases": "Quick Phrases",
+      "quickAssistant": "Quick Assistant"
     },
     "provider": {
       "list": "Provider list",
@@ -287,6 +288,43 @@
       "contentLabel": "Content",
       "contentPlaceholder": "Phrase content, supports ${variable} placeholders",
       "contentHint": "Use ${variable} to insert placeholders. After selecting a phrase, press Tab to jump between placeholders."
+    },
+    "quickAssistant": {
+      "title": "Quick Assistant",
+      "description": "Quickly summon AI assistant with a global shortcut, customizable in Keyboard Shortcuts settings.",
+      "general": "General",
+      "enableLabel": "Enable Quick Assistant",
+      "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere (default: Ctrl+Shift+Space).",
+      "model": "Model",
+      "modelLabel": "AI Model",
+      "modelHint": "Select the AI model used by Quick Assistant.",
+      "actions": "Actions",
+      "addAction": "Add Action",
+      "editAction": "Edit Action",
+      "builtin": "Built-in",
+      "deleteTitle": "Delete Action",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "nameLabel": "Name",
+      "namePlaceholder": "Action name",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Briefly describe the action",
+      "systemPromptLabel": "System Prompt",
+      "systemPromptPlaceholder": "Define the AI behavior for this action...",
+      "systemPromptHint": "Define the AI's role and behavior when executing this action."
+    },
+    "builtinAction": {
+      "builtin-answer": {
+        "name": "Answer Question",
+        "description": "Ask AI a question and get an answer"
+      },
+      "builtin-translate": {
+        "name": "Translate",
+        "description": "Translate text to another language"
+      },
+      "builtin-summary": {
+        "name": "Summarize",
+        "description": "Concisely summarize the provided text"
+      }
     }
   },
   "translate": {
@@ -423,6 +461,7 @@
     "toggleTopic": "Toggle Topic Panel",
     "stopGeneration": "Stop Generation",
     "summonWindow": "Summon Window",
+    "toggleQuickAssistant": "Quick Assistant",
     "category": {
       "app": "Application",
       "chat": "Chat",

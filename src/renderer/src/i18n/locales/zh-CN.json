@@ -160,7 +160,8 @@
       "display": "显示设置",
       "data": "数据设置",
       "keyboardShortcuts": "快捷键",
-      "phrases": "快捷短语"
+      "phrases": "快捷短语",
+      "quickAssistant": "快捷助手"
     },
     "provider": {
       "list": "服务商列表",
@@ -287,6 +288,34 @@
       "contentLabel": "内容",
       "contentPlaceholder": "短语内容，支持 ${变量名} 占位符",
       "contentHint": "使用 ${变量名} 插入占位符，选择短语后按 Tab 键可在占位符间跳转编辑。"
+    },
+    "quickAssistant": {
+      "title": "快捷助手",
+      "description": "通过全局快捷键快速唤起 AI 助手，可在快捷键设置中自定义。",
+      "general": "基本设置",
+      "enableLabel": "启用快捷助手",
+      "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手（默认 Ctrl+Shift+Space）。",
+      "model": "模型配置",
+      "modelLabel": "AI 模型",
+      "modelHint": "选择快捷助手使用的 AI 模型。",
+      "actions": "功能列表",
+      "addAction": "添加功能",
+      "editAction": "编辑功能",
+      "builtin": "内置",
+      "deleteTitle": "删除功能",
+      "deleteDescription": "确定要删除「{{name}}」吗？此操作不可撤销。",
+      "nameLabel": "名称",
+      "namePlaceholder": "功能名称",
+      "descriptionLabel": "描述",
+      "descriptionPlaceholder": "简要描述功能用途",
+      "systemPromptLabel": "系统提示词",
+      "systemPromptPlaceholder": "设定该功能的 AI 行为...",
+      "systemPromptHint": "定义 AI 在执行该功能时的角色和行为规则。"
+    },
+    "builtinAction": {
+      "builtin-answer": { "name": "回答问题", "description": "向 AI 提问并获取回答" },
+      "builtin-translate": { "name": "文本翻译", "description": "将文本翻译为其他语言" },
+      "builtin-summary": { "name": "内容总结", "description": "简洁地总结提供的文本内容" }
     }
   },
   "translate": {
@@ -423,6 +452,7 @@
     "toggleTopic": "切换话题面板",
     "stopGeneration": "停止生成",
     "summonWindow": "唤醒窗口",
+    "toggleQuickAssistant": "快捷助手",
     "category": {
       "app": "应用",
       "chat": "聊天",

@@ -33,6 +33,15 @@ async function persistOverrides(overrides: Overrides): Promise<void> {
   await useSettingsStore.getState().saveSettings({ [STORAGE_KEY]: JSON.stringify(clean) })
 }
 
+/** Notify main process to re-register the quick-assistant global shortcut */
+async function syncQuickAssistantShortcut(): Promise<void> {
+  try {
+    await window.api.updateQuickAssistantShortcut()
+  } catch {
+    // non-critical
+  }
+}
+
 export const useKeybindingStore = create<KeybindingState>((set, get) => ({
   overrides: {},
   isLoaded: false,
@@ -67,6 +76,7 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     const next = { ...get().overrides, [actionId]: accelerator }
     set({ overrides: next })
     await persistOverrides(next)
+    if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
   },
 
   removeOverride: async (actionId) => {
@@ -74,6 +84,7 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     delete next[actionId]
     set({ overrides: next })
     await persistOverrides(next)
+    if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
   },
 
   resetAction: async (actionId) => {
@@ -83,5 +94,6 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
   resetAll: async () => {
     set({ overrides: {} })
     await useSettingsStore.getState().saveSettings({ [STORAGE_KEY]: JSON.stringify({}) })
+    await syncQuickAssistantShortcut()
   },
 }))

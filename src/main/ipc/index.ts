@@ -13,6 +13,8 @@ import { registerPhraseHandlers } from './phrase-handlers'
 import { registerFileHandlers } from './file-handlers'
 import { registerTranslationHistoryHandlers } from './translation-history-handlers'
 import { registerAppHandlers } from './app-handlers'
+import { registerQuickActionHandlers } from './quick-action-handlers'
+import { registerQuickAssistantHandlers } from './quick-assistant-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -30,4 +32,6 @@ export function registerAllIpcHandlers(): void {
   registerFileHandlers()
   registerTranslationHistoryHandlers()
   registerAppHandlers()
+  registerQuickActionHandlers()
+  registerQuickAssistantHandlers()
 }

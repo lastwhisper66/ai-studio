@@ -8,6 +8,7 @@ import {
   Keyboard,
   Database,
   TextQuote,
+  Zap,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -23,6 +24,7 @@ export type SettingsSection =
   | 'data'
   | 'phrases'
   | 'keyboard-shortcuts'
+  | 'quick-assistant'
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection
@@ -46,6 +48,7 @@ const sectionGroups: SectionItem[][] = [
   [
     { id: 'phrases', labelKey: 'settings.sections.phrases', icon: TextQuote },
     { id: 'keyboard-shortcuts', labelKey: 'settings.sections.keyboardShortcuts', icon: Keyboard },
+    { id: 'quick-assistant', labelKey: 'settings.sections.quickAssistant', icon: Zap },
   ],
 ]
 

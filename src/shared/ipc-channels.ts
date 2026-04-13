@@ -92,4 +92,20 @@ export const IpcChannels = {
   APP_GET_FONTS: 'app:get-fonts',
   // App
   APP_CLEAR_DATA: 'app:clear-data',
+  // Quick Actions (CRUD)
+  QUICK_ACTION_LIST: 'quick-action:list',
+  QUICK_ACTION_CREATE: 'quick-action:create',
+  QUICK_ACTION_UPDATE: 'quick-action:update',
+  QUICK_ACTION_DELETE: 'quick-action:delete',
+  QUICK_ACTION_REORDER: 'quick-action:reorder',
+  // Quick Assistant (streaming)
+  QUICK_ASSISTANT_REQUEST: 'quick-assistant:request',
+  QUICK_ASSISTANT_CHUNK: 'quick-assistant:chunk',
+  QUICK_ASSISTANT_END: 'quick-assistant:end',
+  QUICK_ASSISTANT_ERROR: 'quick-assistant:error',
+  QUICK_ASSISTANT_STOP: 'quick-assistant:stop',
+  // Quick Assistant window
+  QUICK_ASSISTANT_CLOSE: 'quick-assistant:close',
+  QUICK_ASSISTANT_READY: 'quick-assistant:ready',
+  QUICK_ASSISTANT_UPDATE_SHORTCUT: 'quick-assistant:update-shortcut',
 } as const

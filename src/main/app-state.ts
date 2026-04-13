@@ -57,3 +57,19 @@ export function applySpellCheckSetting(value?: string): void {
   const enabled = value !== 'false'
   session.defaultSession.setSpellCheckerEnabled(enabled)
 }
+
+// ── Quick Assistant ─────────────────────────────────────────────
+
+let quickAssistantEnabled = true
+
+export function initQuickAssistant(): void {
+  quickAssistantEnabled = getSetting('quickAssistant.enabled') !== 'false'
+}
+
+export function applyQuickAssistantEnabled(value?: string): void {
+  quickAssistantEnabled = value !== 'false'
+}
+
+export function getQuickAssistantEnabled(): boolean {
+  return quickAssistantEnabled
+}

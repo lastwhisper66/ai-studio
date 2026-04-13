@@ -7,6 +7,7 @@ export type KeybindingActionId =
   | 'toggle-topic'
   | 'stop-generation'
   | 'summon-window'
+  | 'toggle-quick-assistant'
 
 export interface KeybindingDef {
   defaultAccelerator: string
@@ -46,6 +47,12 @@ export const DEFAULT_KEYBINDINGS: Record<KeybindingActionId, KeybindingDef> = {
     labelKey: 'keybindings.summonWindow',
     category: 'app',
     readOnly: true,
+  },
+  'toggle-quick-assistant': {
+    // Trailing space represents the Space key (converted to 'Space' by toElectronAccelerator)
+    defaultAccelerator: 'Ctrl+Shift+ ',
+    labelKey: 'keybindings.toggleQuickAssistant',
+    category: 'app',
   },
 }
 

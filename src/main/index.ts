@@ -4,6 +4,7 @@ import {
   BrowserWindow,
   screen,
   globalShortcut,
+  ipcMain,
   Tray,
   Menu,
   nativeImage,
@@ -18,6 +19,7 @@ import { initDatabase, closeDatabase } from './db'
 import { getSetting, setSetting } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
+import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
   initCloseToTray,
   getCloseToTray,
@@ -25,8 +27,15 @@ import {
   initStartMinimized,
   initAutoLaunch,
   initSpellCheck,
+  getQuickAssistantEnabled,
+  initQuickAssistant,
 } from './app-state'
 import { getDataDir } from './utils/paths'
+import {
+  toggleQuickAssistantWindow,
+  initQuickAssistantIpc,
+  preCreateQuickAssistantWindow,
+} from './quick-assistant-window'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -69,6 +78,71 @@ function saveWindowState(win: BrowserWindow): void {
 
 // ── Zoom helpers ───────────────────────────────────────────────
 
+/** Convert DOM-style accelerator to Electron globalShortcut format */
+function toElectronAccelerator(accel: string): string {
+  return accel
+    .split('+')
+    .map((part) => {
+      switch (part) {
+        case ' ':
+          return 'Space'
+        case 'ArrowUp':
+          return 'Up'
+        case 'ArrowDown':
+          return 'Down'
+        case 'ArrowLeft':
+          return 'Left'
+        case 'ArrowRight':
+          return 'Right'
+        case 'Escape':
+          return 'Esc'
+        default:
+          return part
+      }
+    })
+    .join('+')
+}
+
+function getQuickAssistantAccelerator(): string {
+  const raw = getSetting('app.keybindings')
+  let overrides: Partial<Record<KeybindingActionId, string>> = {}
+  if (raw) {
+    try {
+      overrides = JSON.parse(raw)
+    } catch {
+      // ignore
+    }
+  }
+  return (
+    overrides['toggle-quick-assistant'] ??
+    DEFAULT_KEYBINDINGS['toggle-quick-assistant'].defaultAccelerator
+  )
+}
+
+let currentQaShortcut: string | null = null
+
+function registerQuickAssistantShortcut(): void {
+  // Unregister previous shortcut
+  if (currentQaShortcut) {
+    globalShortcut.unregister(currentQaShortcut)
+    currentQaShortcut = null
+  }
+
+  const accel = getQuickAssistantAccelerator()
+  const electronAccel = toElectronAccelerator(accel)
+
+  const ok = globalShortcut.register(electronAccel, () => {
+    if (!getQuickAssistantEnabled()) return
+    toggleQuickAssistantWindow()
+  })
+
+  if (ok) {
+    currentQaShortcut = electronAccel
+  } else if (is.dev) {
+    console.warn(`Failed to register global shortcut ${electronAccel} — may already be in use`)
+  }
+}
+
 function changeZoom(win: BrowserWindow, delta: number): void {
   const current = win.webContents.getZoomFactor()
   const next = clampZoom(current + delta)
@@ -87,6 +161,7 @@ function resetZoom(win: BrowserWindow): void {
 
 let isQuitting = false
 let tray: Tray | null = null
+let mainWindow: BrowserWindow | null = null
 
 function showWindow(win: BrowserWindow): void {
   if (win.isMinimized()) win.restore()
@@ -110,7 +185,7 @@ function createWindow(): void {
 
   const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
 
-  const mainWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: restored.width,
     height: restored.height,
     ...(usePosition ? { x: restored.x, y: restored.y } : {}),
@@ -127,31 +202,32 @@ function createWindow(): void {
       nodeIntegration: false,
     },
   })
+  mainWindow = win
 
-  mainWindow.on('ready-to-show', () => {
+  win.on('ready-to-show', () => {
     // Restore saved zoom factor
     const savedZoom = getSetting('display.zoomFactor')
     if (savedZoom) {
       const factor = parseFloat(savedZoom)
       if (!isNaN(factor)) {
         const clamped = clampZoom(factor)
-        mainWindow.webContents.setZoomFactor(clamped)
-        mainWindow.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, clamped)
+        win.webContents.setZoomFactor(clamped)
+        win.webContents.send(IpcChannels.WINDOW_ZOOM_CHANGED, clamped)
       }
     }
 
     if (!getStartMinimized()) {
       if (restored.isMaximized) {
-        mainWindow.maximize()
+        win.maximize()
       }
-      mainWindow.show()
+      win.show()
     }
   })
 
   // Close behavior: hide to tray or quit, controlled by app.closeToTray setting
-  mainWindow.on('close', (e) => {
+  win.on('close', (e) => {
     try {
-      saveWindowState(mainWindow)
+      saveWindowState(win)
     } catch {
       // Non-critical — silently ignore
     }
@@ -159,7 +235,7 @@ function createWindow(): void {
       const closeToTray = getCloseToTray()
       if (closeToTray) {
         e.preventDefault()
-        mainWindow.hide()
+        win.hide()
         return
       }
     }
@@ -171,37 +247,37 @@ function createWindow(): void {
   })
 
   // Notify renderer of maximize/unmaximize state changes
-  mainWindow.on('maximize', () => {
-    mainWindow.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, true)
+  win.on('maximize', () => {
+    win.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, true)
   })
-  mainWindow.on('unmaximize', () => {
-    mainWindow.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false)
+  win.on('unmaximize', () => {
+    win.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false)
   })
 
-  mainWindow.webContents.setWindowOpenHandler((details) => {
+  win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
   // Intercept shortcuts before IME processing (works regardless of input method)
-  mainWindow.webContents.on('before-input-event', (event, input) => {
+  win.webContents.on('before-input-event', (event, input) => {
     const key = input.key.toLowerCase()
 
     // Zoom shortcuts: Ctrl+Plus, Ctrl+Minus, Ctrl+0
     if (input.control && !input.shift && !input.alt) {
       if (key === '+' || key === '=') {
         event.preventDefault()
-        changeZoom(mainWindow, ZOOM_STEP)
+        changeZoom(win, ZOOM_STEP)
         return
       }
       if (key === '-') {
         event.preventDefault()
-        changeZoom(mainWindow, -ZOOM_STEP)
+        changeZoom(win, -ZOOM_STEP)
         return
       }
       if (key === '0') {
         event.preventDefault()
-        resetZoom(mainWindow)
+        resetZoom(win)
         return
       }
     }
@@ -219,9 +295,9 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    win.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
@@ -233,8 +309,7 @@ if (!gotTheLock) {
   app.quit()
 } else {
   app.on('second-instance', () => {
-    const win = BrowserWindow.getAllWindows()[0]
-    if (win) showWindow(win)
+    if (mainWindow) showWindow(mainWindow)
   })
 
   app.whenReady().then(() => {
@@ -246,7 +321,15 @@ if (!gotTheLock) {
     initStartMinimized()
     initAutoLaunch()
     initSpellCheck()
+    initQuickAssistant()
     registerAllIpcHandlers()
+    initQuickAssistantIpc()
+
+    // IPC: re-register quick assistant shortcut when user changes it
+    ipcMain.handle(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT, () => {
+      registerQuickAssistantShortcut()
+      return { success: true }
+    })
 
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
@@ -254,14 +337,19 @@ if (!gotTheLock) {
 
     createWindow()
 
+    // Pre-create Quick Assistant window (hidden) so the first toggle is instant
+    preCreateQuickAssistantWindow()
+
     // Global shortcut: Ctrl+Win+A to summon the main window
     const registered = globalShortcut.register('Ctrl+Super+A', () => {
-      const win = BrowserWindow.getAllWindows()[0]
-      if (win) showWindow(win)
+      if (mainWindow) showWindow(mainWindow)
     })
     if (!registered && is.dev) {
       console.warn('Failed to register global shortcut Ctrl+Super+A — may already be in use')
     }
+
+    // Global shortcut: Ctrl+Shift+Space to toggle Quick Assistant (user-configurable)
+    registerQuickAssistantShortcut()
 
     // ── System tray ───────────────────────────────────────────────
     const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
@@ -273,8 +361,7 @@ if (!gotTheLock) {
       {
         label: '打开主窗口',
         click: () => {
-          const win = BrowserWindow.getAllWindows()[0]
-          if (win) showWindow(win)
+          if (mainWindow) showWindow(mainWindow)
         },
       },
       { type: 'separator' },
@@ -301,12 +388,11 @@ if (!gotTheLock) {
     tray.setContextMenu(contextMenu)
 
     tray.on('click', () => {
-      const win = BrowserWindow.getAllWindows()[0]
-      if (win) showWindow(win)
+      if (mainWindow) showWindow(mainWindow)
     })
 
     app.on('activate', () => {
-      if (BrowserWindow.getAllWindows().length === 0) createWindow()
+      if (!mainWindow || mainWindow.isDestroyed()) createWindow()
     })
   })
 }
