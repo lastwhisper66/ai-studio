@@ -61,7 +61,7 @@ export function registerQuickAssistantHandlers(): void {
       event: IpcMainInvokeEvent,
       payload: QuickActionRequestPayload,
     ): Promise<IpcResult<void>> => {
-      const { text, actionId, providerId, modelId } = payload
+      const { text, actionId, providerId, modelId, systemPromptOverride } = payload
       const sender = event.sender
       let fullText = ''
 
@@ -86,7 +86,7 @@ export function registerQuickAssistantHandlers(): void {
           {
             settings,
             messages: [
-              { role: 'system', content: action.systemPrompt },
+              { role: 'system', content: systemPromptOverride || action.systemPrompt },
               { role: 'user', content: text },
             ],
             signal: controller.signal,

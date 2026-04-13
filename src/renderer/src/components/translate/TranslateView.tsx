@@ -37,18 +37,8 @@ import { ModelPickerDialog } from '@renderer/components/chat/ModelPickerDialog'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { TranslateSettingsDialog, type TranslateSettings } from './TranslateSettingsDialog'
+import { LANGUAGES, type Language } from '@renderer/lib/languages'
 import type { TranslationHistoryItem } from '@shared/types'
-
-interface Language {
-  code: string
-  label: string
-}
-
-const LANGUAGES: Language[] = [
-  { code: 'zh-CN', label: '简体中文' },
-  { code: 'en', label: 'English' },
-  { code: 'ja', label: '日本語' },
-]
 
 export function TranslateView(): React.JSX.Element {
   const { t } = useTranslation()

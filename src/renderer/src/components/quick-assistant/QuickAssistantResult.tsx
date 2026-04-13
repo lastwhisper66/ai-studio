@@ -2,6 +2,14 @@ import { useRef, useEffect, useState } from 'react'
 import { Square, ArrowLeft, Copy, Check } from 'lucide-react'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
+import { LANGUAGES } from '@renderer/lib/languages'
 
 interface QuickAssistantResultProps {
   content: string
@@ -9,6 +17,9 @@ interface QuickAssistantResultProps {
   error: string | null
   onStop: () => void
   onBack: () => void
+  isTranslateAction?: boolean
+  targetLang?: string
+  onTargetLangChange?: (lang: string) => void
 }
 
 export function QuickAssistantResult({
@@ -17,6 +28,9 @@ export function QuickAssistantResult({
   error,
   onStop,
   onBack,
+  isTranslateAction,
+  targetLang,
+  onTargetLangChange,
 }: QuickAssistantResultProps): React.JSX.Element {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
@@ -43,6 +57,20 @@ export function QuickAssistantResult({
           返回
         </button>
         <div className="flex items-center gap-1">
+          {isTranslateAction && targetLang && onTargetLangChange && (
+            <Select value={targetLang} onValueChange={onTargetLangChange}>
+              <SelectTrigger className="h-7 w-28 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent position="popper" side="bottom">
+                {LANGUAGES.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           {isStreaming && (
             <button
               onClick={onStop}

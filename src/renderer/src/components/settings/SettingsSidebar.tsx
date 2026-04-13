@@ -48,8 +48,8 @@ const sectionGroups: SectionItem[][] = [
   [
     { id: 'phrases', labelKey: 'settings.sections.phrases', icon: TextQuote },
     { id: 'keyboard-shortcuts', labelKey: 'settings.sections.keyboardShortcuts', icon: Keyboard },
-    { id: 'quick-assistant', labelKey: 'settings.sections.quickAssistant', icon: Zap },
   ],
+  [{ id: 'quick-assistant', labelKey: 'settings.sections.quickAssistant', icon: Zap }],
 ]
 
 export function SettingsSidebar({

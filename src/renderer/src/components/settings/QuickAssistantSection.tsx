@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Zap, Plus, Pencil, Trash2, ChevronDown, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import i18n from '@renderer/i18n'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
 import { Button } from '@renderer/components/ui/button'
@@ -14,6 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@renderer/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
@@ -24,6 +32,7 @@ import {
   quickActionIconMap,
   defaultQuickActionIcon,
 } from '@renderer/components/quick-assistant/icons'
+import { LANGUAGES, generateTranslatePrompt } from '@renderer/lib/languages'
 import type { QuickAction } from '@shared/types'
 
 export function QuickAssistantSection(): React.JSX.Element {
@@ -41,6 +50,7 @@ export function QuickAssistantSection(): React.JSX.Element {
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formSystemPrompt, setFormSystemPrompt] = useState('')
+  const [formTargetLang, setFormTargetLang] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -76,6 +86,7 @@ export function QuickAssistantSection(): React.JSX.Element {
     setFormName('')
     setFormDescription('')
     setFormSystemPrompt('')
+    setFormTargetLang('')
     setEditDialogOpen(true)
   }
 
@@ -84,6 +95,11 @@ export function QuickAssistantSection(): React.JSX.Element {
     setFormName(action.name)
     setFormDescription(action.description)
     setFormSystemPrompt(action.systemPrompt)
+    if (action.id === 'builtin-translate') {
+      setFormTargetLang(settings['quickAssistant.translateTargetLang'] || i18n.language || 'en')
+    } else {
+      setFormTargetLang('')
+    }
     setEditDialogOpen(true)
   }
 
@@ -95,6 +111,10 @@ export function QuickAssistantSection(): React.JSX.Element {
         description: formDescription.trim(),
         systemPrompt: formSystemPrompt.trim(),
       })
+      // Persist translate target language to settings
+      if (editingAction.id === 'builtin-translate' && formTargetLang) {
+        saveSettings({ 'quickAssistant.translateTargetLang': formTargetLang })
+      }
     } else {
       await createAction({
         name: formName.trim(),
@@ -272,6 +292,7 @@ export function QuickAssistantSection(): React.JSX.Element {
             setFormName('')
             setFormDescription('')
             setFormSystemPrompt('')
+            setFormTargetLang('')
           }
         }}>
         <DialogContent>
@@ -299,6 +320,29 @@ export function QuickAssistantSection(): React.JSX.Element {
                 onChange={(e) => setFormDescription(e.target.value)}
               />
             </div>
+            {editingAction?.id === 'builtin-translate' && (
+              <div className="space-y-2">
+                <Label>{t('settings.quickAssistant.targetLangLabel', '目标语言')}</Label>
+                <Select
+                  value={formTargetLang}
+                  onValueChange={(value) => {
+                    setFormTargetLang(value)
+                    const langLabel = LANGUAGES.find((l) => l.code === value)?.label ?? value
+                    setFormSystemPrompt(generateTranslatePrompt(langLabel))
+                  }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>{t('settings.quickAssistant.systemPromptLabel')}</Label>
               <Textarea

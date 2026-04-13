@@ -2,15 +2,20 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Pencil } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { generateTranslatePrompt, getLanguageLabel } from '@renderer/lib/languages'
+import i18n from '@renderer/i18n'
 import type { QuickAction } from '@shared/types'
 import { ActionList } from './ActionList'
 import { QuickAssistantResult } from './QuickAssistantResult'
+
+const BUILTIN_TRANSLATE_ID = 'builtin-translate'
 
 type ViewState = 'input' | 'result'
 
 export function QuickAssistantApp(): React.JSX.Element {
   const { actions, loadActions, isLoaded } = useQuickActionStore()
   const loadSettings = useSettingsStore((s) => s.loadSettings)
+  const saveSettings = useSettingsStore((s) => s.saveSettings)
   const settings = useSettingsStore((s) => s.settings)
 
   const [view, setView] = useState<ViewState>('input')
@@ -19,6 +24,10 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [resultContent, setResultContent] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [currentAction, setCurrentAction] = useState<QuickAction | null>(null)
+  const targetLang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
+  const activeTargetLangRef = useRef<string | null>(null)
+  const retranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const readySignalled = useRef(false)
 
@@ -28,10 +37,16 @@ export function QuickAssistantApp(): React.JSX.Element {
     loadSettings()
   }, [loadActions, loadSettings])
 
-  // Clean up all streaming listeners when the component unmounts
+  // Clean up all streaming listeners and pending timers when the component unmounts
   // (e.g. window destroyed while a request is in-flight)
   useEffect(() => {
-    return () => window.api.removeAllQuickAssistantListeners()
+    return () => {
+      window.api.removeAllQuickAssistantListeners()
+      if (retranslateTimerRef.current !== null) {
+        clearTimeout(retranslateTimerRef.current)
+        retranslateTimerRef.current = null
+      }
+    }
   }, [])
 
   // Signal main process that we're ready to be shown (once)
@@ -56,6 +71,12 @@ export function QuickAssistantApp(): React.JSX.Element {
       setResultContent('')
       setError(null)
       setIsStreaming(false)
+      setCurrentAction(null)
+      activeTargetLangRef.current = null
+      if (retranslateTimerRef.current !== null) {
+        clearTimeout(retranslateTimerRef.current)
+        retranslateTimerRef.current = null
+      }
       window.api.removeAllQuickAssistantListeners()
     }
     window.addEventListener('blur', handleBlur)
@@ -81,14 +102,23 @@ export function QuickAssistantApp(): React.JSX.Element {
   }, [view])
 
   const executeAction = useCallback(
-    (action: QuickAction) => {
-      if (!inputText.trim() || isStreaming) return
+    (action: QuickAction, overrideTargetLang?: string) => {
+      if (!inputText.trim() || (isStreaming && overrideTargetLang === undefined)) return
 
       const providerId = settings['quickAssistant.providerId']
       const modelId = settings['quickAssistant.modelId']
 
+      // Build system prompt override for translate action
+      let systemPromptOverride: string | undefined
+      if (action.id === BUILTIN_TRANSLATE_ID) {
+        const lang = overrideTargetLang ?? targetLang
+        systemPromptOverride = generateTranslatePrompt(getLanguageLabel(lang))
+        activeTargetLangRef.current = lang
+      }
+
       // Switch to result view
       setView('result')
+      setCurrentAction(action)
       setResultContent('')
       setError(null)
       setIsStreaming(true)
@@ -127,9 +157,10 @@ export function QuickAssistantApp(): React.JSX.Element {
         actionId: action.id,
         providerId: providerId || undefined,
         modelId: modelId || undefined,
+        systemPromptOverride,
       })
     },
-    [inputText, settings, isStreaming],
+    [inputText, settings, targetLang, isStreaming],
   )
 
   const handleStop = useCallback(async () => {
@@ -145,7 +176,48 @@ export function QuickAssistantApp(): React.JSX.Element {
     setResultContent('')
     setError(null)
     setIsStreaming(false)
+    setCurrentAction(null)
+    activeTargetLangRef.current = null
+    if (retranslateTimerRef.current !== null) {
+      clearTimeout(retranslateTimerRef.current)
+      retranslateTimerRef.current = null
+    }
   }, [isStreaming])
+
+  const handleTargetLangChange = useCallback(
+    async (newLang: string) => {
+      // Skip if same language is already being translated
+      if (newLang === activeTargetLangRef.current) return
+
+      saveSettings({ 'quickAssistant.translateTargetLang': newLang })
+
+      // Immediately clear stale content so the UI shows a loading state
+      setResultContent('')
+      setError(null)
+      setIsStreaming(true)
+
+      // Stop current translation if streaming
+      if (isStreaming) {
+        await window.api.stopQuickAssistant()
+      }
+      window.api.removeAllQuickAssistantListeners()
+
+      // Cancel any previously scheduled re-translation
+      if (retranslateTimerRef.current !== null) {
+        clearTimeout(retranslateTimerRef.current)
+      }
+
+      // Re-translate with new language
+      if (currentAction) {
+        // Small delay to ensure abort completes
+        retranslateTimerRef.current = setTimeout(() => {
+          retranslateTimerRef.current = null
+          executeAction(currentAction, newLang)
+        }, 50)
+      }
+    },
+    [isStreaming, currentAction, executeAction, saveSettings],
+  )
 
   // Global keyboard handler
   useEffect(() => {
@@ -184,6 +256,8 @@ export function QuickAssistantApp(): React.JSX.Element {
   if (!isLoaded) {
     return <div className="bg-background h-full rounded-xl" />
   }
+
+  const isTranslateAction = currentAction?.id === BUILTIN_TRANSLATE_ID
 
   return (
     <div className="bg-background flex h-screen flex-col overflow-hidden rounded-xl border shadow-2xl">
@@ -227,6 +301,9 @@ export function QuickAssistantApp(): React.JSX.Element {
           error={error}
           onStop={handleStop}
           onBack={handleBack}
+          isTranslateAction={isTranslateAction}
+          targetLang={targetLang}
+          onTargetLangChange={handleTargetLangChange}
         />
       )}
     </div>

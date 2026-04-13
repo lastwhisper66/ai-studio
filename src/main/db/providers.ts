@@ -146,6 +146,12 @@ export function reorderProviders(ids: string[]): void {
 
 /** Default provider templates to seed on first launch */
 const DEFAULT_PROVIDER_SEEDS: CreateProviderData[] = [
+  {
+    type: 'fujitsu',
+    name: 'Fujitsu Azure OpenAI',
+    baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
+  },
+  { type: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com' },
   { type: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com' },
   { type: 'openai-response', name: 'OpenAI Response', baseUrl: 'https://api.openai.com' },
   {
@@ -155,14 +161,8 @@ const DEFAULT_PROVIDER_SEEDS: CreateProviderData[] = [
   },
   { type: 'gemini', name: 'Gemini', baseUrl: 'https://generativelanguage.googleapis.com' },
   { type: 'claude', name: 'Claude', baseUrl: 'https://api.anthropic.com' },
-  { type: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com' },
   { type: 'silicon', name: 'Silicon Flow', baseUrl: 'https://api.siliconflow.cn' },
   { type: 'newapi', name: 'New API', baseUrl: 'https://api.example.com' },
-  {
-    type: 'fujitsu',
-    name: 'Fujitsu Azure OpenAI',
-    baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
-  },
 ]
 
 /** Seed default providers on first launch (when providers table is empty) */

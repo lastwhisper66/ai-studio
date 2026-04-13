@@ -271,6 +271,7 @@ export interface QuickActionRequestPayload {
   actionId: string
   providerId?: string
   modelId?: string
+  systemPromptOverride?: string
 }
 
 /** quick-assistant:chunk push data */
