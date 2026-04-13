@@ -42,6 +42,21 @@ async function syncQuickAssistantShortcut(): Promise<void> {
   }
 }
 
+/** Notify main process to re-register the summon-window global shortcut */
+async function syncSummonWindowShortcut(): Promise<void> {
+  try {
+    await window.api.updateSummonWindowShortcut()
+  } catch {
+    // non-critical
+  }
+}
+
+/** Sync global shortcut with main process when a global-shortcut action changes */
+async function syncGlobalShortcut(actionId: KeybindingActionId): Promise<void> {
+  if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
+  if (actionId === 'summon-window') await syncSummonWindowShortcut()
+}
+
 export const useKeybindingStore = create<KeybindingState>((set, get) => ({
   overrides: {},
   isLoaded: false,
@@ -76,7 +91,7 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     const next = { ...get().overrides, [actionId]: accelerator }
     set({ overrides: next })
     await persistOverrides(next)
-    if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
+    await syncGlobalShortcut(actionId)
   },
 
   removeOverride: async (actionId) => {
@@ -84,7 +99,7 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     delete next[actionId]
     set({ overrides: next })
     await persistOverrides(next)
-    if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
+    await syncGlobalShortcut(actionId)
   },
 
   resetAction: async (actionId) => {
@@ -95,5 +110,6 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     set({ overrides: {} })
     await useSettingsStore.getState().saveSettings({ [STORAGE_KEY]: JSON.stringify({}) })
     await syncQuickAssistantShortcut()
+    await syncSummonWindowShortcut()
   },
 }))

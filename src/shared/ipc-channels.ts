@@ -108,4 +108,5 @@ export const IpcChannels = {
   QUICK_ASSISTANT_CLOSE: 'quick-assistant:close',
   QUICK_ASSISTANT_READY: 'quick-assistant:ready',
   QUICK_ASSISTANT_UPDATE_SHORTCUT: 'quick-assistant:update-shortcut',
+  SUMMON_WINDOW_UPDATE_SHORTCUT: 'summon-window:update-shortcut',
 } as const

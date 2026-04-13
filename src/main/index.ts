@@ -103,6 +103,41 @@ function toElectronAccelerator(accel: string): string {
     .join('+')
 }
 
+function getSummonWindowAccelerator(): string {
+  const raw = getSetting('app.keybindings')
+  let overrides: Partial<Record<KeybindingActionId, string>> = {}
+  if (raw) {
+    try {
+      overrides = JSON.parse(raw)
+    } catch {
+      // ignore
+    }
+  }
+  return overrides['summon-window'] ?? DEFAULT_KEYBINDINGS['summon-window'].defaultAccelerator
+}
+
+let currentSummonShortcut: string | null = null
+
+function registerSummonWindowShortcut(): void {
+  if (currentSummonShortcut) {
+    globalShortcut.unregister(currentSummonShortcut)
+    currentSummonShortcut = null
+  }
+
+  const accel = getSummonWindowAccelerator()
+  const electronAccel = toElectronAccelerator(accel)
+
+  const ok = globalShortcut.register(electronAccel, () => {
+    if (mainWindow) showWindow(mainWindow)
+  })
+
+  if (ok) {
+    currentSummonShortcut = electronAccel
+  } else if (is.dev) {
+    console.warn(`Failed to register global shortcut ${electronAccel} — may already be in use`)
+  }
+}
+
 function getQuickAssistantAccelerator(): string {
   const raw = getSetting('app.keybindings')
   let overrides: Partial<Record<KeybindingActionId, string>> = {}
@@ -331,6 +366,11 @@ if (!gotTheLock) {
       return { success: true }
     })
 
+    ipcMain.handle(IpcChannels.SUMMON_WINDOW_UPDATE_SHORTCUT, () => {
+      registerSummonWindowShortcut()
+      return { success: true }
+    })
+
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
     })
@@ -340,13 +380,8 @@ if (!gotTheLock) {
     // Pre-create Quick Assistant window (hidden) so the first toggle is instant
     preCreateQuickAssistantWindow()
 
-    // Global shortcut: Ctrl+Win+A to summon the main window
-    const registered = globalShortcut.register('Ctrl+Super+A', () => {
-      if (mainWindow) showWindow(mainWindow)
-    })
-    if (!registered && is.dev) {
-      console.warn('Failed to register global shortcut Ctrl+Super+A — may already be in use')
-    }
+    // Global shortcut: summon the main window (user-configurable, default Alt+A)
+    registerSummonWindowShortcut()
 
     // Global shortcut: Ctrl+Shift+Space to toggle Quick Assistant (user-configurable)
     registerQuickAssistantShortcut()

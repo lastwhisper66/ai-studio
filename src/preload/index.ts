@@ -440,6 +440,9 @@ const api = {
 
   updateQuickAssistantShortcut: (): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT),
+
+  updateSummonWindowShortcut: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SUMMON_WINDOW_UPDATE_SHORTCUT),
 }
 
 export type ApiType = typeof api

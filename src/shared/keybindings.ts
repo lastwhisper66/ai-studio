@@ -43,10 +43,9 @@ export const DEFAULT_KEYBINDINGS: Record<KeybindingActionId, KeybindingDef> = {
     category: 'chat',
   },
   'summon-window': {
-    defaultAccelerator: 'Ctrl+Super+A',
+    defaultAccelerator: 'Alt+A',
     labelKey: 'keybindings.summonWindow',
     category: 'app',
-    readOnly: true,
   },
   'toggle-quick-assistant': {
     // Trailing space represents the Space key (converted to 'Space' by toElectronAccelerator)
