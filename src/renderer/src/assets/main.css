@@ -156,6 +156,10 @@ pre.shiki code {
   font-family: var(--font-mono) !important;
 }
 
+pre.shiki {
+  overflow-x: auto !important;
+}
+
 /* ── Markdown prose spacing ── */
 .markdown-body > :first-child {
   margin-top: 0;

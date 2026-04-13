@@ -235,7 +235,7 @@ export const MessageBubble = memo(function MessageBubble({
         </AvatarFallback>
       </Avatar>
 
-      <div className={`relative min-w-0 max-w-[60%] ${isEditing ? 'w-[60%]' : ''}`}>
+      <div className={`relative min-w-0 max-w-[60%] overflow-hidden ${isEditing ? 'w-[60%]' : ''}`}>
         <div
           className={`wrap-anywhere overflow-hidden rounded-2xl px-4 py-3 text-sm ${
             isUser
