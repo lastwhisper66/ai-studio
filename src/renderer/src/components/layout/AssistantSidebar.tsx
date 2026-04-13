@@ -236,7 +236,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
 
   return (
     <aside
-      className={`relative flex h-full w-56 shrink-0 flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300${collapsed ? ' !w-0 overflow-hidden' : ''}`}>
+      className={`relative flex h-full w-64 shrink-0 flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300${collapsed ? ' !w-0 overflow-hidden' : ''}`}>
       {/* Add Assistant Button */}
       <div className="mx-2 mt-2 mb-1">
         <Button

@@ -145,7 +145,9 @@
     "cancelSelect": "取消所选",
     "deleteSelected": "删除所选",
     "deleteSelectedTitle": "删除所选话题",
-    "deleteSelectedDescription": "此操作将永久删除所选的 {{count}} 个话题及其所有消息，无法撤销。确定继续吗？"
+    "deleteSelectedDescription": "此操作将永久删除所选的 {{count}} 个话题及其所有消息，无法撤销。确定继续吗？",
+    "selectedCount": "已选 {{count}} 项",
+    "exitMultiSelect": "退出多选"
   },
   "settings": {
     "title": "设置",

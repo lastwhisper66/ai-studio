@@ -25,6 +25,14 @@ export function createAIClient(settings: ApiSettings): OpenAI {
  * Generate a conversation title using the appropriate provider.
  * For non-OpenAI-compatible providers, uses streamChat internally.
  */
+/** Strip quotes, newlines, and leading/trailing punctuation from a generated title. */
+function cleanTitle(raw: string): string {
+  return raw
+    .replace(/["'""''`\r\n]+/g, ' ')
+    .replace(/^[\s.,!?;:…]+|[\s.,!?;:…]+$/g, '')
+    .trim()
+}
+
 export async function generateTitle(
   settings: ApiSettings,
   userMessage: string,
@@ -34,7 +42,7 @@ export async function generateTitle(
     {
       role: 'system' as const,
       content:
-        'Generate a concise title (6 words or less) for this conversation. Return only the title, no quotes or punctuation.',
+        'Summarize this conversation into a title within 10 characters, in the same language as the conversation. Do not use punctuation or special symbols. Output only the title string without anything else.',
     },
     { role: 'user' as const, content: userMessage },
     { role: 'assistant' as const, content: assistantMessage.slice(0, 500) },
@@ -47,15 +55,15 @@ export async function generateTitle(
       const response = await client.chat.completions.create({
         model: settings.model,
         messages: titleMessages,
-        max_completion_tokens: 30,
+        max_completion_tokens: 50,
         temperature: 0.5,
       })
-      const title = response.choices[0]?.message?.content?.trim()
+      const title = cleanTitle(response.choices[0]?.message?.content ?? '')
       if (title) return title
     } else {
       // For Gemini/Claude/etc., use streamChat to generate title
       let title = ''
-      const titleSettings = { ...settings, temperature: 0.5, maxCompletionTokens: 30 }
+      const titleSettings = { ...settings, temperature: 0.5, maxCompletionTokens: 50 }
       await streamChat(
         {
           settings: titleSettings,
@@ -68,11 +76,12 @@ export async function generateTitle(
           },
         },
       )
-      if (title.trim()) return title.trim()
+      const cleaned = cleanTitle(title)
+      if (cleaned) return cleaned
     }
   } catch {
     // fallback below
   }
-  // Fallback: truncate user message
-  return userMessage.length > 30 ? userMessage.slice(0, 30) + '...' : userMessage
+  // Fallback: use beginning of user message
+  return userMessage.slice(0, 20)
 }

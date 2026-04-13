@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Trash2, Pencil, Pin, Eraser, CheckSquare } from 'lucide-react'
+import { Plus, Trash2, Pencil, Pin, Eraser, CheckSquare, X, ListChecks } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
@@ -174,7 +174,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
 
   return (
     <aside
-      className={`relative flex h-full w-56 shrink-0 flex-col border-l bg-sidebar-background text-sidebar-foreground transition-all duration-300${collapsed ? ' !w-0 overflow-hidden' : ''}`}>
+      className={`relative flex h-full w-64 shrink-0 flex-col border-l bg-sidebar-background text-sidebar-foreground transition-all duration-300${collapsed ? ' !w-0 overflow-hidden' : ''}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-2 pt-2 pb-1">
         <Button
@@ -217,7 +217,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
                     <div
                       className={`group relative cursor-pointer overflow-hidden rounded-lg px-3 py-2 text-sm ${
                         isActive && !isMultiSelect
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          ? 'bg-primary/15 text-sidebar-accent-foreground'
                           : isSelected
                             ? 'bg-sidebar-accent/60 text-sidebar-accent-foreground'
                             : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
@@ -233,7 +233,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
                         {isMultiSelect && (
                           <Checkbox
                             checked={isSelected}
-                            className="h-3.5 w-3.5 shrink-0"
+                            className="h-3.5 w-3.5 shrink-0 rounded-[3px] border-muted-foreground/40 data-[state=checked]:border-primary"
                             onCheckedChange={() => handleToggleSelect(conv.id)}
                             onClick={(e) => e.stopPropagation()}
                           />
@@ -241,7 +241,14 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
                         {conv.pinned && !isMultiSelect && (
                           <Pin className="h-3 w-3 shrink-0 opacity-60" />
                         )}
-                        <span className="flex-1 truncate">{conv.title}</span>
+                        <span className="flex-1 truncate" title={conv.title}>
+                          {(() => {
+                            const max = isMultiSelect ? 12 : 13
+                            return conv.title.length > max
+                              ? conv.title.slice(0, max) + '...'
+                              : conv.title
+                          })()}
+                        </span>
                       </div>
                       <div className="mt-0.5 text-xs opacity-50">{formatTime(conv.updatedAt)}</div>
                     </div>
@@ -280,33 +287,52 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
       {isMultiSelect && (
         <>
           <div className="mx-3 border-t" />
-          <div className="flex items-center gap-1 px-2 py-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 shrink-0 text-xs"
-              onClick={handleSelectAll}>
-              {selectedIds.size === topicConversations.length
-                ? t('topic.cancelSelect')
-                : t('topic.selectAll')}
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="h-7 shrink-0 text-xs"
-              disabled={selectedIds.size === 0 || isStreaming}
-              onClick={handleDeleteMany}>
-              {t('topic.deleteSelected')}
-              {selectedIds.size > 0 && ` (${selectedIds.size})`}
-            </Button>
-            <div className="flex-1" />
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 shrink-0 text-xs"
-              onClick={handleToggleMultiSelect}>
-              {t('common.cancel')}
-            </Button>
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSelectAll}>
+                    <ListChecks className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectedIds.size === topicConversations.length
+                    ? t('topic.cancelSelect')
+                    : t('topic.selectAll')}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    disabled={selectedIds.size === 0 || isStreaming}
+                    onClick={handleDeleteMany}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t('topic.deleteSelected')}
+                  {selectedIds.size > 0 && ` (${selectedIds.size})`}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {selectedIds.size > 0 && t('topic.selectedCount', { count: selectedIds.size })}
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleToggleMultiSelect}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('topic.exitMultiSelect')}</TooltipContent>
+            </Tooltip>
           </div>
         </>
       )}

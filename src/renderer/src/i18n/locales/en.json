@@ -145,7 +145,9 @@
     "cancelSelect": "Deselect",
     "deleteSelected": "Delete",
     "deleteSelectedTitle": "Delete selected topics",
-    "deleteSelectedDescription": "This will permanently delete {{count}} selected topics and all their messages. This cannot be undone."
+    "deleteSelectedDescription": "This will permanently delete {{count}} selected topics and all their messages. This cannot be undone.",
+    "selectedCount": "{{count}} selected",
+    "exitMultiSelect": "Exit multi-select"
   },
   "settings": {
     "title": "Settings",
