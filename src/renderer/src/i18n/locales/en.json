@@ -315,6 +315,8 @@
       "placeholderDefault": "Type content to process, select an action below and press Enter...",
       "pinWindow": "Pin window",
       "unpinWindow": "Unpin window",
+      "defaultPinnedLabel": "Always on Top",
+      "defaultPinnedHint": "Keep the Quick Assistant on top by default. You can still toggle via the pin button.",
       "back": "Back",
       "stop": "Stop",
       "copy": "Copy",

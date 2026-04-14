@@ -315,6 +315,8 @@
       "placeholderDefault": "输入要处理的内容，选择下方功能后按 Enter 执行...",
       "pinWindow": "置顶窗口",
       "unpinWindow": "取消置顶",
+      "defaultPinnedLabel": "默认置顶",
+      "defaultPinnedHint": "默认保持快捷助手窗口置顶，仍可通过置顶按钮临时切换。",
       "back": "返回",
       "stop": "停止",
       "copy": "复制",

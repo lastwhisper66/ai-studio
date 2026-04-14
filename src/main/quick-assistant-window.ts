@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { AutoExecutePayload } from '@shared/types'
 import { abortQuickAssistant } from './ipc/quick-assistant-handlers'
+import { getSetting } from './db'
 
 let quickAssistantWindow: BrowserWindow | null = null
 let contentReady = false
@@ -20,6 +21,11 @@ let pendingAutoExecutePayload: AutoExecutePayload | null = null
  * sluggish for everyone else.
  */
 const SHOW_OPACITY_DELAY_MS = 60
+
+/** Read the user's default-pinned preference from DB. */
+function isDefaultPinned(): boolean {
+  return getSetting('quickAssistant.defaultPinned') === 'true'
+}
 
 /**
  * Pre-create the Quick Assistant window (hidden) at app startup.
@@ -38,7 +44,7 @@ export function preCreateQuickAssistantWindow(): void {
     y: Math.round((height - 500) / 2),
     frame: false,
     resizable: false,
-    alwaysOnTop: true,
+    alwaysOnTop: isDefaultPinned(),
     skipTaskbar: true,
     show: false,
     transparent: true,
@@ -79,8 +85,10 @@ export function toggleQuickAssistantWindow(): void {
       pinned = false
       quickAssistantWindow.hide()
     } else if (contentReady) {
-      // Reset pin state each time the window is shown
-      pinned = false
+      // Restore pin state from default setting each time the window is shown
+      const defaultPin = isDefaultPinned()
+      pinned = defaultPin
+      quickAssistantWindow.setAlwaysOnTop(defaultPin)
       // Re-center on primary display each time it's shown
       const { width, height } = screen.getPrimaryDisplay().workAreaSize
       quickAssistantWindow.setBounds({
@@ -124,8 +132,13 @@ export function showQuickAssistantWithAutoExecute(payload: AutoExecutePayload): 
   // Store payload for the renderer to pull when ready
   pendingAutoExecutePayload = payload
 
-  // Reset pin state
-  pinned = false
+  // Only reset pin/alwaysOnTop when transitioning from hidden to visible.
+  // If the window is already visible, preserve the user's current pin override.
+  if (!quickAssistantWindow.isVisible()) {
+    const defaultPin = isDefaultPinned()
+    pinned = defaultPin
+    quickAssistantWindow.setAlwaysOnTop(defaultPin)
+  }
 
   // Re-center on primary display
   const { width, height } = screen.getPrimaryDisplay().workAreaSize
@@ -157,9 +170,12 @@ export function initQuickAssistantIpc(): void {
     contentReady = true
   })
 
-  // Renderer toggles pinned state (keeps window visible on blur)
+  // Renderer toggles pinned state (keeps window visible on blur + always on top)
   ipcMain.on(IpcChannels.QUICK_ASSISTANT_SET_PINNED, (_event, value: boolean) => {
     pinned = value
+    if (quickAssistantWindow && !quickAssistantWindow.isDestroyed()) {
+      quickAssistantWindow.setAlwaysOnTop(value)
+    }
   })
 
   // Renderer pulls pending auto-execute payload (set by screenshot flow)

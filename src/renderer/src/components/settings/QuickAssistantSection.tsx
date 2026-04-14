@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Zap, Plus, Pencil, Trash2, ChevronDown, Sparkles } from 'lucide-react'
+import { Zap, Plus, Pencil, Trash2, ChevronDown, Sparkles, Pin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@renderer/i18n'
 import { Switch } from '@renderer/components/ui/switch'
@@ -47,6 +47,7 @@ export function QuickAssistantSection(): React.JSX.Element {
   const { actions, loadActions, createAction, updateAction, deleteAction } = useQuickActionStore()
 
   const [enabled, setEnabled] = useState(true)
+  const [defaultPinned, setDefaultPinned] = useState(false)
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -63,6 +64,7 @@ export function QuickAssistantSection(): React.JSX.Element {
 
   useEffect(() => {
     setEnabled(settings['quickAssistant.enabled'] !== 'false')
+    setDefaultPinned(settings['quickAssistant.defaultPinned'] === 'true')
   }, [settings])
 
   const providerId = settings['quickAssistant.providerId'] || ''
@@ -75,6 +77,11 @@ export function QuickAssistantSection(): React.JSX.Element {
   const handleEnabledToggle = (checked: boolean): void => {
     setEnabled(checked)
     saveSettings({ 'quickAssistant.enabled': String(checked) })
+  }
+
+  const handleDefaultPinnedToggle = (checked: boolean): void => {
+    setDefaultPinned(checked)
+    saveSettings({ 'quickAssistant.defaultPinned': String(checked) })
   }
 
   const handleModelSelect = (newProviderId: string, newModelId: string): void => {
@@ -176,6 +183,21 @@ export function QuickAssistantSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={enabled} onCheckedChange={handleEnabledToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Pin className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">
+                {t('settings.quickAssistant.defaultPinnedLabel')}
+              </Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.quickAssistant.defaultPinnedHint')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={defaultPinned} onCheckedChange={handleDefaultPinnedToggle} />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pin, PinOff, X, ArrowLeft, Square } from 'lucide-react'
+import { Pin, PinOff, X, ArrowLeft, Square, GripVertical } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
@@ -46,6 +46,7 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [currentAction, setCurrentAction] = useState<QuickAction | null>(null)
   const [pinned, setPinned] = useState(false)
+  const pinnedRef = useRef(false)
   const [attachedFiles, setAttachedFiles] = useState<FileData[]>([])
   const [warning, setWarning] = useState<string | null>(null)
   const targetLang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
@@ -130,13 +131,13 @@ export function QuickAssistantApp(): React.JSX.Element {
   // via hide(), so the next focus handler knows to do a full reset.
   useEffect(() => {
     const handleBlur = (): void => {
-      if (pinned) return
+      if (pinnedRef.current) return
       wasHiddenRef.current = true
       resetState()
     }
     window.addEventListener('blur', handleBlur)
     return () => window.removeEventListener('blur', handleBlur)
-  }, [pinned, resetState])
+  }, [resetState])
 
   // Complement to the blur handler above: BrowserWindow.hide() changes
   // `document.visibilityState` to "hidden" even when `pinned` is true
@@ -250,14 +251,27 @@ export function QuickAssistantApp(): React.JSX.Element {
   useEffect(() => {
     const handleFocus = (): void => {
       loadActions()
-      loadSettings()
       // Only reset pin on a fresh show (after the window was hidden), not on
       // focus-return from child elements like dropdown portals
       if (wasHiddenRef.current) {
-        wasHiddenRef.current = false
-        setPinned(false)
-        window.api.setQuickAssistantPinned(false)
         resetState()
+
+        // Sync local pinned state from store after settings are loaded.
+        // The main process already applied the correct alwaysOnTop + pinned
+        // state before showing the window, so we only update the display state
+        // here — no need to send setQuickAssistantPinned back to main.
+        //
+        // We clear wasHiddenRef AFTER the default pin is applied so that any
+        // blur event firing before loadSettings resolves will see the ref as
+        // true and skip hiding — preventing a race where the window disappears
+        // before the default-pinned preference is read.
+        loadSettings().then(() => {
+          const s = useSettingsStore.getState().settings
+          const defaultPin = s['quickAssistant.defaultPinned'] === 'true'
+          setPinned(defaultPin)
+          pinnedRef.current = defaultPin
+          wasHiddenRef.current = false
+        })
 
         // Check for pending auto-execute payload (set by screenshot flow)
         window.api.getPendingAutoExecute().then((result) => {
@@ -275,6 +289,8 @@ export function QuickAssistantApp(): React.JSX.Element {
             overrideTargetLang: payload.targetLang,
           })
         })
+      } else {
+        loadSettings()
       }
       setTimeout(() => inputRef.current?.focus(), 50)
     }
@@ -348,6 +364,7 @@ export function QuickAssistantApp(): React.JSX.Element {
   const handleTogglePin = useCallback(() => {
     const next = !pinned
     setPinned(next)
+    pinnedRef.current = next
     window.api.setQuickAssistantPinned(next)
   }, [pinned])
 
@@ -518,6 +535,11 @@ export function QuickAssistantApp(): React.JSX.Element {
       <div className="bg-background flex h-full w-full flex-col overflow-hidden rounded-xl border">
         {/* Search input — always visible */}
         <div className="flex items-center gap-3 border-b px-4 py-3">
+          <div
+            className="text-muted-foreground hover:text-foreground -ml-1 shrink-0 transition-colors"
+            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+            <GripVertical className="h-4 w-4" />
+          </div>
           <input
             ref={inputRef}
             type="text"
