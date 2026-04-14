@@ -13,6 +13,10 @@ export function generateTranslatePrompt(targetLangLabel: string): string {
   return `You are a professional translator. Translate the input text to ${targetLangLabel}. Only output the translation, nothing else. Preserve the original formatting.`
 }
 
+export function generateImageTranslatePrompt(targetLangLabel: string): string {
+  return `You are a professional translator with OCR capability. Identify ALL text content in the provided image and translate it to ${targetLangLabel}. Preserve the original structure and formatting as much as possible. Only output the translation, nothing else.`
+}
+
 export function getLanguageLabel(code: string): string {
   return LANGUAGES.find((l) => l.code === code)?.label ?? code
 }

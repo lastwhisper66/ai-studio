@@ -32,7 +32,11 @@ import {
   quickActionIconMap,
   defaultQuickActionIcon,
 } from '@renderer/components/quick-assistant/icons'
-import { LANGUAGES, generateTranslatePrompt } from '@renderer/lib/languages'
+import {
+  LANGUAGES,
+  generateTranslatePrompt,
+  generateImageTranslatePrompt,
+} from '@renderer/lib/languages'
 import type { QuickAction } from '@shared/types'
 
 export function QuickAssistantSection(): React.JSX.Element {
@@ -95,7 +99,7 @@ export function QuickAssistantSection(): React.JSX.Element {
     setFormName(action.name)
     setFormDescription(action.description)
     setFormSystemPrompt(action.systemPrompt)
-    if (action.id === 'builtin-translate') {
+    if (action.id === 'builtin-translate' || action.id === 'builtin-image-translate') {
       setFormTargetLang(settings['quickAssistant.translateTargetLang'] || i18n.language || 'en')
     } else {
       setFormTargetLang('')
@@ -112,7 +116,11 @@ export function QuickAssistantSection(): React.JSX.Element {
         systemPrompt: formSystemPrompt.trim(),
       })
       // Persist translate target language to settings
-      if (editingAction.id === 'builtin-translate' && formTargetLang) {
+      if (
+        (editingAction.id === 'builtin-translate' ||
+          editingAction.id === 'builtin-image-translate') &&
+        formTargetLang
+      ) {
         saveSettings({ 'quickAssistant.translateTargetLang': formTargetLang })
       }
     } else {
@@ -320,7 +328,8 @@ export function QuickAssistantSection(): React.JSX.Element {
                 onChange={(e) => setFormDescription(e.target.value)}
               />
             </div>
-            {editingAction?.id === 'builtin-translate' && (
+            {(editingAction?.id === 'builtin-translate' ||
+              editingAction?.id === 'builtin-image-translate') && (
               <div className="space-y-2">
                 <Label>{t('settings.quickAssistant.targetLangLabel', '目标语言')}</Label>
                 <Select
@@ -328,7 +337,11 @@ export function QuickAssistantSection(): React.JSX.Element {
                   onValueChange={(value) => {
                     setFormTargetLang(value)
                     const langLabel = LANGUAGES.find((l) => l.code === value)?.label ?? value
-                    setFormSystemPrompt(generateTranslatePrompt(langLabel))
+                    setFormSystemPrompt(
+                      editingAction?.id === 'builtin-image-translate'
+                        ? generateImageTranslatePrompt(langLabel)
+                        : generateTranslatePrompt(langLabel),
+                    )
                   }}>
                   <SelectTrigger>
                     <SelectValue />

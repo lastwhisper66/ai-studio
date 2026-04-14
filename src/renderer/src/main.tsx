@@ -7,13 +7,14 @@ import { ThemeProvider } from './components/theme/ThemeProvider'
 import { TooltipProvider } from './components/ui/tooltip'
 import App from './App'
 import { QuickAssistantApp } from './components/quick-assistant/QuickAssistantApp'
+import { ScreenshotApp } from './components/screenshot/ScreenshotApp'
 
 const params = new URLSearchParams(window.location.search)
 const mode = params.get('mode')
 
-// Quick assistant runs in a transparent BrowserWindow — make body/html
-// transparent so only the rounded-corner container shows a background.
-if (mode === 'quick-assistant') {
+// Quick assistant and screenshot run in transparent BrowserWindows — make body/html
+// transparent so only the actual content shows.
+if (mode === 'quick-assistant' || mode === 'screenshot') {
   document.documentElement.style.background = 'transparent'
   document.body.style.background = 'transparent'
 }
@@ -23,6 +24,8 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       {mode === 'quick-assistant' ? (
         <QuickAssistantApp />
+      ) : mode === 'screenshot' ? (
+        <ScreenshotApp />
       ) : (
         <TooltipProvider>
           <App />

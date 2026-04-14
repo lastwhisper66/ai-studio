@@ -32,6 +32,7 @@
     "better-sqlite3": "^12.6.2",
     "cmdk": "^1.1.1",
     "font-list": "^2.0.2",
+    "node-screenshots": "^0.2.8",
     "openai": "^6.27.0",
     "uuid": "^13.0.0"
   },

@@ -36,6 +36,7 @@ import {
   initQuickAssistantIpc,
   preCreateQuickAssistantWindow,
 } from './quick-assistant-window'
+import { startScreenshot, initScreenshotIpc } from './screenshot'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -173,6 +174,44 @@ function registerQuickAssistantShortcut(): void {
 
   if (ok) {
     currentQaShortcut = electronAccel
+  } else if (is.dev) {
+    console.warn(`Failed to register global shortcut ${electronAccel} — may already be in use`)
+  }
+}
+
+function getScreenshotAccelerator(): string {
+  const raw = getSetting('app.keybindings')
+  let overrides: Partial<Record<KeybindingActionId, string>> = {}
+  if (raw) {
+    try {
+      overrides = JSON.parse(raw)
+    } catch {
+      // ignore
+    }
+  }
+  return (
+    overrides['screenshot-translate'] ??
+    DEFAULT_KEYBINDINGS['screenshot-translate'].defaultAccelerator
+  )
+}
+
+let currentScreenshotShortcut: string | null = null
+
+function registerScreenshotShortcut(): void {
+  if (currentScreenshotShortcut) {
+    globalShortcut.unregister(currentScreenshotShortcut)
+    currentScreenshotShortcut = null
+  }
+
+  const accel = getScreenshotAccelerator()
+  const electronAccel = toElectronAccelerator(accel)
+
+  const ok = globalShortcut.register(electronAccel, () => {
+    startScreenshot(mainWindow)
+  })
+
+  if (ok) {
+    currentScreenshotShortcut = electronAccel
   } else if (is.dev) {
     console.warn(`Failed to register global shortcut ${electronAccel} — may already be in use`)
   }
@@ -359,6 +398,7 @@ if (!gotTheLock) {
     initQuickAssistant()
     registerAllIpcHandlers()
     initQuickAssistantIpc()
+    initScreenshotIpc()
 
     // IPC: re-register quick assistant shortcut when user changes it
     ipcMain.handle(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT, () => {
@@ -368,6 +408,11 @@ if (!gotTheLock) {
 
     ipcMain.handle(IpcChannels.SUMMON_WINDOW_UPDATE_SHORTCUT, () => {
       registerSummonWindowShortcut()
+      return { success: true }
+    })
+
+    ipcMain.handle(IpcChannels.SCREENSHOT_UPDATE_SHORTCUT, () => {
+      registerScreenshotShortcut()
       return { success: true }
     })
 
@@ -385,6 +430,9 @@ if (!gotTheLock) {
 
     // Global shortcut: Ctrl+Shift+Space to toggle Quick Assistant (user-configurable)
     registerQuickAssistantShortcut()
+
+    // Global shortcut: Alt+P to trigger screenshot translate (user-configurable)
+    registerScreenshotShortcut()
 
     // ── System tray ───────────────────────────────────────────────
     const iconPath = join(app.getAppPath(), 'resources', 'icon.png')

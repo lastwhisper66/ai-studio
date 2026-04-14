@@ -8,6 +8,7 @@ export type KeybindingActionId =
   | 'stop-generation'
   | 'summon-window'
   | 'toggle-quick-assistant'
+  | 'screenshot-translate'
 
 export interface KeybindingDef {
   defaultAccelerator: string
@@ -51,6 +52,11 @@ export const DEFAULT_KEYBINDINGS: Record<KeybindingActionId, KeybindingDef> = {
     // Trailing space represents the Space key (converted to 'Space' by toElectronAccelerator)
     defaultAccelerator: 'Ctrl+Shift+ ',
     labelKey: 'keybindings.toggleQuickAssistant',
+    category: 'app',
+  },
+  'screenshot-translate': {
+    defaultAccelerator: 'Alt+P',
+    labelKey: 'keybindings.screenshotTranslate',
     category: 'app',
   },
 }

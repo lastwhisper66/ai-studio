@@ -109,5 +109,12 @@ export const IpcChannels = {
   QUICK_ASSISTANT_READY: 'quick-assistant:ready',
   QUICK_ASSISTANT_SET_PINNED: 'quick-assistant:set-pinned',
   QUICK_ASSISTANT_UPDATE_SHORTCUT: 'quick-assistant:update-shortcut',
+  QUICK_ASSISTANT_AUTO_EXECUTE: 'quick-assistant:auto-execute',
+  QUICK_ASSISTANT_GET_PENDING_AUTO_EXECUTE: 'quick-assistant:get-pending-auto-execute',
   SUMMON_WINDOW_UPDATE_SHORTCUT: 'summon-window:update-shortcut',
+  // Screenshot
+  SCREENSHOT_DATA: 'screenshot:data',
+  SCREENSHOT_COMPLETE: 'screenshot:complete',
+  SCREENSHOT_CANCEL: 'screenshot:cancel',
+  SCREENSHOT_UPDATE_SHORTCUT: 'screenshot:update-shortcut',
 } as const

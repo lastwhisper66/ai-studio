@@ -2,11 +2,13 @@ import { BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
+import type { AutoExecutePayload } from '@shared/types'
 import { abortQuickAssistant } from './ipc/quick-assistant-handlers'
 
 let quickAssistantWindow: BrowserWindow | null = null
 let contentReady = false
 let pinned = false
+let pendingAutoExecutePayload: AutoExecutePayload | null = null
 
 /**
  * Delay (ms) before restoring window opacity after show().
@@ -110,6 +112,40 @@ export function hideQuickAssistantWindow(): void {
   }
 }
 
+/**
+ * Show the quick assistant window and automatically execute an action
+ * with the given payload (e.g. screenshot image + image-translate action).
+ * The payload is stored and pulled by the renderer via IPC when it's ready.
+ */
+export function showQuickAssistantWithAutoExecute(payload: AutoExecutePayload): void {
+  if (!quickAssistantWindow || quickAssistantWindow.isDestroyed() || !contentReady) return
+
+  // Store payload for the renderer to pull when ready
+  pendingAutoExecutePayload = payload
+
+  // Reset pin state
+  pinned = false
+
+  // Re-center on primary display
+  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  quickAssistantWindow.setBounds({
+    x: Math.round((width - 600) / 2),
+    y: Math.round((height - 500) / 2),
+    width: 600,
+    height: 500,
+  })
+
+  // Show with opacity transition (same as toggle)
+  quickAssistantWindow.setOpacity(0)
+  quickAssistantWindow.show()
+  quickAssistantWindow.focus()
+  setTimeout(() => {
+    if (quickAssistantWindow && !quickAssistantWindow.isDestroyed()) {
+      quickAssistantWindow.setOpacity(1)
+    }
+  }, SHOW_OPACITY_DELAY_MS)
+}
+
 export function initQuickAssistantIpc(): void {
   ipcMain.on(IpcChannels.QUICK_ASSISTANT_CLOSE, () => {
     hideQuickAssistantWindow()
@@ -123,5 +159,12 @@ export function initQuickAssistantIpc(): void {
   // Renderer toggles pinned state (keeps window visible on blur)
   ipcMain.on(IpcChannels.QUICK_ASSISTANT_SET_PINNED, (_event, value: boolean) => {
     pinned = value
+  })
+
+  // Renderer pulls pending auto-execute payload (set by screenshot flow)
+  ipcMain.handle(IpcChannels.QUICK_ASSISTANT_GET_PENDING_AUTO_EXECUTE, () => {
+    const payload = pendingAutoExecutePayload
+    pendingAutoExecutePayload = null
+    return { success: true, data: payload }
   })
 }

@@ -453,6 +453,7 @@
     "stopGeneration": "停止生成",
     "summonWindow": "唤醒窗口",
     "toggleQuickAssistant": "快捷助手",
+    "screenshotTranslate": "截图翻译",
     "category": {
       "app": "应用",
       "chat": "聊天",

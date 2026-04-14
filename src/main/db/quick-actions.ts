@@ -132,11 +132,6 @@ export function reorderQuickActions(ids: string[]): void {
 
 export function seedQuickActions(): void {
   const db = getDb()
-  const count = db
-    .prepare('SELECT COUNT(*) as cnt FROM quick_actions WHERE is_builtin = 1')
-    .get() as { cnt: number }
-  if (count.cnt > 0) return
-
   const now = new Date().toISOString()
   const builtins = [
     {
@@ -166,10 +161,19 @@ export function seedQuickActions(): void {
       icon: 'FileText',
       sortOrder: 2,
     },
+    {
+      id: 'builtin-image-translate',
+      name: '识图翻译',
+      description: '识别图片中的文字并翻译',
+      systemPrompt:
+        'You are a professional translator with OCR capability. Identify ALL text content in the provided image and translate it. Preserve the original structure and formatting as much as possible. Only output the translation, nothing else.',
+      icon: 'ScanText',
+      sortOrder: 3,
+    },
   ]
 
   const stmt = db.prepare(
-    `INSERT INTO quick_actions (id, name, description, system_prompt, icon, is_builtin, sort_order, created_at, updated_at)
+    `INSERT OR IGNORE INTO quick_actions (id, name, description, system_prompt, icon, is_builtin, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
   )
   const seed = db.transaction(() => {

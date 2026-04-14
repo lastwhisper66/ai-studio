@@ -2,7 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Pin, PinOff, X, ArrowLeft, Square } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
-import { generateTranslatePrompt, getLanguageLabel, LANGUAGES } from '@renderer/lib/languages'
+import {
+  generateTranslatePrompt,
+  generateImageTranslatePrompt,
+  getLanguageLabel,
+  LANGUAGES,
+} from '@renderer/lib/languages'
 import i18n from '@renderer/i18n'
 import type { QuickAction } from '@shared/types'
 import type { FileData } from '@shared/types'
@@ -18,6 +23,7 @@ import {
 } from '@renderer/components/ui/select'
 
 const BUILTIN_TRANSLATE_ID = 'builtin-translate'
+const BUILTIN_IMAGE_TRANSLATE_ID = 'builtin-image-translate'
 
 type ViewState = 'input' | 'result'
 
@@ -118,45 +124,30 @@ export function QuickAssistantApp(): React.JSX.Element {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
-  // Focus input and refresh data when the window is shown (first focus after hide)
-  useEffect(() => {
-    const handleFocus = (): void => {
-      loadActions()
-      loadSettings()
-      // Only reset pin on a fresh show (after the window was hidden), not on
-      // focus-return from child elements like dropdown portals
-      if (wasHiddenRef.current) {
-        wasHiddenRef.current = false
-        setPinned(false)
-        window.api.setQuickAssistantPinned(false)
-        resetState()
-      }
-      setTimeout(() => inputRef.current?.focus(), 50)
-    }
-    window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
-  }, [loadActions, loadSettings, resetState])
-
-  // Auto-focus input when returning to input view (e.g. from result via Back)
-  useEffect(() => {
-    if (view !== 'input') return
-    const timer = setTimeout(() => inputRef.current?.focus(), 50)
-    return () => clearTimeout(timer)
-  }, [view])
-
-  const executeAction = useCallback(
-    (action: QuickAction, overrideTargetLang?: string) => {
-      if (!inputText.trim() && attachedFiles.length === 0) return
-      if (isStreaming && overrideTargetLang === undefined) return
-
+  /**
+   * Core streaming helper — registers chunk/end/error listeners and fires
+   * the quick-assistant request. Shared by executeAction and auto-execute.
+   */
+  const startStreamingRequest = useCallback(
+    (params: {
+      action: QuickAction
+      text: string
+      files?: FileData[]
+      overrideTargetLang?: string
+    }) => {
+      const { action, text, files, overrideTargetLang } = params
       const providerId = settings['quickAssistant.providerId']
       const settingsModelId = settings['quickAssistant.modelId']
 
-      // Build system prompt override for translate action
+      // Build system prompt override for translate actions
       let systemPromptOverride: string | undefined
       if (action.id === BUILTIN_TRANSLATE_ID) {
         const lang = overrideTargetLang ?? targetLang
         systemPromptOverride = generateTranslatePrompt(getLanguageLabel(lang))
+        activeTargetLangRef.current = lang
+      } else if (action.id === BUILTIN_IMAGE_TRANSLATE_ID) {
+        const lang = overrideTargetLang ?? targetLang
+        systemPromptOverride = generateImageTranslatePrompt(getLanguageLabel(lang))
         activeTargetLangRef.current = lang
       }
 
@@ -197,16 +188,74 @@ export function QuickAssistantApp(): React.JSX.Element {
 
       // Fire request
       window.api.quickAssistantRequest({
-        text: inputText.trim(),
+        text,
         actionId: action.id,
         providerId: providerId || undefined,
         modelId: settingsModelId || undefined,
         systemPromptOverride,
-        files: attachedFiles.length > 0 ? attachedFiles : undefined,
+        files: files && files.length > 0 ? files : undefined,
       })
     },
-    [inputText, attachedFiles, settings, targetLang, isStreaming],
+    [settings, targetLang],
   )
+
+  const executeAction = useCallback(
+    (action: QuickAction, overrideTargetLang?: string) => {
+      if (!inputText.trim() && attachedFiles.length === 0) return
+      if (isStreaming && overrideTargetLang === undefined) return
+
+      startStreamingRequest({
+        action,
+        text: inputText.trim(),
+        files: attachedFiles,
+        overrideTargetLang,
+      })
+    },
+    [inputText, attachedFiles, isStreaming, startStreamingRequest],
+  )
+
+  // Focus input and refresh data when the window is shown (first focus after hide)
+  useEffect(() => {
+    const handleFocus = (): void => {
+      loadActions()
+      loadSettings()
+      // Only reset pin on a fresh show (after the window was hidden), not on
+      // focus-return from child elements like dropdown portals
+      if (wasHiddenRef.current) {
+        wasHiddenRef.current = false
+        setPinned(false)
+        window.api.setQuickAssistantPinned(false)
+        resetState()
+
+        // Check for pending auto-execute payload (set by screenshot flow)
+        window.api.getPendingAutoExecute().then((result) => {
+          if (!result.success || !result.data) return
+          const payload = result.data
+          const action = actions.find((a) => a.enabled && a.id === payload.actionId)
+          if (!action || !payload.files?.length) return
+
+          setAttachedFiles(payload.files)
+          setInputText('')
+          startStreamingRequest({
+            action,
+            text: '',
+            files: payload.files,
+            overrideTargetLang: payload.targetLang,
+          })
+        })
+      }
+      setTimeout(() => inputRef.current?.focus(), 50)
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadActions, loadSettings, resetState, actions, startStreamingRequest])
+
+  // Auto-focus input when returning to input view (e.g. from result via Back)
+  useEffect(() => {
+    if (view !== 'input') return
+    const timer = setTimeout(() => inputRef.current?.focus(), 50)
+    return () => clearTimeout(timer)
+  }, [view])
 
   const handleStop = useCallback(async () => {
     await window.api.stopQuickAssistant()
@@ -393,7 +442,8 @@ export function QuickAssistantApp(): React.JSX.Element {
     return <div className="bg-background h-full rounded-xl" />
   }
 
-  const isTranslateAction = currentAction?.id === BUILTIN_TRANSLATE_ID
+  const isTranslateAction =
+    currentAction?.id === BUILTIN_TRANSLATE_ID || currentAction?.id === BUILTIN_IMAGE_TRANSLATE_ID
   const placeholderText = modelId
     ? `询问 '${modelId}' 获取帮助...`
     : '输入要处理的内容，选择下方功能后按 Enter 执行...'

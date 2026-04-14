@@ -290,6 +290,31 @@ export interface QuickActionErrorData {
   error: string
 }
 
+/** screenshot:data payload sent from main to renderer overlay */
+export interface ScreenshotData {
+  base64: string
+  width: number
+  height: number
+  displayWidth: number
+  displayHeight: number
+  scaleFactor: number
+}
+
+/** screenshot:complete payload */
+export interface ScreenshotCompletePayload {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** quick-assistant:auto-execute payload */
+export interface AutoExecutePayload {
+  files: FileData[]
+  actionId: string
+  targetLang?: string
+}
+
 /** Translation history item */
 export interface TranslationHistoryItem {
   id: string

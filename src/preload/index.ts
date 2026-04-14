@@ -34,6 +34,9 @@ import type {
   QuickActionChunkData,
   QuickActionEndData,
   QuickActionErrorData,
+  ScreenshotCompletePayload,
+  ScreenshotData,
+  AutoExecutePayload,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -446,6 +449,25 @@ const api = {
 
   updateSummonWindowShortcut: (): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.SUMMON_WINDOW_UPDATE_SHORTCUT),
+
+  // Screenshot
+  onScreenshotData: (callback: (data: ScreenshotData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: ScreenshotData): void => callback(data)
+    ipcRenderer.on(IpcChannels.SCREENSHOT_DATA, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SCREENSHOT_DATA, handler)
+  },
+
+  screenshotComplete: (rect: ScreenshotCompletePayload): void =>
+    ipcRenderer.send(IpcChannels.SCREENSHOT_COMPLETE, rect),
+
+  screenshotCancel: (): void => ipcRenderer.send(IpcChannels.SCREENSHOT_CANCEL),
+
+  updateScreenshotShortcut: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SCREENSHOT_UPDATE_SHORTCUT),
+
+  // Quick Assistant auto-execute (pull model — renderer pulls pending payload)
+  getPendingAutoExecute: (): Promise<IpcResult<AutoExecutePayload | null>> =>
+    ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_GET_PENDING_AUTO_EXECUTE),
 }
 
 export type ApiType = typeof api
