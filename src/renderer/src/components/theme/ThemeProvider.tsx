@@ -49,6 +49,26 @@ export function ThemeProvider({ children }: { children: ReactNode }): React.JSX.
     localStorage.setItem('colorTheme', id)
   }, [])
 
+  // Sync theme across Electron BrowserWindows via the storage event.
+  // When another window (e.g. main) writes to localStorage, this window picks
+  // up the change and re-applies the theme in real time.
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent): void => {
+      if (e.key === 'theme' && e.newValue) {
+        const v = e.newValue
+        if (v === 'light' || v === 'dark' || v === 'system') {
+          setTheme(v)
+        }
+      } else if (e.key === 'colorTheme' && e.newValue) {
+        if (colorThemes.some((t) => t.id === e.newValue)) {
+          setColorThemeIdState(e.newValue as ColorThemeId)
+        }
+      }
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
+
   // Apply dark class + inject color variables whenever theme or colorTheme changes
   useEffect(() => {
     const root = document.documentElement
