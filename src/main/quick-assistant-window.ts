@@ -60,6 +60,7 @@ export function preCreateQuickAssistantWindow(): void {
     abortQuickAssistant()
     quickAssistantWindow = null
     contentReady = false
+    pinned = false
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {

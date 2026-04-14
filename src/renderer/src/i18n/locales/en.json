@@ -310,7 +310,21 @@
       "descriptionPlaceholder": "Briefly describe the action",
       "systemPromptLabel": "System Prompt",
       "systemPromptPlaceholder": "Define the AI behavior for this action...",
-      "systemPromptHint": "Define the AI's role and behavior when executing this action."
+      "systemPromptHint": "Define the AI's role and behavior when executing this action.",
+      "placeholderWithModel": "Ask '{{model}}' for help...",
+      "placeholderDefault": "Type content to process, select an action below and press Enter...",
+      "pinWindow": "Pin window",
+      "unpinWindow": "Unpin window",
+      "back": "Back",
+      "stop": "Stop",
+      "copy": "Copy",
+      "escBack": "Back",
+      "escClear": "Clear",
+      "escClose": "Close",
+      "select": "Select",
+      "execute": "Execute",
+      "warningImageLimit": "Only 1 image allowed. Remove the existing image first.",
+      "warningImageReadFailed": "Failed to read image. Please try again."
     },
     "builtinAction": {
       "builtin-answer": {

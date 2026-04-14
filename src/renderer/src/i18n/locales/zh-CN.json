@@ -310,7 +310,21 @@
       "descriptionPlaceholder": "简要描述功能用途",
       "systemPromptLabel": "系统提示词",
       "systemPromptPlaceholder": "设定该功能的 AI 行为...",
-      "systemPromptHint": "定义 AI 在执行该功能时的角色和行为规则。"
+      "systemPromptHint": "定义 AI 在执行该功能时的角色和行为规则。",
+      "placeholderWithModel": "询问 '{{model}}' 获取帮助...",
+      "placeholderDefault": "输入要处理的内容，选择下方功能后按 Enter 执行...",
+      "pinWindow": "置顶窗口",
+      "unpinWindow": "取消置顶",
+      "back": "返回",
+      "stop": "停止",
+      "copy": "复制",
+      "escBack": "返回",
+      "escClear": "清空",
+      "escClose": "关闭",
+      "select": "选择",
+      "execute": "执行",
+      "warningImageLimit": "仅支持附加 1 张图片，请先移除已有图片",
+      "warningImageReadFailed": "图片读取失败，请重试"
     },
     "builtinAction": {
       "builtin-answer": { "name": "回答问题", "description": "向 AI 提问并获取回答" },

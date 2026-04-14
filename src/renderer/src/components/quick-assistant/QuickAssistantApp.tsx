@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pin, PinOff, X, ArrowLeft, Square } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import {
   generateTranslatePrompt,
   generateImageTranslatePrompt,
-  getLanguageLabel,
+  getLanguageEnglishLabel,
   LANGUAGES,
 } from '@renderer/lib/languages'
 import i18n from '@renderer/i18n'
@@ -28,6 +29,7 @@ const BUILTIN_IMAGE_TRANSLATE_ID = 'builtin-image-translate'
 type ViewState = 'input' | 'result'
 
 export function QuickAssistantApp(): React.JSX.Element {
+  const { t } = useTranslation()
   const { actions, loadActions, isLoaded } = useQuickActionStore()
   const loadSettings = useSettingsStore((s) => s.loadSettings)
   const saveSettings = useSettingsStore((s) => s.saveSettings)
@@ -42,14 +44,26 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [currentAction, setCurrentAction] = useState<QuickAction | null>(null)
   const [pinned, setPinned] = useState(false)
   const [attachedFiles, setAttachedFiles] = useState<FileData[]>([])
+  const [warning, setWarning] = useState<string | null>(null)
   const targetLang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
   const activeTargetLangRef = useRef<string | null>(null)
   const retranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const readySignalled = useRef(false)
   const wasHiddenRef = useRef(true)
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const modelId = settings['quickAssistant.modelId'] || ''
+
+  /** Flash a short warning message that auto-dismisses after 2 s */
+  const showWarning = useCallback((msg: string) => {
+    if (warningTimerRef.current !== null) clearTimeout(warningTimerRef.current)
+    setWarning(msg)
+    warningTimerRef.current = setTimeout(() => {
+      setWarning(null)
+      warningTimerRef.current = null
+    }, 2000)
+  }, [])
 
   // Load data on mount
   useEffect(() => {
@@ -65,6 +79,10 @@ export function QuickAssistantApp(): React.JSX.Element {
       if (retranslateTimerRef.current !== null) {
         clearTimeout(retranslateTimerRef.current)
         retranslateTimerRef.current = null
+      }
+      if (warningTimerRef.current !== null) {
+        clearTimeout(warningTimerRef.current)
+        warningTimerRef.current = null
       }
     }
   }, [])
@@ -90,6 +108,7 @@ export function QuickAssistantApp(): React.JSX.Element {
     setIsStreaming(false)
     setCurrentAction(null)
     setAttachedFiles([])
+    setWarning(null)
     activeTargetLangRef.current = null
     if (retranslateTimerRef.current !== null) {
       clearTimeout(retranslateTimerRef.current)
@@ -101,6 +120,11 @@ export function QuickAssistantApp(): React.JSX.Element {
   // Reset state when the window loses focus (blur -> hide).
   // This ensures the DOM is already in the clean initial state
   // BEFORE the next show(), eliminating the flash.
+  //
+  // NOTE: When `pinned` is true the blur handler is skipped — the user wants
+  // the window to stay visible. In that case, `visibilitychange` (below)
+  // still marks `wasHiddenRef` when the BrowserWindow is explicitly hidden
+  // via hide(), so the next focus handler knows to do a full reset.
   useEffect(() => {
     const handleBlur = (): void => {
       if (pinned) return
@@ -111,9 +135,14 @@ export function QuickAssistantApp(): React.JSX.Element {
     return () => window.removeEventListener('blur', handleBlur)
   }, [pinned, resetState])
 
-  // Track window visibility to detect hide even when pinned.
-  // BrowserWindow.hide() changes visibilityState regardless of pin,
-  // so this ensures wasHiddenRef is set even when the blur handler skips.
+  // Complement to the blur handler above: BrowserWindow.hide() changes
+  // `document.visibilityState` to "hidden" even when `pinned` is true
+  // (where the blur handler is a no-op). This guarantees `wasHiddenRef`
+  // is always set when the window disappears, regardless of pin state.
+  //
+  // The focus handler below checks `wasHiddenRef` to distinguish a genuine
+  // "window re-shown" from a transient focus return (e.g. closing a
+  // Select dropdown portal that temporarily stole focus).
   useEffect(() => {
     const handleVisibilityChange = (): void => {
       if (document.visibilityState === 'hidden') {
@@ -143,11 +172,11 @@ export function QuickAssistantApp(): React.JSX.Element {
       let systemPromptOverride: string | undefined
       if (action.id === BUILTIN_TRANSLATE_ID) {
         const lang = overrideTargetLang ?? targetLang
-        systemPromptOverride = generateTranslatePrompt(getLanguageLabel(lang))
+        systemPromptOverride = generateTranslatePrompt(getLanguageEnglishLabel(lang))
         activeTargetLangRef.current = lang
       } else if (action.id === BUILTIN_IMAGE_TRANSLATE_ID) {
         const lang = overrideTargetLang ?? targetLang
-        systemPromptOverride = generateImageTranslatePrompt(getLanguageLabel(lang))
+        systemPromptOverride = generateImageTranslatePrompt(getLanguageEnglishLabel(lang))
         activeTargetLangRef.current = lang
       }
 
@@ -319,41 +348,54 @@ export function QuickAssistantApp(): React.JSX.Element {
     window.api.setQuickAssistantPinned(next)
   }, [pinned])
 
-  // Handle image paste from clipboard
-  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
-    const items = e.clipboardData?.items
-    if (!items) return
+  // Handle image paste from clipboard (only 1 image allowed)
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLInputElement>) => {
+      const items = e.clipboardData?.items
+      if (!items) return
 
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i]
-      if (isImageMime(item.type)) {
-        e.preventDefault()
-        const blob = item.getAsFile()
-        if (!blob) continue
-        const mimeType = item.type
-        const reader = new FileReader()
-        reader.onload = (): void => {
-          const dataUrl = reader.result as string
-          const base64 = dataUrl.split(',')[1]
-          if (base64) {
-            setAttachedFiles((prev) => [
-              ...prev,
-              {
-                name: `clipboard-${Date.now()}.${mimeType.split('/')[1] || 'png'}`,
-                mimeType,
-                base64,
-                size: blob.size,
-              },
-            ])
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i]
+        if (isImageMime(item.type)) {
+          e.preventDefault()
+
+          // Only allow a single image attachment
+          if (attachedFiles.length >= 1) {
+            showWarning(t('settings.quickAssistant.warningImageLimit'))
+            return
           }
+
+          const blob = item.getAsFile()
+          if (!blob) continue
+          const mimeType = item.type
+          const reader = new FileReader()
+          reader.onload = (): void => {
+            const dataUrl = reader.result as string
+            const base64 = dataUrl.split(',')[1]
+            if (base64) {
+              setAttachedFiles((prev) => [
+                ...prev,
+                {
+                  name: `clipboard-${Date.now()}.${mimeType.split('/')[1] || 'png'}`,
+                  mimeType,
+                  base64,
+                  size: blob.size,
+                },
+              ])
+            }
+          }
+          reader.onerror = (): void => {
+            console.error('[QuickAssistant] Failed to read pasted image')
+            showWarning(t('settings.quickAssistant.warningImageReadFailed'))
+          }
+          reader.readAsDataURL(blob)
+          // Stop after the first image item
+          return
         }
-        reader.onerror = (): void => {
-          console.error('[QuickAssistant] Failed to read pasted image')
-        }
-        reader.readAsDataURL(blob)
       }
-    }
-  }, [])
+    },
+    [attachedFiles.length, showWarning],
+  )
 
   const removeAttachedFile = useCallback((index: number) => {
     setAttachedFiles((prev) => prev.filter((_, i) => i !== index))
@@ -362,21 +404,47 @@ export function QuickAssistantApp(): React.JSX.Element {
   // Copy result content handler
   const handleCopyResult = useCallback(() => {
     if (resultContent) {
-      navigator.clipboard.writeText(resultContent)
+      navigator.clipboard.writeText(resultContent).catch(() => {
+        // Silently ignore — clipboard may be unavailable in some environments
+      })
     }
   }, [resultContent])
 
-  // Global keyboard handler
+  // Keep frequently-changing values in a ref so the keyboard handler
+  // doesn't re-register on every keystroke / state change.
+  const kbStateRef = useRef({
+    view,
+    inputText,
+    attachedFiles,
+    isStreaming,
+    resultContent,
+    selectedIndex,
+    currentAction,
+  })
+  kbStateRef.current = {
+    view,
+    inputText,
+    attachedFiles,
+    isStreaming,
+    resultContent,
+    selectedIndex,
+    currentAction,
+  }
+
+  // Global keyboard handler — reads transient state from kbStateRef,
+  // only re-registers when callback identities or enabledActions change.
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
+      const s = kbStateRef.current
+
       // Ctrl+Shift+C to copy result
       if (
         e.ctrlKey &&
         e.shiftKey &&
         e.key === 'C' &&
-        view === 'result' &&
-        resultContent &&
-        !isStreaming
+        s.view === 'result' &&
+        s.resultContent &&
+        !s.isStreaming
       ) {
         e.preventDefault()
         handleCopyResult()
@@ -385,9 +453,9 @@ export function QuickAssistantApp(): React.JSX.Element {
 
       if (e.key === 'Escape') {
         e.preventDefault()
-        if (view === 'result') {
+        if (s.view === 'result') {
           handleBack()
-        } else if (inputText || attachedFiles.length > 0) {
+        } else if (s.inputText || s.attachedFiles.length > 0) {
           // In input view, clear input instead of closing when there's content
           setInputText('')
           setAttachedFiles([])
@@ -397,7 +465,7 @@ export function QuickAssistantApp(): React.JSX.Element {
         return
       }
 
-      if (view === 'input') {
+      if (s.view === 'input') {
         if (e.key === 'ArrowDown') {
           e.preventDefault()
           setSelectedIndex((prev) => (prev < enabledActions.length - 1 ? prev + 1 : 0))
@@ -406,17 +474,17 @@ export function QuickAssistantApp(): React.JSX.Element {
           setSelectedIndex((prev) => (prev > 0 ? prev - 1 : enabledActions.length - 1))
         } else if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault()
-          const action = enabledActions[selectedIndex]
-          if (action && (inputText.trim() || attachedFiles.length > 0)) {
+          const action = enabledActions[s.selectedIndex]
+          if (action && (s.inputText.trim() || s.attachedFiles.length > 0)) {
             executeAction(action)
           }
         }
-      } else if (view === 'result') {
+      } else if (s.view === 'result') {
         // In result view, Enter re-executes with new input
-        if (e.key === 'Enter' && !e.shiftKey && currentAction) {
+        if (e.key === 'Enter' && !e.shiftKey && s.currentAction) {
           e.preventDefault()
-          if (inputText.trim() || attachedFiles.length > 0) {
-            executeAction(currentAction)
+          if (s.inputText.trim() || s.attachedFiles.length > 0) {
+            executeAction(s.currentAction)
           }
         }
       }
@@ -424,19 +492,7 @@ export function QuickAssistantApp(): React.JSX.Element {
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [
-    view,
-    enabledActions,
-    selectedIndex,
-    inputText,
-    attachedFiles,
-    isStreaming,
-    executeAction,
-    handleBack,
-    handleCopyResult,
-    resultContent,
-    currentAction,
-  ])
+  }, [enabledActions, executeAction, handleBack, handleCopyResult])
 
   if (!isLoaded) {
     return <div className="bg-background h-full rounded-xl" />
@@ -445,8 +501,14 @@ export function QuickAssistantApp(): React.JSX.Element {
   const isTranslateAction =
     currentAction?.id === BUILTIN_TRANSLATE_ID || currentAction?.id === BUILTIN_IMAGE_TRANSLATE_ID
   const placeholderText = modelId
-    ? `询问 '${modelId}' 获取帮助...`
-    : '输入要处理的内容，选择下方功能后按 Enter 执行...'
+    ? t('settings.quickAssistant.placeholderWithModel', { model: modelId })
+    : t('settings.quickAssistant.placeholderDefault')
+  const escLabel =
+    view === 'result'
+      ? t('settings.quickAssistant.escBack')
+      : inputText || attachedFiles.length > 0
+        ? t('settings.quickAssistant.escClear')
+        : t('settings.quickAssistant.escClose')
 
   return (
     <div className="flex h-screen items-center justify-center">
@@ -465,7 +527,11 @@ export function QuickAssistantApp(): React.JSX.Element {
           <button
             onClick={handleTogglePin}
             className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
-            title={pinned ? '取消置顶' : '置顶窗口'}>
+            title={
+              pinned
+                ? t('settings.quickAssistant.unpinWindow')
+                : t('settings.quickAssistant.pinWindow')
+            }>
             {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
           </button>
         </div>
@@ -517,14 +583,14 @@ export function QuickAssistantApp(): React.JSX.Element {
                   onClick={handleBack}
                   className="hover:text-foreground flex items-center gap-1 transition-colors">
                   <ArrowLeft className="h-3.5 w-3.5" />
-                  返回
+                  {t('settings.quickAssistant.back')}
                 </button>
                 {isStreaming && (
                   <button
                     onClick={handleStop}
                     className="hover:text-foreground flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors">
                     <Square className="h-3 w-3" />
-                    停止
+                    {t('settings.quickAssistant.stop')}
                   </button>
                 )}
                 {isTranslateAction && targetLang && (
@@ -545,22 +611,25 @@ export function QuickAssistantApp(): React.JSX.Element {
             )}
           </div>
           <div className="flex items-center gap-3">
+            {warning && <span className="text-amber-500">{warning}</span>}
             {view === 'result' && resultContent && !isStreaming && (
               <span>
                 <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">
                   Ctrl+Shift+C
                 </kbd>{' '}
-                复制
+                {t('settings.quickAssistant.copy')}
               </span>
             )}
             <span>
               <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Esc</kbd>{' '}
-              {view === 'result' ? '返回' : inputText || attachedFiles.length > 0 ? '清空' : '关闭'}
+              {escLabel}
             </span>
             <span>
-              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">↑↓</kbd> 选择
+              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">↑↓</kbd>{' '}
+              {t('settings.quickAssistant.select')}
               {' · '}
-              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Enter</kbd> 执行
+              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Enter</kbd>{' '}
+              {t('settings.quickAssistant.execute')}
             </span>
           </div>
         </div>

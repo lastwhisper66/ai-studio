@@ -98,10 +98,17 @@ export function QuickAssistantSection(): React.JSX.Element {
     setEditingAction(action)
     setFormName(action.name)
     setFormDescription(action.description)
-    setFormSystemPrompt(action.systemPrompt)
     if (action.id === 'builtin-translate' || action.id === 'builtin-image-translate') {
-      setFormTargetLang(settings['quickAssistant.translateTargetLang'] || i18n.language || 'en')
+      const lang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
+      setFormTargetLang(lang)
+      const englishLabel = LANGUAGES.find((l) => l.code === lang)?.englishLabel ?? lang
+      setFormSystemPrompt(
+        action.id === 'builtin-image-translate'
+          ? generateImageTranslatePrompt(englishLabel)
+          : generateTranslatePrompt(englishLabel),
+      )
     } else {
+      setFormSystemPrompt(action.systemPrompt)
       setFormTargetLang('')
     }
     setEditDialogOpen(true)
@@ -336,11 +343,12 @@ export function QuickAssistantSection(): React.JSX.Element {
                   value={formTargetLang}
                   onValueChange={(value) => {
                     setFormTargetLang(value)
-                    const langLabel = LANGUAGES.find((l) => l.code === value)?.label ?? value
+                    const englishLabel =
+                      LANGUAGES.find((l) => l.code === value)?.englishLabel ?? value
                     setFormSystemPrompt(
                       editingAction?.id === 'builtin-image-translate'
-                        ? generateImageTranslatePrompt(langLabel)
-                        : generateTranslatePrompt(langLabel),
+                        ? generateImageTranslatePrompt(englishLabel)
+                        : generateTranslatePrompt(englishLabel),
                     )
                   }}>
                   <SelectTrigger>

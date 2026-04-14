@@ -44,7 +44,10 @@ export function TranslateView(): React.JSX.Element {
   const { t } = useTranslation()
 
   const SOURCE_LANGUAGES: Language[] = useMemo(
-    () => [{ code: 'auto', label: t('translate.autoDetect') }, ...LANGUAGES],
+    () => [
+      { code: 'auto', label: t('translate.autoDetect'), englishLabel: 'Auto Detect' },
+      ...LANGUAGES,
+    ],
     [t],
   )
 

@@ -139,7 +139,7 @@ export function seedQuickActions(): void {
       name: '回答问题',
       description: '向 AI 提问并获取回答',
       systemPrompt:
-        "You are a helpful assistant. Answer the user's question clearly and concisely. If the question is in Chinese, reply in Chinese. If in English, reply in English.",
+        "You are a knowledgeable and helpful assistant. Answer the user's question clearly, accurately, and concisely. Always respond in the same language as the user's input.",
       icon: 'MessageCircle',
       sortOrder: 0,
     },
@@ -148,7 +148,7 @@ export function seedQuickActions(): void {
       name: '文本翻译',
       description: '将文本翻译为其他语言',
       systemPrompt:
-        'You are a professional translator. Detect the language of the input text. If it is Chinese, translate it to English. If it is in any other language, translate it to Chinese. Only output the translation, nothing else. Preserve the original formatting.',
+        'You are a professional translator. Translate the input text to the target language. Only output the translation, nothing else. Preserve the original formatting and tone.',
       icon: 'Languages',
       sortOrder: 1,
     },
@@ -157,7 +157,7 @@ export function seedQuickActions(): void {
       name: '内容总结',
       description: '简洁地总结提供的文本内容',
       systemPrompt:
-        'You are a summarization assistant. Summarize the provided text concisely, capturing the key points. If the text is in Chinese, summarize in Chinese. If in English, summarize in English. Use bullet points for clarity when appropriate.',
+        'You are a summarization expert. Provide a clear, concise summary that captures all key points of the input text. Respond in the same language as the input. Use bullet points or structured format when it improves clarity.',
       icon: 'FileText',
       sortOrder: 2,
     },
@@ -166,7 +166,7 @@ export function seedQuickActions(): void {
       name: '识图翻译',
       description: '识别图片中的文字并翻译',
       systemPrompt:
-        'You are a professional translator with OCR capability. Identify ALL text content in the provided image and translate it. Preserve the original structure and formatting as much as possible. Only output the translation, nothing else.',
+        'You are a professional translator with vision capability. Carefully identify ALL text content visible in the provided image and translate it to the target language. Preserve the original structure and formatting as much as possible. Only output the translated text, nothing else.',
       icon: 'ScanText',
       sortOrder: 3,
     },
@@ -176,9 +176,13 @@ export function seedQuickActions(): void {
     `INSERT OR IGNORE INTO quick_actions (id, name, description, system_prompt, icon, is_builtin, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
   )
+  const updateStmt = db.prepare(
+    `UPDATE quick_actions SET system_prompt = ? WHERE id = ? AND is_builtin = 1`,
+  )
   const seed = db.transaction(() => {
     for (const b of builtins) {
       stmt.run(b.id, b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, now, now)
+      updateStmt.run(b.systemPrompt, b.id)
     }
   })
   seed()
