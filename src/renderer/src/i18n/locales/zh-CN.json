@@ -321,6 +321,7 @@
       "stop": "停止",
       "copy": "复制",
       "escBack": "返回",
+      "copied": "已复制",
       "escClear": "清空",
       "escClose": "关闭",
       "select": "选择",
@@ -329,9 +330,18 @@
       "warningImageReadFailed": "图片读取失败，请重试"
     },
     "builtinAction": {
-      "builtin-answer": { "name": "回答问题", "description": "向 AI 提问并获取回答" },
-      "builtin-translate": { "name": "文本翻译", "description": "将文本翻译为其他语言" },
-      "builtin-summary": { "name": "内容总结", "description": "简洁地总结提供的文本内容" }
+      "builtin-answer": {
+        "name": "回答问题",
+        "description": "向 AI 提问并获取回答"
+      },
+      "builtin-translate": {
+        "name": "文本翻译",
+        "description": "将文本翻译为其他语言"
+      },
+      "builtin-summary": {
+        "name": "内容总结",
+        "description": "简洁地总结提供的文本内容"
+      }
     }
   },
   "translate": {

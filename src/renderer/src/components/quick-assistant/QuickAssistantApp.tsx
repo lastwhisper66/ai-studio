@@ -48,6 +48,8 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [pinned, setPinned] = useState(false)
   const pinnedRef = useRef(false)
   const [attachedFiles, setAttachedFiles] = useState<FileData[]>([])
+  const [copySuccess, setCopySuccess] = useState(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
   const targetLang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
   const activeTargetLangRef = useRef<string | null>(null)
@@ -87,6 +89,10 @@ export function QuickAssistantApp(): React.JSX.Element {
       if (warningTimerRef.current !== null) {
         clearTimeout(warningTimerRef.current)
         warningTimerRef.current = null
+      }
+      if (copyTimerRef.current !== null) {
+        clearTimeout(copyTimerRef.current)
+        copyTimerRef.current = null
       }
     }
   }, [])
@@ -318,6 +324,7 @@ export function QuickAssistantApp(): React.JSX.Element {
     setResultContent('')
     setError(null)
     setIsStreaming(false)
+    setCopySuccess(false)
     setCurrentAction(null)
     activeTargetLangRef.current = null
     if (retranslateTimerRef.current !== null) {
@@ -424,9 +431,16 @@ export function QuickAssistantApp(): React.JSX.Element {
   // Copy result content handler
   const handleCopyResult = useCallback(() => {
     if (resultContent) {
-      navigator.clipboard.writeText(resultContent).catch(() => {
-        // Silently ignore — clipboard may be unavailable in some environments
-      })
+      navigator.clipboard
+        .writeText(resultContent)
+        .then(() => {
+          if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+          setCopySuccess(true)
+          copyTimerRef.current = setTimeout(() => setCopySuccess(false), 1500)
+        })
+        .catch(() => {
+          // Silently ignore — clipboard may be unavailable in some environments
+        })
     }
   }, [resultContent])
 
@@ -457,11 +471,12 @@ export function QuickAssistantApp(): React.JSX.Element {
     const handler = (e: KeyboardEvent): void => {
       const s = kbStateRef.current
 
-      // Ctrl+Shift+C to copy result
+      // Alt+C to copy result
       if (
-        e.ctrlKey &&
-        e.shiftKey &&
-        e.key === 'C' &&
+        e.altKey &&
+        !e.ctrlKey &&
+        !e.shiftKey &&
+        (e.key === 'c' || e.key === 'C') &&
         s.view === 'result' &&
         s.resultContent &&
         !s.isStreaming
@@ -638,11 +653,30 @@ export function QuickAssistantApp(): React.JSX.Element {
           <div className="flex items-center gap-3">
             {warning && <span className="text-amber-500">{warning}</span>}
             {view === 'result' && resultContent && !isStreaming && (
-              <span>
-                <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">
-                  Ctrl+Shift+C
-                </kbd>{' '}
-                {t('settings.quickAssistant.copy')}
+              <span
+                className={`inline-flex items-center transition-all duration-300 ${copySuccess ? 'text-green-500' : ''}`}>
+                {copySuccess ? (
+                  <>
+                    <svg
+                      className="mr-0.5 h-3 w-3"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {t('settings.quickAssistant.copied', '已复制')}
+                  </>
+                ) : (
+                  <>
+                    <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">
+                      Alt+C
+                    </kbd>{' '}
+                    {t('settings.quickAssistant.copy')}
+                  </>
+                )}
               </span>
             )}
             <span>

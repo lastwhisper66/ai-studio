@@ -321,6 +321,7 @@
       "stop": "Stop",
       "copy": "Copy",
       "escBack": "Back",
+      "copied": "Copied",
       "escClear": "Clear",
       "escClose": "Close",
       "select": "Select",
