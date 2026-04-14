@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Pin, PinOff, X, ArrowLeft, Square } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import {
   generateTranslatePrompt,
   generateImageTranslatePrompt,
@@ -34,6 +35,8 @@ export function QuickAssistantApp(): React.JSX.Element {
   const loadSettings = useSettingsStore((s) => s.loadSettings)
   const saveSettings = useSettingsStore((s) => s.saveSettings)
   const settings = useSettingsStore((s) => s.settings)
+
+  useFontSettings()
 
   const [view, setView] = useState<ViewState>('input')
   const [inputText, setInputText] = useState('')

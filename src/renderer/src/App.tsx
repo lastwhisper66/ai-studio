@@ -9,6 +9,7 @@ import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
+import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
 
 function App(): React.JSX.Element {
@@ -21,7 +22,6 @@ function App(): React.JSX.Element {
   const loadModelGroups = useModelGroupStore((s) => s.load)
   const initKeybindings = useKeybindingStore((s) => s.init)
   const settingsLoaded = useSettingsStore((s) => s.isLoaded)
-  const settings = useSettingsStore((s) => s.settings)
 
   useEffect(() => {
     loadConversations()
@@ -71,34 +71,7 @@ function App(): React.JSX.Element {
     return () => window.removeEventListener('wheel', handler)
   }, [])
 
-  // Apply font settings to CSS variables
-  const fontFamily = settings['display.fontFamily']
-  const codeFontFamily = settings['display.codeFontFamily']
-
-  useEffect(() => {
-    const root = document.documentElement
-    // Escape quotes to prevent CSS injection from malicious font names
-    const esc = (s: string): string => s.replace(/"/g, '\\"')
-
-    if (fontFamily) {
-      root.style.setProperty(
-        '--font-family-sans',
-        `"${esc(fontFamily)}", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
-      )
-    } else {
-      root.style.removeProperty('--font-family-sans')
-    }
-
-    if (codeFontFamily) {
-      root.style.setProperty(
-        '--font-family-mono',
-        `"${esc(codeFontFamily)}", ui-monospace, SFMono-Regular, monospace`,
-      )
-    } else {
-      root.style.removeProperty('--font-family-mono')
-    }
-  }, [fontFamily, codeFontFamily])
-
+  useFontSettings()
   useKeyboardShortcuts()
 
   return <AppLayout />
