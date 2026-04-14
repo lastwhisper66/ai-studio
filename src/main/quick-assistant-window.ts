@@ -6,6 +6,7 @@ import { abortQuickAssistant } from './ipc/quick-assistant-handlers'
 
 let quickAssistantWindow: BrowserWindow | null = null
 let contentReady = false
+let pinned = false
 
 /**
  * Delay (ms) before restoring window opacity after show().
@@ -48,6 +49,7 @@ export function preCreateQuickAssistantWindow(): void {
   })
 
   quickAssistantWindow.on('blur', () => {
+    if (pinned) return
     abortQuickAssistant()
     quickAssistantWindow?.hide()
   })
@@ -70,8 +72,12 @@ export function preCreateQuickAssistantWindow(): void {
 export function toggleQuickAssistantWindow(): void {
   if (quickAssistantWindow && !quickAssistantWindow.isDestroyed()) {
     if (quickAssistantWindow.isVisible()) {
+      // Reset pin so the blur handler runs its abort logic
+      pinned = false
       quickAssistantWindow.hide()
     } else if (contentReady) {
+      // Reset pin state each time the window is shown
+      pinned = false
       // Re-center on primary display each time it's shown
       const { width, height } = screen.getPrimaryDisplay().workAreaSize
       quickAssistantWindow.setBounds({
@@ -112,5 +118,10 @@ export function initQuickAssistantIpc(): void {
   // Renderer signals that React + data loading is complete
   ipcMain.on(IpcChannels.QUICK_ASSISTANT_READY, () => {
     contentReady = true
+  })
+
+  // Renderer toggles pinned state (keeps window visible on blur)
+  ipcMain.on(IpcChannels.QUICK_ASSISTANT_SET_PINNED, (_event, value: boolean) => {
+    pinned = value
   })
 }

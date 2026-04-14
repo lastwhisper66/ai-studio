@@ -1,12 +1,21 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Pencil } from 'lucide-react'
+import { Pin, PinOff, X, ArrowLeft, Square } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
-import { generateTranslatePrompt, getLanguageLabel } from '@renderer/lib/languages'
+import { generateTranslatePrompt, getLanguageLabel, LANGUAGES } from '@renderer/lib/languages'
 import i18n from '@renderer/i18n'
 import type { QuickAction } from '@shared/types'
+import type { FileData } from '@shared/types'
+import { isImageMime } from '@shared/types'
 import { ActionList } from './ActionList'
 import { QuickAssistantResult } from './QuickAssistantResult'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 
 const BUILTIN_TRANSLATE_ID = 'builtin-translate'
 
@@ -25,11 +34,16 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentAction, setCurrentAction] = useState<QuickAction | null>(null)
+  const [pinned, setPinned] = useState(false)
+  const [attachedFiles, setAttachedFiles] = useState<FileData[]>([])
   const targetLang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
   const activeTargetLangRef = useRef<string | null>(null)
   const retranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const readySignalled = useRef(false)
+  const wasHiddenRef = useRef(true)
+
+  const modelId = settings['quickAssistant.modelId'] || ''
 
   // Load data on mount
   useEffect(() => {
@@ -60,39 +74,68 @@ export function QuickAssistantApp(): React.JSX.Element {
   // Show all enabled actions (no filtering — input is the content to process)
   const enabledActions = useMemo(() => actions.filter((a) => a.enabled), [actions])
 
-  // Reset state when the window loses focus (blur → hide).
+  // Helper to reset all UI state to initial
+  const resetState = useCallback(() => {
+    setView('input')
+    setInputText('')
+    setSelectedIndex(0)
+    setResultContent('')
+    setError(null)
+    setIsStreaming(false)
+    setCurrentAction(null)
+    setAttachedFiles([])
+    activeTargetLangRef.current = null
+    if (retranslateTimerRef.current !== null) {
+      clearTimeout(retranslateTimerRef.current)
+      retranslateTimerRef.current = null
+    }
+    window.api.removeAllQuickAssistantListeners()
+  }, [])
+
+  // Reset state when the window loses focus (blur -> hide).
   // This ensures the DOM is already in the clean initial state
   // BEFORE the next show(), eliminating the flash.
   useEffect(() => {
     const handleBlur = (): void => {
-      setView('input')
-      setInputText('')
-      setSelectedIndex(0)
-      setResultContent('')
-      setError(null)
-      setIsStreaming(false)
-      setCurrentAction(null)
-      activeTargetLangRef.current = null
-      if (retranslateTimerRef.current !== null) {
-        clearTimeout(retranslateTimerRef.current)
-        retranslateTimerRef.current = null
-      }
-      window.api.removeAllQuickAssistantListeners()
+      if (pinned) return
+      wasHiddenRef.current = true
+      resetState()
     }
     window.addEventListener('blur', handleBlur)
     return () => window.removeEventListener('blur', handleBlur)
+  }, [pinned, resetState])
+
+  // Track window visibility to detect hide even when pinned.
+  // BrowserWindow.hide() changes visibilityState regardless of pin,
+  // so this ensures wasHiddenRef is set even when the blur handler skips.
+  useEffect(() => {
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState === 'hidden') {
+        wasHiddenRef.current = true
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
-  // Focus input and refresh data when the window is shown
+  // Focus input and refresh data when the window is shown (first focus after hide)
   useEffect(() => {
     const handleFocus = (): void => {
       loadActions()
       loadSettings()
+      // Only reset pin on a fresh show (after the window was hidden), not on
+      // focus-return from child elements like dropdown portals
+      if (wasHiddenRef.current) {
+        wasHiddenRef.current = false
+        setPinned(false)
+        window.api.setQuickAssistantPinned(false)
+        resetState()
+      }
       setTimeout(() => inputRef.current?.focus(), 50)
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [loadActions, loadSettings])
+  }, [loadActions, loadSettings, resetState])
 
   // Auto-focus input when returning to input view (e.g. from result via Back)
   useEffect(() => {
@@ -103,10 +146,11 @@ export function QuickAssistantApp(): React.JSX.Element {
 
   const executeAction = useCallback(
     (action: QuickAction, overrideTargetLang?: string) => {
-      if (!inputText.trim() || (isStreaming && overrideTargetLang === undefined)) return
+      if (!inputText.trim() && attachedFiles.length === 0) return
+      if (isStreaming && overrideTargetLang === undefined) return
 
       const providerId = settings['quickAssistant.providerId']
-      const modelId = settings['quickAssistant.modelId']
+      const settingsModelId = settings['quickAssistant.modelId']
 
       // Build system prompt override for translate action
       let systemPromptOverride: string | undefined
@@ -156,11 +200,12 @@ export function QuickAssistantApp(): React.JSX.Element {
         text: inputText.trim(),
         actionId: action.id,
         providerId: providerId || undefined,
-        modelId: modelId || undefined,
+        modelId: settingsModelId || undefined,
         systemPromptOverride,
+        files: attachedFiles.length > 0 ? attachedFiles : undefined,
       })
     },
-    [inputText, settings, targetLang, isStreaming],
+    [inputText, attachedFiles, settings, targetLang, isStreaming],
   )
 
   const handleStop = useCallback(async () => {
@@ -219,13 +264,84 @@ export function QuickAssistantApp(): React.JSX.Element {
     [isStreaming, currentAction, executeAction, saveSettings],
   )
 
+  const handleTogglePin = useCallback(() => {
+    const next = !pinned
+    setPinned(next)
+    window.api.setQuickAssistantPinned(next)
+  }, [pinned])
+
+  // Handle image paste from clipboard
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (isImageMime(item.type)) {
+        e.preventDefault()
+        const blob = item.getAsFile()
+        if (!blob) continue
+        const mimeType = item.type
+        const reader = new FileReader()
+        reader.onload = (): void => {
+          const dataUrl = reader.result as string
+          const base64 = dataUrl.split(',')[1]
+          if (base64) {
+            setAttachedFiles((prev) => [
+              ...prev,
+              {
+                name: `clipboard-${Date.now()}.${mimeType.split('/')[1] || 'png'}`,
+                mimeType,
+                base64,
+                size: blob.size,
+              },
+            ])
+          }
+        }
+        reader.onerror = (): void => {
+          console.error('[QuickAssistant] Failed to read pasted image')
+        }
+        reader.readAsDataURL(blob)
+      }
+    }
+  }, [])
+
+  const removeAttachedFile = useCallback((index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index))
+  }, [])
+
+  // Copy result content handler
+  const handleCopyResult = useCallback(() => {
+    if (resultContent) {
+      navigator.clipboard.writeText(resultContent)
+    }
+  }, [resultContent])
+
   // Global keyboard handler
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
+      // Ctrl+Shift+C to copy result
+      if (
+        e.ctrlKey &&
+        e.shiftKey &&
+        e.key === 'C' &&
+        view === 'result' &&
+        resultContent &&
+        !isStreaming
+      ) {
+        e.preventDefault()
+        handleCopyResult()
+        return
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault()
         if (view === 'result') {
           handleBack()
+        } else if (inputText || attachedFiles.length > 0) {
+          // In input view, clear input instead of closing when there's content
+          setInputText('')
+          setAttachedFiles([])
         } else {
           window.api.closeQuickAssistant()
         }
@@ -242,8 +358,16 @@ export function QuickAssistantApp(): React.JSX.Element {
         } else if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault()
           const action = enabledActions[selectedIndex]
-          if (action && inputText.trim()) {
+          if (action && (inputText.trim() || attachedFiles.length > 0)) {
             executeAction(action)
+          }
+        }
+      } else if (view === 'result') {
+        // In result view, Enter re-executes with new input
+        if (e.key === 'Enter' && !e.shiftKey && currentAction) {
+          e.preventDefault()
+          if (inputText.trim() || attachedFiles.length > 0) {
+            executeAction(currentAction)
           }
         }
       }
@@ -251,61 +375,146 @@ export function QuickAssistantApp(): React.JSX.Element {
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [view, enabledActions, selectedIndex, inputText, executeAction, handleBack])
+  }, [
+    view,
+    enabledActions,
+    selectedIndex,
+    inputText,
+    attachedFiles,
+    isStreaming,
+    executeAction,
+    handleBack,
+    handleCopyResult,
+    resultContent,
+    currentAction,
+  ])
 
   if (!isLoaded) {
     return <div className="bg-background h-full rounded-xl" />
   }
 
   const isTranslateAction = currentAction?.id === BUILTIN_TRANSLATE_ID
+  const placeholderText = modelId
+    ? `询问 '${modelId}' 获取帮助...`
+    : '输入要处理的内容，选择下方功能后按 Enter 执行...'
 
   return (
-    <div className="bg-background flex h-screen flex-col overflow-hidden rounded-xl border shadow-2xl">
-      {view === 'input' ? (
-        <>
-          {/* Search input */}
-          <div className="flex items-center gap-3 border-b px-4 py-3">
-            <Pencil className="text-muted-foreground h-4 w-4 shrink-0" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="输入要处理的内容，选择下方功能后按 Enter 执行..."
-              className="bg-transparent text-foreground placeholder:text-muted-foreground flex-1 text-sm outline-none"
-            />
-          </div>
+    <div className="flex h-screen items-center justify-center">
+      <div className="bg-background flex h-full w-full flex-col overflow-hidden rounded-xl border">
+        {/* Search input — always visible */}
+        <div className="flex items-center gap-3 border-b px-4 py-3">
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onPaste={handlePaste}
+            placeholder={placeholderText}
+            className="bg-transparent text-foreground placeholder:text-muted-foreground flex-1 text-sm outline-none"
+          />
+          <button
+            onClick={handleTogglePin}
+            className="text-muted-foreground hover:text-foreground shrink-0 transition-colors"
+            title={pinned ? '取消置顶' : '置顶窗口'}>
+            {pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+          </button>
+        </div>
 
-          {/* Action list */}
+        {/* Image attachment preview */}
+        {attachedFiles.length > 0 && (
+          <div className="flex gap-2 border-b px-4 py-2">
+            {attachedFiles.map((file, index) => (
+              <div key={index} className="group relative">
+                <img
+                  src={`data:${file.mimeType};base64,${file.base64}`}
+                  alt={file.name}
+                  className="h-12 w-12 rounded-md border object-cover"
+                />
+                <button
+                  onClick={() => removeAttachedFile(index)}
+                  className="bg-background/80 text-muted-foreground hover:text-foreground absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full border text-xs opacity-0 transition-opacity group-hover:opacity-100">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Content area */}
+        {view === 'input' ? (
           <div className="flex-1 overflow-auto">
             <ActionList
               actions={enabledActions}
               selectedIndex={selectedIndex}
               onSelect={setSelectedIndex}
               onExecute={(action) => {
-                if (inputText.trim()) executeAction(action)
+                if (inputText.trim() || attachedFiles.length > 0) executeAction(action)
               }}
             />
           </div>
-
-          {/* Footer hint */}
-          <div className="text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
-            <span>Esc 关闭</span>
-            <span>↑↓ 选择 · Enter 执行</span>
+        ) : (
+          <div className="min-h-0 flex-1">
+            <QuickAssistantResult content={resultContent} isStreaming={isStreaming} error={error} />
           </div>
-        </>
-      ) : (
-        <QuickAssistantResult
-          content={resultContent}
-          isStreaming={isStreaming}
-          error={error}
-          onStop={handleStop}
-          onBack={handleBack}
-          isTranslateAction={isTranslateAction}
-          targetLang={targetLang}
-          onTargetLangChange={handleTargetLangChange}
-        />
-      )}
+        )}
+
+        {/* Footer hint — always visible */}
+        <div className="text-muted-foreground flex items-center justify-between border-t px-4 py-2 text-xs">
+          <div className="flex items-center gap-1">
+            {view === 'result' && (
+              <>
+                <button
+                  onClick={handleBack}
+                  className="hover:text-foreground flex items-center gap-1 transition-colors">
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  返回
+                </button>
+                {isStreaming && (
+                  <button
+                    onClick={handleStop}
+                    className="hover:text-foreground flex items-center gap-1 rounded-md px-2 py-0.5 transition-colors">
+                    <Square className="h-3 w-3" />
+                    停止
+                  </button>
+                )}
+                {isTranslateAction && targetLang && (
+                  <Select value={targetLang} onValueChange={handleTargetLangChange}>
+                    <SelectTrigger className="h-6 w-28 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent position="popper" side="top">
+                      {LANGUAGES.map((lang) => (
+                        <SelectItem key={lang.code} value={lang.code}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            {view === 'result' && resultContent && !isStreaming && (
+              <span>
+                <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">
+                  Ctrl+Shift+C
+                </kbd>{' '}
+                复制
+              </span>
+            )}
+            <span>
+              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Esc</kbd>{' '}
+              {view === 'result' ? '返回' : inputText || attachedFiles.length > 0 ? '清空' : '关闭'}
+            </span>
+            <span>
+              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">↑↓</kbd> 选择
+              {' · '}
+              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Enter</kbd> 执行
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

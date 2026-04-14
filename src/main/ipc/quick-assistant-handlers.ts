@@ -1,6 +1,11 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+} from 'openai/resources/chat/completions'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { QuickActionRequestPayload, IpcResult, ApiSettings } from '@shared/types'
+import type { QuickActionRequestPayload, IpcResult, ApiSettings, FileData } from '@shared/types'
+import { isImageMime } from '@shared/types'
 import { streamChat } from '../ai'
 import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
@@ -61,7 +66,7 @@ export function registerQuickAssistantHandlers(): void {
       event: IpcMainInvokeEvent,
       payload: QuickActionRequestPayload,
     ): Promise<IpcResult<void>> => {
-      const { text, actionId, providerId, modelId, systemPromptOverride } = payload
+      const { text, actionId, providerId, modelId, systemPromptOverride, files } = payload
       const sender = event.sender
       let fullText = ''
 
@@ -82,12 +87,31 @@ export function registerQuickAssistantHandlers(): void {
         const controller = new AbortController()
         activeController = controller
 
+        // Build user message — multimodal if images are attached
+        const imageFiles = (files ?? []).filter((f: FileData) => isImageMime(f.mimeType))
+        let userMessage: ChatCompletionMessageParam
+        if (imageFiles.length > 0) {
+          const parts: ChatCompletionContentPart[] = []
+          if (text) {
+            parts.push({ type: 'text', text })
+          }
+          for (const file of imageFiles) {
+            parts.push({
+              type: 'image_url',
+              image_url: { url: `data:${file.mimeType};base64,${file.base64}` },
+            })
+          }
+          userMessage = { role: 'user', content: parts }
+        } else {
+          userMessage = { role: 'user', content: text }
+        }
+
         await streamChat(
           {
             settings,
             messages: [
               { role: 'system', content: systemPromptOverride || action.systemPrompt },
-              { role: 'user', content: text },
+              userMessage,
             ],
             signal: controller.signal,
           },

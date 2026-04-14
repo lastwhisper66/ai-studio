@@ -11,6 +11,13 @@ import { QuickAssistantApp } from './components/quick-assistant/QuickAssistantAp
 const params = new URLSearchParams(window.location.search)
 const mode = params.get('mode')
 
+// Quick assistant runs in a transparent BrowserWindow — make body/html
+// transparent so only the rounded-corner container shows a background.
+if (mode === 'quick-assistant') {
+  document.documentElement.style.background = 'transparent'
+  document.body.style.background = 'transparent'
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>

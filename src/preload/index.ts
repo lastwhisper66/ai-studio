@@ -438,6 +438,9 @@ const api = {
 
   quickAssistantReady: (): void => ipcRenderer.send(IpcChannels.QUICK_ASSISTANT_READY),
 
+  setQuickAssistantPinned: (pinned: boolean): void =>
+    ipcRenderer.send(IpcChannels.QUICK_ASSISTANT_SET_PINNED, pinned),
+
   updateQuickAssistantShortcut: (): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT),
 

@@ -272,6 +272,7 @@ export interface QuickActionRequestPayload {
   providerId?: string
   modelId?: string
   systemPromptOverride?: string
+  files?: FileData[]
 }
 
 /** quick-assistant:chunk push data */
