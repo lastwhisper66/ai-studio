@@ -129,14 +129,8 @@ export function QuickAssistantSection(): React.JSX.Element {
         description: formDescription.trim(),
         systemPrompt: formSystemPrompt.trim(),
       })
-      // Persist translate target language to settings
-      if (
-        (editingAction.id === 'builtin-translate' ||
-          editingAction.id === 'builtin-image-translate') &&
-        formTargetLang
-      ) {
-        saveSettings({ 'quickAssistant.translateTargetLang': formTargetLang })
-      }
+      // Note: translateTargetLang is persisted immediately in the dropdown's
+      // onValueChange handler, so no need to save it again here.
     } else {
       await createAction({
         name: formName.trim(),
@@ -372,6 +366,8 @@ export function QuickAssistantSection(): React.JSX.Element {
                         ? generateImageTranslatePrompt(englishLabel)
                         : generateTranslatePrompt(englishLabel),
                     )
+                    // Persist immediately so the quick assistant popup picks up the change
+                    saveSettings({ 'quickAssistant.translateTargetLang': value })
                   }}>
                   <SelectTrigger>
                     <SelectValue />

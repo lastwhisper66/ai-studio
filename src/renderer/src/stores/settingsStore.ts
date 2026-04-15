@@ -46,20 +46,36 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   saveSettings: async (values: Record<string, string>) => {
-    set({ isSaving: true, error: null })
+    // Optimistic update: apply the new values to the store immediately so that
+    // any derived state (e.g. targetLang) reflects the change before the async
+    // IPC round-trip completes. Snapshot only the changed keys for surgical rollback.
+    const current = get().settings
+    const prev = Object.fromEntries(Object.keys(values).map((k) => [k, current[k]]))
+    set((state) => ({
+      settings: { ...state.settings, ...values },
+      isSaving: true,
+      error: null,
+    }))
     try {
       const result = await window.api.setSettingsBatch(values)
       if (!result.success) {
-        set({ isSaving: false, error: result.error ?? 'Failed to save settings' })
+        // Surgical rollback — only revert the keys this call changed
+        set((state) => ({
+          settings: { ...state.settings, ...prev },
+          isSaving: false,
+          error: result.error ?? 'Failed to save settings',
+        }))
         return false
       }
-      set((state) => ({
-        settings: { ...state.settings, ...values },
-        isSaving: false,
-      }))
+      set({ isSaving: false })
       return true
     } catch (e) {
-      set({ isSaving: false, error: (e as Error).message })
+      // Surgical rollback — only revert the keys this call changed
+      set((state) => ({
+        settings: { ...state.settings, ...prev },
+        isSaving: false,
+        error: (e as Error).message,
+      }))
       return false
     }
   },

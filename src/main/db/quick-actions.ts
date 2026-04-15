@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { QuickAction } from '@shared/types'
+import { generateTranslatePrompt, generateImageTranslatePrompt } from '@shared/languages'
 import { getDb } from './database'
 
 interface QuickActionRow {
@@ -147,8 +148,7 @@ export function seedQuickActions(): void {
       id: 'builtin-translate',
       name: '文本翻译',
       description: '将文本翻译为其他语言',
-      systemPrompt:
-        'You are a professional translator. Translate the input text to the target language. Only output the translation, nothing else. Preserve the original formatting and tone.',
+      systemPrompt: generateTranslatePrompt('the target language'),
       icon: 'Languages',
       sortOrder: 1,
     },
@@ -165,8 +165,7 @@ export function seedQuickActions(): void {
       id: 'builtin-image-translate',
       name: '识图翻译',
       description: '识别图片中的文字并翻译',
-      systemPrompt:
-        'You are a professional translator with vision capability. Carefully identify ALL text content visible in the provided image and translate it to the target language. Preserve the original structure and formatting as much as possible. Only output the translated text, nothing else.',
+      systemPrompt: generateImageTranslatePrompt('the target language'),
       icon: 'ScanText',
       sortOrder: 3,
     },

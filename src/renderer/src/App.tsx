@@ -41,6 +41,16 @@ function App(): React.JSX.Element {
     loadModelGroups,
   ])
 
+  // Refresh settings when the main window regains focus so that changes made
+  // in other windows (e.g. the quick-assistant popup) are picked up.
+  useEffect(() => {
+    const handleFocus = (): void => {
+      loadSettings()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [loadSettings])
+
   // Initialize keybinding store after settings are loaded
   useEffect(() => {
     if (settingsLoaded) initKeybindings()
