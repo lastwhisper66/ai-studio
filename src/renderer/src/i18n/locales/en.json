@@ -73,6 +73,7 @@
     "phraseContent": "Phrase content",
     "noPhrasesYet": "No phrases yet. Go to Settings to add.",
     "managePhrases": "Manage Quick Phrases",
+    "placeholderHint": "{{count}} placeholder(s) — Tab / Shift+Tab to navigate",
     "systemPromptPlaceholder": "Click to set assistant system prompt"
   },
   "welcome": {
@@ -287,7 +288,7 @@
       "titlePlaceholder": "Phrase title",
       "contentLabel": "Content",
       "contentPlaceholder": "Phrase content, supports ${variable} placeholders",
-      "contentHint": "Use ${variable} to insert placeholders. After selecting a phrase, press Tab to jump between placeholders."
+      "contentHint": "Use ${variable} to insert placeholders. Press Tab / Shift+Tab in the input to jump between placeholders."
     },
     "quickAssistant": {
       "title": "Quick Assistant",

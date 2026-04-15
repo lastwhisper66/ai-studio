@@ -73,6 +73,7 @@
     "phraseContent": "短语内容",
     "noPhrasesYet": "暂无快捷短语，前往设置添加",
     "managePhrases": "管理快捷短语",
+    "placeholderHint": "{{count}} 个占位符 — Tab / Shift+Tab 跳转",
     "systemPromptPlaceholder": "点击设置助手提示词"
   },
   "welcome": {
@@ -287,7 +288,7 @@
       "titlePlaceholder": "短语标题",
       "contentLabel": "内容",
       "contentPlaceholder": "短语内容，支持 ${变量名} 占位符",
-      "contentHint": "使用 ${变量名} 插入占位符，选择短语后按 Tab 键可在占位符间跳转编辑。"
+      "contentHint": "使用 ${变量名} 插入占位符，输入框中按 Tab / Shift+Tab 可在占位符间前后跳转编辑。"
     },
     "quickAssistant": {
       "title": "快捷助手",

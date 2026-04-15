@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   Paperclip,
   Brain,
@@ -244,12 +244,17 @@ export function MessageInput({
   const [reasoning, setReasoning] = useState<ReasoningLevel>('off')
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const placeholderModeRef = useRef(false)
   const activeConversationId = useConversationStore((s) => s.activeConversationId)
   const clearMessages = useConversationStore((s) => s.clearMessages)
   const renameConversation = useConversationStore((s) => s.renameConversation)
   const insertDivider = useConversationStore((s) => s.insertDivider)
   const focusInputTrigger = useConversationStore((s) => s.focusInputTrigger)
+
+  // Derive placeholder count from input content
+  const placeholderCount = useMemo(() => {
+    const matches = input.match(/\$\{[^}]+\}/g)
+    return matches ? matches.length : 0
+  }, [input])
 
   // Focus textarea when triggered by store signal
   useEffect(() => {
@@ -315,7 +320,6 @@ export function MessageInput({
     const effort = reasoning !== 'off' ? reasoning : undefined
     setInput('')
     setAttachedFiles([])
-    placeholderModeRef.current = false
     onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort)
   }
 
@@ -327,32 +331,40 @@ export function MessageInput({
     if (e.key === 'Escape' && isExpanded) {
       setIsExpanded(false)
     }
-    // Tab: jump to next ${...} placeholder
-    if (e.key === 'Tab' && placeholderModeRef.current) {
+    // Tab / Shift+Tab: cycle through ${...} placeholders (content-driven, no mode gate)
+    if (e.key === 'Tab') {
       const el = textareaRef.current
       if (!el) return
       const text = el.value
-      const cursor = el.selectionEnd
       const regex = /\$\{[^}]+\}/g
-      let match: RegExpExecArray | null
-      // Find the first placeholder after the current cursor position
-      while ((match = regex.exec(text)) !== null) {
-        if (match.index >= cursor) {
-          e.preventDefault()
-          el.setSelectionRange(match.index, match.index + match[0].length)
-          return
+      const allMatches: { index: number; length: number }[] = []
+      let m: RegExpExecArray | null
+      while ((m = regex.exec(text)) !== null) {
+        allMatches.push({ index: m.index, length: m[0].length })
+      }
+      if (allMatches.length === 0) return
+      e.preventDefault()
+      if (e.shiftKey) {
+        // Shift+Tab: find the last placeholder before cursor, wrap to last if none
+        let target = allMatches[allMatches.length - 1]
+        for (let i = allMatches.length - 1; i >= 0; i--) {
+          if (allMatches[i].index + allMatches[i].length <= el.selectionStart) {
+            target = allMatches[i]
+            break
+          }
         }
+        el.setSelectionRange(target.index, target.index + target.length)
+      } else {
+        // Tab: find the first placeholder after cursor, wrap to first if none
+        let target = allMatches[0]
+        for (const match of allMatches) {
+          if (match.index >= el.selectionEnd) {
+            target = match
+            break
+          }
+        }
+        el.setSelectionRange(target.index, target.index + target.length)
       }
-      // No more placeholders after cursor — wrap around to the first one
-      regex.lastIndex = 0
-      match = regex.exec(text)
-      if (match) {
-        e.preventDefault()
-        el.setSelectionRange(match.index, match.index + match[0].length)
-        return
-      }
-      // No placeholders left at all — exit placeholder mode
-      placeholderModeRef.current = false
     }
   }
 
@@ -461,6 +473,16 @@ export function MessageInput({
             />
           </div>
 
+          {/* Placeholder mode indicator */}
+          {placeholderCount > 0 && (
+            <div className="flex items-center gap-1.5 px-4 pb-1">
+              <span className="text-primary bg-primary/10 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs">
+                <Zap className="h-3 w-3" />
+                {t('chat.placeholderHint', { count: placeholderCount })}
+              </span>
+            </div>
+          )}
+
           {/* Bottom toolbar */}
           <div className="flex items-center justify-between px-2 pb-2 pt-1">
             {/* Left: tool buttons */}
@@ -492,7 +514,6 @@ export function MessageInput({
                     const regex = /\$\{[^}]+\}/g
                     const match = regex.exec(c)
                     if (match) {
-                      placeholderModeRef.current = true
                       const phStart = start + match.index
                       const phEnd = phStart + match[0].length
                       requestAnimationFrame(() => {
@@ -500,7 +521,6 @@ export function MessageInput({
                         el.setSelectionRange(phStart, phEnd)
                       })
                     } else {
-                      placeholderModeRef.current = false
                       const cursorPos = start + c.length
                       requestAnimationFrame(() => {
                         el.focus()
