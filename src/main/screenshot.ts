@@ -30,7 +30,7 @@ function restoreMainWindow(): void {
 /**
  * Capture the screen on the given display and show the selection overlay.
  */
-function captureScreen(targetDisplay: Electron.Display): void {
+async function captureScreen(targetDisplay: Electron.Display): Promise<void> {
   try {
     const monitors = Monitor.all()
     const monitor =
@@ -43,8 +43,8 @@ function captureScreen(targetDisplay: Electron.Display): void {
       return
     }
 
-    const image = monitor.captureImageSync()
-    capturedImageBuffer = Buffer.from(image.toPngSync())
+    const image = await monitor.captureImage()
+    capturedImageBuffer = Buffer.from(await image.toPng())
     captureScaleFactor = targetDisplay.scaleFactor
     const base64 = capturedImageBuffer.toString('base64')
 
