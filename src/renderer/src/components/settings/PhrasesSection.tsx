@@ -148,7 +148,7 @@ export function PhrasesSection(): React.JSX.Element {
                 placeholder={t('settings.phrases.contentPlaceholder')}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="min-h-24 resize-none"
+                className="min-h-24 max-h-64 overflow-y-auto resize-none"
               />
               <p className="text-muted-foreground text-xs">{t('settings.phrases.contentHint')}</p>
             </div>

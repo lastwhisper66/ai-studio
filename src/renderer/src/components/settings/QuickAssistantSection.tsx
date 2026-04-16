@@ -388,7 +388,7 @@ export function QuickAssistantSection(): React.JSX.Element {
                 placeholder={t('settings.quickAssistant.systemPromptPlaceholder')}
                 value={formSystemPrompt}
                 onChange={(e) => setFormSystemPrompt(e.target.value)}
-                className="min-h-32 resize-none"
+                className="min-h-32 max-h-64 overflow-y-auto resize-none"
               />
               <p className="text-muted-foreground text-xs">
                 {t('settings.quickAssistant.systemPromptHint')}

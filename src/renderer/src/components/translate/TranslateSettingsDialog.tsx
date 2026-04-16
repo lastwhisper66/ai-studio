@@ -79,7 +79,7 @@ export function TranslateSettingsDialog({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
-              className="text-sm"
+              className="text-sm max-h-64 overflow-y-auto resize-y"
             />
             <p className="text-xs text-muted-foreground">{t('translate.settings.promptHint')}</p>
           </div>

@@ -577,6 +577,7 @@ export function AssistantSettingsDialog({
                       onChange={(e) => change('systemPrompt', e.target.value)}
                       onBlur={() => handleBlur('systemPrompt')}
                       placeholder={t('assistant.settings.systemPromptPlaceholder')}
+                      className="max-h-96 resize-y"
                     />
                     <p className="text-xs text-muted-foreground">
                       {t('assistant.settings.systemPromptHint')}

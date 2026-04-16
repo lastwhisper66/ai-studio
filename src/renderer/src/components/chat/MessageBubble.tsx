@@ -253,7 +253,7 @@ export const MessageBubble = memo(function MessageBubble({
               <div className="space-y-2">
                 <Textarea
                   ref={editTextareaRef}
-                  className="field-sizing-fixed min-h-[40px] max-h-[320px] resize-none border-0 bg-transparent p-0 text-sm text-chat-user-foreground shadow-none focus-visible:ring-0"
+                  className="field-sizing-fixed min-h-10 max-h-80 resize-none border-0 bg-transparent p-0 text-sm text-chat-user-foreground shadow-none focus-visible:ring-0"
                   value={editDraft}
                   onChange={(e) => setEditDraft(e.target.value)}
                   onKeyDown={handleEditKeyDown}
