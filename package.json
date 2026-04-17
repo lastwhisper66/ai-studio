@@ -34,6 +34,7 @@
     "font-list": "^2.0.2",
     "node-screenshots": "^0.2.8",
     "openai": "^6.27.0",
+    "selection-hook": "^2.0.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
