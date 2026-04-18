@@ -162,7 +162,8 @@
       "data": "数据设置",
       "keyboardShortcuts": "快捷键",
       "phrases": "快捷短语",
-      "quickAssistant": "快捷助手"
+      "quickAssistant": "快捷助手",
+      "selectionAssistant": "划词助手"
     },
     "provider": {
       "list": "服务商列表",
@@ -296,6 +297,9 @@
       "general": "基本设置",
       "enableLabel": "启用快捷助手",
       "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手（默认 Ctrl+Shift+Space）。",
+      "shortcutLabel": "开关快捷键",
+      "shortcutHint": "用于快速唤起快捷助手，默认 {{default}}。",
+      "targetLangLabel": "目标语言",
       "model": "模型配置",
       "modelLabel": "AI 模型",
       "modelHint": "选择快捷助手使用的 AI 模型。",
@@ -342,6 +346,44 @@
       "builtin-summary": {
         "name": "内容总结",
         "description": "简洁地总结提供的文本内容"
+      }
+    },
+    "selectionAssistant": {
+      "title": "划词助手",
+      "description": "在任意应用中选中文本即可弹出工具条,点击动作查看 AI 结果。",
+      "general": "基本设置",
+      "enableLabel": "启用划词助手",
+      "enableHint": "关闭后将停止监听全局文本选区,不再弹出工具条。",
+      "shortcutLabel": "开关快捷键",
+      "shortcutHint": "用于快速切换划词助手,默认 {{default}}。",
+      "shortcutUnavailable": "快捷键注册失败,可能已被其他应用占用。",
+      "model": "模型配置",
+      "modelLabel": "AI 模型",
+      "modelHint": "划词助手使用独立的服务商和模型,不复用快捷助手配置。",
+      "actions": "动作配置",
+      "actionsHint": "调整工具条动作的显示与启用状态,可新增自定义动作。",
+      "addAction": "新增动作",
+      "editAction": "编辑动作",
+      "deleteTitle": "删除动作",
+      "deleteDescription": "确定要删除「{{name}}」吗?此操作不可撤销。",
+      "excludedPrograms": "排除应用",
+      "excludedProgramsHint": "输入可执行文件名(如 Chrome.exe),在这些应用中选中文本不会触发划词助手。",
+      "excludedProgramsPlaceholder": "例如 Chrome.exe",
+      "textLength": "文本长度",
+      "textLengthHint": "过滤过短或过长的选中文本。",
+      "minLength": "最小长度",
+      "maxLength": "最大长度",
+      "bubble": {
+        "actionPlaceholder": "动作",
+        "generating": "正在生成…",
+        "stop": "停止",
+        "regenerate": "重新生成",
+        "copy": "复制",
+        "copied": "已复制",
+        "close": "关闭",
+        "pin": "置顶",
+        "unpin": "取消置顶",
+        "escToClose": "关闭"
       }
     }
   },
@@ -481,6 +523,7 @@
     "summonWindow": "唤醒窗口",
     "toggleQuickAssistant": "快捷助手",
     "screenshotTranslate": "截图翻译",
+    "toggleSelectionAssistant": "划词助手",
     "category": {
       "app": "应用",
       "chat": "聊天",

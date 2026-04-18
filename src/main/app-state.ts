@@ -73,3 +73,19 @@ export function applyQuickAssistantEnabled(value?: string): void {
 export function getQuickAssistantEnabled(): boolean {
   return quickAssistantEnabled
 }
+
+// ── Selection Assistant ─────────────────────────────────────────
+
+let selectionAssistantEnabled = true
+
+export function initSelectionAssistant(): void {
+  selectionAssistantEnabled = getSetting('selection.enabled') !== 'false'
+}
+
+export function applySelectionAssistantEnabled(value?: string): void {
+  selectionAssistantEnabled = value !== 'false'
+}
+
+export function getSelectionAssistantEnabled(): boolean {
+  return selectionAssistantEnabled
+}

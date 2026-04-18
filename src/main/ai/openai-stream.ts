@@ -17,9 +17,11 @@ export async function streamOpenAIChat(
     model: settings.model,
     messages,
     stream: true,
-    max_completion_tokens: settings.maxCompletionTokens,
-    temperature: settings.temperature,
-    top_p: settings.topP,
+    ...(settings.maxCompletionTokens !== undefined
+      ? { max_completion_tokens: settings.maxCompletionTokens }
+      : {}),
+    ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+    ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
     ...(reasoningEffort
       ? { reasoning_effort: reasoningEffort as ChatCompletionReasoningEffort }
       : {}),

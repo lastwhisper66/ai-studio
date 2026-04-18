@@ -1,17 +1,5 @@
 [
   {
-    "name": "gpt-5.1",
-    "group": "GPT-5.1",
-    "capabilities": ["reasoning", "vision", "tools", "web"],
-    "providerTypes": ["openai", "openai-response"]
-  },
-  {
-    "name": "gpt-5.1-mini",
-    "group": "GPT-5.1",
-    "capabilities": ["reasoning", "vision", "tools", "web"],
-    "providerTypes": ["openai", "openai-response"]
-  },
-  {
     "name": "gpt-5.4",
     "group": "GPT-5.4",
     "capabilities": ["reasoning", "vision", "tools", "web"],
@@ -24,25 +12,36 @@
     "providerTypes": ["openai", "openai-response"]
   },
   {
-    "name": "gpt-5.3-codex",
-    "group": "GPT-5",
-    "capabilities": ["reasoning", "vision", "web", "tools"],
+    "name": "gpt-5.4-nano",
+    "group": "GPT-5.4",
+    "capabilities": ["reasoning", "tools", "web"],
+    "providerTypes": ["openai", "openai-response"]
+  },
+  {
+    "name": "gpt-5.4-pro",
+    "group": "GPT-5.4",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["openai", "openai-response"]
+  },
+  {
+    "name": "gpt-5.1",
+    "group": "GPT-5.1",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["openai", "openai-response"]
+  },
+  {
+    "name": "gpt-5.1-mini",
+    "group": "GPT-5.1",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
     "providerTypes": ["openai", "openai-response"]
   },
 
   {
-    "name": "deepseek-chat",
-    "group": "DeepSeek-V3.2",
-    "capabilities": ["tools"],
-    "providerTypes": ["deepseek"]
+    "name": "claude-opus-4-7",
+    "group": "Claude Opus",
+    "capabilities": ["reasoning", "vision", "tools"],
+    "providerTypes": ["anthropic", "claude"]
   },
-  {
-    "name": "deepseek-reasoner",
-    "group": "DeepSeek-V3.2",
-    "capabilities": ["reasoning"],
-    "providerTypes": ["deepseek"]
-  },
-
   {
     "name": "claude-opus-4-6",
     "group": "Claude Opus",
@@ -56,7 +55,7 @@
     "providerTypes": ["anthropic", "claude"]
   },
   {
-    "name": "claude-haiku-4-5-20251015",
+    "name": "claude-haiku-4-5",
     "group": "Claude Haiku",
     "capabilities": ["reasoning", "vision", "tools"],
     "providerTypes": ["anthropic", "claude"]
@@ -64,15 +63,52 @@
 
   {
     "name": "gemini-3.1-pro-preview",
-    "group": "Gemini 3",
+    "group": "Gemini 3.1",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["gemini"]
+  },
+  {
+    "name": "gemini-3.1-flash-lite-preview",
+    "group": "Gemini 3.1",
     "capabilities": ["reasoning", "vision", "tools"],
     "providerTypes": ["gemini"]
   },
   {
     "name": "gemini-3-flash-preview",
     "group": "Gemini 3",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["gemini"]
+  },
+  {
+    "name": "gemini-2.5-pro",
+    "group": "Gemini 2.5",
+    "capabilities": ["reasoning", "vision", "tools", "web"],
+    "providerTypes": ["gemini"]
+  },
+  {
+    "name": "gemini-2.5-flash",
+    "group": "Gemini 2.5",
     "capabilities": ["reasoning", "vision", "tools"],
     "providerTypes": ["gemini"]
+  },
+  {
+    "name": "gemini-2.5-flash-lite",
+    "group": "Gemini 2.5",
+    "capabilities": ["vision", "tools"],
+    "providerTypes": ["gemini"]
+  },
+
+  {
+    "name": "deepseek-chat",
+    "group": "DeepSeek-V3.2",
+    "capabilities": ["tools"],
+    "providerTypes": ["deepseek"]
+  },
+  {
+    "name": "deepseek-reasoner",
+    "group": "DeepSeek-V3.2",
+    "capabilities": ["reasoning", "tools"],
+    "providerTypes": ["deepseek"]
   },
 
   {
@@ -85,6 +121,12 @@
     "name": "deepseek-ai/DeepSeek-R1",
     "group": "DeepSeek",
     "capabilities": ["reasoning"],
+    "providerTypes": ["silicon"]
+  },
+  {
+    "name": "Qwen/Qwen3-235B-A22B",
+    "group": "Qwen3",
+    "capabilities": ["reasoning", "tools"],
     "providerTypes": ["silicon"]
   },
   {

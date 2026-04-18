@@ -117,4 +117,32 @@ export const IpcChannels = {
   SCREENSHOT_COMPLETE: 'screenshot:complete',
   SCREENSHOT_CANCEL: 'screenshot:cancel',
   SCREENSHOT_UPDATE_SHORTCUT: 'screenshot:update-shortcut',
+  // Selection Assistant — toolbar window
+  SELECTION_TOOLBAR_READY: 'selection-toolbar:ready',
+  SELECTION_TOOLBAR_DATA: 'selection-toolbar:data',
+  SELECTION_TOOLBAR_ACTION: 'selection-toolbar:action',
+  SELECTION_TOOLBAR_CLOSE: 'selection-toolbar:close',
+  // Selection Assistant — bubble window
+  SELECTION_BUBBLE_READY: 'selection-bubble:ready',
+  SELECTION_BUBBLE_DATA: 'selection-bubble:data',
+  SELECTION_BUBBLE_CLOSE: 'selection-bubble:close',
+  SELECTION_BUBBLE_SET_PINNED: 'selection-bubble:set-pinned',
+  SELECTION_BUBBLE_SET_STREAMING: 'selection-bubble:set-streaming',
+  // Selection Assistant — action CRUD
+  SELECTION_ACTION_LIST: 'selection-action:list',
+  SELECTION_ACTION_CREATE: 'selection-action:create',
+  SELECTION_ACTION_UPDATE: 'selection-action:update',
+  SELECTION_ACTION_DELETE: 'selection-action:delete',
+  SELECTION_ACTION_REORDER: 'selection-action:reorder',
+  // Selection Assistant — streaming AI
+  SELECTION_REQUEST: 'selection:request',
+  SELECTION_CHUNK: 'selection:chunk',
+  SELECTION_END: 'selection:end',
+  SELECTION_ERROR: 'selection:error',
+  SELECTION_STOP: 'selection:stop',
+  // Selection Assistant — toggle + shortcut + runtime config
+  SELECTION_TOGGLE: 'selection:toggle',
+  SELECTION_UPDATE_SHORTCUT: 'selection:update-shortcut',
+  SELECTION_STATE_CHANGED: 'selection:state-changed',
+  SELECTION_REFRESH_FILTER: 'selection:refresh-filter',
 } as const

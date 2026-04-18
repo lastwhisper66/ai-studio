@@ -31,11 +31,12 @@ export async function streamClaudeChat(
   const stream = client.messages.stream(
     {
       model: settings.model,
+      // Anthropic requires max_tokens — fall back to 4096 when caller leaves it unset.
       max_tokens: settings.maxCompletionTokens ?? 4096,
       messages: claudeMessages,
       ...(systemPrompt ? { system: systemPrompt } : {}),
-      temperature: settings.temperature,
-      top_p: settings.topP,
+      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+      ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
     },
     { signal },
   )

@@ -45,9 +45,9 @@ function loadQuickAssistantSettings(providerId?: string, modelId?: string): ApiS
     apiKey: provider.apiKey,
     baseUrl: provider.baseUrl,
     model: model.name,
-    temperature: 0.7,
-    maxCompletionTokens: 4096,
-    topP: 1,
+    // temperature / maxCompletionTokens / topP intentionally omitted so the
+    // model / provider SDK uses its own defaults. Quick Assistant is meant to
+    // be a low-friction surface; advanced sampling lives in Assistant settings.
     systemPrompt: '',
   }
 }

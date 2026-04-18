@@ -40,9 +40,11 @@ export async function streamGeminiChat(
     config: {
       abortSignal: signal,
       systemInstruction: systemInstruction || undefined,
-      temperature: settings.temperature,
-      maxOutputTokens: settings.maxCompletionTokens,
-      topP: settings.topP,
+      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+      ...(settings.maxCompletionTokens !== undefined
+        ? { maxOutputTokens: settings.maxCompletionTokens }
+        : {}),
+      ...(settings.topP !== undefined ? { topP: settings.topP } : {}),
     },
   })
 

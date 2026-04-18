@@ -162,7 +162,8 @@
       "data": "Data",
       "keyboardShortcuts": "Shortcuts",
       "phrases": "Quick Phrases",
-      "quickAssistant": "Quick Assistant"
+      "quickAssistant": "Quick Assistant",
+      "selectionAssistant": "Selection Assistant"
     },
     "provider": {
       "list": "Provider list",
@@ -296,6 +297,9 @@
       "general": "General",
       "enableLabel": "Enable Quick Assistant",
       "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere (default: Ctrl+Shift+Space).",
+      "shortcutLabel": "Toggle Shortcut",
+      "shortcutHint": "Global shortcut to toggle the Quick Assistant (default {{default}}).",
+      "targetLangLabel": "Target language",
       "model": "Model",
       "modelLabel": "AI Model",
       "modelHint": "Select the AI model used by Quick Assistant.",
@@ -342,6 +346,44 @@
       "builtin-summary": {
         "name": "Summarize",
         "description": "Concisely summarize the provided text"
+      }
+    },
+    "selectionAssistant": {
+      "title": "Selection Assistant",
+      "description": "Select text in any application to pop up a toolbar, then click an action to see the AI result.",
+      "general": "General",
+      "enableLabel": "Enable Selection Assistant",
+      "enableHint": "When off, the global text-selection listener stops and the toolbar will not appear.",
+      "shortcutLabel": "Toggle Shortcut",
+      "shortcutHint": "Quickly enable or disable Selection Assistant (default {{default}}).",
+      "shortcutUnavailable": "Shortcut registration failed — it may already be in use by another app.",
+      "model": "Model",
+      "modelLabel": "AI Model",
+      "modelHint": "Selection Assistant uses its own provider and model, independent of Quick Assistant.",
+      "actions": "Actions",
+      "actionsHint": "Choose which actions appear on the toolbar, or add your own.",
+      "addAction": "Add Action",
+      "editAction": "Edit Action",
+      "deleteTitle": "Delete Action",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "excludedPrograms": "Excluded Programs",
+      "excludedProgramsHint": "Enter executable names (e.g. Chrome.exe). Selections inside those apps will not trigger the toolbar.",
+      "excludedProgramsPlaceholder": "e.g. Chrome.exe",
+      "textLength": "Text Length",
+      "textLengthHint": "Skip selections that are too short or too long.",
+      "minLength": "Minimum",
+      "maxLength": "Maximum",
+      "bubble": {
+        "actionPlaceholder": "Action",
+        "generating": "Generating…",
+        "stop": "Stop",
+        "regenerate": "Regenerate",
+        "copy": "Copy",
+        "copied": "Copied",
+        "close": "Close",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "escToClose": "Close"
       }
     }
   },
@@ -481,6 +523,7 @@
     "summonWindow": "Summon Window",
     "toggleQuickAssistant": "Quick Assistant",
     "screenshotTranslate": "Screenshot Translate",
+    "toggleSelectionAssistant": "Selection Assistant",
     "category": {
       "app": "Application",
       "chat": "Chat",

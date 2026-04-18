@@ -8,10 +8,10 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 export function SecuritySection(): React.JSX.Element {
   const { t } = useTranslation()
   const { settings, saveSettings } = useSettingsStore()
-  const [skipSsl, setSkipSsl] = useState(true)
+  const [skipSsl, setSkipSsl] = useState(false)
 
   useEffect(() => {
-    setSkipSsl(settings['app.skipSslVerify'] !== 'false')
+    setSkipSsl(settings['app.skipSslVerify'] === 'true')
   }, [settings])
 
   const handleToggle = (checked: boolean): void => {

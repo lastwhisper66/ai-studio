@@ -9,7 +9,7 @@ export type { StreamCallbacks, StreamChatOptions } from './stream-chat'
 
 /** Sync the NODE_TLS_REJECT_UNAUTHORIZED env var with the user's SSL setting. */
 export function applySslSetting(skip?: boolean): void {
-  const shouldSkip = skip ?? getSetting('app.skipSslVerify') !== 'false'
+  const shouldSkip = skip ?? getSetting('app.skipSslVerify') === 'true'
   if (shouldSkip) {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   } else {

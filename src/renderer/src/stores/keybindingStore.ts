@@ -60,11 +60,21 @@ async function syncScreenshotShortcut(): Promise<void> {
   }
 }
 
+/** Notify main process to re-register the selection-assistant toggle shortcut */
+async function syncSelectionShortcut(): Promise<void> {
+  try {
+    await window.api.updateSelectionShortcut()
+  } catch {
+    // non-critical
+  }
+}
+
 /** Sync global shortcut with main process when a global-shortcut action changes */
 async function syncGlobalShortcut(actionId: KeybindingActionId): Promise<void> {
   if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
   if (actionId === 'summon-window') await syncSummonWindowShortcut()
   if (actionId === 'screenshot-translate') await syncScreenshotShortcut()
+  if (actionId === 'toggle-selection-assistant') await syncSelectionShortcut()
 }
 
 export const useKeybindingStore = create<KeybindingState>((set, get) => ({
@@ -122,5 +132,6 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     await syncQuickAssistantShortcut()
     await syncSummonWindowShortcut()
     await syncScreenshotShortcut()
+    await syncSelectionShortcut()
   },
 }))

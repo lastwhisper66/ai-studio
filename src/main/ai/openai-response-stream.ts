@@ -20,9 +20,11 @@ export async function streamOpenAIResponse(
       model: settings.model,
       input,
       stream: true,
-      temperature: settings.temperature,
-      top_p: settings.topP,
-      max_output_tokens: settings.maxCompletionTokens,
+      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+      ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
+      ...(settings.maxCompletionTokens !== undefined
+        ? { max_output_tokens: settings.maxCompletionTokens }
+        : {}),
     },
     { signal },
   )

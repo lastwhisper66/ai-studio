@@ -6,6 +6,7 @@ import { seedModelDefinitions } from './model-definitions'
 import { seedModelGroups } from './model-groups'
 import { seedDefaultProviders } from './providers'
 import { seedQuickActions } from './quick-actions'
+import { seedSelectionActions } from './selection-actions'
 
 let db: Database.Database | null = null
 
@@ -188,6 +189,23 @@ function createTables(): void {
       ON quick_actions(sort_order);
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS selection_actions (
+      id                 TEXT PRIMARY KEY,
+      name               TEXT NOT NULL,
+      description        TEXT NOT NULL DEFAULT '',
+      system_prompt      TEXT NOT NULL DEFAULT '',
+      icon               TEXT NOT NULL DEFAULT 'Sparkles',
+      is_builtin         INTEGER NOT NULL DEFAULT 0,
+      sort_order         INTEGER NOT NULL DEFAULT 0,
+      enabled            INTEGER NOT NULL DEFAULT 1,
+      created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_selection_actions_sort_order
+      ON selection_actions(sort_order);
+  `)
+
   // Seed: ensure a default assistant exists
   seedDefaultAssistant()
 
@@ -202,6 +220,9 @@ function createTables(): void {
 
   // Seed: populate quick actions on first launch
   seedQuickActions()
+
+  // Seed: populate selection actions on first launch
+  seedSelectionActions()
 }
 
 export function seedDefaultAssistant(): void {

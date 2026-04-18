@@ -176,7 +176,7 @@ export function resolveModelDefinition(modelName: string): ModelDefinition | und
  * INSERT OR IGNORE ensures existing (user-modified) rows are never touched.
  */
 
-const SEED_VERSION = 2
+const SEED_VERSION = 3
 
 interface SeedEntry {
   name: string

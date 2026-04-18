@@ -166,10 +166,12 @@ export interface ApiSettings {
   apiKey: string
   baseUrl: string
   model: string
-  // Global model params
-  temperature: number
-  maxCompletionTokens: number
-  topP: number
+  /** When omitted, the provider SDK's / model's default is used. */
+  temperature?: number
+  /** When omitted, the provider SDK's / model's default is used. */
+  maxCompletionTokens?: number
+  /** When omitted, the provider SDK's / model's default is used. */
+  topP?: number
   systemPrompt: string
 }
 
@@ -323,4 +325,82 @@ export interface TranslationHistoryItem {
   sourceLang: string
   targetLang: string
   createdAt: string
+}
+
+// ── Selection Assistant ─────────────────────────────────────────
+
+/** Default cap on selection text length, applied if the user hasn't customized it. */
+export const DEFAULT_SELECTION_MAX_TEXT_LENGTH = 5000
+/** Default floor; overridden by `selection.minTextLength` setting. */
+export const DEFAULT_SELECTION_MIN_TEXT_LENGTH = 1
+
+/**
+ * Anchor rectangle in DIP (device-independent pixels), describing the
+ * on-screen selection region. Toolbar/bubble windows position themselves
+ * relative to this rectangle.
+ */
+export interface SelectionAnchor {
+  /** Left edge of the selection region (DIP) */
+  x: number
+  /** Top edge of the selection region (DIP) */
+  y: number
+  /** Width of the selection region (DIP); may be 0 when only a mouse point is known */
+  width: number
+  /** Height of the selection region (DIP); may be 0 when only a mouse point is known */
+  height: number
+}
+
+/** Stored selection action — mirrors QuickAction */
+export interface SelectionAction {
+  id: string
+  name: string
+  description: string
+  systemPrompt: string
+  icon: string
+  isBuiltin: boolean
+  sortOrder: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** selection-toolbar:data push payload */
+export interface SelectionToolbarPayload {
+  text: string
+  anchor: SelectionAnchor
+  /** Enabled actions shown on the toolbar */
+  actions: SelectionAction[]
+}
+
+/** selection-bubble:data push payload */
+export interface SelectionBubblePayload {
+  text: string
+  anchor: SelectionAnchor
+  actionId: string
+  /** All enabled actions — used by the bubble's "switch action" menu */
+  actions: SelectionAction[]
+}
+
+/** selection:request payload */
+export interface SelectionRequestPayload {
+  text: string
+  actionId: string
+  providerId?: string
+  modelId?: string
+  systemPromptOverride?: string
+}
+
+/** selection:chunk push data */
+export interface SelectionChunkData {
+  delta: string
+}
+
+/** selection:end push data */
+export interface SelectionEndData {
+  fullText: string
+}
+
+/** selection:error push data */
+export interface SelectionErrorData {
+  error: string
 }

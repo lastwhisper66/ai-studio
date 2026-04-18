@@ -29,6 +29,7 @@ import {
   initSpellCheck,
   getQuickAssistantEnabled,
   initQuickAssistant,
+  getSelectionAssistantEnabled,
 } from './app-state'
 import { getDataDir } from './utils/paths'
 import {
@@ -37,6 +38,17 @@ import {
   preCreateQuickAssistantWindow,
 } from './quick-assistant-window'
 import { startScreenshot, initScreenshotIpc } from './screenshot'
+import {
+  preCreateSelectionToolbarWindow,
+  initSelectionToolbarIpc,
+} from './selection-toolbar-window'
+import { preCreateSelectionBubbleWindow, initSelectionBubbleIpc } from './selection-bubble-window'
+import {
+  cleanupSelectionService,
+  initSelectionService,
+  refreshSelectionFilterConfig,
+  toggleSelectionAssistant,
+} from './selection-service'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -217,6 +229,49 @@ function registerScreenshotShortcut(): void {
   }
 }
 
+function getSelectionToggleAccelerator(): string {
+  const raw = getSetting('app.keybindings')
+  let overrides: Partial<Record<KeybindingActionId, string>> = {}
+  if (raw) {
+    try {
+      overrides = JSON.parse(raw)
+    } catch {
+      // ignore
+    }
+  }
+  return (
+    overrides['toggle-selection-assistant'] ??
+    DEFAULT_KEYBINDINGS['toggle-selection-assistant'].defaultAccelerator
+  )
+}
+
+let currentSelectionToggleShortcut: string | null = null
+
+function registerSelectionToggleShortcut(): boolean {
+  if (currentSelectionToggleShortcut) {
+    globalShortcut.unregister(currentSelectionToggleShortcut)
+    currentSelectionToggleShortcut = null
+  }
+
+  const accel = getSelectionToggleAccelerator()
+  const electronAccel = toElectronAccelerator(accel)
+
+  const ok = globalShortcut.register(electronAccel, () => {
+    const enabled = toggleSelectionAssistant()
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send(IpcChannels.SELECTION_STATE_CHANGED, enabled)
+    }
+    updateTrayMenu()
+  })
+
+  if (ok) {
+    currentSelectionToggleShortcut = electronAccel
+  } else if (is.dev) {
+    console.warn(`Failed to register global shortcut ${electronAccel} — may already be in use`)
+  }
+  return ok
+}
+
 function changeZoom(win: BrowserWindow, delta: number): void {
   const current = win.webContents.getZoomFactor()
   const next = clampZoom(current + delta)
@@ -241,6 +296,52 @@ function showWindow(win: BrowserWindow): void {
   if (win.isMinimized()) win.restore()
   win.show()
   win.focus()
+}
+
+function updateTrayMenu(): void {
+  if (!tray || tray.isDestroyed()) return
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: '打开主窗口',
+      click: () => {
+        if (mainWindow) showWindow(mainWindow)
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '启用划词助手',
+      type: 'checkbox',
+      checked: getSelectionAssistantEnabled(),
+      click: () => {
+        const enabled = toggleSelectionAssistant()
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send(IpcChannels.SELECTION_STATE_CHANGED, enabled)
+        }
+        updateTrayMenu()
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '关于',
+      click: () => {
+        dialog.showMessageBox({
+          type: 'info',
+          title: '关于 AI Studio',
+          message: `AI Studio v${app.getVersion()}`,
+          detail: 'A desktop AI chat application',
+        })
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '退出',
+      click: () => {
+        isQuitting = true
+        app.quit()
+      },
+    },
+  ])
+  tray.setContextMenu(contextMenu)
 }
 
 function createWindow(): void {
@@ -399,6 +500,8 @@ if (!gotTheLock) {
     registerAllIpcHandlers()
     initQuickAssistantIpc()
     initScreenshotIpc()
+    initSelectionToolbarIpc()
+    initSelectionBubbleIpc()
 
     // IPC: re-register quick assistant shortcut when user changes it
     ipcMain.handle(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT, () => {
@@ -416,6 +519,22 @@ if (!gotTheLock) {
       return { success: true }
     })
 
+    ipcMain.handle(IpcChannels.SELECTION_UPDATE_SHORTCUT, () => {
+      const registered = registerSelectionToggleShortcut()
+      return { success: true, data: { registered } }
+    })
+
+    ipcMain.handle(IpcChannels.SELECTION_TOGGLE, () => {
+      const enabled = toggleSelectionAssistant()
+      updateTrayMenu()
+      return { success: true, data: enabled }
+    })
+
+    ipcMain.handle(IpcChannels.SELECTION_REFRESH_FILTER, () => {
+      refreshSelectionFilterConfig()
+      return { success: true }
+    })
+
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
     })
@@ -424,6 +543,11 @@ if (!gotTheLock) {
 
     // Pre-create Quick Assistant window (hidden) so the first toggle is instant
     preCreateQuickAssistantWindow()
+    // Pre-create selection toolbar + bubble so the first selection is instant
+    preCreateSelectionToolbarWindow()
+    preCreateSelectionBubbleWindow()
+    // Start the selection-hook (if enabled) only after the two windows exist
+    initSelectionService()
 
     // Global shortcut: summon the main window (user-configurable, default Alt+A)
     registerSummonWindowShortcut()
@@ -434,41 +558,15 @@ if (!gotTheLock) {
     // Global shortcut: Alt+P to trigger screenshot translate (user-configurable)
     registerScreenshotShortcut()
 
+    // Global shortcut: Alt+H to toggle Selection Assistant (user-configurable)
+    registerSelectionToggleShortcut()
+
     // ── System tray ───────────────────────────────────────────────
     const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
     const trayIcon = nativeImage.createFromPath(iconPath)
     tray = new Tray(trayIcon)
     tray.setToolTip('AI Studio')
-
-    const contextMenu = Menu.buildFromTemplate([
-      {
-        label: '打开主窗口',
-        click: () => {
-          if (mainWindow) showWindow(mainWindow)
-        },
-      },
-      { type: 'separator' },
-      {
-        label: '关于',
-        click: () => {
-          dialog.showMessageBox({
-            type: 'info',
-            title: '关于 AI Studio',
-            message: `AI Studio v${app.getVersion()}`,
-            detail: 'A desktop AI chat application',
-          })
-        },
-      },
-      { type: 'separator' },
-      {
-        label: '退出',
-        click: () => {
-          isQuitting = true
-          app.quit()
-        },
-      },
-    ])
-    tray.setContextMenu(contextMenu)
+    updateTrayMenu()
 
     tray.on('click', () => {
       if (mainWindow) showWindow(mainWindow)
@@ -485,6 +583,7 @@ if (!gotTheLock) {
 // all windows are destroyed (e.g. during a true quit).
 app.on('before-quit', () => {
   isQuitting = true
+  cleanupSelectionService()
 })
 
 app.on('window-all-closed', () => {

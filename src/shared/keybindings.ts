@@ -9,6 +9,7 @@ export type KeybindingActionId =
   | 'summon-window'
   | 'toggle-quick-assistant'
   | 'screenshot-translate'
+  | 'toggle-selection-assistant'
 
 export interface KeybindingDef {
   defaultAccelerator: string
@@ -57,6 +58,11 @@ export const DEFAULT_KEYBINDINGS: Record<KeybindingActionId, KeybindingDef> = {
   'screenshot-translate': {
     defaultAccelerator: 'Alt+P',
     labelKey: 'keybindings.screenshotTranslate',
+    category: 'app',
+  },
+  'toggle-selection-assistant': {
+    defaultAccelerator: 'Alt+H',
+    labelKey: 'keybindings.toggleSelectionAssistant',
     category: 'app',
   },
 }

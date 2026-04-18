@@ -14,6 +14,7 @@ import { DataSection } from './DataSection'
 import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 import { QuickAssistantSection } from './QuickAssistantSection'
+import { SelectionAssistantSection } from './SelectionAssistantSection'
 
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
@@ -58,6 +59,7 @@ export function SettingsPage(): React.JSX.Element {
               {activeSection === 'phrases' && <PhrasesSection />}
               {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
               {activeSection === 'quick-assistant' && <QuickAssistantSection />}
+              {activeSection === 'selection-assistant' && <SelectionAssistantSection />}
             </div>
           </ScrollArea>
         )}

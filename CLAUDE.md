@@ -152,11 +152,23 @@ Key conventions:
 - Assistant CRUD: `src/main/db/assistants.ts` + `src/main/ipc/assistant-handlers.ts` + `assistantStore.ts`
 - Settings UI: `src/renderer/src/components/settings/` (SettingsPage with SettingsSidebar, ProviderList, ProviderDetail, ModelSection)
 
+## Selection Assistant
+
+Pops up a floating toolbar next to any text selection in any Windows app; clicking an action opens an AI result bubble in place. Fully independent of the chat window and Quick Assistant.
+
+- **Native hook**: `selection-hook` npm package (prebuilt Windows binaries). `SelectionService` (`src/main/selection-service.ts`) is a singleton that owns the hook instance, applies the user-configured program exclusion list (`setGlobalFilterMode`), and translates physical-pixel coordinates to DIP via `screen.screenToDipPoint` before positioning windows. Clipboard fallback is left at the hook's default (on) so PDF readers and other non-accessible apps still work.
+- **Two independent windows**: `selection-toolbar-window.ts` (280×44, `focusable: false` to avoid stealing selection focus) and `selection-bubble-window.ts` (420×320, focusable, supports pin). Both are pre-created hidden at startup and use the same opacity-transition trick as Quick Assistant to avoid Windows transparent-flash. Bounds are clamped to the nearest display's `workArea` and flip above the anchor when the bottom overflows.
+- **Actions**: stored in the `selection_actions` SQLite table (`src/main/db/selection-actions.ts`), mirrors `quick_actions`. Four built-ins are seeded: translate, explain, summarize, rewrite.
+- **Settings keys** (all `selection.*`): `enabled`, `providerId`, `modelId`, `translateTargetLang`, `excludedPrograms` (JSON array), `minTextLength`, `maxTextLength`.
+- **Toggle surfaces**: global shortcut `toggle-selection-assistant` (default `Alt+H`), tray checkbox "启用划词助手", and the Switch in Settings → Selection Assistant. All three stay in sync via the `SELECTION_STATE_CHANGED` IPC push.
+- **Runtime config refresh**: the renderer calls `window.api.refreshSelectionFilter()` after any filter-related setting changes so the native hook picks up the new list without a restart.
+
 ## Security
 
 - **API key encryption**: Sensitive settings (e.g., `api.apiKey`) encrypted with Electron `safeStorage` in main process
 - **Context isolation**: Enabled with sandbox mode — renderer has no direct Node.js access
 - **No direct ipcRenderer**: All IPC wrapped through preload contextBridge
+- **Selection hook**: `selection-hook` uses Windows UIA / Accessibility APIs (and optionally a clipboard fallback). Some antivirus tools may flag the global hook — this is expected behavior for accessibility integrations. The clipboard fallback is off by default; when enabled, password managers and browser address bars are excluded.
 - **AbortController**: AI streaming requests can be cancelled via `chat:stop-generation`
 
 ## OpenAI / Azure OpenAI Compatibility

@@ -15,6 +15,8 @@ import { registerTranslationHistoryHandlers } from './translation-history-handle
 import { registerAppHandlers } from './app-handlers'
 import { registerQuickActionHandlers } from './quick-action-handlers'
 import { registerQuickAssistantHandlers } from './quick-assistant-handlers'
+import { registerSelectionActionHandlers } from './selection-action-handlers'
+import { registerSelectionHandlers } from './selection-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -34,4 +36,6 @@ export function registerAllIpcHandlers(): void {
   registerAppHandlers()
   registerQuickActionHandlers()
   registerQuickAssistantHandlers()
+  registerSelectionActionHandlers()
+  registerSelectionHandlers()
 }

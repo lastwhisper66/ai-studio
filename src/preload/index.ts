@@ -37,6 +37,13 @@ import type {
   ScreenshotCompletePayload,
   ScreenshotData,
   AutoExecutePayload,
+  SelectionToolbarPayload,
+  SelectionBubblePayload,
+  SelectionAction,
+  SelectionRequestPayload,
+  SelectionChunkData,
+  SelectionEndData,
+  SelectionErrorData,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -468,6 +475,114 @@ const api = {
   // Quick Assistant auto-execute (pull model — renderer pulls pending payload)
   getPendingAutoExecute: (): Promise<IpcResult<AutoExecutePayload | null>> =>
     ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_GET_PENDING_AUTO_EXECUTE),
+
+  // Selection Assistant — toolbar window
+  selectionToolbarReady: (): void => ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_READY),
+
+  onSelectionToolbarData: (callback: (data: SelectionToolbarPayload) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: SelectionToolbarPayload): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.SELECTION_TOOLBAR_DATA, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SELECTION_TOOLBAR_DATA, handler)
+  },
+
+  selectionToolbarAction: (actionId: string): void =>
+    ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_ACTION, actionId),
+
+  selectionToolbarClose: (): void => ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_CLOSE),
+
+  // Selection Assistant — bubble window
+  selectionBubbleReady: (): void => ipcRenderer.send(IpcChannels.SELECTION_BUBBLE_READY),
+
+  onSelectionBubbleData: (callback: (data: SelectionBubblePayload) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: SelectionBubblePayload): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.SELECTION_BUBBLE_DATA, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SELECTION_BUBBLE_DATA, handler)
+  },
+
+  selectionBubbleClose: (): void => ipcRenderer.send(IpcChannels.SELECTION_BUBBLE_CLOSE),
+
+  setSelectionBubblePinned: (pinned: boolean): void =>
+    ipcRenderer.send(IpcChannels.SELECTION_BUBBLE_SET_PINNED, pinned),
+
+  setSelectionBubbleStreaming: (streaming: boolean): void =>
+    ipcRenderer.send(IpcChannels.SELECTION_BUBBLE_SET_STREAMING, streaming),
+
+  // Selection Assistant — action CRUD
+  listSelectionActions: (): Promise<IpcResult<SelectionAction[]>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_ACTION_LIST),
+
+  createSelectionAction: (data: {
+    name: string
+    description?: string
+    systemPrompt?: string
+    icon?: string
+  }): Promise<IpcResult<SelectionAction>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_ACTION_CREATE, data),
+
+  updateSelectionAction: (
+    id: string,
+    data: Partial<
+      Pick<SelectionAction, 'name' | 'description' | 'systemPrompt' | 'icon' | 'enabled'>
+    >,
+  ): Promise<IpcResult<SelectionAction | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_ACTION_UPDATE, id, data),
+
+  deleteSelectionAction: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_ACTION_DELETE, id),
+
+  reorderSelectionActions: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_ACTION_REORDER, ids),
+
+  // Selection Assistant — streaming AI
+  selectionRequest: (payload: SelectionRequestPayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_REQUEST, payload),
+
+  stopSelectionRequest: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_STOP),
+
+  onSelectionChunk: (callback: (data: SelectionChunkData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: SelectionChunkData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.SELECTION_CHUNK, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SELECTION_CHUNK, handler)
+  },
+
+  onSelectionEnd: (callback: (data: SelectionEndData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: SelectionEndData): void => callback(data)
+    ipcRenderer.on(IpcChannels.SELECTION_END, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SELECTION_END, handler)
+  },
+
+  onSelectionError: (callback: (data: SelectionErrorData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: SelectionErrorData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.SELECTION_ERROR, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SELECTION_ERROR, handler)
+  },
+
+  removeAllSelectionStreamListeners: (): void => {
+    ipcRenderer.removeAllListeners(IpcChannels.SELECTION_CHUNK)
+    ipcRenderer.removeAllListeners(IpcChannels.SELECTION_END)
+    ipcRenderer.removeAllListeners(IpcChannels.SELECTION_ERROR)
+  },
+
+  // Selection Assistant — toggle + shortcut + runtime filter config
+  toggleSelectionAssistant: (): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_TOGGLE),
+
+  updateSelectionShortcut: (): Promise<IpcResult<{ registered: boolean }>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_UPDATE_SHORTCUT),
+
+  refreshSelectionFilter: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SELECTION_REFRESH_FILTER),
+
+  onSelectionStateChanged: (callback: (enabled: boolean) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, enabled: boolean): void => callback(enabled)
+    ipcRenderer.on(IpcChannels.SELECTION_STATE_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SELECTION_STATE_CHANGED, handler)
+  },
 }
 
 export type ApiType = typeof api
