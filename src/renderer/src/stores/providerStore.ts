@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import type { Provider, Model } from '@shared/types'
+import type {
+  Provider,
+  CreateProviderPayload,
+  UpdateProviderPayload,
+  Model,
+  ModelCapability,
+} from '@shared/types'
 
 interface ProviderStore {
   providers: Provider[]
@@ -10,17 +16,27 @@ interface ProviderStore {
   selectedProviderId: string | null
 
   loadProviders: () => Promise<void>
-  addProvider: (
-    data: Partial<Provider> & { type: Provider['type']; name: string },
-  ) => Promise<Provider | undefined>
-  updateProvider: (id: string, data: Partial<Provider>) => Promise<void>
+  addProvider: (data: CreateProviderPayload) => Promise<Provider | undefined>
+  updateProvider: (id: string, data: UpdateProviderPayload) => Promise<void>
   deleteProvider: (id: string) => Promise<void>
+  reorderProviders: (orderedIds: string[]) => Promise<void>
   setActiveProvider: (id: string) => Promise<void>
   setSelectedProviderId: (id: string | null) => void
 
   // Model operations
-  addModel: (providerId: string, name: string) => Promise<Model | undefined>
+  addModel: (
+    providerId: string,
+    name: string,
+    group?: string,
+    capabilities?: ModelCapability[],
+  ) => Promise<Model | undefined>
+  updateModel: (
+    id: string,
+    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+  ) => Promise<void>
   removeModel: (id: string) => Promise<void>
+  removeAllModels: (providerId: string) => Promise<void>
+  reorderModels: (orderedIds: string[]) => Promise<void>
   setActiveModel: (modelId: string, providerId: string) => Promise<void>
 }
 
@@ -61,8 +77,10 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     const result = await window.api.createProvider(data)
     if (result.success && result.data) {
       const provider = result.data
+      const modelsResult = await window.api.listModels()
       set((state) => ({
         providers: [...state.providers, provider],
+        models: modelsResult.success && modelsResult.data ? modelsResult.data : state.models,
         selectedProviderId: provider.id,
       }))
       // If this is the first provider, set it as active
@@ -113,14 +131,39 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
 
   setSelectedProviderId: (id) => set({ selectedProviderId: id }),
 
-  addModel: async (providerId, name) => {
-    const result = await window.api.createModel({ providerId, name })
+  reorderProviders: async (orderedIds) => {
+    set((state) => {
+      const idToIndex = new Map(orderedIds.map((id, i) => [id, i]))
+      return {
+        providers: [...state.providers].sort(
+          (a, b) => (idToIndex.get(a.id) ?? Infinity) - (idToIndex.get(b.id) ?? Infinity),
+        ),
+      }
+    })
+    const result = await window.api.reorderProviders(orderedIds)
+    if (!result.success) {
+      await get().loadProviders()
+    }
+  },
+
+  addModel: async (providerId, name, group, capabilities) => {
+    const result = await window.api.createModel({ providerId, name, group, capabilities })
     if (result.success && result.data) {
       const model = result.data
       set((state) => ({ models: [...state.models, model] }))
       return model
     }
     return undefined
+  },
+
+  updateModel: async (id, data) => {
+    const result = await window.api.updateModel(id, data)
+    if (result.success && result.data) {
+      const updated = result.data
+      set((state) => ({
+        models: state.models.map((m) => (m.id === id ? updated : m)),
+      }))
+    }
   },
 
   removeModel: async (id) => {
@@ -135,11 +178,52 @@ export const useProviderStore = create<ProviderStore>((set, get) => ({
     }
   },
 
+  removeAllModels: async (providerId) => {
+    const result = await window.api.deleteModelsByProvider(providerId)
+    if (result.success) {
+      let activeWasRemoved = false
+      set((state) => {
+        const removedIds = new Set(
+          state.models.filter((m) => m.providerId === providerId).map((m) => m.id),
+        )
+        activeWasRemoved = !!state.activeModelId && removedIds.has(state.activeModelId)
+        const models = state.models.filter((m) => m.providerId !== providerId)
+        return { models, activeModelId: activeWasRemoved ? null : state.activeModelId }
+      })
+      if (activeWasRemoved) {
+        await window.api.setSetting('active.modelId', '')
+      }
+    }
+  },
+
   setActiveModel: async (modelId, providerId) => {
     await Promise.all([
       window.api.setSetting('active.providerId', providerId),
       window.api.setSetting('active.modelId', modelId),
     ])
     set({ activeProviderId: providerId, activeModelId: modelId })
+  },
+
+  reorderModels: async (orderedIds) => {
+    set((state) => {
+      const idToIndex = new Map(orderedIds.map((id, i) => [id, i]))
+      return {
+        models: [...state.models].sort((a, b) => {
+          const ai = idToIndex.get(a.id)
+          const bi = idToIndex.get(b.id)
+          if (ai !== undefined && bi !== undefined) return ai - bi
+          if (ai !== undefined) return -1
+          if (bi !== undefined) return 1
+          return 0
+        }),
+      }
+    })
+    const result = await window.api.reorderModels(orderedIds)
+    if (!result.success) {
+      const modelsResult = await window.api.listModels()
+      if (modelsResult.success && modelsResult.data) {
+        set({ models: modelsResult.data })
+      }
+    }
   },
 }))

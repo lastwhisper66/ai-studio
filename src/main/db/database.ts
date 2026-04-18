@@ -1,13 +1,19 @@
 import Database from 'better-sqlite3'
-import { app } from 'electron'
 import { existsSync, mkdirSync } from 'fs'
-import { dirname, join } from 'path'
+import { join } from 'path'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError } from '../errors'
+import { getDataDir } from '../utils/paths'
+import { seedModelDefinitions } from './model-definitions'
+import { seedModelGroups } from './model-groups'
+import { seedDefaultProviders } from './providers'
+import { seedQuickActions } from './quick-actions'
+import { seedSelectionActions } from './selection-actions'
 
 let db: Database.Database | null = null
 
 export function initDatabase(): void {
-  const appDir = app.isPackaged ? dirname(app.getPath('exe')) : app.getAppPath()
-  const dataDir = join(appDir, 'data')
+  const dataDir = getDataDir()
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
   }
@@ -24,7 +30,7 @@ export function initDatabase(): void {
 
 export function getDb(): Database.Database {
   if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first.')
+    throw new AppError(ERROR_CODES.DB_NOT_INITIALIZED)
   }
   return db
 }
@@ -45,7 +51,6 @@ function createTables(): void {
       title TEXT NOT NULL DEFAULT 'New Chat',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
-      model TEXT,
       system_prompt TEXT,
       assistant_id TEXT,
       pinned INTEGER NOT NULL DEFAULT 0
@@ -54,10 +59,14 @@ function createTables(): void {
     CREATE TABLE IF NOT EXISTS messages (
       id TEXT PRIMARY KEY,
       conversation_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'divider')),
       content TEXT NOT NULL,
+      reasoning_content TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       token_count INTEGER,
+      attachments TEXT,
+      duration INTEGER,
+      thinking_duration INTEGER,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
 
@@ -78,10 +87,6 @@ function createTables(): void {
       name TEXT NOT NULL,
       api_key TEXT NOT NULL DEFAULT '',
       base_url TEXT NOT NULL DEFAULT '',
-      model TEXT NOT NULL DEFAULT '',
-      endpoint TEXT NOT NULL DEFAULT '',
-      api_version TEXT NOT NULL DEFAULT '',
-      deployment_name TEXT NOT NULL DEFAULT '',
       enabled INTEGER NOT NULL DEFAULT 1,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -92,6 +97,8 @@ function createTables(): void {
       id TEXT PRIMARY KEY,
       provider_id TEXT NOT NULL,
       name TEXT NOT NULL,
+      group_name TEXT NOT NULL DEFAULT '',
+      capabilities TEXT NOT NULL DEFAULT '[]',
       enabled INTEGER NOT NULL DEFAULT 1,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -100,6 +107,14 @@ function createTables(): void {
 
     CREATE INDEX IF NOT EXISTS idx_models_provider_id
       ON models(provider_id);
+
+    CREATE TABLE IF NOT EXISTS phrases (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL DEFAULT '',
+      content TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
 
     CREATE TABLE IF NOT EXISTS assistants (
       id TEXT PRIMARY KEY,
@@ -121,7 +136,99 @@ function createTables(): void {
     );
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS translation_history (
+      id TEXT PRIMARY KEY,
+      source_text TEXT NOT NULL,
+      translated_text TEXT NOT NULL,
+      source_lang TEXT NOT NULL,
+      target_lang TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `)
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS model_definitions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      group_name TEXT NOT NULL DEFAULT '',
+      capabilities TEXT NOT NULL DEFAULT '[]',
+      provider_types TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_model_definitions_name
+      ON model_definitions(name);
+  `)
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS model_groups (
+      id TEXT PRIMARY KEY,
+      pattern TEXT NOT NULL UNIQUE,
+      display_name TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_model_groups_pattern
+      ON model_groups(pattern);
+  `)
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS quick_actions (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      system_prompt TEXT NOT NULL DEFAULT '',
+      icon        TEXT NOT NULL DEFAULT 'Sparkles',
+      is_builtin  INTEGER NOT NULL DEFAULT 0,
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      enabled     INTEGER NOT NULL DEFAULT 1,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_quick_actions_sort_order
+      ON quick_actions(sort_order);
+  `)
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS selection_actions (
+      id                 TEXT PRIMARY KEY,
+      name               TEXT NOT NULL,
+      description        TEXT NOT NULL DEFAULT '',
+      system_prompt      TEXT NOT NULL DEFAULT '',
+      icon               TEXT NOT NULL DEFAULT 'Sparkles',
+      is_builtin         INTEGER NOT NULL DEFAULT 0,
+      sort_order         INTEGER NOT NULL DEFAULT 0,
+      enabled            INTEGER NOT NULL DEFAULT 1,
+      created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_selection_actions_sort_order
+      ON selection_actions(sort_order);
+  `)
+
   // Seed: ensure a default assistant exists
+  seedDefaultAssistant()
+
+  // Seed: populate model definitions from static catalog
+  seedModelDefinitions()
+
+  // Seed: populate model groups from static catalog
+  seedModelGroups()
+
+  // Seed: populate default providers on first launch
+  seedDefaultProviders()
+
+  // Seed: populate quick actions on first launch
+  seedQuickActions()
+
+  // Seed: populate selection actions on first launch
+  seedSelectionActions()
+}
+
+export function seedDefaultAssistant(): void {
+  const database = getDb()
   const hasDefault = database
     .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
     .get() as { cnt: number }
@@ -129,7 +236,7 @@ function createTables(): void {
     database
       .prepare(
         `INSERT INTO assistants (id, name, description, is_default, sort_order)
-         VALUES ('default-assistant', '默认助手', '使用全局设置的通用 AI 助手', 1, -1)`,
+         VALUES ('default-assistant', 'seed.assistants.default.name', 'seed.assistants.default.description', 1, -1)`,
       )
       .run()
   }

@@ -1,6 +1,7 @@
 import { Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import type { Assistant } from '@shared/types'
 
 interface AssistantPickerDialogProps {
@@ -19,6 +20,7 @@ export function AssistantPickerDialog({
   onCreate,
 }: AssistantPickerDialogProps): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
 
   const handleSelect = (assistantId: string): void => {
     onSelect(assistantId)
@@ -43,9 +45,9 @@ export function AssistantPickerDialog({
               onClick={() => handleSelect(a.id)}
               className="flex items-center gap-2.5 rounded-xl border bg-card/50 px-3 py-3 text-left transition-colors hover:bg-accent">
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{a.name}</div>
+                <div className="truncate text-sm font-medium">{st(a.name)}</div>
                 {a.description && (
-                  <div className="truncate text-xs text-muted-foreground">{a.description}</div>
+                  <div className="truncate text-xs text-muted-foreground">{st(a.description)}</div>
                 )}
               </div>
             </button>

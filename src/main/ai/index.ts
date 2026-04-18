@@ -1,10 +1,11 @@
 import OpenAI from 'openai'
 import type { ApiSettings } from '@shared/types'
 import { getSetting } from '../db/settings'
-import { getProvider } from '../db/providers'
-import { getModel, listModelsByProvider } from '../db/models'
 import { createOpenAIClient } from './openai-client'
-import { createAzureClient } from './azure-client'
+import { streamChat, OPENAI_COMPATIBLE_TYPES } from './stream-chat'
+
+export { streamChat, OPENAI_COMPATIBLE_TYPES }
+export type { StreamCallbacks, StreamChatOptions } from './stream-chat'
 
 /** Sync the NODE_TLS_REJECT_UNAUTHORIZED env var with the user's SSL setting. */
 export function applySslSetting(skip?: boolean): void {
@@ -17,100 +18,70 @@ export function applySslSetting(skip?: boolean): void {
 }
 
 export function createAIClient(settings: ApiSettings): OpenAI {
-  if (settings.provider === 'azure') {
-    return createAzureClient(settings)
-  }
   return createOpenAIClient(settings)
 }
 
-export function loadApiSettings(): ApiSettings {
-  const activeProviderId = getSetting('active.providerId')
-  if (!activeProviderId) {
-    throw new Error(
-      'No active provider configured. Please add and activate a provider in Settings.',
-    )
-  }
-
-  const provider = getProvider(activeProviderId)
-  if (!provider) {
-    throw new Error('Active provider not found. Please select a provider in Settings.')
-  }
-
-  if (!provider.apiKey) {
-    throw new Error(
-      `API key is not configured for provider "${provider.name}". Please set your API key in Settings.`,
-    )
-  }
-
-  // Resolve active model: active.modelId → first model of provider
-  let modelName = ''
-  const activeModelId = getSetting('active.modelId')
-  if (activeModelId) {
-    const activeModel = getModel(activeModelId)
-    if (activeModel && activeModel.providerId === activeProviderId) {
-      modelName = activeModel.name
-    }
-  }
-  if (!modelName) {
-    const models = listModelsByProvider(activeProviderId)
-    if (models.length > 0) {
-      modelName = models[0].name
-    }
-  }
-
-  if (!modelName) {
-    throw new Error(
-      `No model configured for provider "${provider.name}". Please add at least one model in Settings.`,
-    )
-  }
-
-  // Global model params from settings table
-  const temperature = parseFloat(getSetting('api.temperature') || '0.7')
-  const maxCompletionTokens = parseInt(getSetting('api.maxCompletionTokens') || '4096', 10)
-  const topP = parseFloat(getSetting('api.topP') || '1')
-  const systemPrompt = getSetting('api.systemPrompt') || ''
-
-  return {
-    provider: provider.type,
-    apiKey: provider.apiKey,
-    baseUrl: provider.baseUrl,
-    model: modelName,
-    endpoint: provider.endpoint,
-    apiVersion: provider.apiVersion,
-    deploymentName: provider.deploymentName,
-    temperature,
-    maxCompletionTokens,
-    topP,
-    systemPrompt,
-  }
+/**
+ * Generate a conversation title using the appropriate provider.
+ * For non-OpenAI-compatible providers, uses streamChat internally.
+ */
+/** Strip quotes, newlines, and leading/trailing punctuation from a generated title. */
+function cleanTitle(raw: string): string {
+  return raw
+    .replace(/["'""''`\r\n]+/g, ' ')
+    .replace(/^[\s.,!?;:…]+|[\s.,!?;:…]+$/g, '')
+    .trim()
 }
 
 export async function generateTitle(
-  client: OpenAI,
-  model: string,
+  settings: ApiSettings,
   userMessage: string,
   assistantMessage: string,
 ): Promise<string> {
+  const titleMessages = [
+    {
+      role: 'system' as const,
+      content:
+        'Summarize this conversation into a title within 10 characters, in the same language as the conversation. Do not use punctuation or special symbols. Output only the title string without anything else.',
+    },
+    { role: 'user' as const, content: userMessage },
+    { role: 'assistant' as const, content: assistantMessage.slice(0, 500) },
+  ]
+
   try {
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
+    if (OPENAI_COMPATIBLE_TYPES.has(settings.provider)) {
+      // Use OpenAI client directly for title generation (non-streaming, faster)
+      const client = createOpenAIClient(settings)
+      const response = await client.chat.completions.create({
+        model: settings.model,
+        messages: titleMessages,
+        max_completion_tokens: 50,
+        temperature: 0.5,
+      })
+      const title = cleanTitle(response.choices[0]?.message?.content ?? '')
+      if (title) return title
+    } else {
+      // For Gemini/Claude/etc., use streamChat to generate title
+      let title = ''
+      const titleSettings = { ...settings, temperature: 0.5, maxCompletionTokens: 50 }
+      await streamChat(
         {
-          role: 'system',
-          content:
-            'Generate a concise title (6 words or less) for this conversation. Return only the title, no quotes or punctuation.',
+          settings: titleSettings,
+          messages: titleMessages,
+          signal: AbortSignal.timeout(15000),
         },
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: assistantMessage.slice(0, 500) },
-      ],
-      max_completion_tokens: 30,
-      temperature: 0.5,
-    })
-    const title = response.choices[0]?.message?.content?.trim()
-    if (title) return title
+        {
+          onChunk: (delta) => {
+            title += delta
+          },
+        },
+      )
+      const cleaned = cleanTitle(title)
+      if (cleaned) return cleaned
+    }
   } catch {
     // fallback below
   }
-  // Fallback: truncate user message
-  return userMessage.length > 30 ? userMessage.slice(0, 30) + '...' : userMessage
+  // Fallback: use beginning of user message
+  return userMessage.slice(0, 20)
 }

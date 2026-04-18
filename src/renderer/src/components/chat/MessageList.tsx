@@ -1,10 +1,10 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { ChevronDown, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Button } from '@renderer/components/ui/button'
 import { MessageBubble } from './MessageBubble'
-import { WelcomeScreen } from './WelcomeScreen'
+import { SystemPromptBanner } from './SystemPromptBanner'
 import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
 import { useAutoScroll } from '@renderer/hooks/useAutoScroll'
 import { useConversationStore } from '@renderer/stores/conversationStore'
@@ -13,38 +13,67 @@ import type { Message, Assistant } from '@shared/types'
 interface MessageListProps {
   messages: Message[]
   streamingContent: string
+  streamingReasoningContent: string
   isStreaming: boolean
   isLoading: boolean
   hasActiveConversation: boolean
   hasMoreMessages: boolean
+  streamStartTime: number | null
   onSend: (content: string) => void
   onLoadMore: () => void
-  assistants?: Assistant[]
-  onSelectAssistant?: (id: string) => void
   activeAssistant?: Assistant
+  onEditSystemPrompt?: () => void
 }
 
 export function MessageList({
   messages,
   streamingContent,
+  streamingReasoningContent,
   isStreaming,
   isLoading,
   hasActiveConversation,
   hasMoreMessages,
+  streamStartTime,
   onSend,
   onLoadMore,
-  assistants,
-  onSelectAssistant,
   activeAssistant,
+  onEditSystemPrompt,
 }: MessageListProps): React.JSX.Element {
   const { t } = useTranslation()
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
+  const resendMessage = useConversationStore((s) => s.resendMessage)
+  const editMessage = useConversationStore((s) => s.editMessage)
+  const editAndResendMessage = useConversationStore((s) => s.editAndResendMessage)
+  const editingMessageId = useConversationStore((s) => s.editingMessageId)
+  const setEditingMessageId = useConversationStore((s) => s.setEditingMessageId)
+  const resendTargetId = useConversationStore((s) => s.resendTargetId)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
+  const throttledReasoning = useThrottledValue(streamingReasoningContent, isStreaming)
 
   const { scrollRef, sentinelRef, isAtBottom, scrollToBottom } = useAutoScroll([
     messages,
     throttledContent,
   ])
+
+  // Unified resend handler — stable reference for both user and assistant messages
+  const handleResend = useCallback(
+    (messageId: string) => {
+      const idx = messages.findIndex((m) => m.id === messageId)
+      if (idx === -1) return
+      const msg = messages[idx]
+      if (msg.role === 'user') {
+        resendMessage(messageId)
+      } else if (msg.role === 'assistant') {
+        for (let i = idx - 1; i >= 0; i--) {
+          if (messages[i].role === 'user') {
+            resendMessage(messages[i].id)
+            return
+          }
+        }
+      }
+    },
+    [messages, resendMessage],
+  )
 
   // Show assistant prompt suggestions when conversation has an assistant but no messages yet
   const showAssistantSuggestions =
@@ -55,15 +84,17 @@ export function MessageList({
     !isStreaming
 
   return (
-    <ScrollArea className="flex-1" viewportRef={scrollRef}>
-      <div className="mx-auto max-w-3xl space-y-6 p-6">
-        {!hasActiveConversation ? (
-          <WelcomeScreen
-            onSend={onSend}
-            assistants={assistants}
-            onSelectAssistant={onSelectAssistant}
+    <ScrollArea className="chat-scroll-area flex-1" viewportRef={scrollRef}>
+      <div className="min-w-0 space-y-6 p-6">
+        {/* System prompt banner — only when no messages yet */}
+        {activeAssistant && onEditSystemPrompt && messages.length === 0 && !isStreaming && (
+          <SystemPromptBanner
+            systemPrompt={activeAssistant.systemPrompt}
+            onClick={onEditSystemPrompt}
           />
-        ) : isLoading ? (
+        )}
+
+        {isLoading ? (
           <div className="flex items-center justify-center py-20">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -71,12 +102,8 @@ export function MessageList({
             </div>
           </div>
         ) : showAssistantSuggestions ? (
-          <div className="flex h-full items-center justify-center py-20">
+          <div className="flex items-center justify-center py-12">
             <div className="max-w-md text-center">
-              <h3 className="mb-1 text-lg font-semibold">{activeAssistant.name}</h3>
-              {activeAssistant.description && (
-                <p className="mb-6 text-sm text-muted-foreground">{activeAssistant.description}</p>
-              )}
               <div className="flex flex-col gap-2">
                 {activeAssistant.promptSuggestions.map((suggestion, i) => (
                   <Button
@@ -103,17 +130,57 @@ export function MessageList({
                 </Button>
               </div>
             )}
-            {messages.map((msg) => (
+            {messages.map((msg) =>
+              msg.role === 'divider' ? (
+                <div key={msg.id} className="flex items-center gap-3 py-1">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-muted-foreground shrink-0 text-xs">
+                    {t('chat.contextDivider')}
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+              ) : (
+                <React.Fragment key={msg.id}>
+                  <MessageBubble
+                    role={msg.role}
+                    content={msg.content}
+                    reasoningContent={msg.reasoningContent}
+                    messageId={msg.id}
+                    attachments={msg.attachments}
+                    duration={msg.duration}
+                    thinkingDuration={msg.thinkingDuration}
+                    isEditing={editingMessageId === msg.id}
+                    onDelete={deleteMessage}
+                    onResend={handleResend}
+                    onEdit={(id) => setEditingMessageId(id)}
+                    onEditSave={editMessage}
+                    onEditSaveAndResend={editAndResendMessage}
+                    onEditCancel={() => setEditingMessageId(null)}
+                  />
+                  {/* Show streaming bubble right after the resend target user message */}
+                  {isStreaming && resendTargetId === msg.id && (
+                    <MessageBubble
+                      role="assistant"
+                      content={throttledContent}
+                      reasoningContent={throttledReasoning}
+                      isStreaming
+                      isStreamingReasoning={!!throttledReasoning && !throttledContent}
+                      streamStartTime={streamStartTime}
+                    />
+                  )}
+                </React.Fragment>
+              ),
+            )}
+            {/* Normal streaming (non-resend) — append at end */}
+            {isStreaming && !resendTargetId && (
               <MessageBubble
-                key={msg.id}
-                role={msg.role}
-                content={msg.content}
-                messageId={msg.id}
-                onDelete={deleteMessage}
+                role="assistant"
+                content={throttledContent}
+                reasoningContent={throttledReasoning}
+                isStreaming
+                isStreamingReasoning={!!streamingReasoningContent && !streamingContent}
+                streamStartTime={streamStartTime}
               />
-            ))}
-            {isStreaming && throttledContent && (
-              <MessageBubble role="assistant" content={throttledContent} isStreaming />
             )}
           </>
         )}

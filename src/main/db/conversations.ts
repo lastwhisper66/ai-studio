@@ -7,7 +7,6 @@ interface ConversationRow {
   title: string
   created_at: string
   updated_at: string
-  model: string | null
   system_prompt: string | null
   assistant_id: string | null
   pinned: number
@@ -19,7 +18,6 @@ function rowToConversation(row: ConversationRow): Conversation {
     title: row.title,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    model: row.model,
     systemPrompt: row.system_prompt,
     assistantId: row.assistant_id,
     pinned: row.pinned === 1,
@@ -55,7 +53,7 @@ export function createConversation(title?: string, assistantId?: string): Conver
 
 export function updateConversation(
   id: string,
-  data: Partial<Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
+  data: Partial<Pick<Conversation, 'title' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
 ): Conversation | undefined {
   const db = getDb()
   const now = new Date().toISOString()
@@ -66,10 +64,6 @@ export function updateConversation(
   if (data.title !== undefined) {
     fields.push('title = ?')
     values.push(data.title)
-  }
-  if (data.model !== undefined) {
-    fields.push('model = ?')
-    values.push(data.model)
   }
   if (data.systemPrompt !== undefined) {
     fields.push('system_prompt = ?')
@@ -92,6 +86,14 @@ export function updateConversation(
 
 export function deleteConversation(id: string): void {
   getDb().prepare('DELETE FROM conversations WHERE id = ?').run(id)
+}
+
+export function deleteConversations(ids: string[]): void {
+  if (ids.length === 0) return
+  const placeholders = ids.map(() => '?').join(',')
+  getDb()
+    .prepare(`DELETE FROM conversations WHERE id IN (${placeholders})`)
+    .run(...ids)
 }
 
 export function touchConversation(id: string): void {

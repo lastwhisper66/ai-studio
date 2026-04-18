@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Plus, Trash2, Pencil, Pin, Eraser } from 'lucide-react'
+import { Plus, Trash2, Pencil, Pin, Eraser, CheckSquare, X, ListChecks } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -32,8 +33,10 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
   const {
     conversations,
     activeConversationId,
+    isStreaming,
     createConversation,
     deleteConversation,
+    deleteConversations,
     renameConversation,
     pinConversation,
     setActiveConversation,
@@ -49,6 +52,11 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const [clearId, setClearId] = useState<string | null>(null)
+
+  // Multi-select state
+  const [isMultiSelect, setIsMultiSelect] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [deleteManyDialogOpen, setDeleteManyDialogOpen] = useState(false)
 
   // Filter conversations by active assistant
   const topicConversations = conversations.filter((c) => c.assistantId === activeAssistantId)
@@ -79,13 +87,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
 
   const handleDeleteConfirm = async (): Promise<void> => {
     if (deleteId) {
-      const isLastTopic = topicConversations.length === 1 && topicConversations[0].id === deleteId
-      if (isLastTopic) {
-        await clearMessages(deleteId)
-        await renameConversation(deleteId, 'New Chat')
-      } else {
-        await deleteConversation(deleteId)
-      }
+      await deleteConversation(deleteId)
     }
     setDeleteDialogOpen(false)
     setDeleteId(null)
@@ -103,6 +105,48 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
     }
     setClearDialogOpen(false)
     setClearId(null)
+  }
+
+  // Multi-select handlers
+  const handleToggleMultiSelect = (): void => {
+    setIsMultiSelect((prev) => !prev)
+    setSelectedIds(new Set())
+  }
+
+  const handleToggleSelect = (id: string): void => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  const handleSelectAll = (): void => {
+    if (selectedIds.size === topicConversations.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(topicConversations.map((c) => c.id)))
+    }
+  }
+
+  const handleDeleteMany = (): void => {
+    if (selectedIds.size === 0) return
+    setDeleteManyDialogOpen(true)
+  }
+
+  const handleDeleteManyConfirm = async (): Promise<void> => {
+    const ids = Array.from(selectedIds)
+    if (ids.length > 0) {
+      await deleteConversations(ids)
+    }
+
+    setDeleteManyDialogOpen(false)
+    setSelectedIds(new Set())
+    setIsMultiSelect(false)
   }
 
   const formatTime = (iso: string): string => {
@@ -130,24 +174,31 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
 
   return (
     <aside
-      className={`flex h-full flex-col border-l bg-sidebar-background text-sidebar-foreground transition-all duration-300 ${
-        collapsed ? 'w-0 overflow-hidden' : 'w-56'
-      }`}>
+      className={`relative flex h-full w-64 shrink-0 flex-col border-l bg-sidebar-background text-sidebar-foreground transition-all duration-300${collapsed ? ' !w-0 overflow-hidden' : ''}`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5">
-        <span className="text-sm font-semibold">{t('topic.title')}</span>
+      <div className="flex items-center justify-between px-2 pt-2 pb-1">
+        <Button
+          variant="ghost"
+          className="h-10 flex-1 justify-start gap-2 rounded-xl text-sm hover:bg-sidebar-accent/40"
+          onClick={handleNewTopic}>
+          <Plus className="h-4 w-4" />
+          {t('topic.newTopic')}
+        </Button>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNewTopic}>
-              <Plus className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-10 w-10 rounded-xl ${
+                isMultiSelect ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
+              }`}
+              onClick={handleToggleMultiSelect}>
+              <CheckSquare className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left">{t('topic.newTopic')}</TooltipContent>
+          <TooltipContent side="left">{t('topic.multiSelect')}</TooltipContent>
         </Tooltip>
       </div>
-
-      {/* Divider */}
-      <div className="mx-3 border-b" />
 
       {/* Topic list */}
       <ScrollArea className="flex-1 px-2 pt-1">
@@ -159,52 +210,132 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
           ) : (
             topicConversations.map((conv) => {
               const isActive = activeConversationId === conv.id
+              const isSelected = selectedIds.has(conv.id)
               return (
                 <ContextMenu key={conv.id}>
                   <ContextMenuTrigger asChild>
                     <div
                       className={`group relative cursor-pointer overflow-hidden rounded-lg px-3 py-2 text-sm ${
-                        isActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+                        isActive && !isMultiSelect
+                          ? 'bg-primary/15 text-sidebar-accent-foreground'
+                          : isSelected
+                            ? 'bg-sidebar-accent/60 text-sidebar-accent-foreground'
+                            : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
                       }`}
-                      onClick={() => setActiveConversation(conv.id)}>
+                      onClick={() => {
+                        if (isMultiSelect) {
+                          handleToggleSelect(conv.id)
+                        } else {
+                          setActiveConversation(conv.id)
+                        }
+                      }}>
                       <div className="flex items-center gap-1.5">
-                        {conv.pinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground" />}
-                        <span className="truncate text-sm">{conv.title}</span>
+                        {isMultiSelect && (
+                          <Checkbox
+                            checked={isSelected}
+                            className="h-3.5 w-3.5 shrink-0 rounded-[3px] border-muted-foreground/40 data-[state=checked]:border-primary"
+                            onCheckedChange={() => handleToggleSelect(conv.id)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        )}
+                        {conv.pinned && !isMultiSelect && (
+                          <Pin className="h-3 w-3 shrink-0 opacity-60" />
+                        )}
+                        <span className="flex-1 truncate" title={conv.title}>
+                          {(() => {
+                            const max = isMultiSelect ? 12 : 13
+                            return conv.title.length > max
+                              ? conv.title.slice(0, max) + '...'
+                              : conv.title
+                          })()}
+                        </span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground/60">
-                        {formatTime(conv.updatedAt)}
-                      </div>
+                      <div className="mt-0.5 text-xs opacity-50">{formatTime(conv.updatedAt)}</div>
                     </div>
                   </ContextMenuTrigger>
-                  <ContextMenuContent>
-                    <ContextMenuItem onClick={() => handleRenameOpen(conv.id, conv.title)}>
-                      <Pencil className="h-4 w-4" />
-                      {t('topic.rename')}
-                    </ContextMenuItem>
-                    <ContextMenuItem onClick={() => pinConversation(conv.id)}>
-                      <Pin className="h-4 w-4" />
-                      {conv.pinned ? t('common.unpin') : t('common.pin')}
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
-                    <ContextMenuItem onClick={() => handleClearOpen(conv.id)}>
-                      <Eraser className="h-4 w-4" />
-                      {t('topic.clearMessages')}
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      variant="destructive"
-                      onClick={() => handleDeleteOpen(conv.id)}>
-                      <Trash2 className="h-4 w-4" />
-                      {t('common.delete')}
-                    </ContextMenuItem>
-                  </ContextMenuContent>
+                  {!isMultiSelect && (
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => handleRenameOpen(conv.id, conv.title)}>
+                        <Pencil className="mr-2 h-3.5 w-3.5" />
+                        {t('topic.rename')}
+                      </ContextMenuItem>
+                      <ContextMenuItem onClick={() => pinConversation(conv.id)}>
+                        <Pin className="mr-2 h-3.5 w-3.5" />
+                        {conv.pinned ? t('common.unpin') : t('common.pin')}
+                      </ContextMenuItem>
+                      <ContextMenuSeparator />
+                      <ContextMenuItem onClick={() => handleClearOpen(conv.id)}>
+                        <Eraser className="mr-2 h-3.5 w-3.5" />
+                        {t('topic.clearMessages')}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => handleDeleteOpen(conv.id)}>
+                        <Trash2 className="mr-2 h-3.5 w-3.5" />
+                        {t('common.delete')}
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  )}
                 </ContextMenu>
               )
             })
           )}
         </div>
       </ScrollArea>
+
+      {/* Multi-select bottom action bar */}
+      {isMultiSelect && (
+        <>
+          <div className="mx-3 border-t" />
+          <div className="flex items-center justify-between px-2 py-1.5">
+            <div className="flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleSelectAll}>
+                    <ListChecks className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {selectedIds.size === topicConversations.length
+                    ? t('topic.cancelSelect')
+                    : t('topic.selectAll')}
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    disabled={selectedIds.size === 0 || isStreaming}
+                    onClick={handleDeleteMany}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t('topic.deleteSelected')}
+                  {selectedIds.size > 0 && ` (${selectedIds.size})`}
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {selectedIds.size > 0 && t('topic.selectedCount', { count: selectedIds.size })}
+            </span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={handleToggleMultiSelect}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t('topic.exitMultiSelect')}</TooltipContent>
+            </Tooltip>
+          </div>
+        </>
+      )}
 
       {/* Rename Dialog */}
       <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
@@ -215,10 +346,8 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
           <Input
             value={renameValue}
             onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleRenameConfirm()
-            }}
             placeholder={t('topic.topicTitlePlaceholder')}
+            onKeyDown={(e) => e.key === 'Enter' && handleRenameConfirm()}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>
@@ -229,7 +358,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Single Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -241,6 +370,26 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
               {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDeleteConfirm}>
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Many Confirmation Dialog */}
+      <Dialog open={deleteManyDialogOpen} onOpenChange={setDeleteManyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('topic.deleteSelectedTitle')}</DialogTitle>
+            <DialogDescription>
+              {t('topic.deleteSelectedDescription', { count: selectedIds.size })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteManyDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteManyConfirm}>
               {t('common.delete')}
             </Button>
           </DialogFooter>

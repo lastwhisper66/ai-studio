@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Label } from '@renderer/components/ui/label'
 import { Slider } from '@renderer/components/ui/slider'
+import { Switch } from '@renderer/components/ui/switch'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { Button } from '@renderer/components/ui/button'
 import {
@@ -16,6 +17,7 @@ import {
 export interface TranslateSettings {
   systemPrompt: string
   temperature: number
+  wordWrap: boolean
 }
 
 interface TranslateSettingsDialogProps {
@@ -38,23 +40,27 @@ export function TranslateSettingsDialog({
   const { t } = useTranslation()
   const [prompt, setPrompt] = useState(settings.systemPrompt)
   const [temperature, setTemperature] = useState(settings.temperature)
+  const [wordWrap, setWordWrap] = useState(settings.wordWrap)
 
   // Sync local state when dialog opens or settings change from outside
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open reset
       setPrompt(settings.systemPrompt)
       setTemperature(settings.temperature)
+      setWordWrap(settings.wordWrap)
     }
   }, [open, settings])
 
   const handleSave = (): void => {
-    onSave({ systemPrompt: prompt, temperature })
+    onSave({ systemPrompt: prompt, temperature, wordWrap })
     onOpenChange(false)
   }
 
   const handleReset = (): void => {
     setPrompt('')
     setTemperature(0.3)
+    setWordWrap(true)
   }
 
   return (
@@ -73,7 +79,7 @@ export function TranslateSettingsDialog({
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
-              className="text-sm"
+              className="text-sm max-h-64 overflow-y-auto resize-y"
             />
             <p className="text-xs text-muted-foreground">{t('translate.settings.promptHint')}</p>
           </div>
@@ -93,6 +99,16 @@ export function TranslateSettingsDialog({
             <p className="text-xs text-muted-foreground">
               {t('translate.settings.temperatureHint')}
             </p>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label>{t('translate.settings.wordWrap')}</Label>
+              <p className="text-xs text-muted-foreground">
+                {t('translate.settings.wordWrapHint')}
+              </p>
+            </div>
+            <Switch checked={wordWrap} onCheckedChange={setWordWrap} />
           </div>
         </div>
 

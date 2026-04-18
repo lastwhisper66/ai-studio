@@ -5,6 +5,7 @@ import { Button } from '@renderer/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { useTheme } from '@renderer/hooks/useTheme'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { useConversationStore } from '@renderer/stores/conversationStore'
 import { cn } from '@renderer/lib/utils'
 
 export function PrimaryNav(): React.JSX.Element {
@@ -12,6 +13,7 @@ export function PrimaryNav(): React.JSX.Element {
   const { theme, setTheme } = useTheme()
   const activeView = useSettingsStore((s) => s.activeView)
   const setActiveView = useSettingsStore((s) => s.setActiveView)
+  const requestInputFocus = useConversationStore((s) => s.requestInputFocus)
 
   const cycleTheme = (): void => {
     const nextTheme: Record<Theme, Theme> = {
@@ -39,7 +41,10 @@ export function PrimaryNav(): React.JSX.Element {
               variant="ghost"
               size="icon"
               className={cn('h-9 w-9', activeView === 'chat' && 'text-nav-active')}
-              onClick={() => setActiveView('chat')}>
+              onClick={() => {
+                setActiveView('chat')
+                requestInputFocus()
+              }}>
               <MessageSquare className="h-5 w-5" />
             </Button>
           </TooltipTrigger>

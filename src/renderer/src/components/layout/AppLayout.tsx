@@ -1,10 +1,12 @@
 import { lazy, Suspense, useState, useCallback, useEffect } from 'react'
+import { matchesShortcut } from '@shared/keybindings'
 import { PrimaryNav } from './PrimaryNav'
 import { AssistantSidebar } from './AssistantSidebar'
 import { ChatPanel } from './ChatPanel'
 import { TopicPanel } from './TopicPanel'
 import { TitleBar } from './TitleBar'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { useKeybindingStore } from '@renderer/stores/keybindingStore'
 
 const SettingsPage = lazy(() =>
   import('@renderer/components/settings').then((m) => ({ default: m.SettingsPage })),
@@ -46,17 +48,35 @@ export function AppLayout(): React.JSX.Element {
     })
   }, [])
 
-  // Ctrl+B to toggle sidebar
+  const getAccelerator = useKeybindingStore((s) => s.getAccelerator)
+
+  // Configurable sidebar toggle shortcut — only active on chat view
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
-      if (e.ctrlKey && e.key === 'b') {
+      if (useSettingsStore.getState().activeView !== 'chat') return
+      const accel = getAccelerator('toggle-sidebar')
+      if (matchesShortcut(e, accel)) {
         e.preventDefault()
         toggleSidebar()
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar])
+  }, [toggleSidebar, getAccelerator])
+
+  // Configurable topic panel toggle shortcut — only active on chat view
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent): void {
+      if (useSettingsStore.getState().activeView !== 'chat') return
+      const accel = getAccelerator('toggle-topic')
+      if (matchesShortcut(e, accel)) {
+        e.preventDefault()
+        toggleTopic()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [toggleTopic, getAccelerator])
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">

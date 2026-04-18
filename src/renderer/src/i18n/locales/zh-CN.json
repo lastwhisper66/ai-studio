@@ -15,7 +15,8 @@
     "saving": "保存中...",
     "comingSoon": "即将推出",
     "noModelSet": "未选择模型",
-    "noModelConfigured": "未配置模型"
+    "noModelConfigured": "未配置模型",
+    "copied": "已复制"
   },
   "titleBar": {
     "expandSidebar": "展开侧边栏",
@@ -42,7 +43,38 @@
     "streamingPlaceholder": "AI 正在生成中...",
     "copyMessage": "复制消息",
     "deleteMessage": "删除消息",
-    "scrollToBottom": "滚动到底部"
+    "editMessage": "编辑消息",
+    "resendMessage": "重新发送",
+    "resend": "重新发送",
+    "resendConfirmDescription": "这将删除当前的回答并重新生成，确定继续吗？",
+    "scrollToBottom": "滚动到底部",
+    "addAttachment": "添加附件",
+    "reasoning": "思维链",
+    "reasoningOff": "默认",
+    "reasoningLow": "低",
+    "reasoningMedium": "中",
+    "reasoningHigh": "高",
+    "reasoningXhigh": "极高",
+    "webSearch": "网络搜索",
+    "thinkingProcess": "思考过程",
+    "thinkingTime": "已思考 {{time}}",
+    "thinkingInProgress": "思考中...",
+    "quickPhrases": "快捷短语",
+    "clearMessages": "清空消息",
+    "clearMessagesTitle": "清空消息",
+    "confirmClearMessages": "此操作将清空当前话题的所有消息记录，话题本身将被保留。此操作不可撤销。",
+    "expand": "展开编辑器",
+    "collapse": "收起编辑器",
+    "expandedEditor": "全屏编辑模式",
+    "clearContext": "清除上下文",
+    "dropImageHere": "拖放图片到此处",
+    "contextDivider": "上下文已清除",
+    "phraseTitle": "短语标题（可选）",
+    "phraseContent": "短语内容",
+    "noPhrasesYet": "暂无快捷短语，前往设置添加",
+    "managePhrases": "管理快捷短语",
+    "placeholderHint": "{{count}} 个占位符 — Tab / Shift+Tab 跳转",
+    "systemPromptPlaceholder": "点击设置助手提示词"
   },
   "welcome": {
     "title": "欢迎使用 AI Studio",
@@ -65,11 +97,14 @@
     "selectAssistant": "选择助手",
     "createAssistant": "新建助手",
     "settings": {
+      "assistantTab": "助手设置",
       "modelTab": "模型设置",
       "promptTab": "提示词设置",
       "model": "模型",
       "noProviderHint": "请在设置中添加供应商和可用模型",
       "useDefault": "使用默认",
+      "selectModel": "请选择模型",
+      "modelRequired": "请为助手选择一个模型",
       "customModelName": "自定义模型名",
       "customModelPlaceholder": "输入不在列表中的模型名",
       "customModelHint": "如需使用列表中没有的模型，可在此输入模型名称。",
@@ -89,7 +124,8 @@
       "systemPromptPlaceholder": "设定助手的角色和行为...",
       "systemPromptHint": "定义助手的角色、能力和行为规则。留空则使用全局系统提示词。",
       "resetButton": "重置",
-      "saveButton": "保存"
+      "saveButton": "保存",
+      "createTitle": "新建助手"
     }
   },
   "topic": {
@@ -103,82 +139,259 @@
     "deleteTitle": "删除话题",
     "deleteDescription": "此操作将永久删除该话题及其所有消息，无法撤销。",
     "clearTitle": "清空消息",
-    "clearDescription": "此操作将清除该话题的所有消息记录，话题本身将被保留。无法撤销。",
-    "clearButton": "清空"
+    "clearDescription": "此操作将清空当前话题的所有消息记录，话题本身将被保留。此操作不可撤销。",
+    "clearButton": "清空消息",
+    "multiSelect": "多选",
+    "selectAll": "全选",
+    "cancelSelect": "取消所选",
+    "deleteSelected": "删除所选",
+    "deleteSelectedTitle": "删除所选话题",
+    "deleteSelectedDescription": "此操作将永久删除所选的 {{count}} 个话题及其所有消息，无法撤销。确定继续吗？",
+    "selectedCount": "已选 {{count}} 项",
+    "exitMultiSelect": "退出多选"
   },
   "settings": {
     "title": "设置",
     "sections": {
       "provider": "模型服务",
-      "model": "默认模型",
+      "modelLibrary": "模型库",
+      "modelGroup": "模型分组",
       "general": "通用设置",
+      "security": "安全设置",
       "display": "显示设置",
-      "language": "语言设置"
+      "data": "数据设置",
+      "keyboardShortcuts": "快捷键",
+      "phrases": "快捷短语",
+      "quickAssistant": "快捷助手",
+      "selectionAssistant": "划词助手"
     },
     "provider": {
       "list": "服务商列表",
       "addProvider": "添加服务商",
       "noProviders": "暂无服务商",
       "noProvidersHint": "点击 + 添加",
+      "noSearchResults": "没有匹配的服务商",
+      "searchPlaceholder": "搜索模型平台...",
       "selectOrAdd": "请选择一个服务商或添加新服务商",
-      "currentlyUsed": "当前使用",
       "basicInfo": "基本信息",
+      "rename": "重命名服务商",
+      "providerSettings": "服务商设置",
+      "providerName": "服务商名称",
+      "providerType": "供应商类型",
+      "providerNamePlaceholder": "请输入供应商名称",
+      "selectTypePlaceholder": "请选择供应商类型",
       "name": "名称",
       "apiConfig": "API 配置",
-      "apiKey": "API Key",
-      "endpoint": "端点 (Endpoint)",
-      "apiVersion": "API 版本",
-      "deploymentName": "部署名称",
+      "apiKey": "API 密钥",
+      "apiAddressTooltip": "兼容 OpenAI 的 API 基础地址",
+      "apiAddressSettings": "API 地址设置",
       "apiAddress": "API 地址",
+      "urlPreview": "预览",
       "modelConfig": "模型配置",
       "modelList": "模型列表",
+      "modelCount": "模型",
+      "noModels": "暂无模型，点击下方添加",
       "modelNamePlaceholder": "输入模型名称，如 gpt-4o",
+      "modelGroupPlaceholder": "分组名称（可选）",
+      "manage": "管理",
+      "fetchModels": "获取模型",
+      "fetchModelsFailed": "获取模型失败",
       "save": "保存",
+      "test": "检测",
       "testConnection": "连接测试",
       "testing": "检测中...",
-      "setDefault": "设为默认",
       "connectionSuccess": "连接成功！",
       "connectionFailed": "连接失败",
-      "delete": "删除"
-    },
-    "model": {
-      "defaultModel": "默认模型",
-      "noModelSet": "未设置模型",
-      "noProvider": "未配置服务商",
-      "temperature": "Temperature",
-      "temperatureTooltip": "控制回复的随机性。值越高越有创造性，值越低越确定。",
-      "topP": "Top-P",
-      "topPTooltip": "核采样参数。控制模型考虑的词汇概率累积范围，值越小回复越集中。",
-      "contextCount": "上下文数",
-      "contextCountTooltip": "发送给模型的历史消息数量。设为「不限」将发送所有历史消息。",
-      "unlimited": "不限",
-      "maxTokens": "Max Tokens",
-      "maxTokensTooltip": "模型单次回复的最大 Token 数量。关闭时使用模型默认值。",
-      "streaming": "流式输出",
-      "systemPrompt": "系统提示词",
-      "systemPromptPlaceholder": "你是一个有用的助手...",
-      "systemPromptHint": "用于引导模型行为的系统级提示词。",
-      "reset": "重置"
+      "testAll": "检测所有",
+      "passed": "通过",
+      "failed": "失败",
+      "statusIdle": "待检测",
+      "statusTesting": "检测中",
+      "statusSuccess": "检测成功",
+      "statusError": "检测失败",
+      "delete": "删除",
+      "confirmDeleteTitle": "删除服务商",
+      "confirmDeleteDescription": "确定要删除服务商「{{name}}」吗？该服务商下的所有模型配置也将被删除，此操作不可撤销。",
+      "removeAll": "移除所有",
+      "removeAllTitle": "移除所有模型",
+      "removeAllDescription": "确定要移除「{{name}}」下的全部 {{count}} 个模型吗？此操作不可撤销。"
     },
     "general": {
       "title": "通用设置",
       "description": "应用程序通用配置。",
+      "language": "语言",
+      "startup": "启动",
+      "autoLaunch": "开机自动启动",
+      "autoLaunchDescription": "登录计算机时自动启动应用程序。",
+      "startMinimized": "启动时最小化到托盘",
+      "startMinimizedDescription": "开启后，应用启动时将隐藏到系统托盘而非显示主窗口。",
+      "window": "窗口",
+      "closeToTray": "关闭时最小化到系统托盘",
+      "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。",
+      "spellCheck": "拼写检查",
+      "spellCheckDescription": "为文本输入框启用内置拼写检查器。",
+      "languageLabel": "显示语言",
+      "languageHint": "语言更改立即生效。"
+    },
+    "data": {
+      "title": "数据设置",
+      "description": "管理应用程序数据和存储。",
+      "dataManagement": "数据管理",
+      "clearData": "清除所有数据",
+      "clearDataDescription": "删除所有对话记录、设置和附件，应用将自动重启。",
+      "clearDataConfirmTitle": "确认清除数据",
+      "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
+      "clearDataConfirmButton": "确认清除"
+    },
+    "security": {
+      "title": "安全设置",
+      "description": "网络安全与证书相关配置。",
       "network": "网络",
       "skipSsl": "跳过 SSL 证书验证",
       "skipSslDescription": "在企业 VPN 或代理环境下，如果遇到自签名证书导致连接失败，可以开启此选项。"
     },
     "display": {
       "title": "显示设置",
-      "description": "自定义外观和显示选项。"
+      "description": "自定义外观和显示选项。",
+      "mode": "外观模式",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统",
+      "colorTheme": "颜色主题",
+      "themes": {
+        "default": "经典灰",
+        "mint": "薄荷清风",
+        "lavender": "薰衣草紫",
+        "ocean": "深海蓝",
+        "amber": "琥珀暖阳",
+        "rose": "玫瑰粉黛"
+      },
+      "zoom": "缩放",
+      "zoomReset": "重置缩放",
+      "zoomHint": "使用 Ctrl+滚轮、Ctrl+/Ctrl- 调整缩放，Ctrl+0 重置。",
+      "fonts": "字体",
+      "fontFamily": "全局字体",
+      "fontFamilyHint": "设置应用程序的默认显示字体。",
+      "codeFontFamily": "代码字体",
+      "codeFontFamilyHint": "设置代码块的显示字体。",
+      "fontDefault": "系统默认",
+      "fontNotFound": "未找到字体。"
     },
-    "language": {
-      "title": "语言设置",
-      "description": "选择你偏好的显示语言。",
-      "label": "显示语言",
-      "auto": "自动（跟随系统）",
-      "en": "English",
-      "zhCN": "简体中文",
-      "restartHint": "语言更改立即生效。"
+    "phrases": {
+      "title": "快捷短语",
+      "description": "管理聊天输入框中可快速插入的短语模板。",
+      "addPhrase": "添加短语",
+      "editPhrase": "编辑短语",
+      "empty": "暂无快捷短语，点击上方按钮添加。",
+      "deleteTitle": "删除短语",
+      "deleteDescription": "确定要删除「{{name}}」吗？此操作不可撤销。",
+      "titleLabel": "标题",
+      "titlePlaceholder": "短语标题",
+      "contentLabel": "内容",
+      "contentPlaceholder": "短语内容，支持 ${变量名} 占位符",
+      "contentHint": "使用 ${变量名} 插入占位符，输入框中按 Tab / Shift+Tab 可在占位符间前后跳转编辑。"
+    },
+    "quickAssistant": {
+      "title": "快捷助手",
+      "description": "通过全局快捷键快速唤起 AI 助手，可在快捷键设置中自定义。",
+      "noActions": "暂无可用功能",
+      "general": "基本设置",
+      "enableLabel": "启用快捷助手",
+      "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手。",
+      "shortcutLabel": "开关快捷键",
+      "shortcutHint": "用于快速唤起快捷助手。",
+      "targetLangLabel": "目标语言",
+      "model": "模型配置",
+      "modelLabel": "AI 模型",
+      "modelHint": "选择快捷助手使用的 AI 模型。",
+      "actions": "功能列表",
+      "addAction": "添加功能",
+      "editAction": "编辑功能",
+      "builtin": "内置",
+      "deleteTitle": "删除功能",
+      "deleteDescription": "确定要删除「{{name}}」吗？此操作不可撤销。",
+      "nameLabel": "名称",
+      "namePlaceholder": "功能名称",
+      "descriptionLabel": "描述",
+      "descriptionPlaceholder": "简要描述功能用途",
+      "systemPromptLabel": "系统提示词",
+      "systemPromptPlaceholder": "设定该功能的 AI 行为...",
+      "systemPromptHint": "定义 AI 在执行该功能时的角色和行为规则。",
+      "placeholderWithModel": "询问 '{{model}}' 获取帮助...",
+      "placeholderDefault": "输入要处理的内容，选择下方功能后按 Enter 执行...",
+      "pinWindow": "置顶窗口",
+      "unpinWindow": "取消置顶",
+      "defaultPinnedLabel": "默认置顶",
+      "defaultPinnedHint": "默认保持快捷助手窗口置顶，仍可通过置顶按钮临时切换。",
+      "back": "返回",
+      "stop": "停止",
+      "copy": "Alt+C 复制",
+      "escBack": "ESC 返回",
+      "copied": "已复制",
+      "escClear": "ESC 清空",
+      "escClose": "ESC 关闭",
+      "select": "↑↓ 选择",
+      "execute": "Enter 执行",
+      "rerun": "R 重新执行",
+      "warningImageLimit": "仅支持附加 1 张图片，请先移除已有图片",
+      "warningImageReadFailed": "图片读取失败，请重试"
+    },
+    "builtinAction": {
+      "builtin-answer": {
+        "name": "回答问题",
+        "description": "向 AI 提问并获取回答"
+      },
+      "builtin-translate": {
+        "name": "文本翻译",
+        "description": "将文本翻译为其他语言"
+      },
+      "builtin-summary": {
+        "name": "内容总结",
+        "description": "简洁地总结提供的文本内容"
+      }
+    },
+    "selectionAssistant": {
+      "title": "划词助手",
+      "description": "在任意应用中选中文本即可弹出工具条,点击动作查看 AI 结果。",
+      "general": "基本设置",
+      "enableLabel": "启用划词助手",
+      "enableHint": "开启后，选中文本时会弹出划词工具条。",
+      "defaultPinnedLabel": "默认置顶",
+      "defaultPinnedHint": "默认保持结果气泡置顶，仍可通过置顶按钮临时切换。",
+      "shortcutLabel": "开关快捷键",
+      "shortcutHint": "用于快速切换划词助手。",
+      "shortcutUnavailable": "快捷键注册失败,可能已被其他应用占用。",
+      "model": "模型配置",
+      "modelLabel": "AI 模型",
+      "modelHint": "划词助手使用独立的服务商和模型,不复用快捷助手配置。",
+      "actions": "动作配置",
+      "actionsHint": "调整工具条动作的显示与启用状态,可新增自定义动作。",
+      "addAction": "新增动作",
+      "editAction": "编辑动作",
+      "deleteTitle": "删除动作",
+      "deleteDescription": "确定要删除「{{name}}」吗?此操作不可撤销。",
+      "excludedPrograms": "排除应用",
+      "excludedProgramsHint": "输入可执行文件名(如 Chrome.exe),在这些应用中选中文本不会触发划词助手。",
+      "excludedProgramsPlaceholder": "例如 Chrome.exe",
+      "textLength": "文本长度",
+      "textLengthHint": "过滤过短或过长的选中文本。",
+      "minLength": "最小长度",
+      "maxLength": "最大长度",
+      "bubble": {
+        "actionPlaceholder": "动作",
+        "generating": "正在生成…",
+        "stop": "停止",
+        "regenerate": "R 重新生成",
+        "copy": "Alt+C 复制",
+        "copied": "已复制",
+        "close": "关闭",
+        "pin": "置顶",
+        "unpin": "取消置顶",
+        "escToClose": "ESC 关闭"
+      },
+      "toolbar": {
+        "waitingSelection": "等待选区…"
+      }
     }
   },
   "translate": {
@@ -203,7 +416,242 @@
       "promptHint": "使用 {source} 和 {target} 作为源语言和目标语言占位符。留空则使用默认提示词。",
       "temperature": "Temperature",
       "temperatureHint": "较低值产生更准确的翻译，较高值更具创造性。默认 0.3。",
-      "resetDefault": "重置默认"
+      "resetDefault": "重置默认",
+      "wordWrap": "自动换行",
+      "wordWrapHint": "当翻译结果内容过长时自动换行显示。关闭后可通过水平滚动条查看。"
+    },
+    "history": {
+      "title": "翻译历史",
+      "clearHistory": "清除历史",
+      "clearHistoryConfirm": "确定要清除所有翻译历史记录吗？此操作不可撤销。",
+      "empty": "暂无翻译历史",
+      "clearInput": "清空输入"
+    }
+  },
+  "modelPicker": {
+    "title": "选择模型",
+    "searchPlaceholder": "搜索模型...",
+    "noResults": "没有匹配的模型",
+    "noProviders": "未配置服务商"
+  },
+  "modelManage": {
+    "models": "模型",
+    "searchPlaceholder": "搜索模型 ID 或名称",
+    "noCatalog": "该供应商暂无预置模型目录",
+    "noResults": "没有匹配的模型",
+    "addGroup": "添加整组",
+    "removeGroup": "移除整组",
+    "tab": {
+      "all": "全部",
+      "reasoning": "推理",
+      "vision": "视觉",
+      "web": "联网",
+      "free": "免费",
+      "embedding": "嵌入",
+      "reranking": "重排",
+      "tools": "工具"
+    },
+    "cap": {
+      "reasoning": "推理",
+      "vision": "视觉",
+      "web": "联网",
+      "free": "免费",
+      "embedding": "嵌入",
+      "reranking": "重排",
+      "tools": "工具"
+    }
+  },
+  "addModel": {
+    "title": "添加模型",
+    "modelId": "模型 ID",
+    "modelIdTooltip": "模型 ID 是发送给 API 的标识符，如 gpt-4o、deepseek-chat",
+    "modelIdPlaceholder": "必填 例如 gpt-3.5-turbo",
+    "groupName": "分组名称",
+    "groupNameTooltip": "用于在模型列表中分组显示，如 ChatGPT、DeepSeek",
+    "groupNamePlaceholder": "例如 ChatGPT",
+    "duplicateError": "该模型已存在",
+    "submit": "添加模型",
+    "capabilities": "模型能力"
+  },
+  "editModel": {
+    "title": "编辑模型",
+    "save": "保存"
+  },
+  "modelLibrary": {
+    "title": "模型库",
+    "description": "定义模型的能力标签，添加模型时自动匹配",
+    "addDefinition": "添加模型",
+    "editDefinition": "编辑模型",
+    "searchPlaceholder": "搜索模型名称或分组",
+    "empty": "模型库为空，点击上方按钮添加模型定义",
+    "noResults": "没有匹配的模型",
+    "modelName": "模型名称",
+    "group": "分组",
+    "capabilities": "能力标签",
+    "providerTypes": "适用供应商",
+    "providerTypesHint": "留空表示对所有供应商可见",
+    "ungrouped": "未分组",
+    "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
+  },
+  "modelGroup": {
+    "title": "模型分组",
+    "description": "定义远程模型的分组规则，按前缀匹配模型名称",
+    "addGroup": "添加分组",
+    "editGroup": "编辑分组",
+    "empty": "暂无分组规则，点击上方按钮添加",
+    "deleteTitle": "删除分组",
+    "deleteDescription": "确定要删除「{{name}}」分组规则吗？此操作不可撤销。",
+    "pattern": "匹配模式",
+    "patternPlaceholder": "例如: claude-opus, gpt-5.1",
+    "patternHint": "模型名称以此前缀开头时归入该分组（最长匹配优先）",
+    "displayName": "显示名称",
+    "displayNamePlaceholder": "例如: Claude Opus, GPT-5.1"
+  },
+  "remoteModel": {
+    "title": "{{provider}} 模型",
+    "searchPlaceholder": "搜索模型名称",
+    "loading": "正在获取模型列表...",
+    "noModels": "未获取到模型",
+    "noResults": "没有匹配的模型"
+  },
+  "keybindings": {
+    "title": "快捷键",
+    "description": "自定义常用操作的键盘快捷键。",
+    "pressShortcut": "请按下快捷键...",
+    "resetAll": "全部重置",
+    "conflictTitle": "快捷键冲突",
+    "conflictDescription": "「{{shortcut}}」已被「{{action}}」占用，是否重新分配？",
+    "conflictReadOnly": "「{{shortcut}}」已被系统快捷键「{{action}}」占用，无法使用。",
+    "newConversation": "新建对话",
+    "toggleSettings": "切换设置",
+    "toggleSidebar": "切换侧边栏",
+    "toggleTopic": "切换话题面板",
+    "stopGeneration": "停止生成",
+    "summonWindow": "唤醒窗口",
+    "toggleQuickAssistant": "快捷助手",
+    "screenshotTranslate": "截图翻译",
+    "toggleSelectionAssistant": "划词助手",
+    "category": {
+      "app": "应用",
+      "chat": "聊天",
+      "window": "窗口"
+    }
+  },
+  "tray": {
+    "openMainWindow": "打开主窗口",
+    "enableSelectionAssistant": "启用划词助手",
+    "about": "关于",
+    "quit": "退出"
+  },
+  "dialog": {
+    "about": {
+      "title": "关于 AI Studio",
+      "detail": "桌面 AI 聊天应用"
+    },
+    "filePicker": {
+      "image": "图片",
+      "text": "文本文件",
+      "all": "所有文件"
+    }
+  },
+  "seed": {
+    "assistants": {
+      "default": {
+        "name": "默认助手",
+        "description": "使用全局设置的通用 AI 助手"
+      }
+    },
+    "selectionActions": {
+      "translate": {
+        "name": "翻译",
+        "description": "将选中文本翻译为目标语言"
+      },
+      "explain": {
+        "name": "解释",
+        "description": "解释选中文本的含义或概念"
+      },
+      "summarize": {
+        "name": "总结",
+        "description": "提炼选中文本的要点"
+      },
+      "polish": {
+        "name": "润色",
+        "description": "改写为更流畅、专业的表达"
+      }
+    },
+    "quickActions": {
+      "answer": {
+        "name": "回答问题",
+        "description": "向 AI 提问并获取回答"
+      },
+      "translate": {
+        "name": "文本翻译",
+        "description": "将文本翻译为其他语言"
+      },
+      "summarize": {
+        "name": "内容总结",
+        "description": "简洁地总结提供的文本内容"
+      },
+      "imageTranslate": {
+        "name": "识图翻译",
+        "description": "识别图片中的文字并翻译"
+      }
+    }
+  },
+  "errors": {
+    "internal": "意外错误：{{message}}",
+    "chat": {
+      "conversationNotFound": "未找到对应会话。",
+      "resendTargetNotFound": "未找到要重新发送的消息。",
+      "noProvider": "此助手尚未设置模型，请在助手设置中选择。",
+      "providerNotFound": "未找到服务商，请检查配置。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key，请到设置中填写。",
+      "noModel": "此助手尚未设置模型，请在助手设置中选择。"
+    },
+    "selection": {
+      "noModel": "划词助手尚未配置模型。请打开设置 → 划词助手，选择独立的服务商和模型。",
+      "providerNotFound": "划词助手当前选择的服务商不存在，请在设置 → 划词助手 中重新选择。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key，请到服务商设置中填写。",
+      "noModelSelected": "划词助手尚未选择模型。请打开设置 → 划词助手，挑选一个模型。",
+      "modelUnavailable": "模型在服务商 “{{providerName}}” 下已不可用，请到设置 → 划词助手 重新选择。",
+      "actionNotFound": "未找到划词动作。"
+    },
+    "quickAssistant": {
+      "noProvider": "尚未为快捷助手选择服务商。",
+      "providerNotFound": "未找到所选服务商。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key。",
+      "noModel": "快捷助手尚未配置模型，请在设置中选择。",
+      "modelInvalid": "所选模型在服务商 “{{providerName}}” 下无效。",
+      "actionNotFound": "未找到快捷动作。"
+    },
+    "translate": {
+      "noProvider": "尚未选择服务商，请为翻译选择一个模型。",
+      "providerNotFound": "未找到所选服务商。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key。",
+      "noModel": "尚未选择模型，请选择一个翻译模型。",
+      "modelInvalid": "所选翻译模型在服务商 “{{providerName}}” 下无效。"
+    },
+    "provider": {
+      "connectionTimeout": "连接测试超时",
+      "connectionFailed": "连接失败"
+    },
+    "model": {
+      "fetchFailed": "获取模型列表失败",
+      "fetchTimeout": "获取模型列表超时（15 秒）"
+    },
+    "file": {
+      "tooLarge": "文件过大（最大 10MB）：{{names}}",
+      "invalidAttachmentPath": "附件路径无效",
+      "attachmentNotFound": "未找到附件：{{path}}"
+    },
+    "assistant": {
+      "cannotDeleteDefault": "无法删除默认助手"
+    },
+    "message": {
+      "notFound": "未找到消息：{{id}}"
+    },
+    "db": {
+      "notInitialized": "数据库尚未初始化，请先调用 initDatabase()。"
     }
   }
 }

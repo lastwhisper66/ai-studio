@@ -1,7 +1,16 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { IpcResult, Provider, ApiSettings } from '@shared/types'
-import { listProviders, getProvider, createProvider, updateProvider, deleteProvider } from '../db'
+import type { IpcResult, Provider, ApiSettings, ProviderConnectionTestPayload } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { toLocalizedError } from '../errors'
+import {
+  listProviders,
+  getProvider,
+  createProvider,
+  updateProvider,
+  deleteProvider,
+  reorderProviders,
+} from '../db'
 import type { CreateProviderData, UpdateProviderData } from '../db/providers'
 import { createAIClient } from '../ai'
 
@@ -11,7 +20,7 @@ export function registerProviderHandlers(): void {
       const data = listProviders()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -20,7 +29,7 @@ export function registerProviderHandlers(): void {
       const data = getProvider(id)
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -31,7 +40,7 @@ export function registerProviderHandlers(): void {
         const provider = createProvider(data)
         return { success: true, data: provider }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -43,7 +52,7 @@ export function registerProviderHandlers(): void {
         const provider = updateProvider(id, data)
         return { success: true, data: provider }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -53,28 +62,33 @@ export function registerProviderHandlers(): void {
       deleteProvider(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.PROVIDER_REORDER, (_, ids: string[]): IpcResult<void> => {
+    try {
+      reorderProviders(ids)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
   ipcMain.handle(
     IpcChannels.PROVIDER_TEST_CONNECTION,
-    (_, provider: Provider): Promise<IpcResult<string>> => {
-      console.log('[TestConnection] >>> handler called, provider:', provider.type, provider.name)
+    (_, payload: ProviderConnectionTestPayload): Promise<IpcResult<string>> => {
       return new Promise((resolve) => {
         const fallbackTimer = setTimeout(() => {
-          console.log('[TestConnection] !!! hard timeout (20s) reached')
-          resolve({ success: false, error: 'Connection test timed out' })
+          resolve({ success: false, error: { code: ERROR_CODES.PROVIDER_CONNECTION_TIMEOUT } })
         }, 20000)
 
-        doTestConnection(provider)
+        doTestConnection(payload)
           .then((result) => {
-            console.log('[TestConnection] <<< resolved:', result.success, result.error ?? '')
             resolve(result)
           })
-          .catch((e) => {
-            console.log('[TestConnection] <<< caught error:', e)
-            resolve({ success: false, error: 'Connection failed' })
+          .catch(() => {
+            resolve({ success: false, error: { code: ERROR_CODES.PROVIDER_CONNECTION_FAILED } })
           })
           .finally(() => clearTimeout(fallbackTimer))
       })
@@ -82,35 +96,29 @@ export function registerProviderHandlers(): void {
   )
 }
 
-async function doTestConnection(provider: Provider): Promise<IpcResult<string>> {
+async function doTestConnection(
+  payload: ProviderConnectionTestPayload,
+): Promise<IpcResult<string>> {
   const controller = new AbortController()
   const timerId = setTimeout(() => controller.abort(), 15000)
 
   try {
     const settings: ApiSettings = {
-      provider: provider.type,
-      apiKey: provider.apiKey,
-      baseUrl: provider.baseUrl,
-      endpoint: provider.endpoint,
-      apiVersion: provider.apiVersion,
-      deploymentName: provider.deploymentName,
-      model: provider.model,
+      provider: payload.type,
+      apiKey: payload.apiKey,
+      baseUrl: payload.baseUrl,
+      model: payload.modelName,
       temperature: 0,
       maxCompletionTokens: 1,
       topP: 1,
       systemPrompt: '',
     }
 
-    console.log('[TestConnection] creating client...')
     const client = createAIClient(settings)
 
-    const model =
-      provider.type === 'azure' ? provider.deploymentName || provider.model : provider.model
-
-    console.log('[TestConnection] sending streaming request...')
     const stream = await client.chat.completions.create(
       {
-        model,
+        model: payload.modelName,
         messages: [{ role: 'user', content: 'Hi' }],
         max_completion_tokens: 1,
         stream: true,
@@ -118,7 +126,6 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       { signal: controller.signal },
     )
 
-    console.log('[TestConnection] stream created, consuming first chunk...')
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const _chunk of stream) {
@@ -128,15 +135,12 @@ async function doTestConnection(provider: Provider): Promise<IpcResult<string>> 
       // Stream read error is irrelevant — create() succeeding already proved the connection
     }
 
-    console.log('[TestConnection] success!')
     return { success: true, data: 'Connection successful!' }
   } catch (e) {
-    console.log('[TestConnection] error caught:', e)
     if (controller.signal.aborted) {
-      return { success: false, error: 'Connection timed out (15s)' }
+      return { success: false, error: { code: ERROR_CODES.PROVIDER_CONNECTION_TIMEOUT } }
     }
-    const message = e instanceof Error ? e.message : String(e)
-    return { success: false, error: message || 'Connection failed' }
+    return { success: false, error: toLocalizedError(e) }
   } finally {
     clearTimeout(timerId)
   }

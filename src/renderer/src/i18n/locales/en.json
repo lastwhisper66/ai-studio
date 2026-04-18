@@ -15,7 +15,8 @@
     "saving": "Saving...",
     "comingSoon": "Coming soon",
     "noModelSet": "No model set",
-    "noModelConfigured": "No models configured"
+    "noModelConfigured": "No models configured",
+    "copied": "Copied"
   },
   "titleBar": {
     "expandSidebar": "Expand sidebar",
@@ -42,7 +43,38 @@
     "streamingPlaceholder": "AI is generating...",
     "copyMessage": "Copy message",
     "deleteMessage": "Delete message",
-    "scrollToBottom": "Scroll to bottom"
+    "editMessage": "Edit message",
+    "resendMessage": "Resend message",
+    "resend": "Resend",
+    "resendConfirmDescription": "This will delete the current response and regenerate. Continue?",
+    "scrollToBottom": "Scroll to bottom",
+    "addAttachment": "Add attachment",
+    "reasoning": "Reasoning",
+    "reasoningOff": "Default",
+    "reasoningLow": "Low",
+    "reasoningMedium": "Medium",
+    "reasoningHigh": "High",
+    "reasoningXhigh": "Extra High",
+    "webSearch": "Web search",
+    "thinkingProcess": "Thinking",
+    "thinkingTime": "Thought for {{time}}",
+    "thinkingInProgress": "Thinking...",
+    "quickPhrases": "Quick phrases",
+    "clearMessages": "Clear messages",
+    "clearMessagesTitle": "Clear Messages",
+    "confirmClearMessages": "This will clear all message history for this topic. The topic itself will be preserved. This cannot be undone.",
+    "expand": "Expand editor",
+    "collapse": "Collapse editor",
+    "expandedEditor": "Fullscreen editor",
+    "clearContext": "Clear context",
+    "dropImageHere": "Drop image here",
+    "contextDivider": "Context cleared",
+    "phraseTitle": "Phrase title (optional)",
+    "phraseContent": "Phrase content",
+    "noPhrasesYet": "No phrases yet. Go to Settings to add.",
+    "managePhrases": "Manage Quick Phrases",
+    "placeholderHint": "{{count}} placeholder(s) — Tab / Shift+Tab to navigate",
+    "systemPromptPlaceholder": "Click to set assistant system prompt"
   },
   "welcome": {
     "title": "Welcome to AI Studio",
@@ -65,11 +97,14 @@
     "selectAssistant": "Select assistant",
     "createAssistant": "Create assistant",
     "settings": {
+      "assistantTab": "Assistant",
       "modelTab": "Model settings",
       "promptTab": "Prompt settings",
       "model": "Model",
       "noProviderHint": "Please add providers and available models in settings",
       "useDefault": "Use default",
+      "selectModel": "Select a model",
+      "modelRequired": "Please select a model for this assistant",
       "customModelName": "Custom model name",
       "customModelPlaceholder": "Enter a model name not in the list",
       "customModelHint": "If the model you need is not in the list, you can enter the model name here.",
@@ -89,7 +124,8 @@
       "systemPromptPlaceholder": "Define the assistant's role and behavior...",
       "systemPromptHint": "Define the assistant's role, capabilities, and behavior rules. Leave empty to use the global system prompt.",
       "resetButton": "Reset",
-      "saveButton": "Save"
+      "saveButton": "Save",
+      "createTitle": "Create Assistant"
     }
   },
   "topic": {
@@ -104,81 +140,258 @@
     "deleteDescription": "This will permanently delete the topic and all its messages. This cannot be undone.",
     "clearTitle": "Clear messages",
     "clearDescription": "This will clear all message history for this topic. The topic itself will be preserved. This cannot be undone.",
-    "clearButton": "Clear"
+    "clearButton": "Clear messages",
+    "multiSelect": "Select",
+    "selectAll": "All",
+    "cancelSelect": "Deselect",
+    "deleteSelected": "Delete",
+    "deleteSelectedTitle": "Delete selected topics",
+    "deleteSelectedDescription": "This will permanently delete {{count}} selected topics and all their messages. This cannot be undone.",
+    "selectedCount": "{{count}} selected",
+    "exitMultiSelect": "Exit multi-select"
   },
   "settings": {
     "title": "Settings",
     "sections": {
       "provider": "Providers",
-      "model": "Default Model",
+      "modelLibrary": "Model Library",
+      "modelGroup": "Model Groups",
       "general": "General",
+      "security": "Security",
       "display": "Display",
-      "language": "Language"
+      "data": "Data",
+      "keyboardShortcuts": "Shortcuts",
+      "phrases": "Quick Phrases",
+      "quickAssistant": "Quick Assistant",
+      "selectionAssistant": "Selection Assistant"
     },
     "provider": {
       "list": "Provider list",
       "addProvider": "Add provider",
       "noProviders": "No providers",
       "noProvidersHint": "Click + to add",
+      "noSearchResults": "No matching providers",
+      "searchPlaceholder": "Search providers...",
       "selectOrAdd": "Select a provider or add a new one",
-      "currentlyUsed": "Active",
       "basicInfo": "Basic Info",
+      "rename": "Rename Provider",
+      "providerSettings": "Provider Settings",
+      "providerName": "Provider Name",
+      "providerType": "Provider Type",
+      "providerNamePlaceholder": "Enter provider name",
+      "selectTypePlaceholder": "Select provider type",
       "name": "Name",
       "apiConfig": "API Configuration",
       "apiKey": "API Key",
-      "endpoint": "Endpoint",
-      "apiVersion": "API Version",
-      "deploymentName": "Deployment Name",
+      "apiAddressTooltip": "Base URL for the OpenAI-compatible API",
+      "apiAddressSettings": "API endpoint settings",
       "apiAddress": "API Address",
+      "urlPreview": "Preview",
       "modelConfig": "Model Configuration",
       "modelList": "Model list",
+      "modelCount": "Models",
+      "noModels": "No models yet. Click below to add.",
       "modelNamePlaceholder": "Enter model name, e.g. gpt-4o",
+      "modelGroupPlaceholder": "Group name (optional)",
+      "manage": "Manage",
+      "fetchModels": "Fetch Models",
+      "fetchModelsFailed": "Failed to fetch models",
       "save": "Save",
+      "test": "Test",
       "testConnection": "Test Connection",
       "testing": "Testing...",
-      "setDefault": "Set as default",
       "connectionSuccess": "Connection successful!",
       "connectionFailed": "Connection failed",
-      "delete": "Delete"
-    },
-    "model": {
-      "defaultModel": "Default model",
-      "noModelSet": "No model set",
-      "noProvider": "No provider configured",
-      "temperature": "Temperature",
-      "temperatureTooltip": "Controls the randomness of replies. Higher values are more creative, lower values are more deterministic.",
-      "topP": "Top-P",
-      "topPTooltip": "Nucleus sampling parameter. Controls the cumulative probability range of vocabulary the model considers. Lower values produce more focused replies.",
-      "contextCount": "Context count",
-      "contextCountTooltip": "Number of history messages sent to the model. Set to \"Unlimited\" to send all history.",
-      "unlimited": "Unlimited",
-      "maxTokens": "Max tokens",
-      "maxTokensTooltip": "Maximum number of tokens for a single model reply. When disabled, uses model default.",
-      "streaming": "Streaming output",
-      "systemPrompt": "System prompt",
-      "systemPromptPlaceholder": "You are a helpful assistant...",
-      "systemPromptHint": "System-level prompt to guide model behavior.",
-      "reset": "Reset"
+      "testAll": "Test All",
+      "passed": "passed",
+      "failed": "failed",
+      "statusIdle": "Pending",
+      "statusTesting": "Testing",
+      "statusSuccess": "Success",
+      "statusError": "Failed",
+      "delete": "Delete",
+      "confirmDeleteTitle": "Delete Provider",
+      "confirmDeleteDescription": "Are you sure you want to delete \"{{name}}\"? All model configurations under this provider will also be deleted. This cannot be undone.",
+      "removeAll": "Remove All",
+      "removeAllTitle": "Remove All Models",
+      "removeAllDescription": "Are you sure you want to remove all {{count}} models under \"{{name}}\"? This cannot be undone."
     },
     "general": {
       "title": "General",
       "description": "General application settings.",
+      "language": "Language",
+      "startup": "Startup",
+      "autoLaunch": "Launch at system startup",
+      "autoLaunchDescription": "Automatically start the application when you log in to your computer.",
+      "startMinimized": "Start minimized to tray",
+      "startMinimizedDescription": "When enabled, the application starts hidden in the system tray instead of showing the main window.",
+      "window": "Window",
+      "closeToTray": "Minimize to system tray on close",
+      "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application.",
+      "spellCheck": "Spell check",
+      "spellCheckDescription": "Enable the built-in spell checker for text input fields.",
+      "languageLabel": "Display Language",
+      "languageHint": "Language changes take effect immediately."
+    },
+    "data": {
+      "title": "Data",
+      "description": "Manage application data and storage.",
+      "dataManagement": "Data Management",
+      "clearData": "Clear All Data",
+      "clearDataDescription": "Delete all conversations, settings, and attachments. The app will restart automatically.",
+      "clearDataConfirmTitle": "Confirm Clear Data",
+      "clearDataConfirmDescription": "This action cannot be undone. All conversations, settings, provider configurations, and attachment files will be deleted. The app will restart automatically.",
+      "clearDataConfirmButton": "Confirm Clear"
+    },
+    "security": {
+      "title": "Security",
+      "description": "Network security and certificate settings.",
       "network": "Network",
       "skipSsl": "Skip SSL certificate verification",
       "skipSslDescription": "In enterprise VPN or proxy environments, enable this option if self-signed certificates cause connection failures."
     },
     "display": {
       "title": "Display",
-      "description": "Customize appearance and display options."
+      "description": "Customize appearance and display options.",
+      "mode": "Appearance Mode",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System",
+      "colorTheme": "Color Theme",
+      "themes": {
+        "default": "Classic Gray",
+        "mint": "Mint Breeze",
+        "lavender": "Lavender",
+        "ocean": "Ocean Blue",
+        "amber": "Amber Glow",
+        "rose": "Rose Petal"
+      },
+      "zoom": "Zoom",
+      "zoomReset": "Reset Zoom",
+      "zoomHint": "Use Ctrl+Scroll, Ctrl+/Ctrl- to adjust zoom, Ctrl+0 to reset.",
+      "fonts": "Fonts",
+      "fontFamily": "Global Font",
+      "fontFamilyHint": "Set the default display font for the application.",
+      "codeFontFamily": "Code Font",
+      "codeFontFamilyHint": "Set the display font for code blocks.",
+      "fontDefault": "System Default",
+      "fontNotFound": "No fonts found."
     },
-    "language": {
-      "title": "Language",
-      "description": "Choose your preferred display language.",
-      "label": "Display Language",
-      "auto": "Auto (System)",
-      "en": "English",
-      "zhCN": "Simplified Chinese",
-      "restartHint": "Language changes take effect immediately."
+    "phrases": {
+      "title": "Quick Phrases",
+      "description": "Manage quick-insert phrase templates for the chat input.",
+      "addPhrase": "Add Phrase",
+      "editPhrase": "Edit Phrase",
+      "empty": "No phrases yet. Click the button above to add one.",
+      "deleteTitle": "Delete Phrase",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Phrase title",
+      "contentLabel": "Content",
+      "contentPlaceholder": "Phrase content, supports ${variable} placeholders",
+      "contentHint": "Use ${variable} to insert placeholders. Press Tab / Shift+Tab in the input to jump between placeholders."
+    },
+    "quickAssistant": {
+      "title": "Quick Assistant",
+      "description": "Quickly summon AI assistant with a global shortcut, customizable in Keyboard Shortcuts settings.",
+      "noActions": "No available actions",
+      "general": "General",
+      "enableLabel": "Enable Quick Assistant",
+      "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere.",
+      "shortcutLabel": "Toggle Shortcut",
+      "shortcutHint": "Global shortcut to toggle the Quick Assistant.",
+      "targetLangLabel": "Target language",
+      "model": "Model",
+      "modelLabel": "AI Model",
+      "modelHint": "Select the AI model used by Quick Assistant.",
+      "actions": "Actions",
+      "addAction": "Add Action",
+      "editAction": "Edit Action",
+      "builtin": "Built-in",
+      "deleteTitle": "Delete Action",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "nameLabel": "Name",
+      "namePlaceholder": "Action name",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Briefly describe the action",
+      "systemPromptLabel": "System Prompt",
+      "systemPromptPlaceholder": "Define the AI behavior for this action...",
+      "systemPromptHint": "Define the AI's role and behavior when executing this action.",
+      "placeholderWithModel": "Ask '{{model}}' for help...",
+      "placeholderDefault": "Type content to process, select an action below and press Enter...",
+      "pinWindow": "Pin window",
+      "unpinWindow": "Unpin window",
+      "defaultPinnedLabel": "Always on Top",
+      "defaultPinnedHint": "Keep the Quick Assistant on top by default. You can still toggle via the pin button.",
+      "back": "Back",
+      "stop": "Stop",
+      "copy": "Alt+C Copy",
+      "escBack": "ESC Back",
+      "copied": "Copied",
+      "escClear": "ESC Clear",
+      "escClose": "ESC Close",
+      "select": "↑↓ Select",
+      "execute": "Enter Run",
+      "rerun": "R Rerun",
+      "warningImageLimit": "Only 1 image allowed. Remove the existing image first.",
+      "warningImageReadFailed": "Failed to read image. Please try again."
+    },
+    "builtinAction": {
+      "builtin-answer": {
+        "name": "Answer Question",
+        "description": "Ask AI a question and get an answer"
+      },
+      "builtin-translate": {
+        "name": "Translate",
+        "description": "Translate text to another language"
+      },
+      "builtin-summary": {
+        "name": "Summarize",
+        "description": "Concisely summarize the provided text"
+      }
+    },
+    "selectionAssistant": {
+      "title": "Selection Assistant",
+      "description": "Select text in any application to pop up a toolbar, then click an action to see the AI result.",
+      "general": "General",
+      "enableLabel": "Enable Selection Assistant",
+      "enableHint": "When enabled, selecting text will show the Selection Assistant toolbar.",
+      "defaultPinnedLabel": "Always on Top",
+      "defaultPinnedHint": "Keep the result bubble on top by default. You can still toggle via the pin button.",
+      "shortcutLabel": "Toggle Shortcut",
+      "shortcutHint": "Quickly enable or disable Selection Assistant.",
+      "shortcutUnavailable": "Shortcut registration failed — it may already be in use by another app.",
+      "model": "Model",
+      "modelLabel": "AI Model",
+      "modelHint": "Selection Assistant uses its own provider and model, independent of Quick Assistant.",
+      "actions": "Actions",
+      "actionsHint": "Choose which actions appear on the toolbar, or add your own.",
+      "addAction": "Add Action",
+      "editAction": "Edit Action",
+      "deleteTitle": "Delete Action",
+      "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "excludedPrograms": "Excluded Programs",
+      "excludedProgramsHint": "Enter executable names (e.g. Chrome.exe). Selections inside those apps will not trigger the toolbar.",
+      "excludedProgramsPlaceholder": "e.g. Chrome.exe",
+      "textLength": "Text Length",
+      "textLengthHint": "Skip selections that are too short or too long.",
+      "minLength": "Minimum",
+      "maxLength": "Maximum",
+      "bubble": {
+        "actionPlaceholder": "Action",
+        "generating": "Generating…",
+        "stop": "Stop",
+        "regenerate": "R Regenerate",
+        "copy": "Alt+C Copy",
+        "copied": "Copied",
+        "close": "Close",
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "escToClose": "ESC Close"
+      },
+      "toolbar": {
+        "waitingSelection": "Waiting for selection…"
+      }
     }
   },
   "translate": {
@@ -203,7 +416,242 @@
       "promptHint": "Use {source} and {target} as placeholders for source and target languages. Leave empty to use default prompt.",
       "temperature": "Temperature",
       "temperatureHint": "Lower values produce more accurate translations, higher values are more creative. Default 0.3.",
-      "resetDefault": "Reset default"
+      "resetDefault": "Reset default",
+      "wordWrap": "Word wrap",
+      "wordWrapHint": "Wrap long lines in translation results. When off, use horizontal scrollbar to view."
+    },
+    "history": {
+      "title": "History",
+      "clearHistory": "Clear history",
+      "clearHistoryConfirm": "Are you sure you want to clear all translation history? This cannot be undone.",
+      "empty": "No translation history",
+      "clearInput": "Clear input"
+    }
+  },
+  "modelPicker": {
+    "title": "Select Model",
+    "searchPlaceholder": "Search models...",
+    "noResults": "No matching models",
+    "noProviders": "No providers configured"
+  },
+  "modelManage": {
+    "models": " Models",
+    "searchPlaceholder": "Search model ID or name",
+    "noCatalog": "No preset model catalog for this provider",
+    "noResults": "No matching models",
+    "addGroup": "Add entire group",
+    "removeGroup": "Remove entire group",
+    "tab": {
+      "all": "All",
+      "reasoning": "Reasoning",
+      "vision": "Vision",
+      "web": "Web",
+      "free": "Free",
+      "embedding": "Embedding",
+      "reranking": "Reranking",
+      "tools": "Tools"
+    },
+    "cap": {
+      "reasoning": "Reasoning",
+      "vision": "Vision",
+      "web": "Web",
+      "free": "Free",
+      "embedding": "Embedding",
+      "reranking": "Reranking",
+      "tools": "Tools"
+    }
+  },
+  "addModel": {
+    "title": "Add Model",
+    "modelId": "Model ID",
+    "modelIdTooltip": "The model identifier sent to the API, e.g. gpt-4o, deepseek-chat",
+    "modelIdPlaceholder": "Required, e.g. gpt-3.5-turbo",
+    "groupName": "Group Name",
+    "groupNameTooltip": "Used for grouping models in the list, e.g. ChatGPT, DeepSeek",
+    "groupNamePlaceholder": "e.g. ChatGPT",
+    "duplicateError": "This model already exists",
+    "submit": "Add Model",
+    "capabilities": "Capabilities"
+  },
+  "editModel": {
+    "title": "Edit Model",
+    "save": "Save"
+  },
+  "modelLibrary": {
+    "title": "Model Library",
+    "description": "Define model capabilities for auto-matching when adding models",
+    "addDefinition": "Add Model",
+    "editDefinition": "Edit Model",
+    "searchPlaceholder": "Search model name or group",
+    "empty": "Model library is empty. Click the button above to add a model definition.",
+    "noResults": "No matching models",
+    "modelName": "Model Name",
+    "group": "Group",
+    "capabilities": "Capabilities",
+    "providerTypes": "Provider Types",
+    "providerTypesHint": "Leave empty to make visible to all providers",
+    "ungrouped": "Ungrouped",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
+  },
+  "modelGroup": {
+    "title": "Model Groups",
+    "description": "Define grouping rules for remote models by prefix matching",
+    "addGroup": "Add Group",
+    "editGroup": "Edit Group",
+    "empty": "No grouping rules yet. Click the button above to add one.",
+    "deleteTitle": "Delete Group",
+    "deleteDescription": "Are you sure you want to delete the \"{{name}}\" group rule? This cannot be undone.",
+    "pattern": "Pattern",
+    "patternPlaceholder": "e.g. claude-opus, gpt-5.1",
+    "patternHint": "Models whose name starts with this prefix will be grouped together (longest match wins)",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "e.g. Claude Opus, GPT-5.1"
+  },
+  "remoteModel": {
+    "title": "{{provider}} Models",
+    "searchPlaceholder": "Search model name",
+    "loading": "Fetching model list...",
+    "noModels": "No models found",
+    "noResults": "No matching models"
+  },
+  "keybindings": {
+    "title": "Keyboard Shortcuts",
+    "description": "Customize keyboard shortcuts for common actions.",
+    "pressShortcut": "Press shortcut...",
+    "resetAll": "Reset All",
+    "conflictTitle": "Shortcut Conflict",
+    "conflictDescription": "\"{{shortcut}}\" is already assigned to \"{{action}}\". Reassign it?",
+    "conflictReadOnly": "\"{{shortcut}}\" is reserved by the system shortcut \"{{action}}\" and cannot be used.",
+    "newConversation": "New Conversation",
+    "toggleSettings": "Toggle Settings",
+    "toggleSidebar": "Toggle Sidebar",
+    "toggleTopic": "Toggle Topic Panel",
+    "stopGeneration": "Stop Generation",
+    "summonWindow": "Summon Window",
+    "toggleQuickAssistant": "Quick Assistant",
+    "screenshotTranslate": "Screenshot Translate",
+    "toggleSelectionAssistant": "Selection Assistant",
+    "category": {
+      "app": "Application",
+      "chat": "Chat",
+      "window": "Window"
+    }
+  },
+  "tray": {
+    "openMainWindow": "Open main window",
+    "enableSelectionAssistant": "Enable selection assistant",
+    "about": "About",
+    "quit": "Quit"
+  },
+  "dialog": {
+    "about": {
+      "title": "About AI Studio",
+      "detail": "A desktop AI chat application"
+    },
+    "filePicker": {
+      "image": "Images",
+      "text": "Text files",
+      "all": "All files"
+    }
+  },
+  "seed": {
+    "assistants": {
+      "default": {
+        "name": "Default assistant",
+        "description": "Generic AI assistant using global settings"
+      }
+    },
+    "selectionActions": {
+      "translate": {
+        "name": "Translate",
+        "description": "Translate the selected text into the target language"
+      },
+      "explain": {
+        "name": "Explain",
+        "description": "Explain the meaning or concepts in the selected text"
+      },
+      "summarize": {
+        "name": "Summarize",
+        "description": "Extract the key points from the selected text"
+      },
+      "polish": {
+        "name": "Polish",
+        "description": "Rewrite for a more fluent, professional tone"
+      }
+    },
+    "quickActions": {
+      "answer": {
+        "name": "Answer question",
+        "description": "Ask the AI a question and get an answer"
+      },
+      "translate": {
+        "name": "Text translation",
+        "description": "Translate text into another language"
+      },
+      "summarize": {
+        "name": "Summarize content",
+        "description": "Concisely summarize the provided text"
+      },
+      "imageTranslate": {
+        "name": "Image translation",
+        "description": "Recognize and translate text in an image"
+      }
+    }
+  },
+  "errors": {
+    "internal": "Unexpected error: {{message}}",
+    "chat": {
+      "conversationNotFound": "Conversation not found.",
+      "resendTargetNotFound": "Resend target message not found.",
+      "noProvider": "No model is set for this assistant. Please select one in Assistant Settings.",
+      "providerNotFound": "Provider not found. Please check your configuration.",
+      "apiKeyMissing": "API key is not configured for provider \"{{providerName}}\". Please set your API key in Settings.",
+      "noModel": "No model is set for this assistant. Please select one in Assistant Settings."
+    },
+    "selection": {
+      "noModel": "Selection assistant has no model configured. Open Settings → Selection Assistant to choose a provider and model.",
+      "providerNotFound": "The provider selected for the selection assistant no longer exists. Please pick another one in Settings → Selection Assistant.",
+      "apiKeyMissing": "Provider \"{{providerName}}\" has no API key. Please set it in the provider settings.",
+      "noModelSelected": "Selection assistant has no model selected. Open Settings → Selection Assistant and pick a model.",
+      "modelUnavailable": "The model is no longer available under provider \"{{providerName}}\". Please re-select one in Settings → Selection Assistant.",
+      "actionNotFound": "Selection action not found."
+    },
+    "quickAssistant": {
+      "noProvider": "No provider selected for the Quick Assistant.",
+      "providerNotFound": "Selected provider not found.",
+      "apiKeyMissing": "API key is not configured for provider \"{{providerName}}\".",
+      "noModel": "No model configured for Quick Assistant. Please select a model in settings.",
+      "modelInvalid": "Selected model is invalid for provider \"{{providerName}}\".",
+      "actionNotFound": "Quick action not found."
+    },
+    "translate": {
+      "noProvider": "No provider selected. Please select a model for translation.",
+      "providerNotFound": "Selected provider not found.",
+      "apiKeyMissing": "API key is not configured for provider \"{{providerName}}\".",
+      "noModel": "No model selected. Please select a translation model.",
+      "modelInvalid": "Selected translation model is invalid for provider \"{{providerName}}\"."
+    },
+    "provider": {
+      "connectionTimeout": "Connection test timed out",
+      "connectionFailed": "Connection failed"
+    },
+    "model": {
+      "fetchFailed": "Failed to fetch models",
+      "fetchTimeout": "Fetch models timed out (15s)"
+    },
+    "file": {
+      "tooLarge": "Files too large (max 10MB): {{names}}",
+      "invalidAttachmentPath": "Invalid attachment path",
+      "attachmentNotFound": "Attachment not found: {{path}}"
+    },
+    "assistant": {
+      "cannotDeleteDefault": "Cannot delete the default assistant"
+    },
+    "message": {
+      "notFound": "Message not found: {{id}}"
+    },
+    "db": {
+      "notInitialized": "Database not initialized. Call initDatabase() first."
     }
   }
 }

@@ -2,21 +2,35 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useProviderStore } from '@renderer/stores/providerStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
-import { ModelSection } from './ModelSection'
+import { ModelLibrarySection } from './ModelLibrarySection'
+import { ModelGroupSection } from './ModelGroupSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
-import { LanguageSection } from './LanguageSection'
+import { SecuritySection } from './SecuritySection'
+import { DataSection } from './DataSection'
+import { PhrasesSection } from './PhrasesSection'
+import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
+import { QuickAssistantSection } from './QuickAssistantSection'
+import { SelectionAssistantSection } from './SelectionAssistantSection'
 
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
   const loadProviders = useProviderStore((s) => s.loadProviders)
+  const consumePendingSection = useSettingsStore((s) => s.consumePendingSection)
   const [activeSection, setActiveSection] = useState<SettingsSection>('provider')
 
   useEffect(() => {
     loadProviders()
   }, [loadProviders])
+
+  useEffect(() => {
+    const pending = consumePendingSection()
+    if (pending) setActiveSection(pending)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -31,13 +45,21 @@ export function SettingsPage(): React.JSX.Element {
 
         {activeSection === 'provider' ? (
           <ProviderSection />
+        ) : activeSection === 'model-library' ? (
+          <ModelLibrarySection />
+        ) : activeSection === 'model-group' ? (
+          <ModelGroupSection />
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6">
-              {activeSection === 'model' && <ModelSection />}
               {activeSection === 'general' && <GeneralSection />}
+              {activeSection === 'security' && <SecuritySection />}
               {activeSection === 'display' && <DisplaySection />}
-              {activeSection === 'language' && <LanguageSection />}
+              {activeSection === 'data' && <DataSection />}
+              {activeSection === 'phrases' && <PhrasesSection />}
+              {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
+              {activeSection === 'quick-assistant' && <QuickAssistantSection />}
+              {activeSection === 'selection-assistant' && <SelectionAssistantSection />}
             </div>
           </ScrollArea>
         )}

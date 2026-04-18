@@ -1,5 +1,7 @@
 import { randomUUID } from 'crypto'
 import type { Assistant } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError } from '../errors'
 import { getDb } from './database'
 
 interface AssistantRow {
@@ -189,7 +191,15 @@ export function deleteAssistant(id: string): void {
     | { is_default: number }
     | undefined
   if (row?.is_default) {
-    throw new Error('Cannot delete the default assistant')
+    throw new AppError(ERROR_CODES.ASSISTANT_CANNOT_DELETE_DEFAULT)
   }
   getDb().prepare('DELETE FROM assistants WHERE id = ?').run(id)
+}
+
+export function reorderAssistants(ids: string[]): void {
+  const db = getDb()
+  const update = db.prepare('UPDATE assistants SET sort_order = ? WHERE id = ?')
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id))
+  })()
 }

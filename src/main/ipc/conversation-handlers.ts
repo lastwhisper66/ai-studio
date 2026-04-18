@@ -1,13 +1,24 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { Conversation, IpcResult } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listConversations,
   getConversation,
   createConversation,
   updateConversation,
   deleteConversation,
+  deleteConversations,
+  getMessageAttachments,
 } from '../db'
+import { deleteAttachments } from '../db/attachments'
+
+function cleanupConversationAttachments(conversationId: string): void {
+  const rows = getMessageAttachments(conversationId)
+  for (const row of rows) {
+    deleteAttachments(row.id)
+  }
+}
 
 export function registerConversationHandlers(): void {
   ipcMain.handle(IpcChannels.CONVERSATION_LIST, (): IpcResult<Conversation[]> => {
@@ -15,7 +26,7 @@ export function registerConversationHandlers(): void {
       const data = listConversations()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -26,7 +37,7 @@ export function registerConversationHandlers(): void {
         const data = getConversation(id)
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -38,7 +49,7 @@ export function registerConversationHandlers(): void {
         const data = createConversation(title, assistantId)
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -48,25 +59,37 @@ export function registerConversationHandlers(): void {
     (
       _,
       id: string,
-      data: Partial<
-        Pick<Conversation, 'title' | 'model' | 'systemPrompt' | 'assistantId' | 'pinned'>
-      >,
+      data: Partial<Pick<Conversation, 'title' | 'systemPrompt' | 'assistantId' | 'pinned'>>,
     ): IpcResult<Conversation | undefined> => {
       try {
         const result = updateConversation(id, data)
         return { success: true, data: result }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
 
   ipcMain.handle(IpcChannels.CONVERSATION_DELETE, (_, id: string): IpcResult<void> => {
     try {
+      cleanupConversationAttachments(id)
       deleteConversation(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.CONVERSATION_DELETE_MANY, (_, ids: string[]): IpcResult<void> => {
+    try {
+      if (!Array.isArray(ids) || ids.length === 0) return { success: true }
+      for (const id of ids) {
+        cleanupConversationAttachments(id)
+      }
+      deleteConversations(ids)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

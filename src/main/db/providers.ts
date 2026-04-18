@@ -1,7 +1,12 @@
 import { randomUUID } from 'crypto'
 import type { Provider, ProviderType } from '@shared/types'
 import { getDb } from './database'
+import { createModel } from './models'
 import { encrypt, decrypt } from './settings'
+
+const DEFAULT_MODELS_BY_PROVIDER_TYPE: Partial<Record<ProviderType, string[]>> = {
+  fujitsu: ['gpt-5.1', 'gpt-5-mini'],
+}
 
 interface ProviderRow {
   id: string
@@ -9,10 +14,6 @@ interface ProviderRow {
   name: string
   api_key: string
   base_url: string
-  model: string
-  endpoint: string
-  api_version: string
-  deployment_name: string
   enabled: number
   sort_order: number
   created_at: string
@@ -26,10 +27,6 @@ function rowToProvider(row: ProviderRow): Provider {
     name: row.name,
     apiKey: row.api_key ? decrypt(row.api_key) : '',
     baseUrl: row.base_url,
-    model: row.model,
-    endpoint: row.endpoint,
-    apiVersion: row.api_version,
-    deploymentName: row.deployment_name,
     enabled: row.enabled === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -57,10 +54,6 @@ export interface CreateProviderData {
   name: string
   apiKey?: string
   baseUrl?: string
-  model?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
   enabled?: boolean
   sortOrder?: number
 }
@@ -70,8 +63,8 @@ export function createProvider(data: CreateProviderData): Provider {
   const apiKey = data.apiKey ? encrypt(data.apiKey) : ''
   getDb()
     .prepare(
-      `INSERT INTO providers (id, type, name, api_key, base_url, model, endpoint, api_version, deployment_name, enabled, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO providers (id, type, name, api_key, base_url, enabled, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -79,13 +72,18 @@ export function createProvider(data: CreateProviderData): Provider {
       data.name,
       apiKey,
       data.baseUrl ?? '',
-      data.model ?? '',
-      data.endpoint ?? '',
-      data.apiVersion ?? '',
-      data.deploymentName ?? '',
       data.enabled !== false ? 1 : 0,
       data.sortOrder ?? 0,
     )
+
+  for (const [index, name] of (DEFAULT_MODELS_BY_PROVIDER_TYPE[data.type] ?? []).entries()) {
+    createModel({
+      providerId: id,
+      name,
+      sortOrder: index,
+    })
+  }
+
   return getProvider(id)!
 }
 
@@ -93,10 +91,6 @@ export interface UpdateProviderData {
   name?: string
   apiKey?: string
   baseUrl?: string
-  model?: string
-  endpoint?: string
-  apiVersion?: string
-  deploymentName?: string
   enabled?: boolean
   sortOrder?: number
 }
@@ -116,22 +110,6 @@ export function updateProvider(id: string, data: UpdateProviderData): Provider |
   if (data.baseUrl !== undefined) {
     fields.push('base_url = ?')
     values.push(data.baseUrl)
-  }
-  if (data.model !== undefined) {
-    fields.push('model = ?')
-    values.push(data.model)
-  }
-  if (data.endpoint !== undefined) {
-    fields.push('endpoint = ?')
-    values.push(data.endpoint)
-  }
-  if (data.apiVersion !== undefined) {
-    fields.push('api_version = ?')
-    values.push(data.apiVersion)
-  }
-  if (data.deploymentName !== undefined) {
-    fields.push('deployment_name = ?')
-    values.push(data.deploymentName)
   }
   if (data.enabled !== undefined) {
     fields.push('enabled = ?')
@@ -156,4 +134,43 @@ export function updateProvider(id: string, data: UpdateProviderData): Provider |
 
 export function deleteProvider(id: string): void {
   getDb().prepare('DELETE FROM providers WHERE id = ?').run(id)
+}
+
+export function reorderProviders(ids: string[]): void {
+  const db = getDb()
+  const update = db.prepare('UPDATE providers SET sort_order = ? WHERE id = ?')
+  db.transaction(() => {
+    ids.forEach((id, index) => update.run(index, id))
+  })()
+}
+
+/** Default provider templates to seed on first launch */
+const DEFAULT_PROVIDER_SEEDS: CreateProviderData[] = [
+  {
+    type: 'fujitsu',
+    name: 'Fujitsu Azure OpenAI',
+    baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
+  },
+  { type: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com' },
+  { type: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com' },
+  { type: 'openai-response', name: 'OpenAI Response', baseUrl: 'https://api.openai.com' },
+  {
+    type: 'azure',
+    name: 'Azure OpenAI',
+    baseUrl: 'https://your-resource.openai.azure.com/openai/v1',
+  },
+  { type: 'gemini', name: 'Gemini', baseUrl: 'https://generativelanguage.googleapis.com' },
+  { type: 'claude', name: 'Claude', baseUrl: 'https://api.anthropic.com' },
+  { type: 'silicon', name: 'Silicon Flow', baseUrl: 'https://api.siliconflow.cn' },
+  { type: 'newapi', name: 'New API', baseUrl: 'https://api.example.com' },
+]
+
+/** Seed default providers on first launch (when providers table is empty) */
+export function seedDefaultProviders(): void {
+  const count = getDb().prepare('SELECT COUNT(*) as cnt FROM providers').get() as { cnt: number }
+  if (count.cnt > 0) return
+
+  for (const [index, seed] of DEFAULT_PROVIDER_SEEDS.entries()) {
+    createProvider({ ...seed, sortOrder: index })
+  }
 }

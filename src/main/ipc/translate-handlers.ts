@@ -1,53 +1,44 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
-import { APIUserAbortError } from 'openai'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { TranslateRequestPayload, IpcResult } from '@shared/types'
-import { createAIClient, loadApiSettings } from '../ai'
+import type { TranslateRequestPayload, IpcResult, ApiSettings } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError, toLocalizedError } from '../errors'
+import { streamChat } from '../ai'
 import { getProvider } from '../db/providers'
-import { getModel, listModelsByProvider } from '../db/models'
+import { getModel } from '../db/models'
 
 let activeController: AbortController | null = null
 
-function loadTranslateSettings(providerId?: string, modelId?: string) {
-  // If no specific provider requested, fall back to global active settings
+function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettings {
   if (!providerId) {
-    return loadApiSettings()
+    throw new AppError(ERROR_CODES.TRANSLATE_NO_PROVIDER)
   }
 
   const provider = getProvider(providerId)
   if (!provider) {
-    throw new Error('Selected provider not found.')
+    throw new AppError(ERROR_CODES.TRANSLATE_PROVIDER_NOT_FOUND)
   }
   if (!provider.apiKey) {
-    throw new Error(`API key is not configured for provider "${provider.name}".`)
+    throw new AppError(ERROR_CODES.TRANSLATE_API_KEY_MISSING, { providerName: provider.name })
   }
 
-  // Resolve model: specified modelId → first model of provider
-  let modelName = ''
-  if (modelId) {
-    const model = getModel(modelId)
-    if (model && model.providerId === providerId) {
-      modelName = model.name
-    }
+  // Resolve model: specified modelId only
+  if (!modelId) {
+    throw new AppError(ERROR_CODES.TRANSLATE_NO_MODEL)
   }
-  if (!modelName) {
-    const models = listModelsByProvider(providerId)
-    if (models.length > 0) {
-      modelName = models[0].name
-    }
+
+  const model = getModel(modelId)
+  if (!model || model.providerId !== providerId) {
+    throw new AppError(ERROR_CODES.TRANSLATE_MODEL_INVALID, { providerName: provider.name })
   }
-  if (!modelName) {
-    throw new Error(`No model configured for provider "${provider.name}".`)
-  }
+
+  const modelName = model.name
 
   return {
     provider: provider.type,
     apiKey: provider.apiKey,
     baseUrl: provider.baseUrl,
     model: modelName,
-    endpoint: provider.endpoint,
-    apiVersion: provider.apiVersion,
-    deploymentName: provider.deploymentName,
     temperature: 0.3,
     maxCompletionTokens: 4096,
     topP: 1,
@@ -84,34 +75,29 @@ export function registerTranslateHandlers(): void {
 
       try {
         const settings = loadTranslateSettings(providerId, modelId)
-        const client = createAIClient(settings)
         const controller = new AbortController()
         activeController = controller
 
         const prompt = buildSystemPrompt(systemPrompt, sourceLang, targetLang)
 
-        const stream = await client.chat.completions.create(
+        await streamChat(
           {
-            model: settings.model,
+            settings: { ...settings, temperature: temperature ?? 0.3 },
             messages: [
               { role: 'system', content: prompt },
               { role: 'user', content: text },
             ],
-            stream: true,
-            temperature: temperature ?? 0.3,
+            signal: controller.signal,
           },
-          { signal: controller.signal },
+          {
+            onChunk: (delta) => {
+              fullText += delta
+              if (!sender.isDestroyed()) {
+                sender.send(IpcChannels.TRANSLATE_CHUNK, { delta })
+              }
+            },
+          },
         )
-
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta?.content
-          if (delta) {
-            fullText += delta
-            if (!sender.isDestroyed()) {
-              sender.send(IpcChannels.TRANSLATE_CHUNK, { delta })
-            }
-          }
-        }
 
         if (!sender.isDestroyed()) {
           sender.send(IpcChannels.TRANSLATE_END, { fullText })
@@ -122,8 +108,8 @@ export function registerTranslateHandlers(): void {
         activeController = null
 
         const isAborted =
-          error instanceof APIUserAbortError ||
-          (error instanceof Error && error.name === 'AbortError')
+          error instanceof Error &&
+          (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
           if (!sender.isDestroyed()) {
             sender.send(IpcChannels.TRANSLATE_END, { fullText })
@@ -131,11 +117,11 @@ export function registerTranslateHandlers(): void {
           return { success: true }
         }
 
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const localized = toLocalizedError(error)
         if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.TRANSLATE_ERROR, { error: errorMessage })
+          sender.send(IpcChannels.TRANSLATE_ERROR, { error: localized })
         }
-        return { success: false, error: errorMessage }
+        return { success: false, error: localized }
       }
     },
   )
