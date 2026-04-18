@@ -5,7 +5,7 @@ import { createModel } from './models'
 import { encrypt, decrypt } from './settings'
 
 const DEFAULT_MODELS_BY_PROVIDER_TYPE: Partial<Record<ProviderType, string[]>> = {
-  fujitsu: ['gpt-5.1', 'gpt-5-mini'],
+  // fujitsu: ['gpt-5.1', 'gpt-5-mini'],
 }
 
 interface ProviderRow {
@@ -146,11 +146,11 @@ export function reorderProviders(ids: string[]): void {
 
 /** Default provider templates to seed on first launch */
 const DEFAULT_PROVIDER_SEEDS: CreateProviderData[] = [
-  {
-    type: 'fujitsu',
-    name: 'Fujitsu Azure OpenAI',
-    baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
-  },
+  // {
+  //   type: 'fujitsu',
+  //   name: 'Fujitsu Azure OpenAI',
+  //   baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
+  // },
   { type: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com' },
   { type: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com' },
   { type: 'openai-response', name: 'OpenAI Response', baseUrl: 'https://api.openai.com' },
