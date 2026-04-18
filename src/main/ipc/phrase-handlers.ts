@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { Phrase, IpcResult } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import { listPhrases, createPhrase, updatePhrase, deletePhrase } from '../db'
 
 export function registerPhraseHandlers(): void {
@@ -8,7 +9,7 @@ export function registerPhraseHandlers(): void {
     try {
       return { success: true, data: listPhrases() }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -18,7 +19,7 @@ export function registerPhraseHandlers(): void {
       try {
         return { success: true, data: createPhrase(title, content) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -33,7 +34,7 @@ export function registerPhraseHandlers(): void {
       try {
         return { success: true, data: updatePhrase(id, data) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -43,7 +44,7 @@ export function registerPhraseHandlers(): void {
       deletePhrase(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

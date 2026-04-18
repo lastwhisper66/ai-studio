@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { Conversation, IpcResult } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listConversations,
   getConversation,
@@ -25,7 +26,7 @@ export function registerConversationHandlers(): void {
       const data = listConversations()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -36,7 +37,7 @@ export function registerConversationHandlers(): void {
         const data = getConversation(id)
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -48,7 +49,7 @@ export function registerConversationHandlers(): void {
         const data = createConversation(title, assistantId)
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -64,7 +65,7 @@ export function registerConversationHandlers(): void {
         const result = updateConversation(id, data)
         return { success: true, data: result }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -75,7 +76,7 @@ export function registerConversationHandlers(): void {
       deleteConversation(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -88,7 +89,7 @@ export function registerConversationHandlers(): void {
       deleteConversations(ids)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

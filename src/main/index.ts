@@ -19,6 +19,7 @@ import { initDatabase, closeDatabase } from './db'
 import { getSetting, setSetting } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
+import { initMainI18n, onLanguageChange, t } from './i18n'
 import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
   initCloseToTray,
@@ -302,14 +303,14 @@ function updateTrayMenu(): void {
   if (!tray || tray.isDestroyed()) return
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: '打开主窗口',
+      label: t('tray.openMainWindow'),
       click: () => {
         if (mainWindow) showWindow(mainWindow)
       },
     },
     { type: 'separator' },
     {
-      label: '启用划词助手',
+      label: t('tray.enableSelectionAssistant'),
       type: 'checkbox',
       checked: getSelectionAssistantEnabled(),
       click: () => {
@@ -322,19 +323,19 @@ function updateTrayMenu(): void {
     },
     { type: 'separator' },
     {
-      label: '关于',
+      label: t('tray.about'),
       click: () => {
         dialog.showMessageBox({
           type: 'info',
-          title: '关于 AI Studio',
+          title: t('dialog.about.title'),
           message: `AI Studio v${app.getVersion()}`,
-          detail: 'A desktop AI chat application',
+          detail: t('dialog.about.detail'),
         })
       },
     },
     { type: 'separator' },
     {
-      label: '退出',
+      label: t('tray.quit'),
       click: () => {
         isQuitting = true
         app.quit()
@@ -487,10 +488,12 @@ if (!gotTheLock) {
     if (mainWindow) showWindow(mainWindow)
   })
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     electronApp.setAppUserModelId('com.ai-studio.app')
 
     initDatabase()
+    await initMainI18n()
+    onLanguageChange(() => updateTrayMenu())
     applySslSetting()
     initCloseToTray()
     initStartMinimized()

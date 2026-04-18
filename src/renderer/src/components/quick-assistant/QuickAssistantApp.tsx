@@ -13,6 +13,7 @@ import {
 import i18n from '@renderer/i18n'
 import type { QuickAction } from '@shared/types'
 import type { FileData } from '@shared/types'
+import type { LocalizedError } from '@shared/errors'
 import { isImageMime } from '@shared/types'
 import { ActionList } from './ActionList'
 import { QuickAssistantResult } from './QuickAssistantResult'
@@ -43,7 +44,7 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [resultContent, setResultContent] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<LocalizedError | string | null>(null)
   const [currentAction, setCurrentAction] = useState<QuickAction | null>(null)
   const [pinned, setPinned] = useState(false)
   const pinnedRef = useRef(false)
@@ -257,44 +258,35 @@ export function QuickAssistantApp(): React.JSX.Element {
   useEffect(() => {
     const handleFocus = (): void => {
       loadActions()
+      // Auto-execute must be checked on every focus, independent of
+      // `wasHiddenRef`. The screenshot flow pushes pinned-state right before
+      // show(), which clears `wasHiddenRef` — so gating auto-execute on it
+      // would drop the pending payload on the exact path that needs it.
+      window.api.getPendingAutoExecute().then((result) => {
+        if (!result.success || !result.data) return
+        const payload = result.data
+        const action = actions.find((a) => a.enabled && a.id === payload.actionId)
+        if (!action || !payload.files?.length) return
+
+        setAttachedFiles(payload.files)
+        setInputText('')
+        startStreamingRequest({
+          action,
+          text: '',
+          files: payload.files,
+          overrideTargetLang: payload.targetLang,
+        })
+      })
+
       // Only reset pin on a fresh show (after the window was hidden), not on
       // focus-return from child elements like dropdown portals
       if (wasHiddenRef.current) {
         resetState()
 
-        // Sync local pinned state from store after settings are loaded.
-        // The main process already applied the correct alwaysOnTop + pinned
-        // state before showing the window, so we only update the display state
-        // here — no need to send setQuickAssistantPinned back to main.
-        //
-        // We clear wasHiddenRef AFTER the default pin is applied so that any
-        // blur event firing before loadSettings resolves will see the ref as
-        // true and skip hiding — preventing a race where the window disappears
-        // before the default-pinned preference is read.
-        loadSettings().then(() => {
-          const s = useSettingsStore.getState().settings
-          const defaultPin = s['quickAssistant.defaultPinned'] === 'true'
-          setPinned(defaultPin)
-          pinnedRef.current = defaultPin
-          wasHiddenRef.current = false
-        })
-
-        // Check for pending auto-execute payload (set by screenshot flow)
-        window.api.getPendingAutoExecute().then((result) => {
-          if (!result.success || !result.data) return
-          const payload = result.data
-          const action = actions.find((a) => a.enabled && a.id === payload.actionId)
-          if (!action || !payload.files?.length) return
-
-          setAttachedFiles(payload.files)
-          setInputText('')
-          startStreamingRequest({
-            action,
-            text: '',
-            files: payload.files,
-            overrideTargetLang: payload.targetLang,
-          })
-        })
+        // Refresh settings for other UI (providers / models / etc.). The
+        // pinned state itself is pushed by main via QUICK_ASSISTANT_STATE_CHANGED
+        // right before show(), so we don't derive it from settings here.
+        loadSettings()
       } else {
         loadSettings()
       }
@@ -303,6 +295,17 @@ export function QuickAssistantApp(): React.JSX.Element {
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
   }, [loadActions, loadSettings, resetState, actions, startStreamingRequest])
+
+  // Main is the source of truth for pinned — it reads `quickAssistant.defaultPinned`
+  // and pushes the resolved state right before showing the window. Subscribing
+  // here avoids a race where the renderer reads settings asynchronously on show.
+  useEffect(() => {
+    return window.api.onQuickAssistantStateChanged((state) => {
+      setPinned(state.pinned)
+      pinnedRef.current = state.pinned
+      wasHiddenRef.current = false
+    })
+  }, [])
 
   // Auto-focus input when returning to input view (e.g. from result via Back)
   useEffect(() => {
@@ -515,12 +518,22 @@ export function QuickAssistantApp(): React.JSX.Element {
           }
         }
       } else if (s.view === 'result') {
-        // In result view, Enter re-executes with new input
-        if (e.key === 'Enter' && !e.shiftKey && s.currentAction) {
-          e.preventDefault()
-          if (s.inputText.trim() || s.attachedFiles.length > 0) {
-            executeAction(s.currentAction)
+        // In result view, R re-executes the current action
+        if (
+          (e.key === 'r' || e.key === 'R') &&
+          !e.altKey &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.shiftKey &&
+          s.currentAction &&
+          !s.isStreaming
+        ) {
+          const target = e.target as HTMLElement | null
+          if (target && (target.isContentEditable || /^(INPUT|TEXTAREA)$/.test(target.tagName))) {
+            return
           }
+          e.preventDefault()
+          executeAction(s.currentAction)
         }
       }
     }
@@ -654,42 +667,34 @@ export function QuickAssistantApp(): React.JSX.Element {
             {warning && <span className="text-amber-500">{warning}</span>}
             {view === 'result' && resultContent && !isStreaming && (
               <span
-                className={`inline-flex items-center transition-all duration-300 ${copySuccess ? 'text-green-500' : ''}`}>
-                {copySuccess ? (
-                  <>
-                    <svg
-                      className="mr-0.5 h-3 w-3"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {t('settings.quickAssistant.copied', '已复制')}
-                  </>
-                ) : (
-                  <>
-                    <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">
-                      Alt+C
-                    </kbd>{' '}
-                    {t('settings.quickAssistant.copy')}
-                  </>
+                className={`inline-flex items-center gap-1 transition-all duration-300 ${copySuccess ? 'text-green-500' : ''}`}>
+                {copySuccess && (
+                  <svg
+                    className="h-3 w-3"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 )}
+                {copySuccess
+                  ? t('settings.quickAssistant.copied', '已复制')
+                  : t('settings.quickAssistant.copy')}
               </span>
             )}
-            <span>
-              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Esc</kbd>{' '}
-              {escLabel}
-            </span>
-            <span>
-              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">↑↓</kbd>{' '}
-              {t('settings.quickAssistant.select')}
-              {' · '}
-              <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Enter</kbd>{' '}
-              {t('settings.quickAssistant.execute')}
-            </span>
+            <span>{escLabel}</span>
+            {view === 'result' ? (
+              currentAction && !isStreaming && <span>{t('settings.quickAssistant.rerun')}</span>
+            ) : (
+              <span>
+                {t('settings.quickAssistant.select')}
+                <span className="mx-1">·</span>
+                {t('settings.quickAssistant.execute')}
+              </span>
+            )}
           </div>
         </div>
       </div>

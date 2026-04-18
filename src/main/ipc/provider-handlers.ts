@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, Provider, ApiSettings, ProviderConnectionTestPayload } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { toLocalizedError } from '../errors'
 import {
   listProviders,
   getProvider,
@@ -18,7 +20,7 @@ export function registerProviderHandlers(): void {
       const data = listProviders()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -27,7 +29,7 @@ export function registerProviderHandlers(): void {
       const data = getProvider(id)
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -38,7 +40,7 @@ export function registerProviderHandlers(): void {
         const provider = createProvider(data)
         return { success: true, data: provider }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -50,7 +52,7 @@ export function registerProviderHandlers(): void {
         const provider = updateProvider(id, data)
         return { success: true, data: provider }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -60,7 +62,7 @@ export function registerProviderHandlers(): void {
       deleteProvider(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -69,7 +71,7 @@ export function registerProviderHandlers(): void {
       reorderProviders(ids)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -78,7 +80,7 @@ export function registerProviderHandlers(): void {
     (_, payload: ProviderConnectionTestPayload): Promise<IpcResult<string>> => {
       return new Promise((resolve) => {
         const fallbackTimer = setTimeout(() => {
-          resolve({ success: false, error: 'Connection test timed out' })
+          resolve({ success: false, error: { code: ERROR_CODES.PROVIDER_CONNECTION_TIMEOUT } })
         }, 20000)
 
         doTestConnection(payload)
@@ -86,7 +88,7 @@ export function registerProviderHandlers(): void {
             resolve(result)
           })
           .catch(() => {
-            resolve({ success: false, error: 'Connection failed' })
+            resolve({ success: false, error: { code: ERROR_CODES.PROVIDER_CONNECTION_FAILED } })
           })
           .finally(() => clearTimeout(fallbackTimer))
       })
@@ -136,10 +138,9 @@ async function doTestConnection(
     return { success: true, data: 'Connection successful!' }
   } catch (e) {
     if (controller.signal.aborted) {
-      return { success: false, error: 'Connection timed out (15s)' }
+      return { success: false, error: { code: ERROR_CODES.PROVIDER_CONNECTION_TIMEOUT } }
     }
-    const message = e instanceof Error ? e.message : String(e)
-    return { success: false, error: message || 'Connection failed' }
+    return { success: false, error: toLocalizedError(e) }
   } finally {
     clearTimeout(timerId)
   }

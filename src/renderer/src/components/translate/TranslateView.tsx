@@ -39,9 +39,12 @@ import { getTemplateByType } from '@renderer/components/settings/provider-templa
 import { TranslateSettingsDialog, type TranslateSettings } from './TranslateSettingsDialog'
 import { LANGUAGES, type Language } from '@renderer/lib/languages'
 import type { TranslationHistoryItem } from '@shared/types'
+import type { LocalizedError } from '@shared/errors'
+import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 
 export function TranslateView(): React.JSX.Element {
   const { t } = useTranslation()
+  const resolveError = useLocalizedError()
 
   const SOURCE_LANGUAGES: Language[] = useMemo(
     () => [
@@ -56,7 +59,7 @@ export function TranslateView(): React.JSX.Element {
   const [sourceLang, setSourceLang] = useState('auto')
   const [targetLang, setTargetLang] = useState('zh-CN')
   const [isTranslating, setIsTranslating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<LocalizedError | string | null>(null)
   const [copied, setCopied] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
@@ -469,7 +472,7 @@ export function TranslateView(): React.JSX.Element {
             <div
               className={`p-4 ${translateSettings.wordWrap ? 'break-words' : 'translate-no-wrap w-max min-w-full'}`}>
               {error ? (
-                <p className="text-sm text-destructive">{error}</p>
+                <p className="text-sm text-destructive">{resolveError(error)}</p>
               ) : translatedText ? (
                 <div className="text-sm leading-relaxed">
                   <MarkdownRenderer content={translatedText} />

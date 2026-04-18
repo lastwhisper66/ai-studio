@@ -6,6 +6,8 @@ import type {
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SendMessagePayload, IpcResult, Message, FileData, ApiSettings } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { toLocalizedError } from '../errors'
 import { listMessages, createMessage } from '../db/messages'
 import { loadAttachmentBase64 } from '../db/attachments'
 import { getConversation, updateConversation } from '../db/conversations'
@@ -35,7 +37,7 @@ export function registerChatHandlers(): void {
         if (resendMessageId) {
           const idx = allMessages.findIndex((m) => m.id === resendMessageId)
           if (idx === -1) {
-            return { success: false, error: 'Resend target message not found.' }
+            return { success: false, error: { code: ERROR_CODES.CHAT_RESEND_TARGET_NOT_FOUND } }
           }
           messages = allMessages.slice(0, idx + 1)
         }
@@ -43,7 +45,7 @@ export function registerChatHandlers(): void {
         // Resolve conversation and assistant
         const conversation = getConversation(conversationId)
         if (!conversation) {
-          return { success: false, error: 'Conversation not found.' }
+          return { success: false, error: { code: ERROR_CODES.CHAT_CONVERSATION_NOT_FOUND } }
         }
         const assistant = conversation.assistantId
           ? getAssistant(conversation.assistantId)
@@ -56,27 +58,28 @@ export function registerChatHandlers(): void {
         if (!effectiveProviderId) {
           return {
             success: false,
-            error:
-              'No provider configured. Please set a model for the assistant in Assistant Settings.',
+            error: { code: ERROR_CODES.CHAT_NO_PROVIDER },
           }
         }
 
         const provider = getProvider(effectiveProviderId)
         if (!provider) {
-          return { success: false, error: 'Provider not found. Please check your configuration.' }
+          return { success: false, error: { code: ERROR_CODES.CHAT_PROVIDER_NOT_FOUND } }
         }
         if (!provider.apiKey) {
           return {
             success: false,
-            error: `API key is not configured for provider "${provider.name}". Please set your API key in Settings.`,
+            error: {
+              code: ERROR_CODES.CHAT_API_KEY_MISSING,
+              params: { providerName: provider.name },
+            },
           }
         }
 
         if (!modelName) {
           return {
             success: false,
-            error:
-              'No model configured. Please select a model for the assistant in Assistant Settings.',
+            error: { code: ERROR_CODES.CHAT_NO_MODEL },
           }
         }
 
@@ -265,11 +268,11 @@ export function registerChatHandlers(): void {
           return { success: true }
         }
 
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const localized = toLocalizedError(error)
         if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.CHAT_STREAM_ERROR, { conversationId, error: errorMessage })
+          sender.send(IpcChannels.CHAT_STREAM_ERROR, { conversationId, error: localized })
         }
-        return { success: false, error: errorMessage }
+        return { success: false, error: localized }
       }
     },
   )

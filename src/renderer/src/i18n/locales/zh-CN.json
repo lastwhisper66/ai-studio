@@ -294,11 +294,12 @@
     "quickAssistant": {
       "title": "快捷助手",
       "description": "通过全局快捷键快速唤起 AI 助手，可在快捷键设置中自定义。",
+      "noActions": "暂无可用功能",
       "general": "基本设置",
       "enableLabel": "启用快捷助手",
-      "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手（默认 Ctrl+Shift+Space）。",
+      "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手。",
       "shortcutLabel": "开关快捷键",
-      "shortcutHint": "用于快速唤起快捷助手，默认 {{default}}。",
+      "shortcutHint": "用于快速唤起快捷助手。",
       "targetLangLabel": "目标语言",
       "model": "模型配置",
       "modelLabel": "AI 模型",
@@ -324,13 +325,14 @@
       "defaultPinnedHint": "默认保持快捷助手窗口置顶，仍可通过置顶按钮临时切换。",
       "back": "返回",
       "stop": "停止",
-      "copy": "复制",
-      "escBack": "返回",
+      "copy": "Alt+C 复制",
+      "escBack": "ESC 返回",
       "copied": "已复制",
-      "escClear": "清空",
-      "escClose": "关闭",
-      "select": "选择",
-      "execute": "执行",
+      "escClear": "ESC 清空",
+      "escClose": "ESC 关闭",
+      "select": "↑↓ 选择",
+      "execute": "Enter 执行",
+      "rerun": "R 重新执行",
       "warningImageLimit": "仅支持附加 1 张图片，请先移除已有图片",
       "warningImageReadFailed": "图片读取失败，请重试"
     },
@@ -353,9 +355,11 @@
       "description": "在任意应用中选中文本即可弹出工具条,点击动作查看 AI 结果。",
       "general": "基本设置",
       "enableLabel": "启用划词助手",
-      "enableHint": "关闭后将停止监听全局文本选区,不再弹出工具条。",
+      "enableHint": "开启后，选中文本时会弹出划词工具条。",
+      "defaultPinnedLabel": "默认置顶",
+      "defaultPinnedHint": "默认保持结果气泡置顶，仍可通过置顶按钮临时切换。",
       "shortcutLabel": "开关快捷键",
-      "shortcutHint": "用于快速切换划词助手,默认 {{default}}。",
+      "shortcutHint": "用于快速切换划词助手。",
       "shortcutUnavailable": "快捷键注册失败,可能已被其他应用占用。",
       "model": "模型配置",
       "modelLabel": "AI 模型",
@@ -377,13 +381,16 @@
         "actionPlaceholder": "动作",
         "generating": "正在生成…",
         "stop": "停止",
-        "regenerate": "重新生成",
-        "copy": "复制",
+        "regenerate": "R 重新生成",
+        "copy": "Alt+C 复制",
         "copied": "已复制",
         "close": "关闭",
         "pin": "置顶",
         "unpin": "取消置顶",
-        "escToClose": "关闭"
+        "escToClose": "ESC 关闭"
+      },
+      "toolbar": {
+        "waitingSelection": "等待选区…"
       }
     }
   },
@@ -528,6 +535,123 @@
       "app": "应用",
       "chat": "聊天",
       "window": "窗口"
+    }
+  },
+  "tray": {
+    "openMainWindow": "打开主窗口",
+    "enableSelectionAssistant": "启用划词助手",
+    "about": "关于",
+    "quit": "退出"
+  },
+  "dialog": {
+    "about": {
+      "title": "关于 AI Studio",
+      "detail": "桌面 AI 聊天应用"
+    },
+    "filePicker": {
+      "image": "图片",
+      "text": "文本文件",
+      "all": "所有文件"
+    }
+  },
+  "seed": {
+    "assistants": {
+      "default": {
+        "name": "默认助手",
+        "description": "使用全局设置的通用 AI 助手"
+      }
+    },
+    "selectionActions": {
+      "translate": {
+        "name": "翻译",
+        "description": "将选中文本翻译为目标语言"
+      },
+      "explain": {
+        "name": "解释",
+        "description": "解释选中文本的含义或概念"
+      },
+      "summarize": {
+        "name": "总结",
+        "description": "提炼选中文本的要点"
+      },
+      "polish": {
+        "name": "润色",
+        "description": "改写为更流畅、专业的表达"
+      }
+    },
+    "quickActions": {
+      "answer": {
+        "name": "回答问题",
+        "description": "向 AI 提问并获取回答"
+      },
+      "translate": {
+        "name": "文本翻译",
+        "description": "将文本翻译为其他语言"
+      },
+      "summarize": {
+        "name": "内容总结",
+        "description": "简洁地总结提供的文本内容"
+      },
+      "imageTranslate": {
+        "name": "识图翻译",
+        "description": "识别图片中的文字并翻译"
+      }
+    }
+  },
+  "errors": {
+    "internal": "意外错误：{{message}}",
+    "chat": {
+      "conversationNotFound": "未找到对应会话。",
+      "resendTargetNotFound": "未找到要重新发送的消息。",
+      "noProvider": "此助手尚未设置模型，请在助手设置中选择。",
+      "providerNotFound": "未找到服务商，请检查配置。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key，请到设置中填写。",
+      "noModel": "此助手尚未设置模型，请在助手设置中选择。"
+    },
+    "selection": {
+      "noModel": "划词助手尚未配置模型。请打开设置 → 划词助手，选择独立的服务商和模型。",
+      "providerNotFound": "划词助手当前选择的服务商不存在，请在设置 → 划词助手 中重新选择。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key，请到服务商设置中填写。",
+      "noModelSelected": "划词助手尚未选择模型。请打开设置 → 划词助手，挑选一个模型。",
+      "modelUnavailable": "模型在服务商 “{{providerName}}” 下已不可用，请到设置 → 划词助手 重新选择。",
+      "actionNotFound": "未找到划词动作。"
+    },
+    "quickAssistant": {
+      "noProvider": "尚未为快捷助手选择服务商。",
+      "providerNotFound": "未找到所选服务商。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key。",
+      "noModel": "快捷助手尚未配置模型，请在设置中选择。",
+      "modelInvalid": "所选模型在服务商 “{{providerName}}” 下无效。",
+      "actionNotFound": "未找到快捷动作。"
+    },
+    "translate": {
+      "noProvider": "尚未选择服务商，请为翻译选择一个模型。",
+      "providerNotFound": "未找到所选服务商。",
+      "apiKeyMissing": "服务商 “{{providerName}}” 尚未配置 API Key。",
+      "noModel": "尚未选择模型，请选择一个翻译模型。",
+      "modelInvalid": "所选翻译模型在服务商 “{{providerName}}” 下无效。"
+    },
+    "provider": {
+      "connectionTimeout": "连接测试超时",
+      "connectionFailed": "连接失败"
+    },
+    "model": {
+      "fetchFailed": "获取模型列表失败",
+      "fetchTimeout": "获取模型列表超时（15 秒）"
+    },
+    "file": {
+      "tooLarge": "文件过大（最大 10MB）：{{names}}",
+      "invalidAttachmentPath": "附件路径无效",
+      "attachmentNotFound": "未找到附件：{{path}}"
+    },
+    "assistant": {
+      "cannotDeleteDefault": "无法删除默认助手"
+    },
+    "message": {
+      "notFound": "未找到消息：{{id}}"
+    },
+    "db": {
+      "notInitialized": "数据库尚未初始化，请先调用 initDatabase()。"
     }
   }
 }

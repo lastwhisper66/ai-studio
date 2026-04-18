@@ -136,6 +136,12 @@ const api = {
   setSettingsBatch: (entries: Record<string, string>): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.SETTINGS_SET_BATCH, entries),
 
+  onLanguageChanged: (callback: (lang: string) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, lang: string): void => callback(lang)
+    ipcRenderer.on(IpcChannels.SETTINGS_LANGUAGE_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SETTINGS_LANGUAGE_CHANGED, handler)
+  },
+
   // Providers
   listProviders: (): Promise<IpcResult<Provider[]>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_LIST),
@@ -451,6 +457,15 @@ const api = {
   setQuickAssistantPinned: (pinned: boolean): void =>
     ipcRenderer.send(IpcChannels.QUICK_ASSISTANT_SET_PINNED, pinned),
 
+  onQuickAssistantStateChanged: (callback: (state: { pinned: boolean }) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, state: { pinned: boolean }): void =>
+      callback(state)
+    ipcRenderer.on(IpcChannels.QUICK_ASSISTANT_STATE_CHANGED, handler)
+    return () => {
+      ipcRenderer.removeListener(IpcChannels.QUICK_ASSISTANT_STATE_CHANGED, handler)
+    }
+  },
+
   updateQuickAssistantShortcut: (): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT),
 
@@ -490,6 +505,9 @@ const api = {
     ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_ACTION, actionId),
 
   selectionToolbarClose: (): void => ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_CLOSE),
+
+  selectionToolbarResize: (width: number): void =>
+    ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_RESIZE, width),
 
   // Selection Assistant — bubble window
   selectionBubbleReady: (): void => ipcRenderer.send(IpcChannels.SELECTION_BUBBLE_READY),

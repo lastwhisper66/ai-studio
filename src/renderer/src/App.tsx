@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import i18n from '@renderer/i18n'
 import { AppLayout } from '@renderer/components/layout/AppLayout'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
@@ -55,6 +56,25 @@ function App(): React.JSX.Element {
   useEffect(() => {
     if (settingsLoaded) initKeybindings()
   }, [settingsLoaded, initKeybindings])
+
+  // Reconcile i18n with the persisted `general.language` setting exactly once
+  // after settings load. On a fresh install the setting is empty, so we adopt
+  // whatever the renderer's LanguageDetector resolved to and persist it — the
+  // main process (tray / dialogs / file picker) reads this key at startup and
+  // would otherwise stay on its default, diverging from the UI.
+  const languageReconciled = useRef(false)
+  useEffect(() => {
+    if (!settingsLoaded || languageReconciled.current) return
+    languageReconciled.current = true
+    const { settings, saveSettings } = useSettingsStore.getState()
+    const stored = settings['general.language']
+    const detected = i18n.resolvedLanguage ?? i18n.language ?? 'en'
+    if (!stored) {
+      saveSettings({ 'general.language': detected })
+    } else if (stored !== i18n.resolvedLanguage) {
+      i18n.changeLanguage(stored)
+    }
+  }, [settingsLoaded])
 
   // Ctrl+Wheel zoom — use ref to avoid async read-modify-write race
   const zoomRef = useRef(1.0)

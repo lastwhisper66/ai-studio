@@ -4,6 +4,8 @@ import { clampZoom } from '@shared/zoom'
 import type { IpcResult } from '@shared/types'
 import { getSetting, setSetting, setSettingsBatch, getAllSettings } from '../db'
 import { applySslSetting } from '../ai'
+import { setMainLanguage, LANGUAGE_SETTING_KEY } from '../i18n'
+import { toLocalizedError } from '../errors'
 import {
   applyCloseToTraySetting,
   applyAutoLaunchSetting,
@@ -23,6 +25,19 @@ function applyZoomSetting(value: string): void {
   }
 }
 
+function applyLanguageSetting(value: string): void {
+  setMainLanguage(value)
+  // Broadcast to every renderer (main app + auxiliary windows like the
+  // selection toolbar/bubble) so their i18next instances can switch without
+  // a restart. Each renderer already initialized its instance from
+  // localStorage at load time and won't otherwise observe the change.
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(IpcChannels.SETTINGS_LANGUAGE_CHANGED, value)
+    }
+  }
+}
+
 const settingSideEffects: Record<string, (value: string) => void> = {
   'app.skipSslVerify': (v) => applySslSetting(v === 'true'),
   'app.closeToTray': applyCloseToTraySetting,
@@ -31,6 +46,7 @@ const settingSideEffects: Record<string, (value: string) => void> = {
   'app.startMinimized': applyStartMinimizedSetting,
   'display.zoomFactor': applyZoomSetting,
   'quickAssistant.enabled': applyQuickAssistantEnabled,
+  [LANGUAGE_SETTING_KEY]: applyLanguageSetting,
 }
 
 function applySideEffects(key: string, value: string): void {
@@ -43,7 +59,7 @@ export function registerSettingsHandlers(): void {
       const data = getSetting(key)
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -53,7 +69,7 @@ export function registerSettingsHandlers(): void {
       applySideEffects(key, value)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -62,7 +78,7 @@ export function registerSettingsHandlers(): void {
       const data = getAllSettings()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -76,7 +92,7 @@ export function registerSettingsHandlers(): void {
         }
         return { success: true }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )

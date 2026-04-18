@@ -6,6 +6,8 @@ import type {
 import { IpcChannels } from '@shared/ipc-channels'
 import type { QuickActionRequestPayload, IpcResult, ApiSettings, FileData } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError, toLocalizedError } from '../errors'
 import { streamChat } from '../ai'
 import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
@@ -17,27 +19,25 @@ let activeController: AbortController | null = null
 function loadQuickAssistantSettings(providerId?: string, modelId?: string): ApiSettings {
   const resolvedProviderId = providerId || getSetting('quickAssistant.providerId')
   if (!resolvedProviderId) {
-    throw new Error(
-      'No provider configured for Quick Assistant. Please select a model in settings.',
-    )
+    throw new AppError(ERROR_CODES.QUICK_NO_PROVIDER)
   }
 
   const provider = getProvider(resolvedProviderId)
   if (!provider) {
-    throw new Error('Selected provider not found.')
+    throw new AppError(ERROR_CODES.QUICK_PROVIDER_NOT_FOUND)
   }
   if (!provider.apiKey) {
-    throw new Error(`API key is not configured for provider "${provider.name}".`)
+    throw new AppError(ERROR_CODES.QUICK_API_KEY_MISSING, { providerName: provider.name })
   }
 
   const resolvedModelId = modelId || getSetting('quickAssistant.modelId')
   if (!resolvedModelId) {
-    throw new Error('No model configured for Quick Assistant. Please select a model in settings.')
+    throw new AppError(ERROR_CODES.QUICK_NO_MODEL)
   }
 
   const model = listModelsByProvider(resolvedProviderId).find((m) => m.name === resolvedModelId)
   if (!model) {
-    throw new Error(`Selected model is invalid for provider "${provider.name}".`)
+    throw new AppError(ERROR_CODES.QUICK_MODEL_INVALID, { providerName: provider.name })
   }
 
   return {
@@ -73,7 +73,7 @@ export function registerQuickAssistantHandlers(): void {
       try {
         const action = getQuickAction(actionId)
         if (!action) {
-          throw new Error('Quick action not found.')
+          throw new AppError(ERROR_CODES.QUICK_ACTION_NOT_FOUND)
         }
 
         const settings = loadQuickAssistantSettings(providerId, modelId)
@@ -143,11 +143,11 @@ export function registerQuickAssistantHandlers(): void {
           return { success: true }
         }
 
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const localized = toLocalizedError(error)
         if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.QUICK_ASSISTANT_ERROR, { error: errorMessage })
+          sender.send(IpcChannels.QUICK_ASSISTANT_ERROR, { error: localized })
         }
-        return { success: false, error: errorMessage }
+        return { success: false, error: localized }
       }
     },
   )

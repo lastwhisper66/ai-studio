@@ -30,7 +30,13 @@ export function GeneralSection(): React.JSX.Element {
     setSpellCheck(settings['app.spellCheck'] !== 'false')
     setAutoLaunch(settings['app.autoLaunch'] === 'true')
     setStartMinimized(settings['app.startMinimized'] === 'true')
-  }, [settings])
+    // Sync stored language with i18n on load — ensures the renderer respects
+    // what was persisted in SQLite (the authoritative source for the main process).
+    const storedLang = settings['general.language']
+    if (storedLang && storedLang !== i18n.resolvedLanguage) {
+      i18n.changeLanguage(storedLang)
+    }
+  }, [settings, i18n])
 
   const handleCloseToTrayToggle = (checked: boolean): void => {
     setCloseToTray(checked)
@@ -54,6 +60,7 @@ export function GeneralSection(): React.JSX.Element {
 
   const handleLanguageChange = (value: string): void => {
     i18n.changeLanguage(value)
+    saveSettings({ 'general.language': value })
   }
 
   return (

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SelectionAction, IpcResult } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listSelectionActions,
   createSelectionAction,
@@ -14,7 +15,7 @@ export function registerSelectionActionHandlers(): void {
     try {
       return { success: true, data: listSelectionActions() }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -32,7 +33,7 @@ export function registerSelectionActionHandlers(): void {
       try {
         return { success: true, data: createSelectionAction(data) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -49,7 +50,7 @@ export function registerSelectionActionHandlers(): void {
       try {
         return { success: true, data: updateSelectionAction(id, data) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -59,7 +60,7 @@ export function registerSelectionActionHandlers(): void {
       deleteSelectionAction(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -68,7 +69,7 @@ export function registerSelectionActionHandlers(): void {
       reorderSelectionActions(ids)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

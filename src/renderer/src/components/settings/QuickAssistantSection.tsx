@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@renderer/i18n'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
 import { Button } from '@renderer/components/ui/button'
@@ -49,13 +50,13 @@ import {
   generateTranslatePrompt,
   generateImageTranslatePrompt,
 } from '@renderer/lib/languages'
-import { DEFAULT_KEYBINDINGS } from '@shared/keybindings'
 import type { QuickAction } from '@shared/types'
 
 const QUICK_ASSISTANT_ACTION = 'toggle-quick-assistant'
 
 export function QuickAssistantSection(): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
   const { settings, saveSettings } = useSettingsStore()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -137,8 +138,8 @@ export function QuickAssistantSection(): React.JSX.Element {
 
   const openEdit = (action: QuickAction): void => {
     setEditingAction(action)
-    setFormName(action.name)
-    setFormDescription(action.description)
+    setFormName(st(action.name))
+    setFormDescription(st(action.description))
     if (action.id === 'builtin-translate' || action.id === 'builtin-image-translate') {
       const lang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
       setFormTargetLang(lang)
@@ -158,9 +159,17 @@ export function QuickAssistantSection(): React.JSX.Element {
   const handleSave = async (): Promise<void> => {
     if (!formName.trim()) return
     if (editingAction) {
+      // If the user didn't actually edit the display values, keep the
+      // original raw strings (which may be `seed.*` i18n keys) so that the
+      // built-in row stays translatable on language change.
+      const name = formName.trim() === st(editingAction.name) ? editingAction.name : formName.trim()
+      const description =
+        formDescription.trim() === st(editingAction.description)
+          ? editingAction.description
+          : formDescription.trim()
       await updateAction(editingAction.id, {
-        name: formName.trim(),
-        description: formDescription.trim(),
+        name,
+        description,
         systemPrompt: formSystemPrompt.trim(),
       })
       // Note: translateTargetLang is persisted immediately in the dropdown's
@@ -236,9 +245,7 @@ export function QuickAssistantSection(): React.JSX.Element {
                 {t('settings.quickAssistant.shortcutLabel')}
               </Label>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {t('settings.quickAssistant.shortcutHint', {
-                  default: DEFAULT_KEYBINDINGS[QUICK_ASSISTANT_ACTION].defaultAccelerator,
-                })}
+                {t('settings.quickAssistant.shortcutHint')}
               </p>
             </div>
           </div>
@@ -308,12 +315,8 @@ export function QuickAssistantSection(): React.JSX.Element {
         <div className="mt-4 space-y-2">
           {actions.map((action) => {
             const Icon = quickActionIconMap[action.icon] || defaultQuickActionIcon
-            const displayName = action.isBuiltin
-              ? t(`settings.builtinAction.${action.id}.name`, action.name)
-              : action.name
-            const displayDesc = action.isBuiltin
-              ? t(`settings.builtinAction.${action.id}.description`, action.description)
-              : action.description
+            const displayName = st(action.name)
+            const displayDesc = st(action.description)
             return (
               <div
                 key={action.id}

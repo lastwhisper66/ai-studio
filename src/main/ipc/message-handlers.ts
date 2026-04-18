@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { Message, MessageRole, IpcResult, FileData } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import { getDb } from '../db/database'
 import {
   listMessages,
@@ -21,7 +22,7 @@ export function registerMessageHandlers(): void {
       const data = listMessages(conversationId)
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -37,7 +38,7 @@ export function registerMessageHandlers(): void {
         const data = listMessagesPaginated(conversationId, limit, beforeCreatedAt)
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -68,7 +69,7 @@ export function registerMessageHandlers(): void {
 
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -79,7 +80,7 @@ export function registerMessageHandlers(): void {
       deleteMessage(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -90,7 +91,7 @@ export function registerMessageHandlers(): void {
         const data = updateMessageContent(id, content)
         return { success: true, data }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -104,7 +105,7 @@ export function registerMessageHandlers(): void {
       clearConversationMessages(conversationId)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -114,7 +115,7 @@ export function registerMessageHandlers(): void {
       try {
         return { success: true, data: insertDivider(conversationId) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )

@@ -1,3 +1,5 @@
+import type { LocalizedError } from './errors'
+
 export interface Conversation {
   id: string
   title: string
@@ -178,7 +180,7 @@ export interface ApiSettings {
 export interface IpcResult<T> {
   success: boolean
   data?: T
-  error?: string
+  error?: LocalizedError
 }
 
 /** Reasoning effort level for models that support chain-of-thought */
@@ -214,7 +216,7 @@ export interface StreamEndData {
 /** chat:stream-error push data */
 export interface StreamErrorData {
   conversationId: string
-  error: string
+  error: LocalizedError
 }
 
 /** chat:title-updated push data */
@@ -249,7 +251,7 @@ export interface TranslateEndData {
 
 /** translate:error push data */
 export interface TranslateErrorData {
-  error: string
+  error: LocalizedError
 }
 
 // ── Quick Assistant ─────────────────────────────────────────────
@@ -289,7 +291,7 @@ export interface QuickActionEndData {
 
 /** quick-assistant:error push data */
 export interface QuickActionErrorData {
-  error: string
+  error: LocalizedError
 }
 
 /** screenshot:data payload sent from main to renderer overlay */
@@ -379,6 +381,8 @@ export interface SelectionBubblePayload {
   actionId: string
   /** All enabled actions — used by the bubble's "switch action" menu */
   actions: SelectionAction[]
+  /** Initial pinned state decided by main from `selection.defaultPinned`. */
+  pinned: boolean
 }
 
 /** selection:request payload */
@@ -402,5 +406,5 @@ export interface SelectionEndData {
 
 /** selection:error push data */
 export interface SelectionErrorData {
-  error: string
+  error: LocalizedError
 }

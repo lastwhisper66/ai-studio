@@ -1,6 +1,8 @@
 import { existsSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs'
 import { join, resolve, sep } from 'path'
 import type { FileData, AttachmentMeta } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError } from '../errors'
 import { getDataDir } from '../utils/paths'
 
 function getAttachmentsDir(): string {
@@ -34,10 +36,10 @@ export function loadAttachmentBase64(relativePath: string): string {
   const baseDir = resolve(getAttachmentsDir())
   const fullPath = resolve(baseDir, relativePath)
   if (!fullPath.startsWith(baseDir + sep)) {
-    throw new Error('Invalid attachment path')
+    throw new AppError(ERROR_CODES.FILE_INVALID_ATTACHMENT_PATH)
   }
   if (!existsSync(fullPath)) {
-    throw new Error(`Attachment not found: ${relativePath}`)
+    throw new AppError(ERROR_CODES.FILE_ATTACHMENT_NOT_FOUND, { path: relativePath })
   }
   return readFileSync(fullPath).toString('base64')
 }

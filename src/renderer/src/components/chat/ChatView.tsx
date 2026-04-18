@@ -13,6 +13,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
+import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
@@ -28,6 +30,8 @@ interface ChatViewProps {
 
 export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): React.JSX.Element {
   const { t } = useTranslation()
+  const resolveError = useLocalizedError()
+  const st = useSeedTranslator()
   const {
     activeConversationId,
     conversations,
@@ -183,7 +187,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
           <button
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-accent"
             onClick={() => handleOpenSettings()}>
-            <span>{activeAssistant?.name ?? t('chat.newChat')}</span>
+            <span>{activeAssistant ? st(activeAssistant.name) : t('chat.newChat')}</span>
           </button>
 
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
@@ -254,7 +258,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       {/* Error banner */}
       {error && (
         <div className="flex items-center gap-2 border-t border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
-          <span className="flex-1">{error}</span>
+          <span className="flex-1">{resolveError(error)}</span>
           <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={clearError}>
             <X className="h-3.5 w-3.5" />
           </Button>

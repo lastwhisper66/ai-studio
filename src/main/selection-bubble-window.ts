@@ -3,6 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SelectionAnchor, SelectionBubblePayload } from '@shared/types'
+import { getSetting } from './db'
 
 let bubbleWindow: BrowserWindow | null = null
 let contentReady = false
@@ -33,6 +34,11 @@ const BUBBLE_HEIGHT = 320
 /** Vertical gap between the anchor and the bubble (slightly larger than toolbar) */
 const BUBBLE_OFFSET_Y = 6
 
+/** Read the user's default-pinned preference from DB. */
+function isDefaultPinned(): boolean {
+  return getSetting('selection.defaultPinned') === 'true'
+}
+
 export function preCreateSelectionBubbleWindow(): void {
   if (bubbleWindow && !bubbleWindow.isDestroyed()) return
 
@@ -43,7 +49,7 @@ export function preCreateSelectionBubbleWindow(): void {
     transparent: true,
     resizable: false,
     skipTaskbar: true,
-    alwaysOnTop: true,
+    alwaysOnTop: isDefaultPinned(),
     show: false,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -52,8 +58,6 @@ export function preCreateSelectionBubbleWindow(): void {
       nodeIntegration: false,
     },
   })
-
-  bubbleWindow.setAlwaysOnTop(true, 'screen-saver')
 
   bubbleWindow.on('blur', () => {
     // When pinned, the user wants the bubble to stay visible across focus changes.
@@ -103,21 +107,26 @@ function computeBubbleBounds(anchor: SelectionAnchor): Electron.Rectangle {
   return { x, y, width: BUBBLE_WIDTH, height: BUBBLE_HEIGHT }
 }
 
-export function showSelectionBubble(payload: SelectionBubblePayload): void {
+export function showSelectionBubble(payload: Omit<SelectionBubblePayload, 'pinned'>): void {
   if (!bubbleWindow || bubbleWindow.isDestroyed()) {
     preCreateSelectionBubbleWindow()
   }
   const win = bubbleWindow
   if (!win) return
 
-  pendingPayload = payload
-  // A new selection starts a fresh session — reset pin/streaming flags from any prior view
-  pinned = false
+  // A new selection starts a fresh session — restore pin state from the user's
+  // default setting (matching Quick Assistant behavior), and clear streaming.
+  pinned = isDefaultPinned()
   streaming = false
+  // Keep window z-order in sync with pinned — matches Quick Assistant semantics:
+  // pinned controls both "stay on top" and "don't auto-close on blur".
+  win.setAlwaysOnTop(pinned)
+  const fullPayload: SelectionBubblePayload = { ...payload, pinned }
+  pendingPayload = fullPayload
   win.setBounds(computeBubbleBounds(payload.anchor))
 
   if (contentReady) {
-    win.webContents.send(IpcChannels.SELECTION_BUBBLE_DATA, payload)
+    win.webContents.send(IpcChannels.SELECTION_BUBBLE_DATA, fullPayload)
   }
 
   win.setOpacity(0)
@@ -155,6 +164,9 @@ export function initSelectionBubbleIpc(): void {
 
   ipcMain.on(IpcChannels.SELECTION_BUBBLE_SET_PINNED, (_event, value: boolean) => {
     pinned = Boolean(value)
+    if (bubbleWindow && !bubbleWindow.isDestroyed()) {
+      bubbleWindow.setAlwaysOnTop(pinned)
+    }
   })
 
   ipcMain.on(IpcChannels.SELECTION_BUBBLE_SET_STREAMING, (_event, value: boolean) => {

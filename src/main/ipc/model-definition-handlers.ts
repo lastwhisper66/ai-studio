@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, ModelDefinition } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listModelDefinitions,
   createModelDefinition,
@@ -15,7 +16,7 @@ export function registerModelDefinitionHandlers(): void {
       const data = listModelDefinitions()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -26,7 +27,7 @@ export function registerModelDefinitionHandlers(): void {
         const def = createModelDefinition(data)
         return { success: true, data: def }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -38,7 +39,7 @@ export function registerModelDefinitionHandlers(): void {
         const def = updateModelDefinition(id, data)
         return { success: true, data: def }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -48,7 +49,7 @@ export function registerModelDefinitionHandlers(): void {
       deleteModelDefinition(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, ModelGroup } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import { listModelGroups, createModelGroup, updateModelGroup, deleteModelGroup } from '../db'
 import type { CreateModelGroupData, UpdateModelGroupData } from '../db/model-groups'
 
@@ -10,7 +11,7 @@ export function registerModelGroupHandlers(): void {
       const data = listModelGroups()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -21,7 +22,7 @@ export function registerModelGroupHandlers(): void {
         const group = createModelGroup(data)
         return { success: true, data: group }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -33,7 +34,7 @@ export function registerModelGroupHandlers(): void {
         const group = updateModelGroup(id, data)
         return { success: true, data: group }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -43,7 +44,7 @@ export function registerModelGroupHandlers(): void {
       deleteModelGroup(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

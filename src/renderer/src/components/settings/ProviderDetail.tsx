@@ -262,7 +262,11 @@ function ProviderForm({
       if (result.success && result.data) {
         setRemoteModels(result.data)
       } else if (!result.success) {
-        setFetchError(result.error || t('settings.provider.fetchModelsFailed'))
+        setFetchError(
+          result.error
+            ? t(result.error.code, result.error.params ?? {})
+            : t('settings.provider.fetchModelsFailed'),
+        )
       }
     } finally {
       setIsFetchingModels(false)

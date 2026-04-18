@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3'
 import { existsSync, mkdirSync } from 'fs'
 import { join } from 'path'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError } from '../errors'
 import { getDataDir } from '../utils/paths'
 import { seedModelDefinitions } from './model-definitions'
 import { seedModelGroups } from './model-groups'
@@ -28,7 +30,7 @@ export function initDatabase(): void {
 
 export function getDb(): Database.Database {
   if (!db) {
-    throw new Error('Database not initialized. Call initDatabase() first.')
+    throw new AppError(ERROR_CODES.DB_NOT_INITIALIZED)
   }
   return db
 }
@@ -234,7 +236,7 @@ export function seedDefaultAssistant(): void {
     database
       .prepare(
         `INSERT INTO assistants (id, name, description, is_default, sort_order)
-         VALUES ('default-assistant', '默认助手', '使用全局设置的通用 AI 助手', 1, -1)`,
+         VALUES ('default-assistant', 'seed.assistants.default.name', 'seed.assistants.default.description', 1, -1)`,
       )
       .run()
   }

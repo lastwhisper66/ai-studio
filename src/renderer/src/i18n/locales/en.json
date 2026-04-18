@@ -294,11 +294,12 @@
     "quickAssistant": {
       "title": "Quick Assistant",
       "description": "Quickly summon AI assistant with a global shortcut, customizable in Keyboard Shortcuts settings.",
+      "noActions": "No available actions",
       "general": "General",
       "enableLabel": "Enable Quick Assistant",
-      "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere (default: Ctrl+Shift+Space).",
+      "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere.",
       "shortcutLabel": "Toggle Shortcut",
-      "shortcutHint": "Global shortcut to toggle the Quick Assistant (default {{default}}).",
+      "shortcutHint": "Global shortcut to toggle the Quick Assistant.",
       "targetLangLabel": "Target language",
       "model": "Model",
       "modelLabel": "AI Model",
@@ -324,13 +325,14 @@
       "defaultPinnedHint": "Keep the Quick Assistant on top by default. You can still toggle via the pin button.",
       "back": "Back",
       "stop": "Stop",
-      "copy": "Copy",
-      "escBack": "Back",
+      "copy": "Alt+C Copy",
+      "escBack": "ESC Back",
       "copied": "Copied",
-      "escClear": "Clear",
-      "escClose": "Close",
-      "select": "Select",
-      "execute": "Execute",
+      "escClear": "ESC Clear",
+      "escClose": "ESC Close",
+      "select": "↑↓ Select",
+      "execute": "Enter Run",
+      "rerun": "R Rerun",
       "warningImageLimit": "Only 1 image allowed. Remove the existing image first.",
       "warningImageReadFailed": "Failed to read image. Please try again."
     },
@@ -353,9 +355,11 @@
       "description": "Select text in any application to pop up a toolbar, then click an action to see the AI result.",
       "general": "General",
       "enableLabel": "Enable Selection Assistant",
-      "enableHint": "When off, the global text-selection listener stops and the toolbar will not appear.",
+      "enableHint": "When enabled, selecting text will show the Selection Assistant toolbar.",
+      "defaultPinnedLabel": "Always on Top",
+      "defaultPinnedHint": "Keep the result bubble on top by default. You can still toggle via the pin button.",
       "shortcutLabel": "Toggle Shortcut",
-      "shortcutHint": "Quickly enable or disable Selection Assistant (default {{default}}).",
+      "shortcutHint": "Quickly enable or disable Selection Assistant.",
       "shortcutUnavailable": "Shortcut registration failed — it may already be in use by another app.",
       "model": "Model",
       "modelLabel": "AI Model",
@@ -377,13 +381,16 @@
         "actionPlaceholder": "Action",
         "generating": "Generating…",
         "stop": "Stop",
-        "regenerate": "Regenerate",
-        "copy": "Copy",
+        "regenerate": "R Regenerate",
+        "copy": "Alt+C Copy",
         "copied": "Copied",
         "close": "Close",
         "pin": "Pin",
         "unpin": "Unpin",
-        "escToClose": "Close"
+        "escToClose": "ESC Close"
+      },
+      "toolbar": {
+        "waitingSelection": "Waiting for selection…"
       }
     }
   },
@@ -528,6 +535,123 @@
       "app": "Application",
       "chat": "Chat",
       "window": "Window"
+    }
+  },
+  "tray": {
+    "openMainWindow": "Open main window",
+    "enableSelectionAssistant": "Enable selection assistant",
+    "about": "About",
+    "quit": "Quit"
+  },
+  "dialog": {
+    "about": {
+      "title": "About AI Studio",
+      "detail": "A desktop AI chat application"
+    },
+    "filePicker": {
+      "image": "Images",
+      "text": "Text files",
+      "all": "All files"
+    }
+  },
+  "seed": {
+    "assistants": {
+      "default": {
+        "name": "Default assistant",
+        "description": "Generic AI assistant using global settings"
+      }
+    },
+    "selectionActions": {
+      "translate": {
+        "name": "Translate",
+        "description": "Translate the selected text into the target language"
+      },
+      "explain": {
+        "name": "Explain",
+        "description": "Explain the meaning or concepts in the selected text"
+      },
+      "summarize": {
+        "name": "Summarize",
+        "description": "Extract the key points from the selected text"
+      },
+      "polish": {
+        "name": "Polish",
+        "description": "Rewrite for a more fluent, professional tone"
+      }
+    },
+    "quickActions": {
+      "answer": {
+        "name": "Answer question",
+        "description": "Ask the AI a question and get an answer"
+      },
+      "translate": {
+        "name": "Text translation",
+        "description": "Translate text into another language"
+      },
+      "summarize": {
+        "name": "Summarize content",
+        "description": "Concisely summarize the provided text"
+      },
+      "imageTranslate": {
+        "name": "Image translation",
+        "description": "Recognize and translate text in an image"
+      }
+    }
+  },
+  "errors": {
+    "internal": "Unexpected error: {{message}}",
+    "chat": {
+      "conversationNotFound": "Conversation not found.",
+      "resendTargetNotFound": "Resend target message not found.",
+      "noProvider": "No model is set for this assistant. Please select one in Assistant Settings.",
+      "providerNotFound": "Provider not found. Please check your configuration.",
+      "apiKeyMissing": "API key is not configured for provider \"{{providerName}}\". Please set your API key in Settings.",
+      "noModel": "No model is set for this assistant. Please select one in Assistant Settings."
+    },
+    "selection": {
+      "noModel": "Selection assistant has no model configured. Open Settings → Selection Assistant to choose a provider and model.",
+      "providerNotFound": "The provider selected for the selection assistant no longer exists. Please pick another one in Settings → Selection Assistant.",
+      "apiKeyMissing": "Provider \"{{providerName}}\" has no API key. Please set it in the provider settings.",
+      "noModelSelected": "Selection assistant has no model selected. Open Settings → Selection Assistant and pick a model.",
+      "modelUnavailable": "The model is no longer available under provider \"{{providerName}}\". Please re-select one in Settings → Selection Assistant.",
+      "actionNotFound": "Selection action not found."
+    },
+    "quickAssistant": {
+      "noProvider": "No provider selected for the Quick Assistant.",
+      "providerNotFound": "Selected provider not found.",
+      "apiKeyMissing": "API key is not configured for provider \"{{providerName}}\".",
+      "noModel": "No model configured for Quick Assistant. Please select a model in settings.",
+      "modelInvalid": "Selected model is invalid for provider \"{{providerName}}\".",
+      "actionNotFound": "Quick action not found."
+    },
+    "translate": {
+      "noProvider": "No provider selected. Please select a model for translation.",
+      "providerNotFound": "Selected provider not found.",
+      "apiKeyMissing": "API key is not configured for provider \"{{providerName}}\".",
+      "noModel": "No model selected. Please select a translation model.",
+      "modelInvalid": "Selected translation model is invalid for provider \"{{providerName}}\"."
+    },
+    "provider": {
+      "connectionTimeout": "Connection test timed out",
+      "connectionFailed": "Connection failed"
+    },
+    "model": {
+      "fetchFailed": "Failed to fetch models",
+      "fetchTimeout": "Fetch models timed out (15s)"
+    },
+    "file": {
+      "tooLarge": "Files too large (max 10MB): {{names}}",
+      "invalidAttachmentPath": "Invalid attachment path",
+      "attachmentNotFound": "Attachment not found: {{path}}"
+    },
+    "assistant": {
+      "cannotDeleteDefault": "Cannot delete the default assistant"
+    },
+    "message": {
+      "notFound": "Message not found: {{id}}"
+    },
+    "db": {
+      "notInitialized": "Database not initialized. Call initDatabase() first."
     }
   }
 }

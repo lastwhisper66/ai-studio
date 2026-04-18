@@ -24,7 +24,9 @@ export function DataSection(): React.JSX.Element {
       setClearError(null)
       const result = await window.api.clearAppData()
       if (!result.success) {
-        setClearError(result.error || 'Failed to clear data')
+        setClearError(
+          result.error ? t(result.error.code, result.error.params ?? {}) : 'Failed to clear data',
+        )
       }
     } catch (e) {
       setClearError((e as Error).message)

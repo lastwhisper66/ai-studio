@@ -27,6 +27,12 @@ function isDefaultPinned(): boolean {
   return getSetting('quickAssistant.defaultPinned') === 'true'
 }
 
+/** Push the current pinned state to the renderer so its UI reflects main. */
+function sendPinnedState(): void {
+  if (!quickAssistantWindow || quickAssistantWindow.isDestroyed()) return
+  quickAssistantWindow.webContents.send(IpcChannels.QUICK_ASSISTANT_STATE_CHANGED, { pinned })
+}
+
 /**
  * Pre-create the Quick Assistant window (hidden) at app startup.
  * The page loads and React renders in the background so that
@@ -89,6 +95,7 @@ export function toggleQuickAssistantWindow(): void {
       const defaultPin = isDefaultPinned()
       pinned = defaultPin
       quickAssistantWindow.setAlwaysOnTop(defaultPin)
+      sendPinnedState()
       // Re-center on primary display each time it's shown
       const { width, height } = screen.getPrimaryDisplay().workAreaSize
       quickAssistantWindow.setBounds({
@@ -138,6 +145,7 @@ export function showQuickAssistantWithAutoExecute(payload: AutoExecutePayload): 
     const defaultPin = isDefaultPinned()
     pinned = defaultPin
     quickAssistantWindow.setAlwaysOnTop(defaultPin)
+    sendPinnedState()
   }
 
   // Re-center on primary display

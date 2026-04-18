@@ -1,6 +1,8 @@
 import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { TranslateRequestPayload, IpcResult, ApiSettings } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError, toLocalizedError } from '../errors'
 import { streamChat } from '../ai'
 import { getProvider } from '../db/providers'
 import { getModel } from '../db/models'
@@ -9,25 +11,25 @@ let activeController: AbortController | null = null
 
 function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettings {
   if (!providerId) {
-    throw new Error('No provider selected. Please select a model for translation.')
+    throw new AppError(ERROR_CODES.TRANSLATE_NO_PROVIDER)
   }
 
   const provider = getProvider(providerId)
   if (!provider) {
-    throw new Error('Selected provider not found.')
+    throw new AppError(ERROR_CODES.TRANSLATE_PROVIDER_NOT_FOUND)
   }
   if (!provider.apiKey) {
-    throw new Error(`API key is not configured for provider "${provider.name}".`)
+    throw new AppError(ERROR_CODES.TRANSLATE_API_KEY_MISSING, { providerName: provider.name })
   }
 
   // Resolve model: specified modelId only
   if (!modelId) {
-    throw new Error('No model selected. Please select a translation model.')
+    throw new AppError(ERROR_CODES.TRANSLATE_NO_MODEL)
   }
 
   const model = getModel(modelId)
   if (!model || model.providerId !== providerId) {
-    throw new Error(`Selected translation model is invalid for provider "${provider.name}".`)
+    throw new AppError(ERROR_CODES.TRANSLATE_MODEL_INVALID, { providerName: provider.name })
   }
 
   const modelName = model.name
@@ -115,11 +117,11 @@ export function registerTranslateHandlers(): void {
           return { success: true }
         }
 
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const localized = toLocalizedError(error)
         if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.TRANSLATE_ERROR, { error: errorMessage })
+          sender.send(IpcChannels.TRANSLATE_ERROR, { error: localized })
         }
-        return { success: false, error: errorMessage }
+        return { success: false, error: localized }
       }
     },
   )

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, Assistant } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listAssistants,
   getAssistant,
@@ -17,7 +18,7 @@ export function registerAssistantHandlers(): void {
       const data = listAssistants()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -26,7 +27,7 @@ export function registerAssistantHandlers(): void {
       const data = getAssistant(id)
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -37,7 +38,7 @@ export function registerAssistantHandlers(): void {
         const assistant = createAssistant(data)
         return { success: true, data: assistant }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -49,7 +50,7 @@ export function registerAssistantHandlers(): void {
         const assistant = updateAssistant(id, data)
         return { success: true, data: assistant }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -59,7 +60,7 @@ export function registerAssistantHandlers(): void {
       deleteAssistant(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -68,7 +69,7 @@ export function registerAssistantHandlers(): void {
       reorderAssistants(ids)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

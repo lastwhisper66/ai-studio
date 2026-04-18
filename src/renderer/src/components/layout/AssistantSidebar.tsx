@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Plus, Pencil, Trash2, Copy, Pin } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import {
   DndContext,
   closestCenter,
@@ -58,6 +59,7 @@ interface GroupedAssistants {
 
 export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
   const {
     assistants,
     activeAssistantId,
@@ -352,7 +354,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
           <DragOverlay>
             {draggingAssistant && (
               <div className="rounded-lg bg-sidebar-accent px-3 py-2 text-sm shadow-lg ring-1 ring-primary/30">
-                {draggingAssistant.name}
+                {st(draggingAssistant.name)}
               </div>
             )}
           </DragOverlay>
@@ -415,6 +417,7 @@ function AssistantItem({
   showDelete = true,
 }: AssistantItemProps): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -422,7 +425,7 @@ function AssistantItem({
           <div className="flex min-w-0 flex-1 items-center px-2 py-2">
             {isPinnedItem && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
             <span className={cn('min-w-0 truncate text-sm', a.isDefault && 'font-medium')}>
-              {a.name}
+              {st(a.name)}
             </span>
           </div>
         </div>

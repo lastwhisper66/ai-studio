@@ -68,7 +68,7 @@ export function SettingsSidebar({
   const { t } = useTranslation()
 
   return (
-    <nav className="w-48 shrink-0 border-r p-3">
+    <nav className="w-52 shrink-0 border-r p-3">
       {sectionGroups.map((group, groupIndex) => (
         <div key={groupIndex}>
           {groupIndex > 0 && <Separator className="my-2" />}
@@ -78,7 +78,7 @@ export function SettingsSidebar({
                 key={id}
                 onClick={() => onSectionChange(id)}
                 className={cn(
-                  'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors',
+                  'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors',
                   activeSection === id
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
                     : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',

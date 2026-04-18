@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Copy, Pin, PinOff, RotateCw, Square, X } from 'lucide-react'
+import { Pin, PinOff, Square, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
+import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import {
   Select,
@@ -17,6 +19,7 @@ import {
 } from '@renderer/lib/languages'
 import i18n from '@renderer/i18n'
 import type { SelectionAction, SelectionBubblePayload } from '@shared/types'
+import type { LocalizedError } from '@shared/errors'
 import {
   defaultSelectionActionIcon,
   selectionActionIconMap,
@@ -36,11 +39,12 @@ function normalizeLangCode(input: string | undefined): string {
 
 export function SelectionBubbleApp(): React.JSX.Element {
   const { t } = useTranslation()
+  const resolveError = useLocalizedError()
   const [payload, setPayload] = useState<SelectionBubblePayload | null>(null)
   const [currentActionId, setCurrentActionId] = useState<string>('')
   const [content, setContent] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<LocalizedError | string | null>(null)
   const [pinned, setPinned] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
   const [targetLang, setTargetLang] = useState<string>(() => normalizeLangCode(i18n.language))
@@ -66,10 +70,11 @@ export function SelectionBubbleApp(): React.JSX.Element {
     const unsubscribe = window.api.onSelectionBubbleData((data) => {
       setPayload(data)
       setCurrentActionId(data.actionId)
-      // Fresh payload — reset everything
+      // Fresh payload — reset everything. Main is the source of truth for the
+      // initial pinned state; it reads `selection.defaultPinned` on show.
       setContent('')
       setError(null)
-      setPinned(false)
+      setPinned(data.pinned)
       setCopySuccess(false)
     })
     if (!readySignalled.current) {
@@ -98,12 +103,50 @@ export function SelectionBubbleApp(): React.JSX.Element {
     }
   }, [])
 
-  // Esc closes the bubble
+  // This window is pre-created at startup; its i18n instance won't observe
+  // later language changes in the main window. Subscribe to the main-process
+  // broadcast so the header/footer labels stay in sync on the fly.
+  useEffect(() => {
+    return window.api.onLanguageChanged((lang) => {
+      i18n.changeLanguage(lang)
+    })
+  }, [])
+
+  // Track the latest state/handlers inside the global keydown listener so it
+  // doesn't need to re-register (and miss keys during re-render gaps).
+  const shortcutStateRef = useRef({
+    canRegenerate: false,
+    canCopy: false,
+    handleRegenerate: (): void => {},
+    handleCopy: (): void => {},
+  })
+
+  // Esc closes the bubble; R regenerates; Alt+C copies
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key === 'Escape') {
         e.preventDefault()
         window.api.selectionBubbleClose()
+        return
+      }
+      // Alt+C — copy current result
+      if (e.altKey && (e.key === 'c' || e.key === 'C')) {
+        if (shortcutStateRef.current.canCopy) {
+          e.preventDefault()
+          shortcutStateRef.current.handleCopy()
+        }
+        return
+      }
+      // R — regenerate (ignore if a modifier is held or focus is in an editable)
+      if ((e.key === 'r' || e.key === 'R') && !e.altKey && !e.ctrlKey && !e.metaKey) {
+        const target = e.target as HTMLElement | null
+        if (target && (target.isContentEditable || /^(INPUT|TEXTAREA)$/.test(target.tagName))) {
+          return
+        }
+        if (shortcutStateRef.current.canRegenerate) {
+          e.preventDefault()
+          shortcutStateRef.current.handleRegenerate()
+        }
       }
     }
     window.addEventListener('keydown', handler)
@@ -254,6 +297,16 @@ export function SelectionBubbleApp(): React.JSX.Element {
     window.api.selectionBubbleClose()
   }, [])
 
+  // Keep the shortcut ref in sync with the latest state + handlers
+  useEffect(() => {
+    shortcutStateRef.current = {
+      canRegenerate: !isStreaming && (Boolean(content) || Boolean(error)),
+      canCopy: Boolean(content) && !isStreaming,
+      handleRegenerate,
+      handleCopy,
+    }
+  }, [isStreaming, content, error, handleRegenerate, handleCopy])
+
   return (
     <div className="flex h-screen flex-col">
       <div className="bg-background text-foreground flex h-full w-full flex-col overflow-hidden rounded-xl border shadow-md">
@@ -267,7 +320,7 @@ export function SelectionBubbleApp(): React.JSX.Element {
           />
           {isTranslate && (
             <Select value={targetLang} onValueChange={handleTargetLangChange}>
-              <SelectTrigger className="h-6 w-24 text-xs">
+              <SelectTrigger className="h-6 w-28 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -304,7 +357,7 @@ export function SelectionBubbleApp(): React.JSX.Element {
             <div className="px-3 py-2 text-sm">
               {error ? (
                 <div className="border-destructive/50 bg-destructive/10 rounded-md border p-2">
-                  <p className="text-destructive text-xs">{error}</p>
+                  <p className="text-destructive text-xs">{resolveError(error)}</p>
                 </div>
               ) : content ? (
                 <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -323,13 +376,13 @@ export function SelectionBubbleApp(): React.JSX.Element {
           </ScrollArea>
         </div>
 
-        {/* Footer: action buttons */}
+        {/* Footer: action buttons with inline shortcut hints */}
         <div className="text-muted-foreground flex items-center justify-between border-t px-3 py-1.5 text-xs">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-3">
             {isStreaming ? (
               <button
                 onClick={handleStop}
-                className="hover:text-foreground flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors">
+                className="hover:text-foreground inline-flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors">
                 <Square className="h-3 w-3" />
                 {t('settings.selectionAssistant.bubble.stop')}
               </button>
@@ -338,15 +391,25 @@ export function SelectionBubbleApp(): React.JSX.Element {
                 <button
                   onClick={handleRegenerate}
                   disabled={!content && !error}
-                  className="hover:text-foreground flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors disabled:opacity-40">
-                  <RotateCw className="h-3 w-3" />
+                  className="hover:text-foreground inline-flex items-center rounded-md px-1 py-0.5 transition-colors disabled:opacity-40">
                   {t('settings.selectionAssistant.bubble.regenerate')}
                 </button>
                 <button
                   onClick={handleCopy}
                   disabled={!content}
-                  className="hover:text-foreground flex items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors disabled:opacity-40">
-                  <Copy className="h-3 w-3" />
+                  className={`hover:text-foreground inline-flex items-center gap-1 rounded-md px-1 py-0.5 transition-colors disabled:opacity-40 ${copySuccess ? 'text-green-500' : ''}`}>
+                  {copySuccess && (
+                    <svg
+                      className="h-3 w-3"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
                   {copySuccess
                     ? t('settings.selectionAssistant.bubble.copied')
                     : t('settings.selectionAssistant.bubble.copy')}
@@ -354,10 +417,7 @@ export function SelectionBubbleApp(): React.JSX.Element {
               </>
             )}
           </div>
-          <span>
-            <kbd className="bg-muted rounded px-1 py-0.5 text-[10px] font-medium">Esc</kbd>{' '}
-            {t('settings.selectionAssistant.bubble.escToClose')}
-          </span>
+          <span>{t('settings.selectionAssistant.bubble.escToClose')}</span>
         </div>
       </div>
     </div>
@@ -377,6 +437,7 @@ function ActionSelect({
   onChange,
   placeholder,
 }: ActionSelectProps): React.JSX.Element {
+  const st = useSeedTranslator()
   const current = actions.find((a) => a.id === currentId)
   const Icon = current
     ? (selectionActionIconMap[current.icon] ?? defaultSelectionActionIcon)
@@ -386,7 +447,7 @@ function ActionSelect({
     <Select value={currentId} onValueChange={onChange}>
       <SelectTrigger className="h-6 w-auto gap-1 border-none px-1.5 text-xs shadow-none focus:ring-0">
         <Icon className="h-3.5 w-3.5" />
-        <span className="font-medium">{current?.name ?? placeholder}</span>
+        <span className="font-medium">{current ? st(current.name) : placeholder}</span>
       </SelectTrigger>
       <SelectContent position="popper">
         {actions.map((a) => {
@@ -395,7 +456,7 @@ function ActionSelect({
             <SelectItem key={a.id} value={a.id}>
               <span className="flex items-center gap-2">
                 <ItemIcon className="h-3.5 w-3.5" />
-                <span>{a.name}</span>
+                <span>{st(a.name)}</span>
               </span>
             </SelectItem>
           )

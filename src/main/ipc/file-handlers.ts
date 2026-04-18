@@ -3,6 +3,9 @@ import { readFileSync } from 'fs'
 import { basename } from 'path'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, FileData } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { toLocalizedError } from '../errors'
+import { t } from '../i18n'
 import { loadAttachmentBase64 } from '../db/attachments'
 
 const MIME_MAP: Record<string, string> = {
@@ -31,9 +34,9 @@ export function registerFileHandlers(): void {
       const result = await dialog.showOpenDialog({
         properties: ['openFile', 'multiSelections'],
         filters: [
-          { name: '图片', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
-          { name: '文本文件', extensions: ['txt', 'md', 'csv', 'json'] },
-          { name: '所有文件', extensions: ['*'] },
+          { name: t('dialog.filePicker.image'), extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+          { name: t('dialog.filePicker.text'), extensions: ['txt', 'md', 'csv', 'json'] },
+          { name: t('dialog.filePicker.all'), extensions: ['*'] },
         ],
       })
       if (result.canceled || result.filePaths.length === 0) {
@@ -55,11 +58,14 @@ export function registerFileHandlers(): void {
         })
       }
       if (oversized.length > 0 && files.length === 0) {
-        return { success: false, error: `文件过大（最大 10MB）：${oversized.join(', ')}` }
+        return {
+          success: false,
+          error: { code: ERROR_CODES.FILE_TOO_LARGE, params: { names: oversized.join(', ') } },
+        }
       }
       return { success: true, data: files }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -68,7 +74,7 @@ export function registerFileHandlers(): void {
       const base64 = loadAttachmentBase64(relativePath)
       return { success: true, data: base64 }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

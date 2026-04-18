@@ -7,12 +7,14 @@ import {
   ChevronDown,
   Sparkles,
   MousePointerClick,
+  Pin,
   ShieldAlert,
   X,
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import i18n from '@renderer/i18n'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
 import { Button } from '@renderer/components/ui/button'
@@ -46,7 +48,6 @@ import {
   defaultSelectionActionIcon,
 } from '@renderer/components/selection-toolbar/icons'
 import { LANGUAGES, generateTranslatePrompt } from '@renderer/lib/languages'
-import { DEFAULT_KEYBINDINGS } from '@shared/keybindings'
 import type { SelectionAction } from '@shared/types'
 import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
 
@@ -66,6 +67,7 @@ function parseProgramList(raw: string | undefined): string[] {
 
 export function SelectionAssistantSection(): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
   const { settings, saveSettings } = useSettingsStore()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -82,6 +84,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
   // Core toggles
   const [enabled, setEnabled] = useState(true)
+  const [defaultPinned, setDefaultPinned] = useState(false)
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Action editor dialog
@@ -111,6 +114,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
   useEffect(() => {
     setEnabled(settings['selection.enabled'] !== 'false')
+    setDefaultPinned(settings['selection.defaultPinned'] === 'true')
     setMinLen(settings['selection.minTextLength'] ?? String(DEFAULT_SELECTION_MIN_TEXT_LENGTH))
     setMaxLen(settings['selection.maxTextLength'] ?? String(DEFAULT_SELECTION_MAX_TEXT_LENGTH))
   }, [settings])
@@ -138,6 +142,11 @@ export function SelectionAssistantSection(): React.JSX.Element {
     const next = result.success && typeof result.data === 'boolean' ? result.data : checked
     setEnabled(next)
     await saveSettings({ 'selection.enabled': String(next) })
+  }
+
+  const handleDefaultPinnedToggle = (checked: boolean): void => {
+    setDefaultPinned(checked)
+    saveSettings({ 'selection.defaultPinned': String(checked) })
   }
 
   const handleShortcutChange = async (accel: string): Promise<void> => {
@@ -176,8 +185,8 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
   const openEdit = (action: SelectionAction): void => {
     setEditingAction(action)
-    setFormName(action.name)
-    setFormDescription(action.description)
+    setFormName(st(action.name))
+    setFormDescription(st(action.description))
     if (action.id === BUILTIN_SEL_TRANSLATE_ID) {
       const lang = settings['selection.translateTargetLang'] || i18n.language || 'en'
       setFormTargetLang(lang)
@@ -193,9 +202,16 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const handleSave = async (): Promise<void> => {
     if (!formName.trim()) return
     if (editingAction) {
+      // Preserve `seed.*` keys when the user opens Edit and saves without
+      // actually changing the display text (see QuickAssistantSection).
+      const name = formName.trim() === st(editingAction.name) ? editingAction.name : formName.trim()
+      const description =
+        formDescription.trim() === st(editingAction.description)
+          ? editingAction.description
+          : formDescription.trim()
       await updateAction(editingAction.id, {
-        name: formName.trim(),
-        description: formDescription.trim(),
+        name,
+        description,
         systemPrompt: formSystemPrompt.trim(),
       })
     } else {
@@ -282,15 +298,28 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <div className="flex items-start gap-3">
+            <Pin className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">
+                {t('settings.selectionAssistant.defaultPinnedLabel')}
+              </Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.selectionAssistant.defaultPinnedHint')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={defaultPinned} onCheckedChange={handleDefaultPinnedToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
             <MousePointerClick className="text-muted-foreground mt-0.5 size-4 shrink-0" />
             <div>
               <Label className="text-sm font-medium">
                 {t('settings.selectionAssistant.shortcutLabel')}
               </Label>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {t('settings.selectionAssistant.shortcutHint', {
-                  default: DEFAULT_KEYBINDINGS[SELECTION_ACTION].defaultAccelerator,
-                })}
+                {t('settings.selectionAssistant.shortcutHint')}
               </p>
               {!shortcutRegistered && (
                 <p className="text-destructive mt-1 inline-flex items-center gap-1 text-xs">
@@ -380,7 +409,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{action.name}</p>
+                      <p className="text-sm font-medium">{st(action.name)}</p>
                       {action.isBuiltin && (
                         <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-[10px] font-medium">
                           {t('settings.quickAssistant.builtin')}
@@ -389,7 +418,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
                     </div>
                     {action.description && (
                       <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                        {action.description}
+                        {st(action.description)}
                       </p>
                     )}
                   </div>

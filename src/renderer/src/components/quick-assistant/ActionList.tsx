@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 import type { QuickAction } from '@shared/types'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { quickActionIconMap, defaultQuickActionIcon } from './icons'
 
 interface ActionListProps {
@@ -17,17 +18,14 @@ export function ActionList({
   onExecute,
 }: ActionListProps): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
 
   return (
     <div className="flex flex-col gap-1 p-2">
       {actions.map((action, index) => {
         const Icon = quickActionIconMap[action.icon] || defaultQuickActionIcon
-        const name = action.isBuiltin
-          ? t(`settings.builtinAction.${action.id}.name`, action.name)
-          : action.name
-        const description = action.isBuiltin
-          ? t(`settings.builtinAction.${action.id}.description`, action.description)
-          : action.description
+        const name = st(action.name)
+        const description = st(action.description)
         return (
           <button
             key={action.id}
@@ -57,7 +55,7 @@ export function ActionList({
       })}
       {actions.length === 0 && (
         <div className="py-6 text-center">
-          <p className="text-muted-foreground text-sm">暂无可用功能</p>
+          <p className="text-muted-foreground text-sm">{t('settings.quickAssistant.noActions')}</p>
         </div>
       )}
     </div>

@@ -118,7 +118,7 @@ async function captureScreen(targetDisplay: Electron.Display): Promise<void> {
   }
 }
 
-export function startScreenshot(mainWindow: BrowserWindow | null): void {
+export function startScreenshot(_mainWindow: BrowserWindow | null): void {
   // Prevent multiple overlays
   if (overlayWindow && !overlayWindow.isDestroyed()) return
 
@@ -126,15 +126,11 @@ export function startScreenshot(mainWindow: BrowserWindow | null): void {
   const cursorPoint = screen.getCursorScreenPoint()
   const targetDisplay = screen.getDisplayNearestPoint(cursorPoint)
 
-  // Hide application windows so they don't appear in the screenshot
+  // Keep the main window visible so the user can screenshot the app itself.
+  // captureImage() grabs the current screen state before the selection overlay
+  // is shown, so the app window will be included in the captured buffer.
   hiddenMainWindow = null
-  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
-    mainWindow.once('hide', () => captureScreen(targetDisplay))
-    mainWindow.hide()
-    hiddenMainWindow = mainWindow
-  } else {
-    captureScreen(targetDisplay)
-  }
+  captureScreen(targetDisplay)
 }
 
 export function initScreenshotIpc(): void {

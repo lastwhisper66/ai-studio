@@ -2,18 +2,37 @@ import { BrowserWindow, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
+import type { SelectionAction, SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
 
 let toolbarWindow: BrowserWindow | null = null
 let contentReady = false
 let pendingPayload: SelectionToolbarPayload | null = null
+let opacityFallbackTimer: NodeJS.Timeout | null = null
 
 /** See quick-assistant-window.ts — same opacity trick to avoid Win32 transparent-flash. */
-const SHOW_OPACITY_DELAY_MS = 60
-const TOOLBAR_WIDTH = 280
+const TOOLBAR_MIN_WIDTH = 120
+const TOOLBAR_MAX_WIDTH = 720
+const TOOLBAR_DEFAULT_WIDTH = 280
 const TOOLBAR_HEIGHT = 44
 /** Vertical gap between the selection region and the toolbar */
 const TOOLBAR_OFFSET_Y = 4
+/**
+ * If the renderer fails to report a measured width (e.g. it crashed or the
+ * payload arrived before it was ready), fall back to showing the window at
+ * max width after this timeout. Better to reveal an oversized toolbar than a
+ * frozen transparent one.
+ */
+const RESIZE_FALLBACK_MS = 200
+
+/**
+ * Width heuristic used only as a fallback. The renderer reports the real
+ * DOM-measured width via `SELECTION_TOOLBAR_RESIZE` right after paint, so this
+ * initial size is just a safe upper bound while the first frame is laying out.
+ */
+function initialToolbarWidth(actions: SelectionAction[]): number {
+  if (actions.length === 0) return TOOLBAR_DEFAULT_WIDTH
+  return TOOLBAR_MAX_WIDTH
+}
 
 let onActionClick: ((actionId: string, payload: SelectionToolbarPayload) => void) | null = null
 
@@ -28,7 +47,7 @@ export function preCreateSelectionToolbarWindow(): void {
   if (toolbarWindow && !toolbarWindow.isDestroyed()) return
 
   toolbarWindow = new BrowserWindow({
-    width: TOOLBAR_WIDTH,
+    width: TOOLBAR_DEFAULT_WIDTH,
     height: TOOLBAR_HEIGHT,
     frame: false,
     transparent: true,
@@ -65,7 +84,7 @@ export function preCreateSelectionToolbarWindow(): void {
 }
 
 /** Clamp the toolbar position to the work area of the display containing `anchor`. */
-function computeToolbarBounds(anchor: SelectionAnchor): Electron.Rectangle {
+function computeToolbarBounds(anchor: SelectionAnchor, width: number): Electron.Rectangle {
   const display = screen.getDisplayNearestPoint({
     x: Math.round(anchor.x + anchor.width / 2),
     y: Math.round(anchor.y + anchor.height / 2),
@@ -76,7 +95,7 @@ function computeToolbarBounds(anchor: SelectionAnchor): Electron.Rectangle {
   let y = Math.round(anchor.y + anchor.height + TOOLBAR_OFFSET_Y)
 
   // Clamp horizontally
-  const maxX = area.x + area.width - TOOLBAR_WIDTH
+  const maxX = area.x + area.width - width
   if (x > maxX) x = maxX
   if (x < area.x) x = area.x
 
@@ -86,7 +105,7 @@ function computeToolbarBounds(anchor: SelectionAnchor): Electron.Rectangle {
   }
   if (y < area.y) y = area.y
 
-  return { x, y, width: TOOLBAR_WIDTH, height: TOOLBAR_HEIGHT }
+  return { x, y, width, height: TOOLBAR_HEIGHT }
 }
 
 export function showSelectionToolbar(payload: SelectionToolbarPayload): void {
@@ -97,23 +116,34 @@ export function showSelectionToolbar(payload: SelectionToolbarPayload): void {
   if (!win) return
 
   pendingPayload = payload
-  win.setBounds(computeToolbarBounds(payload.anchor))
+  // Lay out at a safe upper bound with opacity 0. The renderer measures the
+  // real content width right after paint and calls selectionToolbarResize,
+  // which tightens the bounds and flips opacity to 1 — so users never see the
+  // oversized box. See SELECTION_TOOLBAR_RESIZE handler below.
+  win.setBounds(computeToolbarBounds(payload.anchor, initialToolbarWidth(payload.actions)))
+  win.setOpacity(0)
+  win.showInactive()
 
   if (contentReady) {
     win.webContents.send(IpcChannels.SELECTION_TOOLBAR_DATA, payload)
   }
 
-  // Opacity transition to avoid transparent-window flash on Windows
-  win.setOpacity(0)
-  win.showInactive()
-  setTimeout(() => {
-    if (win && !win.isDestroyed()) {
+  // Fallback: if the renderer never reports a measurement (crash, IPC drop),
+  // reveal the window anyway rather than leaving it invisible forever.
+  if (opacityFallbackTimer) clearTimeout(opacityFallbackTimer)
+  opacityFallbackTimer = setTimeout(() => {
+    opacityFallbackTimer = null
+    if (win && !win.isDestroyed() && win.isVisible()) {
       win.setOpacity(1)
     }
-  }, SHOW_OPACITY_DELAY_MS)
+  }, RESIZE_FALLBACK_MS)
 }
 
 export function hideSelectionToolbar(): void {
+  if (opacityFallbackTimer) {
+    clearTimeout(opacityFallbackTimer)
+    opacityFallbackTimer = null
+  }
   if (toolbarWindow && !toolbarWindow.isDestroyed() && toolbarWindow.isVisible()) {
     toolbarWindow.hide()
   }
@@ -146,6 +176,19 @@ export function initSelectionToolbarIpc(): void {
 
   ipcMain.on(IpcChannels.SELECTION_TOOLBAR_CLOSE, () => {
     hideSelectionToolbar()
+  })
+
+  ipcMain.on(IpcChannels.SELECTION_TOOLBAR_RESIZE, (_event, width: number) => {
+    if (!toolbarWindow || toolbarWindow.isDestroyed() || !toolbarWindow.isVisible()) return
+    if (!pendingPayload) return
+    if (!Number.isFinite(width) || width <= 0) return
+    const clamped = Math.max(TOOLBAR_MIN_WIDTH, Math.min(TOOLBAR_MAX_WIDTH, Math.ceil(width)))
+    toolbarWindow.setBounds(computeToolbarBounds(pendingPayload.anchor, clamped))
+    toolbarWindow.setOpacity(1)
+    if (opacityFallbackTimer) {
+      clearTimeout(opacityFallbackTimer)
+      opacityFallbackTimer = null
+    }
   })
 
   ipcMain.on(IpcChannels.SELECTION_TOOLBAR_ACTION, (_event, actionId: string) => {

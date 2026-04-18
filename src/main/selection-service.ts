@@ -5,12 +5,7 @@ import SelectionHook, {
   type SelectionHookInstance,
   type TextSelectionData,
 } from 'selection-hook'
-import type {
-  SelectionAction,
-  SelectionAnchor,
-  SelectionBubblePayload,
-  SelectionToolbarPayload,
-} from '@shared/types'
+import type { SelectionAction, SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
 import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
 import {
   getVisibleToolbarBounds,
@@ -257,13 +252,12 @@ function handleDismissEvent(): void {
 }
 
 function handleToolbarAction(actionId: string, payload: SelectionToolbarPayload): void {
-  const bubblePayload: SelectionBubblePayload = {
+  showSelectionBubble({
     text: payload.text,
     anchor: payload.anchor,
     actionId,
     actions: loadEnabledActions(),
-  }
-  showSelectionBubble(bubblePayload)
+  })
 }
 
 /** Push the current filter settings into the native hook. Safe before start(). */

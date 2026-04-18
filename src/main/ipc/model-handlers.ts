@@ -1,6 +1,8 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, Model, ApiSettings, RemoteModelFetchPayload } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { toLocalizedError } from '../errors'
 import {
   listAllModels,
   createModel,
@@ -24,7 +26,7 @@ export function registerModelHandlers(): void {
       const data = listAllModels()
       return { success: true, data }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -33,7 +35,7 @@ export function registerModelHandlers(): void {
       const model = createModel(data)
       return { success: true, data: model }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -44,7 +46,7 @@ export function registerModelHandlers(): void {
         const model = updateModel(id, data)
         return { success: true, data: model }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -54,7 +56,7 @@ export function registerModelHandlers(): void {
       deleteModel(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -63,7 +65,7 @@ export function registerModelHandlers(): void {
       deleteModelsByProvider(providerId)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -72,7 +74,7 @@ export function registerModelHandlers(): void {
       reorderModels(ids)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -83,7 +85,7 @@ export function registerModelHandlers(): void {
       try {
         return await doFetchRemoteModels(payload)
       } catch {
-        return { success: false, error: 'Failed to fetch models' }
+        return { success: false, error: { code: ERROR_CODES.MODEL_FETCH_FAILED } }
       }
     },
   )
@@ -122,10 +124,9 @@ async function doFetchRemoteModels(
     return { success: true, data: models }
   } catch (e) {
     if (controller.signal.aborted) {
-      return { success: false, error: 'Fetch models timed out (15s)' }
+      return { success: false, error: { code: ERROR_CODES.MODEL_FETCH_TIMEOUT } }
     }
-    const message = e instanceof Error ? e.message : String(e)
-    return { success: false, error: message || 'Failed to fetch models' }
+    return { success: false, error: toLocalizedError(e) }
   } finally {
     clearTimeout(timerId)
   }

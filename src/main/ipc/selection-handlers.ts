@@ -2,6 +2,8 @@ import { ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SelectionRequestPayload, IpcResult, ApiSettings } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError, toLocalizedError } from '../errors'
 import { streamChat } from '../ai'
 import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
@@ -26,25 +28,25 @@ let activeRequestSeq = 0
 function loadSelectionSettings(providerId?: string, modelId?: string): ApiSettings {
   const resolvedProviderId = providerId || getSetting('selection.providerId')
   if (!resolvedProviderId) {
-    throw new Error('划词助手尚未配置模型。请打开设置 → 划词助手，选择独立的服务商和模型。')
+    throw new AppError(ERROR_CODES.SELECTION_NO_MODEL)
   }
 
   const provider = getProvider(resolvedProviderId)
   if (!provider) {
-    throw new Error('划词助手当前选择的服务商不存在，请在设置 → 划词助手 中重新选择。')
+    throw new AppError(ERROR_CODES.SELECTION_PROVIDER_NOT_FOUND)
   }
   if (!provider.apiKey) {
-    throw new Error(`服务商 "${provider.name}" 尚未配置 API Key，请到服务商设置中填写。`)
+    throw new AppError(ERROR_CODES.SELECTION_API_KEY_MISSING, { providerName: provider.name })
   }
 
   const resolvedModelId = modelId || getSetting('selection.modelId')
   if (!resolvedModelId) {
-    throw new Error('划词助手尚未选择模型。请打开设置 → 划词助手，挑选一个模型。')
+    throw new AppError(ERROR_CODES.SELECTION_NO_MODEL_SELECTED)
   }
 
   const model = listModelsByProvider(resolvedProviderId).find((m) => m.name === resolvedModelId)
   if (!model) {
-    throw new Error(`模型在服务商 "${provider.name}" 下已不可用，请到设置 → 划词助手 重新选择。`)
+    throw new AppError(ERROR_CODES.SELECTION_MODEL_UNAVAILABLE, { providerName: provider.name })
   }
 
   return {
@@ -86,7 +88,7 @@ export function registerSelectionHandlers(): void {
       try {
         const action = getSelectionAction(actionId)
         if (!action) {
-          throw new Error('Selection action not found.')
+          throw new AppError(ERROR_CODES.SELECTION_ACTION_NOT_FOUND)
         }
 
         const settings = loadSelectionSettings(providerId, modelId)
@@ -142,11 +144,11 @@ export function registerSelectionHandlers(): void {
           return { success: true }
         }
 
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        const localized = toLocalizedError(error)
         if (isCurrent() && !sender.isDestroyed()) {
-          sender.send(IpcChannels.SELECTION_ERROR, { error: errorMessage })
+          sender.send(IpcChannels.SELECTION_ERROR, { error: localized })
         }
-        return { success: false, error: errorMessage }
+        return { success: false, error: localized }
       }
     },
   )

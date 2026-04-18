@@ -1,11 +1,13 @@
 import { useRef, useEffect } from 'react'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
+import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
+import type { LocalizedError } from '@shared/errors'
 
 interface QuickAssistantResultProps {
   content: string
   isStreaming: boolean
-  error: string | null
+  error: LocalizedError | string | null
 }
 
 export function QuickAssistantResult({
@@ -14,6 +16,7 @@ export function QuickAssistantResult({
   error,
 }: QuickAssistantResultProps): React.JSX.Element {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const resolveError = useLocalizedError()
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -25,7 +28,7 @@ export function QuickAssistantResult({
         <div className="p-4">
           {error ? (
             <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-3">
-              <p className="text-destructive text-sm">{error}</p>
+              <p className="text-destructive text-sm">{resolveError(error)}</p>
             </div>
           ) : content ? (
             <div className="prose prose-sm dark:prose-invert max-w-none">

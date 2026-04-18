@@ -14,6 +14,7 @@ i18n
       'zh-CN': { translation: zhCN },
     },
     fallbackLng: 'en',
+    showSupportNotice: false,
     interpolation: {
       escapeValue: false,
     },

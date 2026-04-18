@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { QuickAction, IpcResult } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listQuickActions,
   createQuickAction,
@@ -14,7 +15,7 @@ export function registerQuickActionHandlers(): void {
     try {
       return { success: true, data: listQuickActions() }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -27,7 +28,7 @@ export function registerQuickActionHandlers(): void {
       try {
         return { success: true, data: createQuickAction(data) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -44,7 +45,7 @@ export function registerQuickActionHandlers(): void {
       try {
         return { success: true, data: updateQuickAction(id, data) }
       } catch (e) {
-        return { success: false, error: (e as Error).message }
+        return { success: false, error: toLocalizedError(e) }
       }
     },
   )
@@ -54,7 +55,7 @@ export function registerQuickActionHandlers(): void {
       deleteQuickAction(id)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -63,7 +64,7 @@ export function registerQuickActionHandlers(): void {
       reorderQuickActions(ids)
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }

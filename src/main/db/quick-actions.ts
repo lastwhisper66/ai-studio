@@ -137,8 +137,8 @@ export function seedQuickActions(): void {
   const builtins = [
     {
       id: 'builtin-answer',
-      name: '回答问题',
-      description: '向 AI 提问并获取回答',
+      name: 'seed.quickActions.answer.name',
+      description: 'seed.quickActions.answer.description',
       systemPrompt:
         "You are a knowledgeable and helpful assistant. Answer the user's question clearly, accurately, and concisely. Always respond in the same language as the user's input.",
       icon: 'MessageCircle',
@@ -146,16 +146,16 @@ export function seedQuickActions(): void {
     },
     {
       id: 'builtin-translate',
-      name: '文本翻译',
-      description: '将文本翻译为其他语言',
+      name: 'seed.quickActions.translate.name',
+      description: 'seed.quickActions.translate.description',
       systemPrompt: generateTranslatePrompt('the target language'),
       icon: 'Languages',
       sortOrder: 1,
     },
     {
       id: 'builtin-summary',
-      name: '内容总结',
-      description: '简洁地总结提供的文本内容',
+      name: 'seed.quickActions.summarize.name',
+      description: 'seed.quickActions.summarize.description',
       systemPrompt:
         'You are a summarization expert. Provide a clear, concise summary that captures all key points of the input text. Respond in the same language as the input. Use bullet points or structured format when it improves clarity.',
       icon: 'FileText',
@@ -163,8 +163,8 @@ export function seedQuickActions(): void {
     },
     {
       id: 'builtin-image-translate',
-      name: '识图翻译',
-      description: '识别图片中的文字并翻译',
+      name: 'seed.quickActions.imageTranslate.name',
+      description: 'seed.quickActions.imageTranslate.description',
       systemPrompt: generateImageTranslatePrompt('the target language'),
       icon: 'ScanText',
       sortOrder: 3,

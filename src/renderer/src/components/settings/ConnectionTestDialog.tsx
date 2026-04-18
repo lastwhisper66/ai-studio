@@ -67,7 +67,9 @@ export function ConnectionTestDialog({
         } else {
           updateModelState(modelId, {
             status: 'error',
-            message: res.error || t('settings.provider.connectionFailed'),
+            message: res.error
+              ? t(res.error.code, res.error.params ?? {})
+              : t('settings.provider.connectionFailed'),
           })
         }
       } catch (e) {

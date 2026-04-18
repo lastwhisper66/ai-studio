@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult, TranslationHistoryItem } from '@shared/types'
+import { toLocalizedError } from '../errors'
 import {
   listTranslationHistory,
   createTranslationHistory,
@@ -14,7 +15,7 @@ export function registerTranslationHistoryHandlers(): void {
       try {
         return { success: true, data: listTranslationHistory() }
       } catch (error) {
-        return { success: false, error: (error as Error).message }
+        return { success: false, error: toLocalizedError(error) }
       }
     },
   )
@@ -32,7 +33,7 @@ export function registerTranslationHistoryHandlers(): void {
         const item = createTranslationHistory(sourceText, translatedText, sourceLang, targetLang)
         return { success: true, data: item }
       } catch (error) {
-        return { success: false, error: (error as Error).message }
+        return { success: false, error: toLocalizedError(error) }
       }
     },
   )
@@ -42,7 +43,7 @@ export function registerTranslationHistoryHandlers(): void {
       clearTranslationHistory()
       return { success: true }
     } catch (error) {
-      return { success: false, error: (error as Error).message }
+      return { success: false, error: toLocalizedError(error) }
     }
   })
 }

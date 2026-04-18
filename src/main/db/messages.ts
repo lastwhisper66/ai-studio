@@ -1,5 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { Message, MessageRole, AttachmentMeta } from '@shared/types'
+import { ERROR_CODES } from '@shared/errors'
+import { AppError } from '../errors'
 import { getDb } from './database'
 import { touchConversation } from './conversations'
 
@@ -135,7 +137,7 @@ export function updateMessageContent(id: string, content: string): Message {
   })
 
   const updated = updateMessage()
-  if (!updated) throw new Error(`Message not found: ${id}`)
+  if (!updated) throw new AppError(ERROR_CODES.MESSAGE_NOT_FOUND, { id })
   return rowToMessage(updated)
 }
 

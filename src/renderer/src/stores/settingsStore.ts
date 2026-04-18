@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import type { SettingsSection } from '@renderer/components/settings/SettingsSidebar'
+import type { LocalizedError } from '@shared/errors'
+import { fallbackLocalizedError } from '@shared/errors'
 
 type ActiveView = 'chat' | 'settings' | 'translate'
 
@@ -7,7 +9,7 @@ interface SettingsState {
   settings: Record<string, string>
   isLoaded: boolean
   isSaving: boolean
-  error: string | null
+  error: LocalizedError | null
   activeView: ActiveView
   pendingSettingsSection: SettingsSection | null
 
@@ -41,7 +43,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     if (result.success && result.data) {
       set({ settings: result.data, isLoaded: true })
     } else {
-      set({ error: result.error ?? 'Failed to load settings' })
+      set({ error: result.error ?? fallbackLocalizedError('Failed to load settings') })
     }
   },
 
@@ -63,7 +65,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
         set((state) => ({
           settings: { ...state.settings, ...prev },
           isSaving: false,
-          error: result.error ?? 'Failed to save settings',
+          error: result.error ?? fallbackLocalizedError('Failed to save settings'),
         }))
         return false
       }
@@ -74,7 +76,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
       set((state) => ({
         settings: { ...state.settings, ...prev },
         isSaving: false,
-        error: (e as Error).message,
+        error: fallbackLocalizedError((e as Error).message),
       }))
       return false
     }

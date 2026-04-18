@@ -8,6 +8,8 @@ import type {
   SendMessagePayload,
 } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import type { LocalizedError } from '@shared/errors'
+import { fallbackLocalizedError } from '@shared/errors'
 
 import { useAssistantStore } from './assistantStore'
 
@@ -17,7 +19,7 @@ interface ConversationState {
   messages: Message[]
   hasMoreMessages: boolean
   isLoading: boolean
-  error: string | null
+  error: LocalizedError | null
   isStreaming: boolean
   streamingContent: string
   streamingReasoningContent: string
@@ -210,7 +212,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       if (result.success && result.data) {
         set({ conversations: result.data })
       } else {
-        set({ error: result.error ?? 'Failed to load conversations' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to load conversations') })
       }
     },
 
@@ -228,7 +230,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         get().requestInputFocus()
         return true
       }
-      set({ error: result.error ?? 'Failed to create conversation' })
+      set({ error: result.error ?? fallbackLocalizedError('Failed to create conversation') })
       return false
     },
 
@@ -262,7 +264,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           set({ conversations: remaining })
         }
       } else {
-        set({ error: result.error ?? 'Failed to delete conversation' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to delete conversation') })
       }
     },
 
@@ -300,7 +302,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           set({ conversations: remaining })
         }
       } else {
-        set({ error: result.error ?? 'Failed to delete conversations' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to delete conversations') })
       }
     },
 
@@ -313,7 +315,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           ),
         }))
       } else {
-        set({ error: result.error ?? 'Failed to rename conversation' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to rename conversation') })
       }
     },
 
@@ -331,7 +333,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             }),
         }))
       } else {
-        set({ error: result.error ?? 'Failed to pin conversation' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to pin conversation') })
       }
     },
 
@@ -346,7 +348,10 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         })
         get().requestInputFocus()
       } else {
-        set({ isLoading: false, error: result.error ?? 'Failed to load messages' })
+        set({
+          isLoading: false,
+          error: result.error ?? fallbackLocalizedError('Failed to load messages'),
+        })
       }
     },
 
@@ -379,7 +384,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       if (result.success && result.data) {
         set((state) => ({ messages: [...state.messages, result.data!] }))
       } else {
-        set({ error: result.error ?? 'Failed to send message' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to send message') })
       }
     },
 
@@ -388,7 +393,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       if (result.success) {
         set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
       } else {
-        set({ error: result.error ?? 'Failed to delete message' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to delete message') })
       }
     },
 
@@ -400,7 +405,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           set({ messages: [], hasMoreMessages: false })
         }
       } else {
-        set({ error: result.error ?? 'Failed to clear messages' })
+        set({ error: result.error ?? fallbackLocalizedError('Failed to clear messages') })
       }
     },
 
@@ -454,7 +459,10 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       if (nextMsg && nextMsg.role === 'assistant') {
         const deleteResult = await window.api.deleteMessage(nextMsg.id)
         if (!deleteResult.success) {
-          set({ isStreaming: false, error: deleteResult.error ?? 'Failed to delete old response' })
+          set({
+            isStreaming: false,
+            error: deleteResult.error ?? fallbackLocalizedError('Failed to delete old response'),
+          })
           return
         }
         set((state) => ({
@@ -482,7 +490,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       // 1. Persist content update to DB
       const updateResult = await window.api.updateMessage(messageId, newContent)
       if (!updateResult.success) {
-        set({ error: updateResult.error ?? 'Failed to update message' })
+        set({ error: updateResult.error ?? fallbackLocalizedError('Failed to update message') })
         return
       }
 

@@ -157,16 +157,16 @@ export function seedSelectionActions(): void {
   const builtins = [
     {
       id: 'builtin-sel-translate',
-      name: '翻译',
-      description: '将选中文本翻译为目标语言',
+      name: 'seed.selectionActions.translate.name',
+      description: 'seed.selectionActions.translate.description',
       systemPrompt: generateTranslatePrompt('the target language'),
       icon: 'Languages',
       sortOrder: 0,
     },
     {
       id: 'builtin-sel-explain',
-      name: '解释',
-      description: '解释选中文本的含义或概念',
+      name: 'seed.selectionActions.explain.name',
+      description: 'seed.selectionActions.explain.description',
       systemPrompt:
         'You are an expert explainer. Clearly and concisely explain the meaning, concept, or context of the given text. Respond in the same language as the input.',
       icon: 'BookOpen',
@@ -174,8 +174,8 @@ export function seedSelectionActions(): void {
     },
     {
       id: 'builtin-sel-summarize',
-      name: '总结',
-      description: '提炼选中文本的要点',
+      name: 'seed.selectionActions.summarize.name',
+      description: 'seed.selectionActions.summarize.description',
       systemPrompt:
         'You are a summarization expert. Provide a clear, concise summary that captures the key points of the input text. Respond in the same language as the input. Use bullet points when it improves clarity.',
       icon: 'FileText',
@@ -183,8 +183,8 @@ export function seedSelectionActions(): void {
     },
     {
       id: 'builtin-sel-rewrite',
-      name: '润色',
-      description: '改写为更流畅、专业的表达',
+      name: 'seed.selectionActions.polish.name',
+      description: 'seed.selectionActions.polish.description',
       systemPrompt:
         'You are a professional editor. Rewrite the given text to be clearer, more fluent, and more polished while preserving its original meaning and tone. Respond in the same language as the input. Only output the rewritten text.',
       icon: 'Wand2',

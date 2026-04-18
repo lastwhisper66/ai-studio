@@ -3,6 +3,7 @@ import { existsSync, rmSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
+import { toLocalizedError } from '../errors'
 import type { IpcResult } from '@shared/types'
 import { getDb, seedDefaultAssistant } from '../db/database'
 import { seedModelDefinitions } from '../db/model-definitions'
@@ -57,7 +58,7 @@ export function registerAppHandlers(): void {
 
       return { success: true }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 
@@ -68,7 +69,7 @@ export function registerAppHandlers(): void {
       const cleaned = fonts.map((f) => f.replace(/^"|"$/g, '')).sort()
       return { success: true, data: cleaned }
     } catch (e) {
-      return { success: false, error: (e as Error).message }
+      return { success: false, error: toLocalizedError(e) }
     }
   })
 }
