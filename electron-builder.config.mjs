@@ -1,0 +1,45 @@
+import { rebuild } from '@electron/rebuild'
+
+/** @type {import('electron-builder').Configuration} */
+export default {
+  appId: 'com.ai-studio.app',
+  productName: 'AI Studio',
+  directories: {
+    buildResources: 'build',
+  },
+  files: [
+    '!**/.vscode/*',
+    '!src/*',
+    '!electron.vite.config.{js,ts,mjs,cjs}',
+    '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}',
+    '!{.env,.env.*,.npmrc,package-lock.json}',
+    '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}',
+  ],
+  asarUnpack: ['resources/**', 'node_modules/better-sqlite3/**'],
+  win: {
+    executableName: 'ai-studio',
+    icon: 'build/icon.ico',
+  },
+  nsis: {
+    artifactName: '${name}-${version}-setup.${ext}',
+    shortcutName: '${productName}',
+    uninstallDisplayName: '${productName}',
+    createDesktopShortcut: 'always',
+    oneClick: false,
+    allowToChangeInstallationDirectory: true,
+  },
+  npmRebuild: true,
+  publish: null,
+  beforeBuild: async ({ appDir, electronVersion, arch }) => {
+    console.log(
+      `[beforeBuild] Rebuilding only better-sqlite3 for Electron ${electronVersion} (${arch})`,
+    )
+    await rebuild({
+      buildPath: appDir,
+      electronVersion,
+      arch,
+      onlyModules: ['better-sqlite3'],
+    })
+    return false
+  },
+}
