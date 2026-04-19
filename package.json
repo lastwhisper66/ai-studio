@@ -1,6 +1,6 @@
 {
   "name": "ai-studio",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "AI Studio - Windows desktop AI chat application",
   "main": "./out/main/index.js",
   "author": {
@@ -17,10 +17,10 @@
     "dev": "electron-vite dev",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
-    "build:unpack": "npm run build && electron-builder --config electron-builder.config.mjs --dir",
-    "build:win": "npm run build && electron-builder --config electron-builder.config.mjs --win",
-    "build:mac": "electron-vite build && electron-builder --config electron-builder.config.mjs --mac",
-    "build:linux": "electron-vite build && electron-builder --config electron-builder.config.mjs --linux"
+    "build:unpack": "npm run build && electron-builder --dir",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "electron-vite build && electron-builder --mac",
+    "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
