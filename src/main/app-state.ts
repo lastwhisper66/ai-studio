@@ -60,14 +60,14 @@ export function applySpellCheckSetting(value?: string): void {
 
 // ── Quick Assistant ─────────────────────────────────────────────
 
-let quickAssistantEnabled = true
+let quickAssistantEnabled = false
 
 export function initQuickAssistant(): void {
-  quickAssistantEnabled = getSetting('quickAssistant.enabled') !== 'false'
+  quickAssistantEnabled = getSetting('quickAssistant.enabled') === 'true'
 }
 
 export function applyQuickAssistantEnabled(value?: string): void {
-  quickAssistantEnabled = value !== 'false'
+  quickAssistantEnabled = value === 'true'
 }
 
 export function getQuickAssistantEnabled(): boolean {
@@ -76,14 +76,14 @@ export function getQuickAssistantEnabled(): boolean {
 
 // ── Selection Assistant ─────────────────────────────────────────
 
-let selectionAssistantEnabled = true
+let selectionAssistantEnabled = false
 
 export function initSelectionAssistant(): void {
-  selectionAssistantEnabled = getSetting('selection.enabled') !== 'false'
+  selectionAssistantEnabled = getSetting('selection.enabled') === 'true'
 }
 
 export function applySelectionAssistantEnabled(value?: string): void {
-  selectionAssistantEnabled = value !== 'false'
+  selectionAssistantEnabled = value === 'true'
 }
 
 export function getSelectionAssistantEnabled(): boolean {

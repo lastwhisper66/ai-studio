@@ -113,7 +113,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }, [loadActions])
 
   useEffect(() => {
-    setEnabled(settings['selection.enabled'] !== 'false')
+    setEnabled(settings['selection.enabled'] === 'true')
     setDefaultPinned(settings['selection.defaultPinned'] === 'true')
     setMinLen(settings['selection.minTextLength'] ?? String(DEFAULT_SELECTION_MIN_TEXT_LENGTH))
     setMaxLen(settings['selection.maxTextLength'] ?? String(DEFAULT_SELECTION_MAX_TEXT_LENGTH))

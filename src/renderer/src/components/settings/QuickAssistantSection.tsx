@@ -98,7 +98,7 @@ export function QuickAssistantSection(): React.JSX.Element {
   }, [loadActions])
 
   useEffect(() => {
-    setEnabled(settings['quickAssistant.enabled'] !== 'false')
+    setEnabled(settings['quickAssistant.enabled'] === 'true')
     setDefaultPinned(settings['quickAssistant.defaultPinned'] === 'true')
   }, [settings])
 

@@ -3,13 +3,13 @@ productName: AI Studio
 directories:
   buildResources: build
 files:
-  - "!**/.vscode/*"
-  - "!src/*"
-  - "!electron.vite.config.{js,ts,mjs,cjs}"
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
   - "!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-\
     update.yml,CHANGELOG.md,README.md}"
-  - "!{.env,.env.*,.npmrc,package-lock.json}"
-  - "!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}"
+  - '!{.env,.env.*,.npmrc,package-lock.json}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
   - resources/**
   - node_modules/better-sqlite3/**
@@ -23,5 +23,5 @@ nsis:
   createDesktopShortcut: always
   oneClick: false
   allowToChangeInstallationDirectory: true
-npmRebuild: true
+npmRebuild: false
 publish: null
