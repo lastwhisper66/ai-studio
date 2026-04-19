@@ -309,7 +309,7 @@ export function SelectionBubbleApp(): React.JSX.Element {
 
   return (
     <div className="flex h-screen flex-col">
-      <div className="bg-background text-foreground flex h-full w-full flex-col overflow-hidden rounded-xl border shadow-md">
+      <div className="bg-background text-foreground flex h-full w-full flex-col overflow-hidden rounded-xl border">
         {/* Header: current action + window controls */}
         <div className="flex items-center gap-2 border-b px-3 py-2">
           <ActionSelect

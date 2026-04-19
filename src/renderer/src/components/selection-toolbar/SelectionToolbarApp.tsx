@@ -77,7 +77,7 @@ export function SelectionToolbarApp(): React.JSX.Element {
     <div className="flex h-screen items-center justify-start">
       <div
         ref={containerRef}
-        className="bg-background text-foreground flex h-full w-max items-center gap-0.5 overflow-hidden rounded-xl border px-1.5 shadow-md">
+        className="bg-background text-foreground flex h-full w-max items-center gap-0.5 overflow-hidden rounded-xl border px-1.5">
         {actions.length === 0 ? (
           <span className="text-muted-foreground px-2 text-xs">
             {t('settings.selectionAssistant.toolbar.waitingSelection')}
