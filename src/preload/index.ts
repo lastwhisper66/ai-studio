@@ -142,6 +142,13 @@ const api = {
     return () => ipcRenderer.removeListener(IpcChannels.SETTINGS_LANGUAGE_CHANGED, handler)
   },
 
+  onSettingsChanged: (callback: (entries: Record<string, string>) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, entries: Record<string, string>): void =>
+      callback(entries)
+    ipcRenderer.on(IpcChannels.SETTINGS_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SETTINGS_CHANGED, handler)
+  },
+
   // Providers
   listProviders: (): Promise<IpcResult<Provider[]>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_LIST),

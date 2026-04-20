@@ -103,6 +103,18 @@ export function SelectionBubbleApp(): React.JSX.Element {
     }
   }, [])
 
+  // Stay in sync when the target language is changed from another window
+  // (e.g. the Settings → Selection Assistant dialog). Without this, the
+  // bubble's dropdown and the settings dialog can display different values.
+  useEffect(() => {
+    return window.api.onSettingsChanged((entries) => {
+      const next = entries['selection.translateTargetLang']
+      if (typeof next !== 'string') return
+      const normalized = normalizeLangCode(next)
+      setTargetLang((prev) => (prev === normalized ? prev : normalized))
+    })
+  }, [])
+
   // This window is pre-created at startup; its i18n instance won't observe
   // later language changes in the main window. Subscribe to the main-process
   // broadcast so the header/footer labels stay in sync on the fly.

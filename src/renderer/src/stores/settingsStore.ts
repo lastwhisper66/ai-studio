@@ -15,6 +15,7 @@ interface SettingsState {
 
   loadSettings: () => Promise<void>
   saveSettings: (values: Record<string, string>) => Promise<boolean>
+  mergeExternalSettings: (values: Record<string, string>) => void
   clearError: () => void
   setActiveView: (view: ActiveView) => void
   navigateToSettings: (section: SettingsSection) => void
@@ -45,6 +46,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     } else {
       set({ error: result.error ?? fallbackLocalizedError('Failed to load settings') })
     }
+  },
+
+  mergeExternalSettings: (values: Record<string, string>) => {
+    // Merge settings pushed from the main process (originating in another
+    // window). Skipping keys whose values already match avoids unnecessary
+    // re-renders of subscribing components.
+    set((state) => {
+      let changed = false
+      const next = { ...state.settings }
+      for (const [k, v] of Object.entries(values)) {
+        if (next[k] !== v) {
+          next[k] = v
+          changed = true
+        }
+      }
+      return changed ? { settings: next } : state
+    })
   },
 
   saveSettings: async (values: Record<string, string>) => {
@@ -82,3 +100,15 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     }
   },
 }))
+
+// Auto-subscribe to cross-window settings broadcasts at module load. Keeping
+// this wiring inside the store (rather than in each window's App component)
+// means every renderer that imports the store — main, quick-assistant,
+// selection-bubble — stays in sync automatically, mirroring the observer
+// pattern used by electron-store's `.onDidAnyChange()`. Guarded so SSR / tests
+// without `window.api` don't crash.
+if (typeof window !== 'undefined' && window.api?.onSettingsChanged) {
+  window.api.onSettingsChanged((entries) => {
+    useSettingsStore.getState().mergeExternalSettings(entries)
+  })
+}

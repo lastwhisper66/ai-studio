@@ -28,6 +28,7 @@ export const IpcChannels = {
   SETTINGS_GET_ALL: 'settings:get-all',
   SETTINGS_SET_BATCH: 'settings:set-batch',
   SETTINGS_LANGUAGE_CHANGED: 'settings:language-changed',
+  SETTINGS_CHANGED: 'settings:changed',
   // Provider
   PROVIDER_LIST: 'provider:list',
   PROVIDER_GET: 'provider:get',
