@@ -24,7 +24,9 @@
     "minimize": "最小化",
     "maximize": "最大化",
     "restore": "还原",
-    "close": "关闭"
+    "close": "关闭",
+    "pinOnTop": "窗口置顶",
+    "unpinFromTop": "取消置顶"
   },
   "nav": {
     "chat": "聊天",

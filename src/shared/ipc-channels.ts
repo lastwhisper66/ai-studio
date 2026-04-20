@@ -85,6 +85,9 @@ export const IpcChannels = {
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
   WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
+  WINDOW_TOGGLE_ALWAYS_ON_TOP: 'window:toggle-always-on-top',
+  WINDOW_IS_ALWAYS_ON_TOP: 'window:is-always-on-top',
+  WINDOW_ALWAYS_ON_TOP_CHANGE: 'window:always-on-top-change',
   // Zoom
   WINDOW_SET_ZOOM: 'window:set-zoom',
   WINDOW_GET_ZOOM: 'window:get-zoom',

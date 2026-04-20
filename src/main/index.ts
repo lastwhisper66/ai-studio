@@ -430,6 +430,11 @@ function createWindow(): void {
     win.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, false)
   })
 
+  // Notify renderer of always-on-top state changes
+  win.on('always-on-top-changed', (_event, isAlwaysOnTop) => {
+    win.webContents.send(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, isAlwaysOnTop)
+  })
+
   win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }

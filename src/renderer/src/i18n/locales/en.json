@@ -24,7 +24,9 @@
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore",
-    "close": "Close"
+    "close": "Close",
+    "pinOnTop": "Pin on top",
+    "unpinFromTop": "Unpin from top"
   },
   "nav": {
     "chat": "Chat",

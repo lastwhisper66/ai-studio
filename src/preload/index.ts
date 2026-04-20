@@ -393,6 +393,19 @@ const api = {
     return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
   },
 
+  windowToggleAlwaysOnTop: (): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.WINDOW_TOGGLE_ALWAYS_ON_TOP),
+
+  windowIsAlwaysOnTop: (): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.WINDOW_IS_ALWAYS_ON_TOP),
+
+  onWindowAlwaysOnTopChange: (callback: (isAlwaysOnTop: boolean) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, isAlwaysOnTop: boolean): void =>
+      callback(isAlwaysOnTop)
+    ipcRenderer.on(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, handler)
+  },
+
   // Quick Actions (CRUD)
   listQuickActions: (): Promise<IpcResult<QuickAction[]>> =>
     ipcRenderer.invoke(IpcChannels.QUICK_ACTION_LIST),

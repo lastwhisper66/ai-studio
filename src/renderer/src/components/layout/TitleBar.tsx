@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Minus, Square, X, PanelLeftClose, PanelLeftOpen, Copy } from 'lucide-react'
+import { Minus, Square, X, PanelLeftClose, PanelLeftOpen, Copy, Pin, PinOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 
@@ -11,10 +11,17 @@ interface TitleBarProps {
 export function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): React.JSX.Element {
   const { t } = useTranslation()
   const [isMaximized, setIsMaximized] = useState(false)
+  const [isAlwaysOnTop, setIsAlwaysOnTop] = useState(false)
 
   useEffect(() => {
     window.api.windowIsMaximized().then(setIsMaximized)
     const cleanup = window.api.onWindowMaximizedChange(setIsMaximized)
+    return cleanup
+  }, [])
+
+  useEffect(() => {
+    window.api.windowIsAlwaysOnTop().then(setIsAlwaysOnTop)
+    const cleanup = window.api.onWindowAlwaysOnTopChange(setIsAlwaysOnTop)
     return cleanup
   }, [])
 
@@ -52,6 +59,18 @@ export function TitleBar({ sidebarCollapsed, onToggleSidebar }: TitleBarProps): 
       <div
         className="flex h-full items-stretch"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              className="flex w-12 items-center justify-center transition-colors hover:bg-foreground/10"
+              onClick={() => window.api.windowToggleAlwaysOnTop()}>
+              {isAlwaysOnTop ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {isAlwaysOnTop ? t('titleBar.unpinFromTop') : t('titleBar.pinOnTop')}
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
