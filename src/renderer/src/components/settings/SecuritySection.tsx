@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import { ShieldAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
@@ -8,14 +7,9 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 export function SecuritySection(): React.JSX.Element {
   const { t } = useTranslation()
   const { settings, saveSettings } = useSettingsStore()
-  const [skipSsl, setSkipSsl] = useState(false)
-
-  useEffect(() => {
-    setSkipSsl(settings['app.skipSslVerify'] === 'true')
-  }, [settings])
+  const skipSsl = settings['app.skipSslVerify'] === 'true'
 
   const handleToggle = (checked: boolean): void => {
-    setSkipSsl(checked)
     saveSettings({ 'app.skipSslVerify': String(checked) })
   }
 

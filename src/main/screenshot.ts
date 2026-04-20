@@ -118,7 +118,7 @@ async function captureScreen(targetDisplay: Electron.Display): Promise<void> {
   }
 }
 
-export function startScreenshot(_mainWindow: BrowserWindow | null): void {
+export function startScreenshot(): void {
   // Prevent multiple overlays
   if (overlayWindow && !overlayWindow.isDestroyed()) return
 

@@ -50,6 +50,12 @@ import {
   generateTranslatePrompt,
   generateImageTranslatePrompt,
 } from '@renderer/lib/languages'
+import {
+  BUILTIN_TRANSLATE_ID,
+  BUILTIN_IMAGE_TRANSLATE_ID,
+  getTranslateLangKey,
+  resolveTranslateTargetLang,
+} from '@renderer/lib/quickAssistantTranslate'
 import type { QuickAction } from '@shared/types'
 
 const QUICK_ASSISTANT_ACTION = 'toggle-quick-assistant'
@@ -62,8 +68,8 @@ export function QuickAssistantSection(): React.JSX.Element {
   const models = useProviderStore((s) => s.models)
   const { actions, loadActions, createAction, updateAction, deleteAction } = useQuickActionStore()
 
-  const [enabled, setEnabled] = useState(true)
-  const [defaultPinned, setDefaultPinned] = useState(false)
+  const enabled = settings['quickAssistant.enabled'] === 'true'
+  const defaultPinned = settings['quickAssistant.defaultPinned'] === 'true'
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -97,11 +103,6 @@ export function QuickAssistantSection(): React.JSX.Element {
     loadActions()
   }, [loadActions])
 
-  useEffect(() => {
-    setEnabled(settings['quickAssistant.enabled'] === 'true')
-    setDefaultPinned(settings['quickAssistant.defaultPinned'] === 'true')
-  }, [settings])
-
   const providerId = settings['quickAssistant.providerId'] || ''
   const modelId = settings['quickAssistant.modelId'] || ''
 
@@ -110,12 +111,10 @@ export function QuickAssistantSection(): React.JSX.Element {
   const selectedModel = models.find((m) => m.name === modelId && m.providerId === providerId)
 
   const handleEnabledToggle = (checked: boolean): void => {
-    setEnabled(checked)
     saveSettings({ 'quickAssistant.enabled': String(checked) })
   }
 
   const handleDefaultPinnedToggle = (checked: boolean): void => {
-    setDefaultPinned(checked)
     saveSettings({ 'quickAssistant.defaultPinned': String(checked) })
   }
 
@@ -140,12 +139,14 @@ export function QuickAssistantSection(): React.JSX.Element {
     setEditingAction(action)
     setFormName(st(action.name))
     setFormDescription(st(action.description))
-    if (action.id === 'builtin-translate' || action.id === 'builtin-image-translate') {
-      const lang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
+    if (action.id === BUILTIN_TRANSLATE_ID || action.id === BUILTIN_IMAGE_TRANSLATE_ID) {
+      // Each built-in translate action keeps its own independent target-lang
+      // setting. When unset, fall back to the UI locale — not the other key.
+      const lang = resolveTranslateTargetLang(action.id, settings, i18n.language)
       setFormTargetLang(lang)
       const englishLabel = LANGUAGES.find((l) => l.code === lang)?.englishLabel ?? lang
       setFormSystemPrompt(
-        action.id === 'builtin-image-translate'
+        action.id === BUILTIN_IMAGE_TRANSLATE_ID
           ? generateImageTranslatePrompt(englishLabel)
           : generateTranslatePrompt(englishLabel),
       )
@@ -417,8 +418,8 @@ export function QuickAssistantSection(): React.JSX.Element {
                 onChange={(e) => setFormDescription(e.target.value)}
               />
             </div>
-            {(editingAction?.id === 'builtin-translate' ||
-              editingAction?.id === 'builtin-image-translate') && (
+            {(editingAction?.id === BUILTIN_TRANSLATE_ID ||
+              editingAction?.id === BUILTIN_IMAGE_TRANSLATE_ID) && (
               <div className="space-y-2">
                 <Label>{t('settings.quickAssistant.targetLangLabel', '目标语言')}</Label>
                 <Select
@@ -428,12 +429,13 @@ export function QuickAssistantSection(): React.JSX.Element {
                     const englishLabel =
                       LANGUAGES.find((l) => l.code === value)?.englishLabel ?? value
                     setFormSystemPrompt(
-                      editingAction?.id === 'builtin-image-translate'
+                      editingAction?.id === BUILTIN_IMAGE_TRANSLATE_ID
                         ? generateImageTranslatePrompt(englishLabel)
                         : generateTranslatePrompt(englishLabel),
                     )
-                    // Persist immediately so the quick assistant popup picks up the change
-                    saveSettings({ 'quickAssistant.translateTargetLang': value })
+                    // Persist immediately so the quick assistant popup picks up the change.
+                    // Write to the key matching this action so text / image translate stay independent.
+                    saveSettings({ [getTranslateLangKey(editingAction?.id)]: value })
                   }}>
                   <SelectTrigger>
                     <SelectValue />

@@ -83,8 +83,8 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const [shortcutRegistered, setShortcutRegistered] = useState(true)
 
   // Core toggles
-  const [enabled, setEnabled] = useState(true)
-  const [defaultPinned, setDefaultPinned] = useState(false)
+  const enabled = settings['selection.enabled'] === 'true'
+  const defaultPinned = settings['selection.defaultPinned'] === 'true'
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Action editor dialog
@@ -113,16 +113,16 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }, [loadActions])
 
   useEffect(() => {
-    setEnabled(settings['selection.enabled'] === 'true')
-    setDefaultPinned(settings['selection.defaultPinned'] === 'true')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinLen(settings['selection.minTextLength'] ?? String(DEFAULT_SELECTION_MIN_TEXT_LENGTH))
     setMaxLen(settings['selection.maxTextLength'] ?? String(DEFAULT_SELECTION_MAX_TEXT_LENGTH))
   }, [settings])
 
-  // Keep the Switch in sync when the state flips externally (global shortcut / tray)
+  // Keep the enable state in sync when flipped externally (global shortcut / tray).
+  // The store's saveSettings drives both the derived `enabled` value and any
+  // listeners in other windows.
   useEffect(() => {
     const unsubscribe = window.api.onSelectionStateChanged((next) => {
-      setEnabled(next)
       saveSettings({ 'selection.enabled': String(next) })
     })
     return unsubscribe
@@ -140,12 +140,10 @@ export function SelectionAssistantSection(): React.JSX.Element {
     if (checked === enabled) return
     const result = await window.api.toggleSelectionAssistant()
     const next = result.success && typeof result.data === 'boolean' ? result.data : checked
-    setEnabled(next)
     await saveSettings({ 'selection.enabled': String(next) })
   }
 
   const handleDefaultPinnedToggle = (checked: boolean): void => {
-    setDefaultPinned(checked)
     saveSettings({ 'selection.defaultPinned': String(checked) })
   }
 

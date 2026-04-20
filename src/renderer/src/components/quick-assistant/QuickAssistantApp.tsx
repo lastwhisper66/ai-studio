@@ -24,9 +24,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@renderer/components/ui/select'
-
-const BUILTIN_TRANSLATE_ID = 'builtin-translate'
-const BUILTIN_IMAGE_TRANSLATE_ID = 'builtin-image-translate'
+import {
+  BUILTIN_TRANSLATE_ID,
+  BUILTIN_IMAGE_TRANSLATE_ID,
+  getTranslateLangKey,
+  resolveTranslateTargetLang,
+} from '@renderer/lib/quickAssistantTranslate'
 
 type ViewState = 'input' | 'result'
 
@@ -52,7 +55,7 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [copySuccess, setCopySuccess] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
-  const targetLang = settings['quickAssistant.translateTargetLang'] || i18n.language || 'en'
+  const targetLang = resolveTranslateTargetLang(currentAction?.id, settings, i18n.language)
   const activeTargetLangRef = useRef<string | null>(null)
   const retranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -182,11 +185,13 @@ export function QuickAssistantApp(): React.JSX.Element {
       // Build system prompt override for translate actions
       let systemPromptOverride: string | undefined
       if (action.id === BUILTIN_TRANSLATE_ID) {
-        const lang = overrideTargetLang ?? targetLang
+        const lang =
+          overrideTargetLang ?? resolveTranslateTargetLang(action.id, settings, i18n.language)
         systemPromptOverride = generateTranslatePrompt(getLanguageEnglishLabel(lang))
         activeTargetLangRef.current = lang
       } else if (action.id === BUILTIN_IMAGE_TRANSLATE_ID) {
-        const lang = overrideTargetLang ?? targetLang
+        const lang =
+          overrideTargetLang ?? resolveTranslateTargetLang(action.id, settings, i18n.language)
         systemPromptOverride = generateImageTranslatePrompt(getLanguageEnglishLabel(lang))
         activeTargetLangRef.current = lang
       }
@@ -236,7 +241,7 @@ export function QuickAssistantApp(): React.JSX.Element {
         files: files && files.length > 0 ? files : undefined,
       })
     },
-    [settings, targetLang],
+    [settings],
   )
 
   const executeAction = useCallback(
@@ -341,7 +346,7 @@ export function QuickAssistantApp(): React.JSX.Element {
       // Skip if same language is already being translated
       if (newLang === activeTargetLangRef.current) return
 
-      saveSettings({ 'quickAssistant.translateTargetLang': newLang })
+      saveSettings({ [getTranslateLangKey(currentAction?.id)]: newLang })
 
       // Immediately clear stale content so the UI shows a loading state
       setResultContent('')
@@ -424,7 +429,7 @@ export function QuickAssistantApp(): React.JSX.Element {
         }
       }
     },
-    [attachedFiles.length, showWarning],
+    [attachedFiles.length, showWarning, t],
   )
 
   const removeAttachedFile = useCallback((index: number) => {
@@ -458,15 +463,17 @@ export function QuickAssistantApp(): React.JSX.Element {
     selectedIndex,
     currentAction,
   })
-  kbStateRef.current = {
-    view,
-    inputText,
-    attachedFiles,
-    isStreaming,
-    resultContent,
-    selectedIndex,
-    currentAction,
-  }
+  useEffect(() => {
+    kbStateRef.current = {
+      view,
+      inputText,
+      attachedFiles,
+      isStreaming,
+      resultContent,
+      selectedIndex,
+      currentAction,
+    }
+  })
 
   // Global keyboard handler — reads transient state from kbStateRef,
   // only re-registers when callback identities or enabledActions change.

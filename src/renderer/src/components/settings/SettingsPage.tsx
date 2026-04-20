@@ -20,17 +20,13 @@ export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
   const loadProviders = useProviderStore((s) => s.loadProviders)
   const consumePendingSection = useSettingsStore((s) => s.consumePendingSection)
-  const [activeSection, setActiveSection] = useState<SettingsSection>('provider')
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    () => consumePendingSection() ?? 'provider',
+  )
 
   useEffect(() => {
     loadProviders()
   }, [loadProviders])
-
-  useEffect(() => {
-    const pending = consumePendingSection()
-    if (pending) setActiveSection(pending)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">

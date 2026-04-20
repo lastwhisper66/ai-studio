@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { X, Globe, SpellCheck, Power, EyeOff } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
@@ -20,18 +20,14 @@ const LANGUAGES = [
 export function GeneralSection(): React.JSX.Element {
   const { t, i18n } = useTranslation()
   const { settings, saveSettings } = useSettingsStore()
-  const [closeToTray, setCloseToTray] = useState(true)
-  const [spellCheck, setSpellCheck] = useState(true)
-  const [autoLaunch, setAutoLaunch] = useState(false)
-  const [startMinimized, setStartMinimized] = useState(false)
+  const closeToTray = settings['app.closeToTray'] !== 'false'
+  const spellCheck = settings['app.spellCheck'] !== 'false'
+  const autoLaunch = settings['app.autoLaunch'] === 'true'
+  const startMinimized = settings['app.startMinimized'] === 'true'
 
+  // Sync stored language with i18n on load — ensures the renderer respects
+  // what was persisted in SQLite (the authoritative source for the main process).
   useEffect(() => {
-    setCloseToTray(settings['app.closeToTray'] !== 'false')
-    setSpellCheck(settings['app.spellCheck'] !== 'false')
-    setAutoLaunch(settings['app.autoLaunch'] === 'true')
-    setStartMinimized(settings['app.startMinimized'] === 'true')
-    // Sync stored language with i18n on load — ensures the renderer respects
-    // what was persisted in SQLite (the authoritative source for the main process).
     const storedLang = settings['general.language']
     if (storedLang && storedLang !== i18n.resolvedLanguage) {
       i18n.changeLanguage(storedLang)
@@ -39,22 +35,18 @@ export function GeneralSection(): React.JSX.Element {
   }, [settings, i18n])
 
   const handleCloseToTrayToggle = (checked: boolean): void => {
-    setCloseToTray(checked)
     saveSettings({ 'app.closeToTray': String(checked) })
   }
 
   const handleSpellCheckToggle = (checked: boolean): void => {
-    setSpellCheck(checked)
     saveSettings({ 'app.spellCheck': String(checked) })
   }
 
   const handleAutoLaunchToggle = (checked: boolean): void => {
-    setAutoLaunch(checked)
     saveSettings({ 'app.autoLaunch': String(checked) })
   }
 
   const handleStartMinimizedToggle = (checked: boolean): void => {
-    setStartMinimized(checked)
     saveSettings({ 'app.startMinimized': String(checked) })
   }
 

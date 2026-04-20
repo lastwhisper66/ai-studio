@@ -211,6 +211,7 @@ function ProviderForm({
   const [remoteModels, setRemoteModels] = useState<RemoteModel[]>([])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft({
       name: provider.name,
       apiKey: provider.apiKey,
@@ -301,14 +302,11 @@ function ProviderForm({
     return groups
   }, [providerModels, modelSearch])
 
-  // Build flat id list matching the grouped render order for SortableContext
-  const sortedModelIds = useMemo(() => {
-    const ids: string[] = []
-    for (const [, models] of modelGroups.entries()) {
-      for (const m of models) ids.push(m.id)
-    }
-    return ids
-  }, [modelGroups])
+  // Build flat id list matching the grouped render order for SortableContext.
+  // React Compiler memoizes this automatically, so no manual useMemo needed.
+  const sortedModelIds = Array.from(modelGroups.values()).flatMap((models) =>
+    models.map((m) => m.id),
+  )
 
   return (
     <ScrollArea className="flex-1">

@@ -220,7 +220,7 @@ function registerScreenshotShortcut(): void {
   const electronAccel = toElectronAccelerator(accel)
 
   const ok = globalShortcut.register(electronAccel, () => {
-    startScreenshot(mainWindow)
+    startScreenshot()
   })
 
   if (ok) {

@@ -245,6 +245,9 @@ export function SelectionBubbleApp(): React.JSX.Element {
   useEffect(() => {
     if (!payload || !currentAction) return
     if (!targetLangLoaded) return
+    // startRequest is the side-effect we're syncing to — the setState calls
+    // inside it are part of that external trigger, not cascading renders.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startRequest(currentAction, payload.text)
     // Only re-trigger when the payload itself changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
