@@ -220,6 +220,7 @@ function registerScreenshotShortcut(): void {
   const electronAccel = toElectronAccelerator(accel)
 
   const ok = globalShortcut.register(electronAccel, () => {
+    if (!getQuickAssistantEnabled()) return
     startScreenshot()
   })
 
