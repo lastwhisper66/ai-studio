@@ -10,13 +10,12 @@ export const LANGUAGES: Language[] = [
   { code: 'ja', label: '日本語', englishLabel: 'Japanese' },
 ]
 
-export function generateTranslatePrompt(targetLangLabel: string): string {
-  return `You are a professional translator. Translate the input text to ${targetLangLabel}. Only output the translation, nothing else. Preserve the original formatting and tone.`
-}
-
-export function generateImageTranslatePrompt(targetLangLabel: string): string {
-  return `You are a professional translator. Translate the text or image content sent by the user to ${targetLangLabel}. Only output the translation, nothing else.`
-}
+/**
+ * Sentinel value for the "no target-language override" option in quick
+ * assistant / selection bubble dropdowns. When selected, callers skip the
+ * `Please respond in X.` append and let the action's stored prompt run as-is.
+ */
+export const TARGET_LANG_OFF = 'off'
 
 export function getLanguageLabel(code: string): string {
   return LANGUAGES.find((l) => l.code === code)?.label ?? code
@@ -24,4 +23,20 @@ export function getLanguageLabel(code: string): string {
 
 export function getLanguageEnglishLabel(code: string): string {
   return LANGUAGES.find((l) => l.code === code)?.englishLabel ?? code
+}
+
+/**
+ * Map an arbitrary locale code (e.g. i18n.language) to a LANGUAGES entry,
+ * or pass through the `off` sentinel when the user has disabled the override.
+ * Falls back to the first LANGUAGES entry (or 'en') if no match is found.
+ */
+export function normalizeLangCode(input: string | undefined): string {
+  if (!input) return LANGUAGES[0]?.code ?? 'en'
+  if (input === TARGET_LANG_OFF) return TARGET_LANG_OFF
+  if (LANGUAGES.some((l) => l.code === input)) return input
+  // Try the primary subtag: "en-US" -> "en", or "zh" -> "zh-CN" when only a
+  // region-tagged entry exists.
+  const primary = input.split('-')[0]
+  const match = LANGUAGES.find((l) => l.code === primary || l.code.startsWith(`${primary}-`))
+  return match?.code ?? LANGUAGES[0]?.code ?? 'en'
 }

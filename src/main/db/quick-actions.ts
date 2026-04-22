@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { QuickAction } from '@shared/types'
-import { generateTranslatePrompt, generateImageTranslatePrompt } from '@shared/languages'
 import { getDb } from './database'
 
 interface QuickActionRow {
@@ -140,7 +139,7 @@ export function seedQuickActions(): void {
       name: 'seed.quickActions.answer.name',
       description: 'seed.quickActions.answer.description',
       systemPrompt:
-        "You are a knowledgeable and helpful assistant. Answer the user's question clearly, accurately, and concisely. Always respond in the same language as the user's input.",
+        "You are a knowledgeable and helpful assistant. Answer the user's question clearly, accurately, and concisely.",
       icon: 'MessageCircle',
       sortOrder: 0,
     },
@@ -148,7 +147,8 @@ export function seedQuickActions(): void {
       id: 'builtin-translate',
       name: 'seed.quickActions.translate.name',
       description: 'seed.quickActions.translate.description',
-      systemPrompt: generateTranslatePrompt('the target language'),
+      systemPrompt:
+        'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
       icon: 'Languages',
       sortOrder: 1,
     },
@@ -157,7 +157,7 @@ export function seedQuickActions(): void {
       name: 'seed.quickActions.summarize.name',
       description: 'seed.quickActions.summarize.description',
       systemPrompt:
-        'You are a summarization expert. Provide a clear, concise summary that captures all key points of the input text. Respond in the same language as the input. Use bullet points or structured format when it improves clarity.',
+        'You are a summarization expert. Provide a clear, concise summary that captures all key points of the input text. Use bullet points or structured format when it improves clarity.',
       icon: 'FileText',
       sortOrder: 2,
     },
@@ -165,7 +165,8 @@ export function seedQuickActions(): void {
       id: 'builtin-image-translate',
       name: 'seed.quickActions.imageTranslate.name',
       description: 'seed.quickActions.imageTranslate.description',
-      systemPrompt: generateImageTranslatePrompt('the target language'),
+      systemPrompt:
+        'You are a professional translator. Translate the text or image content sent by the user into the language specified in the follow-up instruction. If the content is already in that language, output it unchanged. Only output the translation, nothing else.',
       icon: 'ScanText',
       sortOrder: 3,
     },

@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pin, PinOff, X, ArrowLeft, Square, GripVertical } from 'lucide-react'
+import { HelpCircle, Pin, PinOff, X, ArrowLeft, Square, GripVertical } from 'lucide-react'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import {
-  generateTranslatePrompt,
-  generateImageTranslatePrompt,
   getLanguageEnglishLabel,
   LANGUAGES,
+  TARGET_LANG_OFF,
+  normalizeLangCode,
 } from '@renderer/lib/languages'
 import i18n from '@renderer/i18n'
 import type { QuickAction } from '@shared/types'
@@ -24,12 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@renderer/components/ui/select'
-import {
-  BUILTIN_TRANSLATE_ID,
-  BUILTIN_IMAGE_TRANSLATE_ID,
-  getTranslateLangKey,
-  resolveTranslateTargetLang,
-} from '@renderer/lib/quickAssistantTranslate'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+
+/** Single source-of-truth setting key for the target-language override. */
+const TARGET_LANG_KEY = 'quickAssistant.translateTargetLang'
 
 type ViewState = 'input' | 'result'
 
@@ -55,7 +53,7 @@ export function QuickAssistantApp(): React.JSX.Element {
   const [copySuccess, setCopySuccess] = useState(false)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [warning, setWarning] = useState<string | null>(null)
-  const targetLang = resolveTranslateTargetLang(currentAction?.id, settings, i18n.language)
+  const targetLang = normalizeLangCode(settings[TARGET_LANG_KEY] ?? i18n.language)
   const activeTargetLangRef = useRef<string | null>(null)
   const retranslateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -182,19 +180,25 @@ export function QuickAssistantApp(): React.JSX.Element {
       const providerId = settings['quickAssistant.providerId']
       const settingsModelId = settings['quickAssistant.modelId']
 
-      // Build system prompt override for translate actions
+      // Build system prompt override based on the target-language selection.
+      // The override applies to every action — selecting a specific language
+      // appends a "please respond in X" line to the stored prompt, so built-in,
+      // user-edited, and custom actions are all honored the same way. When
+      // the user picks "off" we skip the append and let main fall back to the
+      // action's original systemPrompt.
+      const lang =
+        overrideTargetLang ?? normalizeLangCode(settings[TARGET_LANG_KEY] || i18n.language)
       let systemPromptOverride: string | undefined
-      if (action.id === BUILTIN_TRANSLATE_ID) {
-        const lang =
-          overrideTargetLang ?? resolveTranslateTargetLang(action.id, settings, i18n.language)
-        systemPromptOverride = generateTranslatePrompt(getLanguageEnglishLabel(lang))
-        activeTargetLangRef.current = lang
-      } else if (action.id === BUILTIN_IMAGE_TRANSLATE_ID) {
-        const lang =
-          overrideTargetLang ?? resolveTranslateTargetLang(action.id, settings, i18n.language)
-        systemPromptOverride = generateImageTranslatePrompt(getLanguageEnglishLabel(lang))
-        activeTargetLangRef.current = lang
+      if (lang === TARGET_LANG_OFF) {
+        systemPromptOverride = undefined
+      } else {
+        const englishLabel = getLanguageEnglishLabel(lang)
+        const basePrompt = action.systemPrompt?.trim() ?? ''
+        systemPromptOverride = basePrompt
+          ? `${basePrompt}\n\nPlease respond in ${englishLabel}.`
+          : `Please respond in ${englishLabel}.`
       }
+      activeTargetLangRef.current = lang
 
       // Switch to result view
       setView('result')
@@ -346,7 +350,7 @@ export function QuickAssistantApp(): React.JSX.Element {
       // Skip if same language is already being translated
       if (newLang === activeTargetLangRef.current) return
 
-      saveSettings({ [getTranslateLangKey(currentAction?.id)]: newLang })
+      saveSettings({ [TARGET_LANG_KEY]: newLang })
 
       // Immediately clear stale content so the UI shows a loading state
       setResultContent('')
@@ -553,8 +557,6 @@ export function QuickAssistantApp(): React.JSX.Element {
     return <div className="bg-background h-full rounded-xl" />
   }
 
-  const isTranslateAction =
-    currentAction?.id === BUILTIN_TRANSLATE_ID || currentAction?.id === BUILTIN_IMAGE_TRANSLATE_ID
   const placeholderText = modelId
     ? t('settings.quickAssistant.placeholderWithModel', { model: modelId })
     : t('settings.quickAssistant.placeholderDefault')
@@ -653,20 +655,25 @@ export function QuickAssistantApp(): React.JSX.Element {
                     {t('settings.quickAssistant.stop')}
                   </button>
                 )}
-                {isTranslateAction && targetLang && (
-                  <Select value={targetLang} onValueChange={handleTargetLangChange}>
-                    <SelectTrigger className="h-6 w-28 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper" side="top">
-                      {LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.code} value={lang.code}>
-                          {lang.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={targetLang} onValueChange={handleTargetLangChange}>
+                  <SelectTrigger className="h-6 w-28 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent position="popper" side="top">
+                    <SelectItem value={TARGET_LANG_OFF}>{t('common.targetLang.off')}</SelectItem>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <HelpCircle className="text-muted-foreground size-3.5 shrink-0 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{t('common.targetLang.hint')}</TooltipContent>
+                </Tooltip>
               </>
             )}
           </div>

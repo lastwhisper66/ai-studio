@@ -110,7 +110,7 @@ export function registerQuickAssistantHandlers(): void {
           {
             settings,
             messages: [
-              { role: 'system', content: systemPromptOverride || action.systemPrompt },
+              { role: 'system', content: systemPromptOverride ?? action.systemPrompt },
               userMessage,
             ],
             signal: controller.signal,

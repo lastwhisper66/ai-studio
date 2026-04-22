@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { SelectionAction } from '@shared/types'
-import { generateTranslatePrompt } from '@shared/languages'
 import { getDb } from './database'
 
 interface SelectionActionRow {
@@ -159,7 +158,8 @@ export function seedSelectionActions(): void {
       id: 'builtin-sel-translate',
       name: 'seed.selectionActions.translate.name',
       description: 'seed.selectionActions.translate.description',
-      systemPrompt: generateTranslatePrompt('the target language'),
+      systemPrompt:
+        'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
       icon: 'Languages',
       sortOrder: 0,
     },
@@ -168,7 +168,7 @@ export function seedSelectionActions(): void {
       name: 'seed.selectionActions.explain.name',
       description: 'seed.selectionActions.explain.description',
       systemPrompt:
-        'You are an expert explainer. Clearly and concisely explain the meaning, concept, or context of the given text. Respond in the same language as the input.',
+        'You are an expert explainer. Clearly and concisely explain the meaning, concept, or context of the given text.',
       icon: 'BookOpen',
       sortOrder: 1,
     },
@@ -177,7 +177,7 @@ export function seedSelectionActions(): void {
       name: 'seed.selectionActions.summarize.name',
       description: 'seed.selectionActions.summarize.description',
       systemPrompt:
-        'You are a summarization expert. Provide a clear, concise summary that captures the key points of the input text. Respond in the same language as the input. Use bullet points when it improves clarity.',
+        'You are a summarization expert. Provide a clear, concise summary that captures the key points of the input text. Use bullet points when it improves clarity.',
       icon: 'FileText',
       sortOrder: 2,
     },
@@ -186,7 +186,7 @@ export function seedSelectionActions(): void {
       name: 'seed.selectionActions.polish.name',
       description: 'seed.selectionActions.polish.description',
       systemPrompt:
-        'You are a professional editor. Rewrite the given text to be clearer, more fluent, and more polished while preserving its original meaning and tone. Respond in the same language as the input. Only output the rewritten text.',
+        'You are a professional editor. Rewrite the given text to be clearer, more fluent, and more polished while preserving its original meaning and tone. Only output the rewritten text.',
       icon: 'Wand2',
       sortOrder: 3,
     },

@@ -5,6 +5,7 @@ import { IpcChannels } from '@shared/ipc-channels'
 import type { AutoExecutePayload } from '@shared/types'
 import { abortQuickAssistant } from './ipc/quick-assistant-handlers'
 import { getSetting } from './db'
+import { createWindowSizePersistor } from './utils/window-size-persist'
 
 let quickAssistantWindow: BrowserWindow | null = null
 let contentReady = false
@@ -21,6 +22,16 @@ let pendingAutoExecutePayload: AutoExecutePayload | null = null
  * sluggish for everyone else.
  */
 const SHOW_OPACITY_DELAY_MS = 60
+
+const sizePersistor = createWindowSizePersistor({
+  widthKey: 'quickAssistant.windowWidth',
+  heightKey: 'quickAssistant.windowHeight',
+  defaultWidth: 600,
+  defaultHeight: 500,
+  minWidth: 480,
+  minHeight: 360,
+  logPrefix: '[QuickAssistant]',
+})
 
 /** Read the user's default-pinned preference from DB. */
 function isDefaultPinned(): boolean {
@@ -41,15 +52,18 @@ function sendPinnedState(): void {
 export function preCreateQuickAssistantWindow(): void {
   if (quickAssistantWindow && !quickAssistantWindow.isDestroyed()) return
 
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize
+  const { width: winWidth, height: winHeight } = sizePersistor.load()
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
 
   quickAssistantWindow = new BrowserWindow({
-    width: 600,
-    height: 500,
-    x: Math.round((width - 600) / 2),
-    y: Math.round((height - 500) / 2),
+    width: winWidth,
+    height: winHeight,
+    minWidth: 480,
+    minHeight: 360,
+    x: Math.round((screenWidth - winWidth) / 2),
+    y: Math.round((screenHeight - winHeight) / 2),
     frame: false,
-    resizable: false,
+    resizable: true,
     alwaysOnTop: isDefaultPinned(),
     skipTaskbar: true,
     show: false,
@@ -68,6 +82,8 @@ export function preCreateQuickAssistantWindow(): void {
     quickAssistantWindow?.hide()
   })
 
+  sizePersistor.attach(quickAssistantWindow)
+
   quickAssistantWindow.on('closed', () => {
     abortQuickAssistant()
     quickAssistantWindow = null
@@ -84,6 +100,19 @@ export function preCreateQuickAssistantWindow(): void {
   }
 }
 
+/** Re-center the window on the primary display using its current size. */
+function recenterOnPrimary(): void {
+  if (!quickAssistantWindow || quickAssistantWindow.isDestroyed()) return
+  const [winWidth, winHeight] = quickAssistantWindow.getSize()
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize
+  quickAssistantWindow.setBounds({
+    x: Math.round((screenWidth - winWidth) / 2),
+    y: Math.round((screenHeight - winHeight) / 2),
+    width: winWidth,
+    height: winHeight,
+  })
+}
+
 export function toggleQuickAssistantWindow(): void {
   if (quickAssistantWindow && !quickAssistantWindow.isDestroyed()) {
     if (quickAssistantWindow.isVisible()) {
@@ -96,14 +125,9 @@ export function toggleQuickAssistantWindow(): void {
       pinned = defaultPin
       quickAssistantWindow.setAlwaysOnTop(defaultPin)
       sendPinnedState()
-      // Re-center on primary display each time it's shown
-      const { width, height } = screen.getPrimaryDisplay().workAreaSize
-      quickAssistantWindow.setBounds({
-        x: Math.round((width - 600) / 2),
-        y: Math.round((height - 500) / 2),
-        width: 600,
-        height: 500,
-      })
+      // Re-center on primary display each time it's shown, preserving the
+      // user's last-chosen window size.
+      recenterOnPrimary()
       // Prevent transparent-window flash on Windows: show invisible first,
       // let the compositor prepare the content, then reveal.
       quickAssistantWindow.setOpacity(0)
@@ -148,14 +172,8 @@ export function showQuickAssistantWithAutoExecute(payload: AutoExecutePayload): 
     sendPinnedState()
   }
 
-  // Re-center on primary display
-  const { width, height } = screen.getPrimaryDisplay().workAreaSize
-  quickAssistantWindow.setBounds({
-    x: Math.round((width - 600) / 2),
-    y: Math.round((height - 500) / 2),
-    width: 600,
-    height: 500,
-  })
+  // Re-center on primary display, preserving the user's last-chosen size.
+  recenterOnPrimary()
 
   // Show with opacity transition (same as toggle)
   quickAssistantWindow.setOpacity(0)

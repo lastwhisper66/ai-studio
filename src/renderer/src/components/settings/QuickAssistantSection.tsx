@@ -11,7 +11,6 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@renderer/i18n'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
@@ -26,13 +25,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@renderer/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@renderer/components/ui/select'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useQuickActionStore } from '@renderer/stores/quickActionStore'
@@ -45,17 +37,6 @@ import {
   quickActionIconMap,
   defaultQuickActionIcon,
 } from '@renderer/components/quick-assistant/icons'
-import {
-  LANGUAGES,
-  generateTranslatePrompt,
-  generateImageTranslatePrompt,
-} from '@renderer/lib/languages'
-import {
-  BUILTIN_TRANSLATE_ID,
-  BUILTIN_IMAGE_TRANSLATE_ID,
-  getTranslateLangKey,
-  resolveTranslateTargetLang,
-} from '@renderer/lib/quickAssistantTranslate'
 import type { QuickAction } from '@shared/types'
 
 const QUICK_ASSISTANT_ACTION = 'toggle-quick-assistant'
@@ -77,7 +58,6 @@ export function QuickAssistantSection(): React.JSX.Element {
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formSystemPrompt, setFormSystemPrompt] = useState('')
-  const [formTargetLang, setFormTargetLang] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   // Keybinding
@@ -131,7 +111,6 @@ export function QuickAssistantSection(): React.JSX.Element {
     setFormName('')
     setFormDescription('')
     setFormSystemPrompt('')
-    setFormTargetLang('')
     setEditDialogOpen(true)
   }
 
@@ -139,21 +118,7 @@ export function QuickAssistantSection(): React.JSX.Element {
     setEditingAction(action)
     setFormName(st(action.name))
     setFormDescription(st(action.description))
-    if (action.id === BUILTIN_TRANSLATE_ID || action.id === BUILTIN_IMAGE_TRANSLATE_ID) {
-      // Each built-in translate action keeps its own independent target-lang
-      // setting. When unset, fall back to the UI locale — not the other key.
-      const lang = resolveTranslateTargetLang(action.id, settings, i18n.language)
-      setFormTargetLang(lang)
-      const englishLabel = LANGUAGES.find((l) => l.code === lang)?.englishLabel ?? lang
-      setFormSystemPrompt(
-        action.id === BUILTIN_IMAGE_TRANSLATE_ID
-          ? generateImageTranslatePrompt(englishLabel)
-          : generateTranslatePrompt(englishLabel),
-      )
-    } else {
-      setFormSystemPrompt(action.systemPrompt)
-      setFormTargetLang('')
-    }
+    setFormSystemPrompt(action.systemPrompt)
     setEditDialogOpen(true)
   }
 
@@ -173,8 +138,6 @@ export function QuickAssistantSection(): React.JSX.Element {
         description,
         systemPrompt: formSystemPrompt.trim(),
       })
-      // Note: translateTargetLang is persisted immediately in the dropdown's
-      // onValueChange handler, so no need to save it again here.
     } else {
       await createAction({
         name: formName.trim(),
@@ -390,7 +353,6 @@ export function QuickAssistantSection(): React.JSX.Element {
             setFormName('')
             setFormDescription('')
             setFormSystemPrompt('')
-            setFormTargetLang('')
           }
         }}>
         <DialogContent>
@@ -418,38 +380,6 @@ export function QuickAssistantSection(): React.JSX.Element {
                 onChange={(e) => setFormDescription(e.target.value)}
               />
             </div>
-            {(editingAction?.id === BUILTIN_TRANSLATE_ID ||
-              editingAction?.id === BUILTIN_IMAGE_TRANSLATE_ID) && (
-              <div className="space-y-2">
-                <Label>{t('settings.quickAssistant.targetLangLabel', '目标语言')}</Label>
-                <Select
-                  value={formTargetLang}
-                  onValueChange={(value) => {
-                    setFormTargetLang(value)
-                    const englishLabel =
-                      LANGUAGES.find((l) => l.code === value)?.englishLabel ?? value
-                    setFormSystemPrompt(
-                      editingAction?.id === BUILTIN_IMAGE_TRANSLATE_ID
-                        ? generateImageTranslatePrompt(englishLabel)
-                        : generateTranslatePrompt(englishLabel),
-                    )
-                    // Persist immediately so the quick assistant popup picks up the change.
-                    // Write to the key matching this action so text / image translate stay independent.
-                    saveSettings({ [getTranslateLangKey(editingAction?.id)]: value })
-                  }}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="space-y-2">
               <Label>{t('settings.quickAssistant.systemPromptLabel')}</Label>
               <Textarea

@@ -16,7 +16,11 @@
     "comingSoon": "Coming soon",
     "noModelSet": "No model set",
     "noModelConfigured": "No models configured",
-    "copied": "Copied"
+    "copied": "Copied",
+    "targetLang": {
+      "off": "Off",
+      "hint": "Overrides output language; \"Off\" uses the prompt's default."
+    }
   },
   "titleBar": {
     "expandSidebar": "Expand sidebar",
@@ -302,7 +306,6 @@
       "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere.",
       "shortcutLabel": "Toggle Shortcut",
       "shortcutHint": "Global shortcut to toggle the Quick Assistant.",
-      "targetLangLabel": "Target language",
       "model": "Model",
       "modelLabel": "AI Model",
       "modelHint": "Select the AI model used by Quick Assistant.",

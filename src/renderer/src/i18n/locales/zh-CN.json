@@ -16,7 +16,11 @@
     "comingSoon": "即将推出",
     "noModelSet": "未选择模型",
     "noModelConfigured": "未配置模型",
-    "copied": "已复制"
+    "copied": "已复制",
+    "targetLang": {
+      "off": "关闭",
+      "hint": "覆盖输出语言;选「关闭」则使用提示词原设置"
+    }
   },
   "titleBar": {
     "expandSidebar": "展开侧边栏",
@@ -302,7 +306,6 @@
       "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手。",
       "shortcutLabel": "开关快捷键",
       "shortcutHint": "用于快速唤起快捷助手。",
-      "targetLangLabel": "目标语言",
       "model": "模型配置",
       "modelLabel": "AI 模型",
       "modelHint": "选择快捷助手使用的 AI 模型。",

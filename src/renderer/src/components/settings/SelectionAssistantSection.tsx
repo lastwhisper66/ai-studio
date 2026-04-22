@@ -13,7 +13,6 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@renderer/i18n'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
@@ -28,13 +27,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@renderer/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@renderer/components/ui/select'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useSelectionActionStore } from '@renderer/stores/selectionActionStore'
@@ -47,12 +39,10 @@ import {
   selectionActionIconMap,
   defaultSelectionActionIcon,
 } from '@renderer/components/selection-toolbar/icons'
-import { LANGUAGES, generateTranslatePrompt } from '@renderer/lib/languages'
 import type { SelectionAction } from '@shared/types'
 import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
 
 const SELECTION_ACTION = 'toggle-selection-assistant'
-const BUILTIN_SEL_TRANSLATE_ID = 'builtin-sel-translate'
 const PROGRAM_NAME_MAX_LENGTH = 120
 
 function parseProgramList(raw: string | undefined): string[] {
@@ -94,7 +84,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formSystemPrompt, setFormSystemPrompt] = useState('')
-  const [formTargetLang, setFormTargetLang] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   // Excluded programs — live-edited list backed by settings
@@ -177,7 +166,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
     setFormName('')
     setFormDescription('')
     setFormSystemPrompt('')
-    setFormTargetLang('')
     setEditDialogOpen(true)
   }
 
@@ -185,15 +173,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
     setEditingAction(action)
     setFormName(st(action.name))
     setFormDescription(st(action.description))
-    if (action.id === BUILTIN_SEL_TRANSLATE_ID) {
-      const lang = settings['selection.translateTargetLang'] || i18n.language || 'en'
-      setFormTargetLang(lang)
-      const englishLabel = LANGUAGES.find((l) => l.code === lang)?.englishLabel ?? lang
-      setFormSystemPrompt(generateTranslatePrompt(englishLabel))
-    } else {
-      setFormSystemPrompt(action.systemPrompt)
-      setFormTargetLang('')
-    }
+    setFormSystemPrompt(action.systemPrompt)
     setEditDialogOpen(true)
   }
 
@@ -549,7 +529,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
             setFormName('')
             setFormDescription('')
             setFormSystemPrompt('')
-            setFormTargetLang('')
           }
         }}>
         <DialogContent>
@@ -577,32 +556,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
                 placeholder={t('settings.quickAssistant.descriptionPlaceholder')}
               />
             </div>
-            {editingAction?.id === BUILTIN_SEL_TRANSLATE_ID && (
-              <div className="space-y-2">
-                <Label>{t('settings.quickAssistant.targetLangLabel', '目标语言')}</Label>
-                <Select
-                  value={formTargetLang}
-                  onValueChange={(value) => {
-                    setFormTargetLang(value)
-                    const englishLabel =
-                      LANGUAGES.find((l) => l.code === value)?.englishLabel ?? value
-                    setFormSystemPrompt(generateTranslatePrompt(englishLabel))
-                    // Persist immediately so the bubble picks up the change
-                    saveSettings({ 'selection.translateTargetLang': value })
-                  }}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="space-y-2">
               <Label>{t('settings.quickAssistant.systemPromptLabel')}</Label>
               <Textarea
