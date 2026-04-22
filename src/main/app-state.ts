@@ -1,4 +1,4 @@
-import { app, session } from 'electron'
+import { app, session, type BrowserWindow } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { getSetting } from './db/settings'
 
@@ -88,4 +88,14 @@ export function applySelectionAssistantEnabled(value?: string): void {
 
 export function getSelectionAssistantEnabled(): boolean {
   return selectionAssistantEnabled
+}
+
+let mainWindowRef: BrowserWindow | null = null
+
+export function setMainWindow(win: BrowserWindow | null): void {
+  mainWindowRef = win
+}
+
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindowRef && !mainWindowRef.isDestroyed() ? mainWindowRef : null
 }

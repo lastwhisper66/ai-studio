@@ -236,6 +236,9 @@
       "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application.",
       "spellCheck": "Spell check",
       "spellCheckDescription": "Enable the built-in spell checker for text input fields.",
+      "notification": "Notification",
+      "notifyAssistantMessage": "Assistant message notification",
+      "notifyAssistantMessageDescription": "Show a Windows system notification when an assistant reply completes while the app is not in the foreground.",
       "languageLabel": "Display Language",
       "languageHint": "Language changes take effect immediately."
     },
@@ -658,5 +661,9 @@
     "db": {
       "notInitialized": "Database not initialized. Call initDatabase() first."
     }
+  },
+  "notification": {
+    "chatComplete": "Assistant reply completed",
+    "translateComplete": "Translation completed"
   }
 }

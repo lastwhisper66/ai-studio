@@ -236,6 +236,9 @@
       "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。",
       "spellCheck": "拼写检查",
       "spellCheckDescription": "为文本输入框启用内置拼写检查器。",
+      "notification": "通知",
+      "notifyAssistantMessage": "助手消息通知",
+      "notifyAssistantMessageDescription": "当应用不在前台时，助手回复完成后显示 Windows 系统通知。",
       "languageLabel": "显示语言",
       "languageHint": "语言更改立即生效。"
     },
@@ -658,5 +661,9 @@
     "db": {
       "notInitialized": "数据库尚未初始化，请先调用 initDatabase()。"
     }
+  },
+  "notification": {
+    "chatComplete": "助手回复已完成",
+    "translateComplete": "翻译已完成"
   }
 }

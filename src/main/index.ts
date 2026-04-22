@@ -31,6 +31,7 @@ import {
   getQuickAssistantEnabled,
   initQuickAssistant,
   getSelectionAssistantEnabled,
+  setMainWindow,
 } from './app-state'
 import { getDataDir } from './utils/paths'
 import {
@@ -380,6 +381,7 @@ function createWindow(): void {
     },
   })
   mainWindow = win
+  setMainWindow(win)
 
   win.on('ready-to-show', () => {
     // Restore saved zoom factor

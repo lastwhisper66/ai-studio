@@ -71,12 +71,12 @@ export function TranslateView(): React.JSX.Element {
   const [history, setHistory] = useState<TranslationHistoryItem[]>([])
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  // Track current translation params for saving history on stream end
   const currentTranslationRef = useRef<{
     sourceText: string
     sourceLang: string
     targetLang: string
   } | null>(null)
+  const sessionIdRef = useRef(0)
 
   // Independent model selection for translate (separate from chat's global selection)
   const providers = useProviderStore((s) => s.providers)
@@ -132,10 +132,63 @@ export function TranslateView(): React.JSX.Element {
     window.api.setSetting('translate.sourceLang', value)
   }, [])
 
-  const handleTargetLangChange = useCallback((value: string) => {
-    setTargetLang(value)
-    window.api.setSetting('translate.targetLang', value)
-  }, [])
+  const resolveSourceLabel = useCallback(
+    (lang: string) =>
+      lang === 'auto' ? 'auto' : (LANGUAGES.find((l) => l.code === lang)?.englishLabel ?? lang),
+    [],
+  )
+
+  const doTranslate = useCallback(
+    async (text: string, srcLang: string, tgtLang: string) => {
+      currentTranslationRef.current = null
+      await window.api.stopTranslation()
+
+      const id = ++sessionIdRef.current
+      setError(null)
+      setTranslatedText('')
+      setIsTranslating(true)
+
+      const sourceLabel = resolveSourceLabel(srcLang)
+      const targetLabel = LANGUAGES.find((l) => l.code === tgtLang)?.englishLabel ?? tgtLang
+
+      currentTranslationRef.current = {
+        sourceText: text,
+        sourceLang: sourceLabel,
+        targetLang: targetLabel,
+      }
+
+      const result = await window.api.translate({
+        text,
+        sourceLang: sourceLabel,
+        targetLang: targetLabel,
+        providerId: localProviderId ?? undefined,
+        modelId: localModelId ?? undefined,
+        systemPrompt: translateSettings.systemPrompt || undefined,
+        temperature: translateSettings.temperature,
+      })
+
+      if (sessionIdRef.current !== id) return
+      if (!result.success) {
+        setError(result.error ?? t('translate.failed'))
+        setIsTranslating(false)
+        currentTranslationRef.current = null
+      }
+    },
+    [resolveSourceLabel, localProviderId, localModelId, translateSettings, t],
+  )
+
+  const handleTargetLangChange = useCallback(
+    (value: string) => {
+      setTargetLang(value)
+      window.api.setSetting('translate.targetLang', value)
+
+      const text = sourceText.trim()
+      if (!text) return
+
+      doTranslate(text, sourceLang, value).catch(() => {})
+    },
+    [sourceText, sourceLang, doTranslate],
+  )
 
   const activeProviderId = localProviderId
   const activeModelId = localModelId
@@ -156,14 +209,16 @@ export function TranslateView(): React.JSX.Element {
   // Register streaming listeners
   useEffect(() => {
     const unsubChunk = window.api.onTranslateChunk((data) => {
+      if (!currentTranslationRef.current) return
       setTranslatedText((prev) => prev + data.delta)
     })
 
     const unsubEnd = window.api.onTranslateEnd((data) => {
-      setIsTranslating(false)
-      // Save to history if we have a completed translation
       const params = currentTranslationRef.current
-      if (params && data.fullText) {
+      if (!params) return
+      currentTranslationRef.current = null
+      setIsTranslating(false)
+      if (data.fullText) {
         window.api
           .createTranslationHistory(
             params.sourceText,
@@ -173,18 +228,17 @@ export function TranslateView(): React.JSX.Element {
           )
           .then((result) => {
             if (result.success && result.data) {
-              const newItem = result.data
-              setHistory((prev) => [newItem, ...prev].slice(0, 50))
+              setHistory((prev) => [result.data!, ...prev].slice(0, 50))
             }
           })
       }
-      currentTranslationRef.current = null
     })
 
     const unsubError = window.api.onTranslateError((data) => {
+      if (!currentTranslationRef.current) return
+      currentTranslationRef.current = null
       setError(data.error)
       setIsTranslating(false)
-      currentTranslationRef.current = null
     })
 
     return () => {
@@ -199,55 +253,24 @@ export function TranslateView(): React.JSX.Element {
     const text = sourceText.trim()
     if (!text || isTranslating) return
 
-    setError(null)
-    setTranslatedText('')
-    setIsTranslating(true)
-
-    const sourceLabel =
-      sourceLang === 'auto'
-        ? 'auto'
-        : (SOURCE_LANGUAGES.find((l) => l.code === sourceLang)?.label ?? sourceLang)
-    const targetLabel = LANGUAGES.find((l) => l.code === targetLang)?.label ?? targetLang
-
-    // Store params for history saving on stream end
-    currentTranslationRef.current = {
-      sourceText: text,
-      sourceLang: sourceLabel,
-      targetLang: targetLabel,
-    }
-
-    const result = await window.api.translate({
-      text,
-      sourceLang: sourceLabel,
-      targetLang: targetLabel,
-      providerId: activeProviderId ?? undefined,
-      modelId: activeModelId ?? undefined,
-      systemPrompt: translateSettings.systemPrompt || undefined,
-      temperature: translateSettings.temperature,
-    })
-
-    if (!result.success) {
-      setError(result.error ?? t('translate.failed'))
-      setIsTranslating(false)
-      currentTranslationRef.current = null
-    }
-  }, [
-    sourceText,
-    sourceLang,
-    targetLang,
-    isTranslating,
-    activeProviderId,
-    activeModelId,
-    translateSettings,
-    t,
-    SOURCE_LANGUAGES,
-  ])
+    await doTranslate(text, sourceLang, targetLang)
+  }, [sourceText, sourceLang, targetLang, isTranslating, doTranslate])
 
   const handleStop = useCallback(async () => {
     currentTranslationRef.current = null
     await window.api.stopTranslation()
     setIsTranslating(false)
   }, [])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === 'Escape' && isTranslating) {
+        handleStop()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isTranslating, handleStop])
 
   const handleSwapLanguages = useCallback(() => {
     if (sourceLang === 'auto') return
