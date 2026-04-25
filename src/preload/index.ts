@@ -621,6 +621,13 @@ const api = {
     ipcRenderer.on(IpcChannels.SELECTION_STATE_CHANGED, handler)
     return () => ipcRenderer.removeListener(IpcChannels.SELECTION_STATE_CHANGED, handler)
   },
+
+  // User profile
+  saveUserAvatar: (oldRelativePath: string | null): Promise<IpcResult<string | null>> =>
+    ipcRenderer.invoke(IpcChannels.USER_SAVE_AVATAR, oldRelativePath),
+
+  readUserAvatar: (relativePath: string): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.USER_READ_AVATAR, relativePath),
 }
 
 export type ApiType = typeof api

@@ -97,6 +97,9 @@ export const IpcChannels = {
   APP_GET_FONTS: 'app:get-fonts',
   // App
   APP_CLEAR_DATA: 'app:clear-data',
+  // User
+  USER_SAVE_AVATAR: 'user:save-avatar',
+  USER_READ_AVATAR: 'user:read-avatar',
   // Quick Actions (CRUD)
   QUICK_ACTION_LIST: 'quick-action:list',
   QUICK_ACTION_CREATE: 'quick-action:create',

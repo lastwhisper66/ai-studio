@@ -13,6 +13,7 @@ export interface Conversation {
 export interface Assistant {
   id: string
   name: string
+  icon: string
   description: string
   systemPrompt: string
   providerId: string | null

@@ -28,14 +28,17 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@electron-toolkit/utils": "^4.0.0",
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@google/genai": "^1.48.0",
     "better-sqlite3": "^12.6.2",
     "cmdk": "^1.1.1",
+    "emoji-mart": "^5.6.0",
     "font-list": "^2.0.2",
     "node-screenshots": "^0.2.8",
     "openai": "^6.27.0",
     "selection-hook": "^2.0.1",
-    "uuid": "^13.0.0"
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

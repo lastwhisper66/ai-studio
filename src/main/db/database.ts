@@ -17,6 +17,10 @@ export function initDatabase(): void {
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
   }
+  const avatarsDir = join(dataDir, 'avatars')
+  if (!existsSync(avatarsDir)) {
+    mkdirSync(avatarsDir, { recursive: true })
+  }
   const dbPath = join(dataDir, 'ai-studio.db')
   db = new Database(dbPath)
 
@@ -119,6 +123,7 @@ function createTables(): void {
     CREATE TABLE IF NOT EXISTS assistants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL DEFAULT '',
       system_prompt TEXT NOT NULL DEFAULT '',
       provider_id TEXT,

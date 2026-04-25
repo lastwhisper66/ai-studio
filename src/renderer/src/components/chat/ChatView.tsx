@@ -15,6 +15,7 @@ import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
+import { useUserAvatar } from '@renderer/hooks/useUserAvatar'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
@@ -54,6 +55,8 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const updateAssistant = useAssistantStore((s) => s.updateAssistant)
 
   const providers = useProviderStore((s) => s.providers)
+
+  const userAvatarUrl = useUserAvatar()
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
   const activeAssistant = activeAssistantId
@@ -252,6 +255,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         onSend={sendMessage}
         onLoadMore={loadMoreMessages}
         activeAssistant={activeAssistant}
+        userAvatarUrl={userAvatarUrl}
         onEditSystemPrompt={handleEditSystemPrompt}
       />
 

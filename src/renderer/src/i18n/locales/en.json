@@ -30,7 +30,16 @@
     "restore": "Restore",
     "close": "Close",
     "pinOnTop": "Pin on top",
-    "unpinFromTop": "Unpin from top"
+    "unpinFromTop": "Unpin from top",
+    "userProfile": "User profile"
+  },
+  "userProfile": {
+    "title": "User Profile",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Enter your name",
+    "avatar": "Avatar",
+    "changeAvatar": "Change Avatar",
+    "removeAvatar": "Remove Avatar"
   },
   "nav": {
     "chat": "Chat",

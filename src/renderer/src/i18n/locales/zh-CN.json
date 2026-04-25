@@ -30,7 +30,16 @@
     "restore": "还原",
     "close": "关闭",
     "pinOnTop": "窗口置顶",
-    "unpinFromTop": "取消置顶"
+    "unpinFromTop": "取消置顶",
+    "userProfile": "用户资料"
+  },
+  "userProfile": {
+    "title": "用户资料",
+    "displayName": "显示名称",
+    "displayNamePlaceholder": "输入你的名称",
+    "avatar": "头像",
+    "changeAvatar": "更换头像",
+    "removeAvatar": "移除头像"
   },
   "nav": {
     "chat": "聊天",
