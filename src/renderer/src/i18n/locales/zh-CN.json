@@ -381,6 +381,8 @@
       "excludedPrograms": "排除应用",
       "excludedProgramsHint": "输入可执行文件名(如 Chrome.exe),在这些应用中选中文本不会触发划词助手。",
       "excludedProgramsPlaceholder": "例如 Chrome.exe",
+      "clipboardFallbackLabel": "剪贴板回退",
+      "clipboardFallbackHint": "部分应用无法直接获取选中文本，开启后将通过模拟复制操作获取。",
       "textLength": "文本长度",
       "textLengthHint": "过滤过短或过长的选中文本。",
       "minLength": "最小长度",

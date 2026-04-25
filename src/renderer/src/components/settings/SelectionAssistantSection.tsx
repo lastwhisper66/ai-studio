@@ -8,6 +8,7 @@ import {
   Sparkles,
   MousePointerClick,
   Pin,
+  ClipboardCopy,
   ShieldAlert,
   X,
   RotateCcw,
@@ -75,6 +76,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
   // Core toggles
   const enabled = settings['selection.enabled'] === 'true'
   const defaultPinned = settings['selection.defaultPinned'] === 'true'
+  const clipboardFallback = settings['selection.clipboardFallback'] !== 'false'
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Action editor dialog
@@ -134,6 +136,13 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
   const handleDefaultPinnedToggle = (checked: boolean): void => {
     saveSettings({ 'selection.defaultPinned': String(checked) })
+  }
+
+  const handleClipboardFallbackToggle = async (checked: boolean): Promise<void> => {
+    await saveSettings({ 'selection.clipboardFallback': String(checked) })
+    await window.api.refreshSelectionFilter().catch((err) => {
+      console.warn('[SelectionAssistant] refreshSelectionFilter failed:', err)
+    })
   }
 
   const handleShortcutChange = async (accel: string): Promise<void> => {
@@ -287,6 +296,21 @@ export function SelectionAssistantSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={defaultPinned} onCheckedChange={handleDefaultPinnedToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <ClipboardCopy className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">
+                {t('settings.selectionAssistant.clipboardFallbackLabel')}
+              </Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.selectionAssistant.clipboardFallbackHint')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={clipboardFallback} onCheckedChange={handleClipboardFallbackToggle} />
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">

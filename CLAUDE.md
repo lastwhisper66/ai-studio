@@ -168,7 +168,7 @@ Pops up a floating toolbar next to any text selection in any Windows app; clicki
 - **API key encryption**: Sensitive settings (e.g., `api.apiKey`) encrypted with Electron `safeStorage` in main process
 - **Context isolation**: Enabled with sandbox mode — renderer has no direct Node.js access
 - **No direct ipcRenderer**: All IPC wrapped through preload contextBridge
-- **Selection hook**: `selection-hook` uses Windows UIA / Accessibility APIs (and optionally a clipboard fallback). Some antivirus tools may flag the global hook — this is expected behavior for accessibility integrations. The clipboard fallback is off by default; when enabled, password managers and browser address bars are excluded.
+- **Selection hook**: `selection-hook` uses Windows UIA / Accessibility APIs (and optionally a clipboard fallback). Some antivirus tools may flag the global hook — this is expected behavior for accessibility integrations. The clipboard fallback is on by default and can be toggled in Settings → Selection Assistant; when enabled, password managers and browser address bars are excluded.
 - **AbortController**: AI streaming requests can be cancelled via `chat:stop-generation`
 
 ## OpenAI / Azure OpenAI Compatibility

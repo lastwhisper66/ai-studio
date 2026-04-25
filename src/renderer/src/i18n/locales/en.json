@@ -381,6 +381,8 @@
       "excludedPrograms": "Excluded Programs",
       "excludedProgramsHint": "Enter executable names (e.g. Chrome.exe). Selections inside those apps will not trigger the toolbar.",
       "excludedProgramsPlaceholder": "e.g. Chrome.exe",
+      "clipboardFallbackLabel": "Clipboard Fallback",
+      "clipboardFallbackHint": "Some apps cannot provide selected text directly. Enable this to simulate a copy operation as a fallback.",
       "textLength": "Text Length",
       "textLengthHint": "Skip selections that are too short or too long.",
       "minLength": "Minimum",

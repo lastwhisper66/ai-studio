@@ -38,12 +38,14 @@ interface SelectionFilterConfig {
   excludedPrograms: string[]
   minTextLength: number
   maxTextLength: number
+  clipboardFallback: boolean
 }
 
 let filterConfig: SelectionFilterConfig = {
   excludedPrograms: [],
   minTextLength: DEFAULT_MIN_TEXT_LENGTH,
   maxTextLength: DEFAULT_MAX_TEXT_LENGTH,
+  clipboardFallback: true,
 }
 
 function parseJsonArray(raw: string | undefined, fallback: string[]): string[] {
@@ -73,6 +75,7 @@ function loadFilterConfig(): SelectionFilterConfig {
       1,
       parseNumber(getSetting('selection.maxTextLength'), DEFAULT_MAX_TEXT_LENGTH),
     ),
+    clipboardFallback: getSetting('selection.clipboardFallback') !== 'false',
   }
 }
 
@@ -271,6 +274,19 @@ function applyHookFilterConfig(hook: SelectionHookInstance): void {
     }
   } catch (err) {
     console.warn('[SelectionService] setGlobalFilterMode failed:', err)
+  }
+  try {
+    if (filterConfig.clipboardFallback) {
+      hook.enableClipboard()
+    } else {
+      hook.disableClipboard()
+    }
+  } catch (err) {
+    if (err instanceof TypeError) {
+      console.warn('[SelectionService] selection-hook version does not support clipboard toggle')
+    } else {
+      console.warn('[SelectionService] clipboard fallback toggle failed:', err)
+    }
   }
 }
 
