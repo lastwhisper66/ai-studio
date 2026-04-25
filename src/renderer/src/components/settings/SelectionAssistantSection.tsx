@@ -15,8 +15,10 @@ import {
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
+import { cn } from '@renderer/lib/utils'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Textarea } from '@renderer/components/ui/textarea'
@@ -41,6 +43,7 @@ import {
   defaultSelectionActionIcon,
 } from '@renderer/components/selection-toolbar/icons'
 import type { SelectionAction } from '@shared/types'
+import type { SelectionTriggerMode } from '@shared/types'
 import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
 
 const SELECTION_ACTION = 'toggle-selection-assistant'
@@ -77,6 +80,8 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const enabled = settings['selection.enabled'] === 'true'
   const defaultPinned = settings['selection.defaultPinned'] === 'true'
   const clipboardFallback = settings['selection.clipboardFallback'] !== 'false'
+  const triggerMode: SelectionTriggerMode =
+    settings['selection.triggerMode'] === 'ctrlkey' ? 'ctrlkey' : 'selected'
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Action editor dialog
@@ -143,6 +148,11 @@ export function SelectionAssistantSection(): React.JSX.Element {
     await window.api.refreshSelectionFilter().catch((err) => {
       console.warn('[SelectionAssistant] refreshSelectionFilter failed:', err)
     })
+  }
+
+  const handleTriggerModeChange = async (mode: SelectionTriggerMode): Promise<void> => {
+    await saveSettings({ 'selection.triggerMode': mode })
+    await window.api.refreshSelectionFilter().catch(() => null)
   }
 
   const handleShortcutChange = async (accel: string): Promise<void> => {
@@ -311,6 +321,41 @@ export function SelectionAssistantSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={clipboardFallback} onCheckedChange={handleClipboardFallbackToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <MousePointerClick className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <Label className="text-sm font-medium">
+              {t('settings.selectionAssistant.triggerModeLabel')}
+            </Label>
+          </div>
+          <div className="flex gap-1.5">
+            {(['selected', 'ctrlkey'] as const).map((mode) => (
+              <Tooltip key={mode}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerModeChange(mode)}
+                    className={cn(
+                      'cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                      triggerMode === mode
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'hover:bg-muted/50',
+                    )}>
+                    {t(
+                      `settings.selectionAssistant.triggerMode${mode.charAt(0).toUpperCase() + mode.slice(1)}`,
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t(
+                    `settings.selectionAssistant.triggerMode${mode.charAt(0).toUpperCase() + mode.slice(1)}Desc`,
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">

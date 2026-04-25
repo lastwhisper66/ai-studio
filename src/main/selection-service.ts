@@ -1,12 +1,14 @@
 import { app, screen } from 'electron'
 import { basename } from 'path'
 import SelectionHook, {
+  type KeyboardEventData,
   type MouseEventData,
   type SelectionHookInstance,
   type TextSelectionData,
 } from 'selection-hook'
 import type { SelectionAction, SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
 import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
+import type { SelectionTriggerMode } from '@shared/types'
 import {
   getVisibleToolbarBounds,
   hideSelectionToolbar,
@@ -39,6 +41,7 @@ interface SelectionFilterConfig {
   minTextLength: number
   maxTextLength: number
   clipboardFallback: boolean
+  triggerMode: SelectionTriggerMode
 }
 
 let filterConfig: SelectionFilterConfig = {
@@ -46,6 +49,7 @@ let filterConfig: SelectionFilterConfig = {
   minTextLength: DEFAULT_MIN_TEXT_LENGTH,
   maxTextLength: DEFAULT_MAX_TEXT_LENGTH,
   clipboardFallback: true,
+  triggerMode: 'selected',
 }
 
 function parseJsonArray(raw: string | undefined, fallback: string[]): string[] {
@@ -76,6 +80,7 @@ function loadFilterConfig(): SelectionFilterConfig {
       parseNumber(getSetting('selection.maxTextLength'), DEFAULT_MAX_TEXT_LENGTH),
     ),
     clipboardFallback: getSetting('selection.clipboardFallback') !== 'false',
+    triggerMode: getSetting('selection.triggerMode') === 'ctrlkey' ? 'ctrlkey' : 'selected',
   }
 }
 
@@ -254,6 +259,11 @@ function handleDismissEvent(): void {
   }
 }
 
+function handleKeyDismissEvent(data: KeyboardEventData): void {
+  if (filterConfig.triggerMode === 'ctrlkey' && isCtrlKey(data.vkCode)) return
+  handleDismissEvent()
+}
+
 function handleToolbarAction(actionId: string, payload: SelectionToolbarPayload): void {
   showSelectionBubble({
     text: payload.text,
@@ -290,6 +300,89 @@ function applyHookFilterConfig(hook: SelectionHookInstance): void {
   }
 }
 
+// ── Ctrlkey mode state ──────────────────────────────────────────
+let isCtrlkeyListenerActive = false
+let ctrlHoldTimer: ReturnType<typeof setTimeout> | null = null
+
+function isCtrlKey(vkCode: number): boolean {
+  return vkCode === 162 || vkCode === 163 // VK_LCONTROL, VK_RCONTROL
+}
+
+function clearCtrlHoldTimer(): void {
+  if (ctrlHoldTimer !== null) {
+    clearTimeout(ctrlHoldTimer)
+    ctrlHoldTimer = null
+  }
+}
+
+function handleKeyDownCtrlkeyMode(data: KeyboardEventData): void {
+  if (!hookInstance) return
+  if (!isCtrlKey(data.vkCode)) {
+    clearCtrlHoldTimer()
+    return
+  }
+  if (ctrlHoldTimer !== null) return
+
+  hookInstance.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
+  hookInstance.off('mouse-down', handleMouseDownCtrlkeyMode)
+  hookInstance.on('mouse-wheel', handleMouseWheelCtrlkeyMode)
+  hookInstance.on('mouse-down', handleMouseDownCtrlkeyMode)
+  ctrlHoldTimer = setTimeout(() => {
+    ctrlHoldTimer = null
+    if (!hookInstance) return
+    const selectionData = hookInstance.getCurrentSelection()
+    if (selectionData) {
+      // Passive mode: hook coordinates are unreliable (often 0,0).
+      const cursor = screen.getCursorScreenPoint()
+      selectionData.mousePosEnd = cursor
+      selectionData.mousePosStart = cursor
+      handleTextSelection(selectionData)
+    }
+  }, 350)
+}
+
+function handleKeyUpCtrlkeyMode(data: KeyboardEventData): void {
+  if (!hookInstance) return
+  if (!isCtrlKey(data.vkCode)) return
+  clearCtrlHoldTimer()
+  hookInstance.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
+  hookInstance.off('mouse-down', handleMouseDownCtrlkeyMode)
+}
+
+function handleMouseWheelCtrlkeyMode(): void {
+  clearCtrlHoldTimer()
+}
+
+function handleMouseDownCtrlkeyMode(): void {
+  clearCtrlHoldTimer()
+}
+
+// ── Trigger mode management ─────────────────────────────────────
+function applyTriggerMode(hook: SelectionHookInstance): void {
+  const mode = filterConfig.triggerMode
+
+  if (isCtrlkeyListenerActive) {
+    hook.off('key-down', handleKeyDownCtrlkeyMode)
+    hook.off('key-up', handleKeyUpCtrlkeyMode)
+    hook.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
+    hook.off('mouse-down', handleMouseDownCtrlkeyMode)
+    clearCtrlHoldTimer()
+    isCtrlkeyListenerActive = false
+  }
+
+  try {
+    hook.setSelectionPassiveMode(mode === 'ctrlkey')
+  } catch (err) {
+    console.warn('[SelectionService] setSelectionPassiveMode not supported:', err)
+  }
+
+  if (mode === 'ctrlkey') {
+    hook.on('key-down', handleKeyDownCtrlkeyMode)
+    hook.on('key-up', handleKeyUpCtrlkeyMode)
+    isCtrlkeyListenerActive = true
+  }
+}
+
 /** Lazily create the hook instance (does not start it). */
 function ensureHook(): SelectionHookInstance | null {
   if (hookInstance) return hookInstance
@@ -298,12 +391,13 @@ function ensureHook(): SelectionHookInstance | null {
     hook.on('text-selection', handleTextSelection)
     hook.on('mouse-down', handleMouseDown)
     hook.on('mouse-wheel', handleDismissEvent)
-    hook.on('key-down', handleDismissEvent)
+    hook.on('key-down', handleKeyDismissEvent)
     hook.on('error', (err) => {
       console.error('[SelectionService] hook error:', err)
     })
     hookInstance = hook
     applyHookFilterConfig(hook)
+    applyTriggerMode(hook)
     return hook
   } catch (err) {
     console.error('[SelectionService] Failed to construct SelectionHook:', err)
@@ -371,8 +465,14 @@ export function toggleSelectionAssistant(): boolean {
  * options in Settings → Selection Assistant.
  */
 export function refreshSelectionFilterConfig(): void {
+  const oldMode = filterConfig.triggerMode
   filterConfig = loadFilterConfig()
-  if (hookInstance) applyHookFilterConfig(hookInstance)
+  if (hookInstance) {
+    applyHookFilterConfig(hookInstance)
+    if (oldMode !== filterConfig.triggerMode) {
+      applyTriggerMode(hookInstance)
+    }
+  }
 }
 
 export function isSelectionServiceRunning(): boolean {

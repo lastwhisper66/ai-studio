@@ -331,6 +331,8 @@ export interface TranslationHistoryItem {
 
 // ── Selection Assistant ─────────────────────────────────────────
 
+export type SelectionTriggerMode = 'selected' | 'ctrlkey'
+
 /** Default cap on selection text length, applied if the user hasn't customized it. */
 export const DEFAULT_SELECTION_MAX_TEXT_LENGTH = 5000
 /** Default floor; overridden by `selection.minTextLength` setting. */
