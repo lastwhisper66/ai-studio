@@ -23,6 +23,13 @@ import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Textarea } from '@renderer/components/ui/textarea'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -48,6 +55,14 @@ import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } 
 
 const SELECTION_ACTION = 'toggle-selection-assistant'
 const PROGRAM_NAME_MAX_LENGTH = 120
+
+const SEARCH_ENGINE_OPTIONS = [
+  { value: 'google' },
+  { value: 'bing' },
+  { value: 'baidu' },
+  { value: 'duckduckgo' },
+  { value: 'custom' },
+]
 
 function parseProgramList(raw: string | undefined): string[] {
   if (!raw) return []
@@ -576,6 +591,50 @@ export function SelectionAssistantSection(): React.JSX.Element {
               onBlur={commitLengthThresholds}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Web Search */}
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-sm font-semibold">{t('settings.selectionAssistant.search.title')}</h3>
+        <p className="text-muted-foreground mt-1 text-xs">
+          {t('settings.selectionAssistant.search.hint')}
+        </p>
+        <div className="mt-3 space-y-3">
+          <div className="space-y-1">
+            <Label className="text-xs">{t('settings.selectionAssistant.search.engineLabel')}</Label>
+            <Select
+              value={settings['selection.searchEngine'] || 'google'}
+              onValueChange={(v) => saveSettings({ 'selection.searchEngine': v })}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SEARCH_ENGINE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {t(`settings.selectionAssistant.search.${opt.value}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {settings['selection.searchEngine'] === 'custom' && (
+            <div className="space-y-1">
+              <Label className="text-xs">
+                {t('settings.selectionAssistant.search.customUrlLabel')}
+              </Label>
+              <Input
+                value={settings['selection.searchEngineCustomUrl'] || ''}
+                onChange={(e) =>
+                  saveSettings({ 'selection.searchEngineCustomUrl': e.target.value })
+                }
+                placeholder={t('settings.selectionAssistant.search.customUrlPlaceholder')}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t('settings.selectionAssistant.search.customUrlHint')}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

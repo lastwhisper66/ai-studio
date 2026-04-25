@@ -407,6 +407,20 @@
       },
       "toolbar": {
         "waitingSelection": "Waiting for selection…"
+      },
+      "search": {
+        "title": "Web Search",
+        "hint": "When clicking the search button on the toolbar, open the search engine in the default browser.",
+        "engineLabel": "Search Engine",
+        "customUrlLabel": "Custom Search URL",
+        "customUrlPlaceholder": "https://example.com/search?q={query}",
+        "customUrlHint": "Use {query} as the search keyword placeholder.",
+        "buttonTitle": "Search",
+        "google": "Google",
+        "bing": "Bing",
+        "baidu": "Baidu",
+        "duckduckgo": "DuckDuckGo",
+        "custom": "Custom"
       }
     }
   },

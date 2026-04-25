@@ -529,6 +529,9 @@ const api = {
   selectionToolbarResize: (width: number): void =>
     ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_RESIZE, width),
 
+  selectionToolbarSearch: (text: string): void =>
+    ipcRenderer.send(IpcChannels.SELECTION_TOOLBAR_SEARCH, text),
+
   // Selection Assistant — bubble window
   selectionBubbleReady: (): void => ipcRenderer.send(IpcChannels.SELECTION_BUBBLE_READY),
 

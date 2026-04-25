@@ -407,6 +407,20 @@
       },
       "toolbar": {
         "waitingSelection": "等待选区…"
+      },
+      "search": {
+        "title": "网页搜索",
+        "hint": "点击工具条搜索按钮时，使用默认浏览器打开搜索引擎。",
+        "engineLabel": "搜索引擎",
+        "customUrlLabel": "自定义搜索 URL",
+        "customUrlPlaceholder": "https://example.com/search?q={query}",
+        "customUrlHint": "使用 {query} 作为搜索关键词占位符。",
+        "buttonTitle": "搜索",
+        "google": "Google",
+        "bing": "Bing",
+        "baidu": "百度",
+        "duckduckgo": "DuckDuckGo",
+        "custom": "自定义"
       }
     }
   },

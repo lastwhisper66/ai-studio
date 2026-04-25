@@ -129,6 +129,7 @@ export const IpcChannels = {
   SELECTION_TOOLBAR_ACTION: 'selection-toolbar:action',
   SELECTION_TOOLBAR_CLOSE: 'selection-toolbar:close',
   SELECTION_TOOLBAR_RESIZE: 'selection-toolbar:resize',
+  SELECTION_TOOLBAR_SEARCH: 'selection-toolbar:search',
   // Selection Assistant — bubble window
   SELECTION_BUBBLE_READY: 'selection-bubble:ready',
   SELECTION_BUBBLE_DATA: 'selection-bubble:data',

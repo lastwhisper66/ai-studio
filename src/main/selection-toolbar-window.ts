@@ -1,8 +1,39 @@
-import { BrowserWindow, ipcMain, screen } from 'electron'
+import { BrowserWindow, ipcMain, screen, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SelectionAction, SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
+import { getSetting } from './db/settings'
+
+const SEARCH_ENGINES: Record<string, string> = {
+  google: 'https://www.google.com/search?q={query}',
+  bing: 'https://www.bing.com/search?q={query}',
+  baidu: 'https://www.baidu.com/s?wd={query}',
+  duckduckgo: 'https://duckduckgo.com/?q={query}',
+}
+
+const DEFAULT_SEARCH_ENGINE = 'google'
+
+const ALLOWED_PROTOCOLS = ['https:', 'http:']
+
+function buildSearchUrl(text: string): string {
+  const engineId = getSetting('selection.searchEngine') || DEFAULT_SEARCH_ENGINE
+  let template: string
+  if (engineId === 'custom') {
+    const custom = getSetting('selection.searchEngineCustomUrl') || ''
+    try {
+      const { protocol } = new URL(custom.replace('{query}', 'test'))
+      template = ALLOWED_PROTOCOLS.includes(protocol)
+        ? custom
+        : SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+    } catch {
+      template = SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+    }
+  } else {
+    template = SEARCH_ENGINES[engineId] || SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+  }
+  return template.replaceAll('{query}', encodeURIComponent(text))
+}
 
 let toolbarWindow: BrowserWindow | null = null
 let contentReady = false
@@ -199,5 +230,21 @@ export function initSelectionToolbarIpc(): void {
     pendingPayload = null
     hideSelectionToolbar()
     onActionClick?.(actionId, payload)
+  })
+
+  ipcMain.on(IpcChannels.SELECTION_TOOLBAR_SEARCH, (_event, text: string) => {
+    if (!text) return
+    pendingPayload = null
+    hideSelectionToolbar()
+    const url = buildSearchUrl(text)
+    try {
+      const { protocol } = new URL(url)
+      if (!ALLOWED_PROTOCOLS.includes(protocol)) return
+    } catch {
+      return
+    }
+    shell.openExternal(url).catch((err) => {
+      console.warn('[SelectionToolbar] openExternal failed:', err)
+    })
   })
 }
