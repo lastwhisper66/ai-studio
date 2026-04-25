@@ -1,4 +1,4 @@
-import { app, screen } from 'electron'
+import { app, screen, shell } from 'electron'
 import { basename } from 'path'
 import SelectionHook, {
   type KeyboardEventData,
@@ -7,7 +7,11 @@ import SelectionHook, {
   type TextSelectionData,
 } from 'selection-hook'
 import type { SelectionAction, SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
-import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
+import {
+  BUILTIN_SEARCH_ACTION_ID,
+  DEFAULT_SELECTION_MAX_TEXT_LENGTH,
+  DEFAULT_SELECTION_MIN_TEXT_LENGTH,
+} from '@shared/types'
 import type { SelectionTriggerMode } from '@shared/types'
 import {
   getVisibleToolbarBounds,
@@ -32,6 +36,36 @@ import { abortSelectionRequest } from './ipc/selection-handlers'
 /** Default cap — overridden by `selection.maxTextLength` setting. */
 const DEFAULT_MAX_TEXT_LENGTH = DEFAULT_SELECTION_MAX_TEXT_LENGTH
 const DEFAULT_MIN_TEXT_LENGTH = DEFAULT_SELECTION_MIN_TEXT_LENGTH
+
+const SEARCH_ENGINES: Record<string, string> = {
+  google: 'https://www.google.com/search?q={query}',
+  bing: 'https://www.bing.com/search?q={query}',
+  baidu: 'https://www.baidu.com/s?wd={query}',
+  duckduckgo: 'https://duckduckgo.com/?q={query}',
+}
+
+const DEFAULT_SEARCH_ENGINE = 'google'
+
+const ALLOWED_PROTOCOLS = ['https:', 'http:']
+
+function buildSearchUrl(text: string): string {
+  const engineId = getSetting('selection.searchEngine') || DEFAULT_SEARCH_ENGINE
+  let template: string
+  if (engineId === 'custom') {
+    const custom = getSetting('selection.searchEngineCustomUrl') || ''
+    try {
+      const { protocol } = new URL(custom.replaceAll('{query}', 'test'))
+      template = ALLOWED_PROTOCOLS.includes(protocol)
+        ? custom
+        : SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+    } catch {
+      template = SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+    }
+  } else {
+    template = SEARCH_ENGINES[engineId] || SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+  }
+  return template.replaceAll('{query}', encodeURIComponent(text))
+}
 
 let hookInstance: SelectionHookInstance | null = null
 let running = false
@@ -265,11 +299,24 @@ function handleKeyDismissEvent(data: KeyboardEventData): void {
 }
 
 function handleToolbarAction(actionId: string, payload: SelectionToolbarPayload): void {
+  if (actionId === BUILTIN_SEARCH_ACTION_ID) {
+    const url = buildSearchUrl(payload.text)
+    try {
+      const { protocol } = new URL(url)
+      if (!ALLOWED_PROTOCOLS.includes(protocol)) return
+    } catch {
+      return
+    }
+    shell.openExternal(url).catch((err) => {
+      console.warn('[SelectionService] openExternal failed:', err)
+    })
+    return
+  }
   showSelectionBubble({
     text: payload.text,
     anchor: payload.anchor,
     actionId,
-    actions: loadEnabledActions(),
+    actions: loadEnabledActions().filter((a) => a.id !== BUILTIN_SEARCH_ACTION_ID),
   })
 }
 

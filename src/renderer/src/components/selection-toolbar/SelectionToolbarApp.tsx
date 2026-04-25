@@ -1,6 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Search } from 'lucide-react'
 import type { SelectionToolbarPayload } from '@shared/types'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import i18n from '@renderer/i18n'
@@ -102,21 +101,6 @@ export function SelectionToolbarApp(): React.JSX.Element {
               </button>
             )
           })
-        )}
-        {payload?.text && (
-          <>
-            {actions.length > 0 && <div className="bg-border mx-0.5 h-5 w-px shrink-0" />}
-            <button
-              title={t('settings.selectionAssistant.search.buttonTitle')}
-              aria-label={t('settings.selectionAssistant.search.buttonTitle')}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                window.api.selectionToolbarSearch(payload.text)
-              }}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs transition-colors">
-              <Search className="h-4 w-4 shrink-0" />
-            </button>
-          </>
         )}
       </div>
     </div>

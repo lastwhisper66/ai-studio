@@ -4,6 +4,7 @@ import {
   Languages,
   MessageCircle,
   ScanText,
+  Search,
   Sparkles,
   Wand2,
 } from 'lucide-react'
@@ -15,6 +16,7 @@ export const selectionActionIconMap: Record<string, React.ElementType> = {
   Languages,
   MessageCircle,
   ScanText,
+  Search,
   Sparkles,
   Wand2,
 }

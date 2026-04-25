@@ -410,7 +410,7 @@
       },
       "search": {
         "title": "Web Search",
-        "hint": "When clicking the search button on the toolbar, open the search engine in the default browser.",
+        "hint": "Configure the search engine used by the search action. Opens in the default browser.",
         "engineLabel": "Search Engine",
         "customUrlLabel": "Custom Search URL",
         "customUrlPlaceholder": "https://example.com/search?q={query}",
@@ -607,6 +607,10 @@
       "polish": {
         "name": "Polish",
         "description": "Rewrite for a more fluent, professional tone"
+      },
+      "search": {
+        "name": "Search",
+        "description": "Search the selected text with a search engine"
       }
     },
     "quickActions": {

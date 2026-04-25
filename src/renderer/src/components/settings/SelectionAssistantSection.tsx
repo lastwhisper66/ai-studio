@@ -51,7 +51,11 @@ import {
 } from '@renderer/components/selection-toolbar/icons'
 import type { SelectionAction } from '@shared/types'
 import type { SelectionTriggerMode } from '@shared/types'
-import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
+import {
+  BUILTIN_SEARCH_ACTION_ID,
+  DEFAULT_SELECTION_MAX_TEXT_LENGTH,
+  DEFAULT_SELECTION_MIN_TEXT_LENGTH,
+} from '@shared/types'
 
 const SELECTION_ACTION = 'toggle-selection-assistant'
 const PROGRAM_NAME_MAX_LENGTH = 120
@@ -107,6 +111,9 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const [formDescription, setFormDescription] = useState('')
   const [formSystemPrompt, setFormSystemPrompt] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+
+  // Search action editor dialog
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
 
   // Excluded programs — live-edited list backed by settings
   const [programInput, setProgramInput] = useState('')
@@ -204,6 +211,10 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }
 
   const openEdit = (action: SelectionAction): void => {
+    if (action.id === BUILTIN_SEARCH_ACTION_ID) {
+      setSearchDialogOpen(true)
+      return
+    }
     setEditingAction(action)
     setFormName(st(action.name))
     setFormDescription(st(action.description))
@@ -244,6 +255,11 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }
 
   const pendingDeleteAction = actions.find((a) => a.id === pendingDeleteId)
+
+  const currentSearchEngine = settings['selection.searchEngine'] || 'google'
+  const searchEngineLabel =
+    t(`settings.selectionAssistant.search.${currentSearchEngine}`, '') ||
+    t('settings.selectionAssistant.search.google')
 
   // ── Program exclusion list ──────────────────────────────────────
   const addExcludedProgram = async (): Promise<void> => {
@@ -486,6 +502,9 @@ export function SelectionAssistantSection(): React.JSX.Element {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {action.id === BUILTIN_SEARCH_ACTION_ID && (
+                    <span className="text-muted-foreground mr-1 text-xs">{searchEngineLabel}</span>
+                  )}
                   <Switch
                     checked={action.enabled}
                     onCheckedChange={(checked) => updateAction(action.id, { enabled: checked })}
@@ -594,50 +613,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Web Search */}
-      <div className="rounded-xl border bg-card/50 p-5">
-        <h3 className="text-sm font-semibold">{t('settings.selectionAssistant.search.title')}</h3>
-        <p className="text-muted-foreground mt-1 text-xs">
-          {t('settings.selectionAssistant.search.hint')}
-        </p>
-        <div className="mt-3 space-y-3">
-          <div className="space-y-1">
-            <Label className="text-xs">{t('settings.selectionAssistant.search.engineLabel')}</Label>
-            <Select
-              value={settings['selection.searchEngine'] || 'google'}
-              onValueChange={(v) => saveSettings({ 'selection.searchEngine': v })}>
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SEARCH_ENGINE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {t(`settings.selectionAssistant.search.${opt.value}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {settings['selection.searchEngine'] === 'custom' && (
-            <div className="space-y-1">
-              <Label className="text-xs">
-                {t('settings.selectionAssistant.search.customUrlLabel')}
-              </Label>
-              <Input
-                value={settings['selection.searchEngineCustomUrl'] || ''}
-                onChange={(e) =>
-                  saveSettings({ 'selection.searchEngineCustomUrl': e.target.value })
-                }
-                placeholder={t('settings.selectionAssistant.search.customUrlPlaceholder')}
-              />
-              <p className="text-muted-foreground text-xs">
-                {t('settings.selectionAssistant.search.customUrlHint')}
-              </p>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Model Picker */}
       <ModelPickerDialog
         open={modelPickerOpen}
@@ -726,6 +701,53 @@ export function SelectionAssistantSection(): React.JSX.Element {
             <Button variant="destructive" onClick={handleDelete}>
               {t('common.delete')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Search Action Settings */}
+      <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings.selectionAssistant.search.title')}</DialogTitle>
+            <DialogDescription>{t('settings.selectionAssistant.search.hint')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t('settings.selectionAssistant.search.engineLabel')}</Label>
+              <Select
+                value={currentSearchEngine}
+                onValueChange={(v) => saveSettings({ 'selection.searchEngine': v })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SEARCH_ENGINE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {t(`settings.selectionAssistant.search.${opt.value}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {currentSearchEngine === 'custom' && (
+              <div className="space-y-2">
+                <Label>{t('settings.selectionAssistant.search.customUrlLabel')}</Label>
+                <Input
+                  value={settings['selection.searchEngineCustomUrl'] || ''}
+                  onChange={(e) =>
+                    saveSettings({ 'selection.searchEngineCustomUrl': e.target.value })
+                  }
+                  placeholder={t('settings.selectionAssistant.search.customUrlPlaceholder')}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t('settings.selectionAssistant.search.customUrlHint')}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSearchDialogOpen(false)}>{t('common.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

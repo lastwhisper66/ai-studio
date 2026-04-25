@@ -338,6 +338,8 @@ export const DEFAULT_SELECTION_MAX_TEXT_LENGTH = 5000
 /** Default floor; overridden by `selection.minTextLength` setting. */
 export const DEFAULT_SELECTION_MIN_TEXT_LENGTH = 1
 
+export const BUILTIN_SEARCH_ACTION_ID = 'builtin-sel-search'
+
 /**
  * Anchor rectangle in DIP (device-independent pixels), describing the
  * on-screen selection region. Toolbar/bubble windows position themselves

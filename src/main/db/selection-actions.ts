@@ -190,6 +190,14 @@ export function seedSelectionActions(): void {
       icon: 'Wand2',
       sortOrder: 3,
     },
+    {
+      id: 'builtin-sel-search',
+      name: 'seed.selectionActions.search.name',
+      description: 'seed.selectionActions.search.description',
+      systemPrompt: '',
+      icon: 'Search',
+      sortOrder: 4,
+    },
   ]
 
   const stmt = db.prepare(

@@ -410,7 +410,7 @@
       },
       "search": {
         "title": "网页搜索",
-        "hint": "点击工具条搜索按钮时，使用默认浏览器打开搜索引擎。",
+        "hint": "配置搜索动作使用的搜索引擎，点击后将在默认浏览器中打开。",
         "engineLabel": "搜索引擎",
         "customUrlLabel": "自定义搜索 URL",
         "customUrlPlaceholder": "https://example.com/search?q={query}",
@@ -607,6 +607,10 @@
       "polish": {
         "name": "润色",
         "description": "改写为更流畅、专业的表达"
+      },
+      "search": {
+        "name": "搜索",
+        "description": "使用搜索引擎搜索选中文本"
       }
     },
     "quickActions": {
