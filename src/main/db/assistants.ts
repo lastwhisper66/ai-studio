@@ -207,8 +207,24 @@ export function deleteAssistant(id: string): void {
 
 export function reorderAssistants(ids: string[]): void {
   const db = getDb()
+  const query = db.prepare('SELECT sort_order, is_default FROM assistants WHERE id = ?')
   const update = db.prepare('UPDATE assistants SET sort_order = ? WHERE id = ?')
+
   db.transaction(() => {
-    ids.forEach((id, index) => update.run(index, id))
+    const pinned: string[] = []
+    const unpinned: string[] = []
+
+    for (const id of ids) {
+      const row = query.get(id) as { sort_order: number; is_default: number } | undefined
+      if (!row) continue
+      if (row.sort_order < 0 && !row.is_default) {
+        pinned.push(id)
+      } else {
+        unpinned.push(id)
+      }
+    }
+
+    pinned.forEach((id, i) => update.run(-(pinned.length - i), id))
+    unpinned.forEach((id, i) => update.run(i, id))
   })()
 }

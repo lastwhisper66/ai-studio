@@ -204,6 +204,9 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
       const draggedAssistant = nonDefaultAssistants[oldIndex]
       const targetAssistant = nonDefaultAssistants[newIndex]
 
+      // Block drags across the pinned/unpinned boundary
+      if (isPinned(draggedAssistant) !== isPinned(targetAssistant)) return
+
       // Build new order: default assistant first, then reordered non-defaults
       const reordered = [...nonDefaultAssistants]
       const [moved] = reordered.splice(oldIndex, 1)
