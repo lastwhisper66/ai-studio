@@ -354,6 +354,8 @@ export interface SelectionAnchor {
   width: number
   /** Height of the selection region (DIP); may be 0 when only a mouse point is known */
   height: number
+  /** When true the toolbar should appear above the anchor instead of below. */
+  preferTop?: boolean
 }
 
 /** Stored selection action — mirrors QuickAction */

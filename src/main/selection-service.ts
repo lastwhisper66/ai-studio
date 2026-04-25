@@ -83,7 +83,7 @@ let filterConfig: SelectionFilterConfig = {
   minTextLength: DEFAULT_MIN_TEXT_LENGTH,
   maxTextLength: DEFAULT_MAX_TEXT_LENGTH,
   clipboardFallback: true,
-  triggerMode: 'selected',
+  triggerMode: 'ctrlkey',
 }
 
 function parseJsonArray(raw: string | undefined, fallback: string[]): string[] {
@@ -114,7 +114,7 @@ function loadFilterConfig(): SelectionFilterConfig {
       parseNumber(getSetting('selection.maxTextLength'), DEFAULT_MAX_TEXT_LENGTH),
     ),
     clipboardFallback: getSetting('selection.clipboardFallback') !== 'false',
-    triggerMode: getSetting('selection.triggerMode') === 'ctrlkey' ? 'ctrlkey' : 'selected',
+    triggerMode: getSetting('selection.triggerMode') === 'selected' ? 'selected' : 'ctrlkey',
   }
 }
 
@@ -164,6 +164,14 @@ function getEffectiveExcludedPrograms(): string[] {
   return Array.from(set)
 }
 
+/**
+ * Pixel offset added to mouse-based Y coordinates (physical pixels, before
+ * DIP conversion) so the anchor clears the text line. Mouse cursors sit at
+ * the text baseline, not at the bottom of the line box. Cherry Studio uses
+ * 16px for the same purpose.
+ */
+const MOUSE_Y_OFFSET_PX = 16
+
 /** Check whether a coordinate pair is the INVALID_COORDINATE sentinel. */
 function isValidPoint(p: { x: number; y: number }): boolean {
   return p.x !== SelectionHook.INVALID_COORDINATE && p.y !== SelectionHook.INVALID_COORDINATE
@@ -173,53 +181,82 @@ function isValidPoint(p: { x: number; y: number }): boolean {
  * Compute an on-screen anchor rectangle (DIP) from a TextSelectionData.
  * selection-hook returns physical pixels; Electron's setBounds expects DIP,
  * so we convert via screen.screenToDipPoint().
+ *
+ * Offset strategy (mirrors Cherry Studio):
+ *  - MOUSE_SINGLE / MOUSE_DUAL: mouse cursor sits at the text baseline, so
+ *    we push the anchor bottom down by MOUSE_Y_OFFSET_PX before DIP conversion.
+ *  - MOUSE_DUAL with upward drag: the anchor top is pushed up so the toolbar
+ *    can flip above the selection without overlapping.
+ *  - SEL_FULL / SEL_DETAILED: real selection rectangles already include the
+ *    full line height, no extra offset needed.
  */
 function computeAnchor(data: TextSelectionData): SelectionAnchor | null {
   const { posLevel } = data
 
-  // Pick the best-available anchor based on the position level. Higher
-  // levels provide real selection rectangles; lower levels only have the
-  // mouse cursor position at selection end.
-  let startPx: { x: number; y: number } | null = null
-  let endPx: { x: number; y: number } | null = null
+  let topPx: { x: number; y: number } | null = null
+  let bottomPx: { x: number; y: number } | null = null
+  let preferTop = false
 
   if (
     posLevel === SelectionHook.PositionLevel.SEL_FULL ||
     posLevel === SelectionHook.PositionLevel.SEL_DETAILED
   ) {
     if (isValidPoint(data.startTop) && isValidPoint(data.endBottom)) {
-      startPx = data.startTop
-      endPx = data.endBottom
+      topPx = data.startTop
+      bottomPx = data.endBottom
+      // If mouse info is available, detect upward drag
+      if (isValidPoint(data.mousePosStart) && isValidPoint(data.mousePosEnd)) {
+        preferTop = data.mousePosEnd.y - data.mousePosStart.y < -14
+      }
     }
   } else if (posLevel === SelectionHook.PositionLevel.MOUSE_DUAL) {
     if (isValidPoint(data.mousePosStart) && isValidPoint(data.mousePosEnd)) {
-      startPx = data.mousePosStart
-      endPx = data.mousePosEnd
+      const yDist = data.mousePosEnd.y - data.mousePosStart.y
+
+      if (Math.abs(yDist) > 14) {
+        // Multi-line selection
+        if (yDist > 0) {
+          // Dragged downward — anchor bottom below the end point
+          topPx = data.mousePosStart
+          bottomPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y + MOUSE_Y_OFFSET_PX }
+        } else {
+          // Dragged upward — anchor top above the end point
+          topPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y - MOUSE_Y_OFFSET_PX }
+          bottomPx = data.mousePosStart
+          preferTop = true
+        }
+      } else {
+        // Same-line selection — push bottom down
+        const maxY = Math.max(data.mousePosStart.y, data.mousePosEnd.y)
+        const minX = Math.min(data.mousePosStart.x, data.mousePosEnd.x)
+        topPx = { x: minX, y: data.mousePosStart.y }
+        bottomPx = { x: data.mousePosEnd.x, y: maxY + MOUSE_Y_OFFSET_PX }
+      }
     }
   } else if (posLevel === SelectionHook.PositionLevel.MOUSE_SINGLE) {
     if (isValidPoint(data.mousePosEnd)) {
-      startPx = data.mousePosEnd
-      endPx = data.mousePosEnd
+      topPx = data.mousePosEnd
+      bottomPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y + MOUSE_Y_OFFSET_PX }
     }
   }
 
   // Fallback: try mousePosEnd regardless
-  if (!startPx && isValidPoint(data.mousePosEnd)) {
-    startPx = data.mousePosEnd
-    endPx = data.mousePosEnd
+  if (!topPx && isValidPoint(data.mousePosEnd)) {
+    topPx = data.mousePosEnd
+    bottomPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y + MOUSE_Y_OFFSET_PX }
   }
 
-  if (!startPx || !endPx) return null
+  if (!topPx || !bottomPx) return null
 
-  const startDip = screen.screenToDipPoint(startPx)
-  const endDip = screen.screenToDipPoint(endPx)
+  const startDip = screen.screenToDipPoint(topPx)
+  const endDip = screen.screenToDipPoint(bottomPx)
 
   const x = Math.min(startDip.x, endDip.x)
   const y = Math.min(startDip.y, endDip.y)
   const width = Math.abs(endDip.x - startDip.x)
   const height = Math.abs(endDip.y - startDip.y)
 
-  return { x, y, width, height }
+  return { x, y, width, height, preferTop }
 }
 
 function handleTextSelection(data: TextSelectionData): void {

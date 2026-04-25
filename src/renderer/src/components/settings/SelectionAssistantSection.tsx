@@ -100,7 +100,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const defaultPinned = settings['selection.defaultPinned'] === 'true'
   const clipboardFallback = settings['selection.clipboardFallback'] !== 'false'
   const triggerMode: SelectionTriggerMode =
-    settings['selection.triggerMode'] === 'ctrlkey' ? 'ctrlkey' : 'selected'
+    settings['selection.triggerMode'] === 'selected' ? 'selected' : 'ctrlkey'
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Action editor dialog
@@ -361,17 +361,18 @@ export function SelectionAssistantSection(): React.JSX.Element {
               {t('settings.selectionAssistant.triggerModeLabel')}
             </Label>
           </div>
-          <div className="flex gap-1.5">
-            {(['selected', 'ctrlkey'] as const).map((mode) => (
+          <div className="border-border inline-flex overflow-hidden rounded-md border">
+            {(['ctrlkey', 'selected'] as const).map((mode, i) => (
               <Tooltip key={mode}>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={() => handleTriggerModeChange(mode)}
                     className={cn(
-                      'cursor-pointer rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                      'cursor-pointer px-3 py-1.5 text-xs font-medium transition-colors',
+                      i > 0 && 'border-border border-l',
                       triggerMode === mode
-                        ? 'border-primary bg-primary/10 text-primary'
+                        ? 'bg-primary text-primary-foreground'
                         : 'hover:bg-muted/50',
                     )}>
                     {t(
