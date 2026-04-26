@@ -13,6 +13,12 @@ export function useAutoScroll(deps: DependencyList = []): UseAutoScrollReturn {
   const [isAtBottom, setIsAtBottom] = useState(true)
   const isAtBottomRef = useRef(true)
 
+  const scrollViewportToBottom = useCallback((behavior: ScrollBehavior = 'smooth'): void => {
+    const viewport = scrollRef.current
+    if (!viewport) return
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior })
+  }, [])
+
   // Use IntersectionObserver to track whether the sentinel is visible
   useEffect(() => {
     const sentinel = sentinelRef.current
@@ -35,13 +41,13 @@ export function useAutoScroll(deps: DependencyList = []): UseAutoScrollReturn {
   // Uses ref to avoid stale closure — isAtBottom state may lag behind the observer callback.
   useEffect(() => {
     if (isAtBottomRef.current) {
-      sentinelRef.current?.scrollIntoView({ behavior: 'smooth' })
+      scrollViewportToBottom()
     }
-  }, deps) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [...deps, scrollViewportToBottom]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const scrollToBottom = useCallback(() => {
-    sentinelRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [])
+    scrollViewportToBottom()
+  }, [scrollViewportToBottom])
 
   return { scrollRef, sentinelRef, isAtBottom, scrollToBottom }
 }
