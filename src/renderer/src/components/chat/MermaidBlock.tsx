@@ -101,9 +101,8 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
   const copyImage = useCallback(async () => {
     if (!svg) return
     try {
-      const portableSvg = await renderMermaidSvg(code, 'default')
-      await copySvgAsImage(portableSvg, {
-        ...PORTABLE_IMAGE_OPTIONS,
+      const themedSvg = await renderMermaidSvg(code, mermaidTheme)
+      await copySvgAsImage(themedSvg, {
         text: code,
         alt: 'Mermaid diagram',
       })
@@ -112,7 +111,7 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
     } catch (err) {
       console.warn('Copy image failed:', err)
     }
-  }, [code, svg])
+  }, [code, mermaidTheme, svg])
 
   const exportFile = useCallback(
     async (format: 'svg' | 'png') => {

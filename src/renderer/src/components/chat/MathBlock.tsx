@@ -4,7 +4,7 @@ import katex, { type TrustContext } from 'katex'
 import { useTranslation } from 'react-i18next'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
-import { PORTABLE_IMAGE_OPTIONS, copySvgAsImage, sanitizeSvgMarkup } from '@renderer/lib/canvas'
+import { copySvgAsImage, sanitizeSvgMarkup } from '@renderer/lib/canvas'
 import { BlockToolbarBtn } from './BlockToolbarBtn'
 import { ZoomablePreviewDialog } from './ZoomablePreviewDialog'
 
@@ -157,7 +157,6 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
   const copyImage = useCallback(async () => {
     try {
       await copySvgAsImage(await renderMathSvg(value, displayMode), {
-        ...PORTABLE_IMAGE_OPTIONS,
         text: value,
         alt: value,
       })
