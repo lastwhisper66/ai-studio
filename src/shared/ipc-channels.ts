@@ -21,6 +21,7 @@ export const IpcChannels = {
   PHRASE_DELETE: 'phrase:delete',
   // File
   FILE_OPEN_DIALOG: 'file:open-dialog',
+  FILE_SAVE: 'file:save',
   ATTACHMENT_READ: 'attachment:read',
   // Settings
   SETTINGS_GET: 'settings:get',
@@ -97,6 +98,7 @@ export const IpcChannels = {
   APP_GET_FONTS: 'app:get-fonts',
   // App
   APP_CLEAR_DATA: 'app:clear-data',
+  CLIPBOARD_WRITE_IMAGE: 'clipboard:write-image',
   // User
   USER_SAVE_AVATAR: 'user:save-avatar',
   USER_READ_AVATAR: 'user:read-avatar',

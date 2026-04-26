@@ -47,6 +47,18 @@ export interface FileData {
   size: number
 }
 
+export interface SaveFilePayload {
+  base64: string
+  defaultPath: string
+  filters?: { name: string; extensions: string[] }[]
+}
+
+export interface ClipboardImagePayload {
+  pngBase64: string
+  html?: string
+  text?: string
+}
+
 /** Check whether a MIME type represents an image */
 export function isImageMime(mimeType: string): boolean {
   return mimeType.startsWith('image/')

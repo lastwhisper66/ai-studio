@@ -89,7 +89,32 @@
     "noPhrasesYet": "No phrases yet. Go to Settings to add.",
     "managePhrases": "Manage Quick Phrases",
     "placeholderHint": "{{count}} placeholder(s) — Tab / Shift+Tab to navigate",
-    "systemPromptPlaceholder": "Click to set assistant system prompt"
+    "systemPromptPlaceholder": "Click to set assistant system prompt",
+    "mermaid": {
+      "rendering": "Rendering...",
+      "error": "Mermaid render failed",
+      "copyCode": "Copy code",
+      "copyImage": "Copy image",
+      "compare": "Compare view",
+      "fullscreen": "Fullscreen",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Reset zoom",
+      "exportSvg": "Export SVG",
+      "exportPng": "Export PNG"
+    },
+    "math": {
+      "error": "Formula render failed",
+      "copyCode": "Copy LaTeX",
+      "copyImage": "Copy image",
+      "fullscreen": "Zoom in",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Reset zoom"
+    },
+    "code": {
+      "expand": "Expand all code"
+    }
   },
   "welcome": {
     "title": "Welcome to AI Studio",
@@ -294,6 +319,10 @@
       "fontFamilyHint": "Set the default display font for the application.",
       "codeFontFamily": "Code Font",
       "codeFontFamilyHint": "Set the display font for code blocks.",
+      "mathEngine": "Math Engine",
+      "mathEngineHint": "Choose the engine for rendering math formulas. KaTeX is faster and lighter, MathJax is more comprehensive.",
+      "mathEngineKatex": "KaTeX",
+      "mathEngineMathjax": "MathJax",
       "fontDefault": "System Default",
       "fontNotFound": "No fonts found."
     },

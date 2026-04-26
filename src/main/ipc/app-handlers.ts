@@ -1,10 +1,10 @@
-import { app, ipcMain } from 'electron'
+import { app, clipboard, ipcMain, nativeImage } from 'electron'
 import { existsSync, rmSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
 import { toLocalizedError } from '../errors'
-import type { IpcResult } from '@shared/types'
+import type { ClipboardImagePayload, IpcResult } from '@shared/types'
 import { getDb, seedDefaultAssistant } from '../db/database'
 import { seedModelDefinitions } from '../db/model-definitions'
 import { seedModelGroups } from '../db/model-groups'
@@ -85,4 +85,24 @@ export function registerAppHandlers(): void {
       return { success: false, error: toLocalizedError(e) }
     }
   })
+
+  ipcMain.handle(
+    IpcChannels.CLIPBOARD_WRITE_IMAGE,
+    (_, payload: ClipboardImagePayload): IpcResult<void> => {
+      try {
+        const image = nativeImage.createFromBuffer(Buffer.from(payload.pngBase64, 'base64'))
+        if (image.isEmpty()) {
+          throw new Error('Invalid image data')
+        }
+
+        const data: Parameters<typeof clipboard.write>[0] = { image }
+        if (payload.html) data.html = payload.html
+        if (payload.text) data.text = payload.text
+        clipboard.write(data)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 }

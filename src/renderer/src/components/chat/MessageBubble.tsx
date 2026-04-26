@@ -311,7 +311,7 @@ export const MessageBubble = memo(function MessageBubble({
                   thinkingDuration={thinkingDuration}
                 />
               )}
-              <MarkdownRenderer content={content} />
+              <MarkdownRenderer content={content} isStreaming={isStreaming} />
             </>
           )}
           {isStreaming && !isWaiting && !isStreamingReasoning && (

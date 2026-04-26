@@ -10,6 +10,7 @@ import {
   Code,
   Minus,
   Plus,
+  Sigma,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '@renderer/hooks/useTheme'
@@ -256,6 +257,38 @@ export function DisplaySection(): React.JSX.Element {
               placeholder={t('settings.display.fontDefault')}
               emptyText={t('settings.display.fontNotFound')}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Math Engine ── */}
+      <div className="rounded-xl border bg-card/50 p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Sigma className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">{t('settings.display.mathEngine')}</Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.display.mathEngineHint')}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            {(['katex', 'mathjax'] as const).map((eng) => (
+              <button
+                key={eng}
+                type="button"
+                aria-pressed={(settings['display.mathEngine'] || 'katex') === eng}
+                onClick={() => saveSettings({ 'display.mathEngine': eng })}
+                className={cn(
+                  'rounded-lg border px-4 py-2 text-sm transition-colors',
+                  (settings['display.mathEngine'] || 'katex') === eng
+                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                    : 'border-border hover:bg-accent text-muted-foreground',
+                )}>
+                {t(`settings.display.mathEngine${eng === 'katex' ? 'Katex' : 'Mathjax'}`)}
+              </button>
+            ))}
           </div>
         </div>
       </div>

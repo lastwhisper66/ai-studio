@@ -23,6 +23,8 @@ import type {
   Assistant,
   Phrase,
   FileData,
+  SaveFilePayload,
+  ClipboardImagePayload,
   TranslateRequestPayload,
   TranslateChunkData,
   TranslateEndData,
@@ -119,6 +121,9 @@ const api = {
   // File
   openFileDialog: (): Promise<IpcResult<FileData[]>> =>
     ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG),
+
+  saveFile: (payload: SaveFilePayload): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.FILE_SAVE, payload),
 
   readAttachment: (relativePath: string): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.ATTACHMENT_READ, relativePath),
@@ -369,6 +374,9 @@ const api = {
 
   // App
   clearAppData: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_DATA),
+
+  copyPngToClipboard: (payload: ClipboardImagePayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.CLIPBOARD_WRITE_IMAGE, payload),
 
   getSystemFonts: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke(IpcChannels.APP_GET_FONTS),
 
