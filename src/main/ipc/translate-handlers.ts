@@ -4,10 +4,12 @@ import type { TranslateRequestPayload, IpcResult, ApiSettings } from '@shared/ty
 import { ERROR_CODES } from '@shared/errors'
 import { AppError, toLocalizedError } from '../errors'
 import { streamChat } from '../ai'
+import { showCompletionNotification } from '../utils/notification'
 import { getProvider } from '../db/providers'
 import { getModel } from '../db/models'
 
 let activeController: AbortController | null = null
+let activeRequestId: number | null = null
 
 function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettings {
   if (!providerId) {
@@ -47,8 +49,9 @@ function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettin
 }
 
 const DEFAULT_TRANSLATE_PROMPT =
-  'You are a professional translator. Translate the following text{source} to {target}. ' +
-  'Only output the translation, nothing else. Preserve the original formatting.'
+  'You are a professional translator. Translate the input text{source} into {target}. ' +
+  'If the input is already in {target}, output it unchanged. ' +
+  'Only output the translation, nothing else. Preserve the original formatting and tone.'
 
 function buildSystemPrompt(
   customPrompt: string | undefined,
@@ -58,7 +61,7 @@ function buildSystemPrompt(
   const sourcePart = sourceLang === 'auto' ? '' : ` from ${sourceLang}`
   const template = customPrompt?.trim() || DEFAULT_TRANSLATE_PROMPT
   // Support {source} and {target} placeholders in custom prompts
-  return template.replace('{source}', sourcePart).replace('{target}', targetLang)
+  return template.replaceAll('{source}', sourcePart).replaceAll('{target}', targetLang)
 }
 
 export function registerTranslateHandlers(): void {
@@ -68,17 +71,36 @@ export function registerTranslateHandlers(): void {
       event: IpcMainInvokeEvent,
       payload: TranslateRequestPayload,
     ): Promise<IpcResult<void>> => {
-      const { text, sourceLang, targetLang, providerId, modelId, systemPrompt, temperature } =
-        payload
+      const {
+        requestId,
+        text,
+        sourceLang,
+        targetLang,
+        providerId,
+        modelId,
+        systemPrompt,
+        temperature,
+      } = payload
       const sender = event.sender
       let fullText = ''
+      let controller: AbortController | null = null
 
       try {
         const settings = loadTranslateSettings(providerId, modelId)
-        const controller = new AbortController()
+
+        if (activeController) {
+          activeController.abort()
+          activeController = null
+        }
+
+        controller = new AbortController()
         activeController = controller
+        activeRequestId = requestId
 
         const prompt = buildSystemPrompt(systemPrompt, sourceLang, targetLang)
+
+        const isStillActive = (): boolean =>
+          activeController === controller && activeRequestId === requestId
 
         await streamChat(
           {
@@ -92,34 +114,45 @@ export function registerTranslateHandlers(): void {
           {
             onChunk: (delta) => {
               fullText += delta
-              if (!sender.isDestroyed()) {
-                sender.send(IpcChannels.TRANSLATE_CHUNK, { delta })
+              if (isStillActive() && !sender.isDestroyed()) {
+                sender.send(IpcChannels.TRANSLATE_CHUNK, { requestId, delta })
               }
             },
           },
         )
 
-        if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.TRANSLATE_END, { fullText })
+        const stillActive = isStillActive()
+        if (stillActive) {
+          activeController = null
+          activeRequestId = null
         }
-        activeController = null
+
+        if (stillActive && !sender.isDestroyed()) {
+          sender.send(IpcChannels.TRANSLATE_END, { requestId, fullText })
+          showCompletionNotification('translate')
+        }
         return { success: true }
       } catch (error: unknown) {
-        activeController = null
+        // If a newer request replaced us, silently discard — the new stream owns the UI now
+        const stillActive = activeController === controller && activeRequestId === requestId
+        if (stillActive) {
+          activeController = null
+          activeRequestId = null
+        }
 
         const isAborted =
           error instanceof Error &&
           (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
-          if (!sender.isDestroyed()) {
-            sender.send(IpcChannels.TRANSLATE_END, { fullText })
+          if (stillActive && !sender.isDestroyed()) {
+            sender.send(IpcChannels.TRANSLATE_END, { requestId, fullText })
           }
           return { success: true }
         }
 
         const localized = toLocalizedError(error)
-        if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.TRANSLATE_ERROR, { error: localized })
+        if (stillActive && !sender.isDestroyed()) {
+          sender.send(IpcChannels.TRANSLATE_ERROR, { requestId, error: localized })
         }
         return { success: false, error: localized }
       }
@@ -130,6 +163,7 @@ export function registerTranslateHandlers(): void {
     if (activeController) {
       activeController.abort()
       activeController = null
+      activeRequestId = null
     }
     return { success: true }
   })

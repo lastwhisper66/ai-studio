@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Pin, PinOff, Square, X } from 'lucide-react'
+import { HelpCircle, Pin, PinOff, Square, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
@@ -12,10 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@renderer/components/ui/select'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import {
-  generateTranslatePrompt,
   getLanguageEnglishLabel,
   LANGUAGES,
+  TARGET_LANG_OFF,
+  normalizeLangCode,
 } from '@renderer/lib/languages'
 import i18n from '@renderer/i18n'
 import type { SelectionAction, SelectionBubblePayload } from '@shared/types'
@@ -24,18 +26,6 @@ import {
   defaultSelectionActionIcon,
   selectionActionIconMap,
 } from '@renderer/components/selection-toolbar/icons'
-
-const BUILTIN_SEL_TRANSLATE_ID = 'builtin-sel-translate'
-
-/** Map an arbitrary locale code (e.g. i18n.language) to a LANGUAGES entry. */
-function normalizeLangCode(input: string | undefined): string {
-  if (!input) return LANGUAGES[0]?.code ?? 'en'
-  if (LANGUAGES.some((l) => l.code === input)) return input
-  // Try the primary subtag: "en-US" -> "en"
-  const primary = input.split('-')[0]
-  const match = LANGUAGES.find((l) => l.code === primary || l.code.startsWith(`${primary}-`))
-  return match?.code ?? LANGUAGES[0]?.code ?? 'en'
-}
 
 export function SelectionBubbleApp(): React.JSX.Element {
   const { t } = useTranslation()
@@ -101,6 +91,18 @@ export function SelectionBubbleApp(): React.JSX.Element {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // Stay in sync when the target language is changed from another window
+  // (e.g. the Settings → Selection Assistant dialog). Without this, the
+  // bubble's dropdown and the settings dialog can display different values.
+  useEffect(() => {
+    return window.api.onSettingsChanged((entries) => {
+      const next = entries['selection.translateTargetLang']
+      if (typeof next !== 'string') return
+      const normalized = normalizeLangCode(next)
+      setTargetLang((prev) => (prev === normalized ? prev : normalized))
+    })
   }, [])
 
   // This window is pre-created at startup; its i18n instance won't observe
@@ -177,11 +179,15 @@ export function SelectionBubbleApp(): React.JSX.Element {
     return payload.actions.find((a) => a.id === currentActionId) ?? null
   }, [payload, currentActionId])
 
-  const isTranslate = currentAction?.id === BUILTIN_SEL_TRANSLATE_ID
-
   /**
    * Start streaming the current action against the current text+lang.
    * Caller is responsible for calling stop() on any in-flight request first.
+   *
+   * The target language usually drives the system prompt: we append a
+   * "please respond in X" line to the stored prompt so built-in, user-edited,
+   * and custom actions are all honored the same way. When the user picks
+   * "off" we skip that append and hand the action's prompt through unchanged,
+   * so prompts like "respond in the same language as the input" work as-is.
    */
   const startRequest = useCallback(
     (action: SelectionAction, text: string, overrideLang?: string) => {
@@ -192,10 +198,17 @@ export function SelectionBubbleApp(): React.JSX.Element {
       setIsStreaming(true)
       setCopySuccess(false)
 
+      const lang = overrideLang ?? targetLangRef.current
       let systemPromptOverride: string | undefined
-      if (action.id === BUILTIN_SEL_TRANSLATE_ID) {
-        const lang = overrideLang ?? targetLangRef.current
-        systemPromptOverride = generateTranslatePrompt(getLanguageEnglishLabel(lang))
+      if (lang === TARGET_LANG_OFF) {
+        // Pass through: main falls back to the action's original systemPrompt.
+        systemPromptOverride = undefined
+      } else {
+        const englishLabel = getLanguageEnglishLabel(lang)
+        const basePrompt = action.systemPrompt?.trim() ?? ''
+        systemPromptOverride = basePrompt
+          ? `${basePrompt}\n\nPlease respond in ${englishLabel}.`
+          : `Please respond in ${englishLabel}.`
       }
 
       let cleanedUp = false
@@ -233,6 +246,9 @@ export function SelectionBubbleApp(): React.JSX.Element {
   useEffect(() => {
     if (!payload || !currentAction) return
     if (!targetLangLoaded) return
+    // startRequest is the side-effect we're syncing to — the setState calls
+    // inside it are part of that external trigger, not cascading renders.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     startRequest(currentAction, payload.text)
     // Only re-trigger when the payload itself changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -266,7 +282,7 @@ export function SelectionBubbleApp(): React.JSX.Element {
       if (nextLang === targetLang) return
       setTargetLang(nextLang)
       window.api.setSetting('selection.translateTargetLang', nextLang)
-      if (!payload || !currentAction || currentAction.id !== BUILTIN_SEL_TRANSLATE_ID) return
+      if (!payload || !currentAction) return
       if (isStreaming) await window.api.stopSelectionRequest()
       startRequest(currentAction, payload.text, nextLang)
     },
@@ -309,7 +325,7 @@ export function SelectionBubbleApp(): React.JSX.Element {
 
   return (
     <div className="flex h-screen flex-col">
-      <div className="bg-background text-foreground flex h-full w-full flex-col overflow-hidden rounded-xl border shadow-md">
+      <div className="bg-background text-foreground flex h-full w-full flex-col overflow-hidden rounded-xl border">
         {/* Header: current action + window controls */}
         <div className="flex items-center gap-2 border-b px-3 py-2">
           <ActionSelect
@@ -318,19 +334,28 @@ export function SelectionBubbleApp(): React.JSX.Element {
             onChange={handleSwitchAction}
             placeholder={t('settings.selectionAssistant.bubble.actionPlaceholder')}
           />
-          {isTranslate && (
-            <Select value={targetLang} onValueChange={handleTargetLangChange}>
-              <SelectTrigger className="h-6 w-28 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                {LANGUAGES.map((lang) => (
-                  <SelectItem key={lang.code} value={lang.code}>
-                    {lang.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {targetLangLoaded && (
+            <>
+              <Select value={targetLang} onValueChange={handleTargetLangChange}>
+                <SelectTrigger className="h-6 w-28 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  <SelectItem value={TARGET_LANG_OFF}>{t('common.targetLang.off')}</SelectItem>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="text-muted-foreground size-3.5 shrink-0 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="top">{t('common.targetLang.hint')}</TooltipContent>
+              </Tooltip>
+            </>
           )}
           <div className="flex-1" />
           <button
@@ -353,14 +378,14 @@ export function SelectionBubbleApp(): React.JSX.Element {
 
         {/* Body: streaming markdown */}
         <div className="min-h-0 flex-1">
-          <ScrollArea className="h-full">
+          <ScrollArea className="chat-scroll-area h-full">
             <div className="px-3 py-2 text-sm">
               {error ? (
                 <div className="border-destructive/50 bg-destructive/10 rounded-md border p-2">
                   <p className="text-destructive text-xs">{resolveError(error)}</p>
                 </div>
               ) : content ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
+                <div className="prose prose-sm dark:prose-invert wrap-anywhere min-w-0 max-w-none">
                   <MarkdownRenderer content={content} />
                 </div>
               ) : isStreaming ? (

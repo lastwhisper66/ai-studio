@@ -14,6 +14,7 @@ import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
 import { streamChat, generateTitle, applySslSetting } from '../ai'
+import { showCompletionNotification } from '../utils/notification'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -228,6 +229,8 @@ export function registerChatHandlers(): void {
         if (!sender.isDestroyed()) {
           sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })
         }
+
+        showCompletionNotification('chat')
 
         activeStreams.delete(conversationId)
 

@@ -4,6 +4,7 @@ import { is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { SelectionAnchor, SelectionBubblePayload } from '@shared/types'
 import { getSetting } from './db'
+import { createWindowSizePersistor } from './utils/window-size-persist'
 
 let bubbleWindow: BrowserWindow | null = null
 let contentReady = false
@@ -29,10 +30,18 @@ export function setSelectionBubbleHideHandler(handler: (() => void) | null): voi
 }
 
 const SHOW_OPACITY_DELAY_MS = 60
-const BUBBLE_WIDTH = 420
-const BUBBLE_HEIGHT = 320
 /** Vertical gap between the anchor and the bubble (slightly larger than toolbar) */
 const BUBBLE_OFFSET_Y = 6
+
+const sizePersistor = createWindowSizePersistor({
+  widthKey: 'selection.bubbleWidth',
+  heightKey: 'selection.bubbleHeight',
+  defaultWidth: 420,
+  defaultHeight: 320,
+  minWidth: 360,
+  minHeight: 240,
+  logPrefix: '[SelectionBubble]',
+})
 
 /** Read the user's default-pinned preference from DB. */
 function isDefaultPinned(): boolean {
@@ -42,12 +51,16 @@ function isDefaultPinned(): boolean {
 export function preCreateSelectionBubbleWindow(): void {
   if (bubbleWindow && !bubbleWindow.isDestroyed()) return
 
+  const { width, height } = sizePersistor.load()
+
   bubbleWindow = new BrowserWindow({
-    width: BUBBLE_WIDTH,
-    height: BUBBLE_HEIGHT,
+    width,
+    height,
+    minWidth: 360,
+    minHeight: 240,
     frame: false,
     transparent: true,
-    resizable: false,
+    resizable: true,
     skipTaskbar: true,
     alwaysOnTop: isDefaultPinned(),
     show: false,
@@ -67,6 +80,8 @@ export function preCreateSelectionBubbleWindow(): void {
     hideSelectionBubble()
   })
 
+  sizePersistor.attach(bubbleWindow)
+
   bubbleWindow.on('closed', () => {
     bubbleWindow = null
     contentReady = false
@@ -84,7 +99,10 @@ export function preCreateSelectionBubbleWindow(): void {
   }
 }
 
-function computeBubbleBounds(anchor: SelectionAnchor): Electron.Rectangle {
+function computeBubbleBounds(
+  anchor: SelectionAnchor,
+  size: { width: number; height: number },
+): Electron.Rectangle {
   const display = screen.getDisplayNearestPoint({
     x: Math.round(anchor.x + anchor.width / 2),
     y: Math.round(anchor.y + anchor.height / 2),
@@ -94,17 +112,19 @@ function computeBubbleBounds(anchor: SelectionAnchor): Electron.Rectangle {
   let x = Math.round(anchor.x)
   let y = Math.round(anchor.y + anchor.height + BUBBLE_OFFSET_Y)
 
-  const maxX = area.x + area.width - BUBBLE_WIDTH
-  if (x > maxX) x = maxX
-  if (x < area.x) x = area.x
+  // Clamp order matters: apply the min last so a bubble wider than the work
+  // area (edge case on very small displays) still sticks to the left edge
+  // rather than leaking off the right.
+  const maxX = area.x + area.width - size.width
+  x = Math.max(area.x, Math.min(maxX, x))
 
   // If bubble would overflow the work area bottom, flip above the anchor
-  if (y + BUBBLE_HEIGHT > area.y + area.height) {
-    y = Math.round(anchor.y - BUBBLE_HEIGHT - BUBBLE_OFFSET_Y)
+  if (y + size.height > area.y + area.height) {
+    y = Math.round(anchor.y - size.height - BUBBLE_OFFSET_Y)
   }
   if (y < area.y) y = area.y
 
-  return { x, y, width: BUBBLE_WIDTH, height: BUBBLE_HEIGHT }
+  return { x, y, width: size.width, height: size.height }
 }
 
 export function showSelectionBubble(payload: Omit<SelectionBubblePayload, 'pinned'>): void {
@@ -123,7 +143,9 @@ export function showSelectionBubble(payload: Omit<SelectionBubblePayload, 'pinne
   win.setAlwaysOnTop(pinned)
   const fullPayload: SelectionBubblePayload = { ...payload, pinned }
   pendingPayload = fullPayload
-  win.setBounds(computeBubbleBounds(payload.anchor))
+  // Use the window's current size so repositioning honors the user's last resize.
+  const [width, height] = win.getSize()
+  win.setBounds(computeBubbleBounds(payload.anchor, { width, height }))
 
   if (contentReady) {
     win.webContents.send(IpcChannels.SELECTION_BUBBLE_DATA, fullPayload)

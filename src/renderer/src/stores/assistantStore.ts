@@ -70,6 +70,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     if (!source) return
     const result = await window.api.createAssistant({
       name: `${source.name} (副本)`,
+      icon: source.icon,
       description: source.description,
       systemPrompt: source.systemPrompt,
       providerId: source.providerId,

@@ -1,14 +1,16 @@
-import { app, ipcMain } from 'electron'
+import { app, clipboard, ipcMain, nativeImage } from 'electron'
 import { existsSync, rmSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
 import { toLocalizedError } from '../errors'
-import type { IpcResult } from '@shared/types'
+import type { ClipboardImagePayload, IpcResult } from '@shared/types'
 import { getDb, seedDefaultAssistant } from '../db/database'
 import { seedModelDefinitions } from '../db/model-definitions'
 import { seedModelGroups } from '../db/model-groups'
 import { seedDefaultProviders } from '../db/providers'
+import { seedQuickActions } from '../db/quick-actions'
+import { seedSelectionActions } from '../db/selection-actions'
 import { getDataDir } from '../utils/paths'
 
 export function registerAppHandlers(): void {
@@ -16,19 +18,28 @@ export function registerAppHandlers(): void {
     try {
       const db = getDb()
 
-      // NOTE: Update this list when adding new tables
-      db.exec(`
-        DELETE FROM messages;
-        DELETE FROM conversations;
-        DELETE FROM settings;
-        DELETE FROM models;
-        DELETE FROM providers;
-        DELETE FROM assistants;
-        DELETE FROM phrases;
-        DELETE FROM translation_history;
-        DELETE FROM model_definitions;
-        DELETE FROM model_groups;
-      `)
+      // Dynamically collect all user tables to avoid missing any when new tables are added.
+      // Excludes sqlite internal tables (sqlite_*) — SQLite reserves this prefix.
+      const tables = db
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+        .all() as { name: string }[]
+
+      const clearAll = db.transaction(() => {
+        for (const { name } of tables) {
+          // name comes from sqlite_master, not user input — safe to interpolate.
+          // Quote with double quotes to handle any reserved words.
+          db.exec(`DELETE FROM "${name}"`)
+        }
+      })
+
+      // foreign_keys pragma is a no-op inside a transaction, so toggle it outside.
+      // Disabled during bulk delete so row order doesn't matter.
+      db.pragma('foreign_keys = OFF')
+      try {
+        clearAll()
+      } finally {
+        db.pragma('foreign_keys = ON')
+      }
 
       // Reclaim disk space after bulk deletion
       db.exec('VACUUM')
@@ -50,6 +61,8 @@ export function registerAppHandlers(): void {
       seedModelGroups()
       seedDefaultProviders()
       seedDefaultAssistant()
+      seedQuickActions()
+      seedSelectionActions()
 
       // Relaunch the app — app.exit(0) terminates the process,
       // so the return below is unreachable but required by the type signature
@@ -72,4 +85,24 @@ export function registerAppHandlers(): void {
       return { success: false, error: toLocalizedError(e) }
     }
   })
+
+  ipcMain.handle(
+    IpcChannels.CLIPBOARD_WRITE_IMAGE,
+    (_, payload: ClipboardImagePayload): IpcResult<void> => {
+      try {
+        const image = nativeImage.createFromBuffer(Buffer.from(payload.pngBase64, 'base64'))
+        if (image.isEmpty()) {
+          throw new Error('Invalid image data')
+        }
+
+        const data: Parameters<typeof clipboard.write>[0] = { image }
+        if (payload.html) data.html = payload.html
+        if (payload.text) data.text = payload.text
+        clipboard.write(data)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 }

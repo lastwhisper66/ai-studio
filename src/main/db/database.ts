@@ -17,6 +17,10 @@ export function initDatabase(): void {
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
   }
+  const avatarsDir = join(dataDir, 'avatars')
+  if (!existsSync(avatarsDir)) {
+    mkdirSync(avatarsDir, { recursive: true })
+  }
   const dbPath = join(dataDir, 'ai-studio.db')
   db = new Database(dbPath)
 
@@ -88,6 +92,7 @@ function createTables(): void {
       api_key TEXT NOT NULL DEFAULT '',
       base_url TEXT NOT NULL DEFAULT '',
       enabled INTEGER NOT NULL DEFAULT 1,
+      is_default INTEGER NOT NULL DEFAULT 0,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -119,6 +124,7 @@ function createTables(): void {
     CREATE TABLE IF NOT EXISTS assistants (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      icon TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL DEFAULT '',
       system_prompt TEXT NOT NULL DEFAULT '',
       provider_id TEXT,

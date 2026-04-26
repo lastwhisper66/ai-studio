@@ -92,17 +92,29 @@ function computeToolbarBounds(anchor: SelectionAnchor, width: number): Electron.
   const area = display.workArea
 
   let x = Math.round(anchor.x)
-  let y = Math.round(anchor.y + anchor.height + TOOLBAR_OFFSET_Y)
+  let y: number
+
+  if (anchor.preferTop) {
+    // Prefer placing above the selection (user dragged upward)
+    y = Math.round(anchor.y - TOOLBAR_HEIGHT - TOOLBAR_OFFSET_Y)
+    // If it would go above the work area, fall back to below
+    if (y < area.y) {
+      y = Math.round(anchor.y + anchor.height + TOOLBAR_OFFSET_Y)
+    }
+  } else {
+    // Default: place below the selection
+    y = Math.round(anchor.y + anchor.height + TOOLBAR_OFFSET_Y)
+    // If the toolbar would extend below the work area, flip above the selection
+    if (y + TOOLBAR_HEIGHT > area.y + area.height) {
+      y = Math.round(anchor.y - TOOLBAR_HEIGHT - TOOLBAR_OFFSET_Y)
+    }
+  }
 
   // Clamp horizontally
   const maxX = area.x + area.width - width
   if (x > maxX) x = maxX
   if (x < area.x) x = area.x
 
-  // If the toolbar would extend below the work area, flip above the selection
-  if (y + TOOLBAR_HEIGHT > area.y + area.height) {
-    y = Math.round(anchor.y - TOOLBAR_HEIGHT - TOOLBAR_OFFSET_Y)
-  }
   if (y < area.y) y = area.y
 
   return { x, y, width, height: TOOLBAR_HEIGHT }
@@ -194,8 +206,7 @@ export function initSelectionToolbarIpc(): void {
   ipcMain.on(IpcChannels.SELECTION_TOOLBAR_ACTION, (_event, actionId: string) => {
     if (!pendingPayload) return
     const payload = pendingPayload
-    // Clear first so a rapid second IPC (double-click, stuck event) can't
-    // fire the same action twice for a single selection.
+    // Clear first so a rapid second IPC can't fire the same action twice.
     pendingPayload = null
     hideSelectionToolbar()
     onActionClick?.(actionId, payload)

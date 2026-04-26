@@ -10,11 +10,11 @@ export function useKeyboardShortcuts(): void {
   const isStreaming = useConversationStore((s) => s.isStreaming)
   const requestInputFocus = useConversationStore((s) => s.requestInputFocus)
   const setActiveView = useSettingsStore((s) => s.setActiveView)
-  const getAccelerator = useKeybindingStore((s) => s.getAccelerator)
+  const getEffectiveAccelerator = useKeybindingStore((s) => s.getEffectiveAccelerator)
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
-      const toggleSettingsAccel = getAccelerator('toggle-settings')
+      const toggleSettingsAccel = getEffectiveAccelerator('toggle-settings')
       if (matchesShortcut(e, toggleSettingsAccel)) {
         e.preventDefault()
         const current = useSettingsStore.getState().activeView
@@ -24,14 +24,14 @@ export function useKeyboardShortcuts(): void {
         return
       }
 
-      const newConvAccel = getAccelerator('new-conversation')
+      const newConvAccel = getEffectiveAccelerator('new-conversation')
       if (matchesShortcut(e, newConvAccel)) {
         e.preventDefault()
         createConversation()
         return
       }
 
-      const stopAccel = getAccelerator('stop-generation')
+      const stopAccel = getEffectiveAccelerator('stop-generation')
       if (matchesShortcut(e, stopAccel) && isStreaming) {
         e.preventDefault()
         stopGeneration()
@@ -45,7 +45,7 @@ export function useKeyboardShortcuts(): void {
     createConversation,
     stopGeneration,
     isStreaming,
-    getAccelerator,
+    getEffectiveAccelerator,
     setActiveView,
     requestInputFocus,
   ])

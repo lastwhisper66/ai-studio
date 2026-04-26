@@ -21,6 +21,7 @@ export const IpcChannels = {
   PHRASE_DELETE: 'phrase:delete',
   // File
   FILE_OPEN_DIALOG: 'file:open-dialog',
+  FILE_SAVE: 'file:save',
   ATTACHMENT_READ: 'attachment:read',
   // Settings
   SETTINGS_GET: 'settings:get',
@@ -28,6 +29,7 @@ export const IpcChannels = {
   SETTINGS_GET_ALL: 'settings:get-all',
   SETTINGS_SET_BATCH: 'settings:set-batch',
   SETTINGS_LANGUAGE_CHANGED: 'settings:language-changed',
+  SETTINGS_CHANGED: 'settings:changed',
   // Provider
   PROVIDER_LIST: 'provider:list',
   PROVIDER_GET: 'provider:get',
@@ -85,6 +87,9 @@ export const IpcChannels = {
   WINDOW_CLOSE: 'window:close',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
   WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
+  WINDOW_TOGGLE_ALWAYS_ON_TOP: 'window:toggle-always-on-top',
+  WINDOW_IS_ALWAYS_ON_TOP: 'window:is-always-on-top',
+  WINDOW_ALWAYS_ON_TOP_CHANGE: 'window:always-on-top-change',
   // Zoom
   WINDOW_SET_ZOOM: 'window:set-zoom',
   WINDOW_GET_ZOOM: 'window:get-zoom',
@@ -93,6 +98,10 @@ export const IpcChannels = {
   APP_GET_FONTS: 'app:get-fonts',
   // App
   APP_CLEAR_DATA: 'app:clear-data',
+  CLIPBOARD_WRITE_IMAGE: 'clipboard:write-image',
+  // User
+  USER_SAVE_AVATAR: 'user:save-avatar',
+  USER_READ_AVATAR: 'user:read-avatar',
   // Quick Actions (CRUD)
   QUICK_ACTION_LIST: 'quick-action:list',
   QUICK_ACTION_CREATE: 'quick-action:create',

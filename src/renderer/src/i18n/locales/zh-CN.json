@@ -16,7 +16,11 @@
     "comingSoon": "即将推出",
     "noModelSet": "未选择模型",
     "noModelConfigured": "未配置模型",
-    "copied": "已复制"
+    "copied": "已复制",
+    "targetLang": {
+      "off": "关闭",
+      "hint": "覆盖输出语言;选「关闭」则使用提示词原设置"
+    }
   },
   "titleBar": {
     "expandSidebar": "展开侧边栏",
@@ -24,7 +28,18 @@
     "minimize": "最小化",
     "maximize": "最大化",
     "restore": "还原",
-    "close": "关闭"
+    "close": "关闭",
+    "pinOnTop": "窗口置顶",
+    "unpinFromTop": "取消置顶",
+    "userProfile": "用户资料"
+  },
+  "userProfile": {
+    "title": "用户资料",
+    "displayName": "显示名称",
+    "displayNamePlaceholder": "输入你的名称",
+    "avatar": "头像",
+    "changeAvatar": "更换头像",
+    "removeAvatar": "移除头像"
   },
   "nav": {
     "chat": "聊天",
@@ -74,7 +89,32 @@
     "noPhrasesYet": "暂无快捷短语，前往设置添加",
     "managePhrases": "管理快捷短语",
     "placeholderHint": "{{count}} 个占位符 — Tab / Shift+Tab 跳转",
-    "systemPromptPlaceholder": "点击设置助手提示词"
+    "systemPromptPlaceholder": "点击设置助手提示词",
+    "mermaid": {
+      "rendering": "渲染中...",
+      "error": "Mermaid 渲染失败",
+      "copyCode": "复制代码",
+      "copyImage": "复制图像",
+      "compare": "对照视图",
+      "fullscreen": "全屏查看",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "zoomReset": "重置缩放",
+      "exportSvg": "导出 SVG",
+      "exportPng": "导出 PNG"
+    },
+    "math": {
+      "error": "公式渲染失败",
+      "copyCode": "复制 LaTeX",
+      "copyImage": "复制图像",
+      "fullscreen": "放大查看",
+      "zoomIn": "放大",
+      "zoomOut": "缩小",
+      "zoomReset": "重置缩放"
+    },
+    "code": {
+      "expand": "展开全部代码"
+    }
   },
   "welcome": {
     "title": "欢迎使用 AI Studio",
@@ -157,7 +197,7 @@
       "modelLibrary": "模型库",
       "modelGroup": "模型分组",
       "general": "通用设置",
-      "security": "安全设置",
+      "network": "网络设置",
       "display": "显示设置",
       "data": "数据设置",
       "keyboardShortcuts": "快捷键",
@@ -214,7 +254,9 @@
       "confirmDeleteDescription": "确定要删除服务商「{{name}}」吗？该服务商下的所有模型配置也将被删除，此操作不可撤销。",
       "removeAll": "移除所有",
       "removeAllTitle": "移除所有模型",
-      "removeAllDescription": "确定要移除「{{name}}」下的全部 {{count}} 个模型吗？此操作不可撤销。"
+      "removeAllDescription": "确定要移除「{{name}}」下的全部 {{count}} 个模型吗？此操作不可撤销。",
+      "defaultProviderRenameHint": "内置服务商不可重命名",
+      "defaultProviderDeleteHint": "内置服务商不可删除"
     },
     "general": {
       "title": "通用设置",
@@ -230,6 +272,9 @@
       "closeToTrayDescription": "开启后，点击关闭按钮将隐藏窗口到系统托盘而非退出应用程序。",
       "spellCheck": "拼写检查",
       "spellCheckDescription": "为文本输入框启用内置拼写检查器。",
+      "notification": "通知",
+      "notifyAssistantMessage": "助手消息通知",
+      "notifyAssistantMessageDescription": "当应用不在前台时，助手回复完成后显示 Windows 系统通知。",
       "languageLabel": "显示语言",
       "languageHint": "语言更改立即生效。"
     },
@@ -243,10 +288,10 @@
       "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
       "clearDataConfirmButton": "确认清除"
     },
-    "security": {
-      "title": "安全设置",
-      "description": "网络安全与证书相关配置。",
-      "network": "网络",
+    "network": {
+      "title": "网络设置",
+      "description": "网络相关配置。",
+      "certificate": "证书",
       "skipSsl": "跳过 SSL 证书验证",
       "skipSslDescription": "在企业 VPN 或代理环境下，如果遇到自签名证书导致连接失败，可以开启此选项。"
     },
@@ -274,6 +319,10 @@
       "fontFamilyHint": "设置应用程序的默认显示字体。",
       "codeFontFamily": "代码字体",
       "codeFontFamilyHint": "设置代码块的显示字体。",
+      "mathEngine": "数学公式引擎",
+      "mathEngineHint": "选择用于渲染数学公式的引擎。KaTeX 更快更轻量，MathJax 功能更全面。",
+      "mathEngineKatex": "KaTeX",
+      "mathEngineMathjax": "MathJax",
       "fontDefault": "系统默认",
       "fontNotFound": "未找到字体。"
     },
@@ -300,7 +349,6 @@
       "enableHint": "开启后，可通过快捷键在任何位置唤起快捷助手。",
       "shortcutLabel": "开关快捷键",
       "shortcutHint": "用于快速唤起快捷助手。",
-      "targetLangLabel": "目标语言",
       "model": "模型配置",
       "modelLabel": "AI 模型",
       "modelHint": "选择快捷助手使用的 AI 模型。",
@@ -373,6 +421,14 @@
       "excludedPrograms": "排除应用",
       "excludedProgramsHint": "输入可执行文件名(如 Chrome.exe),在这些应用中选中文本不会触发划词助手。",
       "excludedProgramsPlaceholder": "例如 Chrome.exe",
+      "clipboardFallbackLabel": "剪贴板回退",
+      "clipboardFallbackHint": "部分应用无法直接获取选中文本，开启后将通过模拟复制操作获取。",
+      "triggerModeLabel": "触发方式",
+      "triggerModeHint": "选择划词助手的触发方式",
+      "triggerModeSelected": "选中即触发",
+      "triggerModeSelectedDesc": "选中文本后自动弹出工具栏",
+      "triggerModeCtrlkey": "长按 Ctrl 触发",
+      "triggerModeCtrlkeyDesc": "选中文本后长按 Ctrl 键弹出工具栏",
       "textLength": "文本长度",
       "textLengthHint": "过滤过短或过长的选中文本。",
       "minLength": "最小长度",
@@ -391,6 +447,20 @@
       },
       "toolbar": {
         "waitingSelection": "等待选区…"
+      },
+      "search": {
+        "title": "网页搜索",
+        "hint": "配置搜索动作使用的搜索引擎，点击后将在默认浏览器中打开。",
+        "engineLabel": "搜索引擎",
+        "customUrlLabel": "自定义搜索 URL",
+        "customUrlPlaceholder": "https://example.com/search?q={query}",
+        "customUrlHint": "使用 {query} 作为搜索关键词占位符。",
+        "buttonTitle": "搜索",
+        "google": "Google",
+        "bing": "Bing",
+        "baidu": "百度",
+        "duckduckgo": "DuckDuckGo",
+        "custom": "自定义"
       }
     }
   },
@@ -418,7 +488,9 @@
       "temperatureHint": "较低值产生更准确的翻译，较高值更具创造性。默认 0.3。",
       "resetDefault": "重置默认",
       "wordWrap": "自动换行",
-      "wordWrapHint": "当翻译结果内容过长时自动换行显示。关闭后可通过水平滚动条查看。"
+      "wordWrapHint": "当翻译结果内容过长时自动换行显示。关闭后可通过水平滚动条查看。",
+      "markdownPreview": "Markdown 预览",
+      "markdownPreviewHint": "在翻译结果中渲染 Markdown 格式。复制仍使用原始译文。"
     },
     "history": {
       "title": "翻译历史",
@@ -519,6 +591,9 @@
     "description": "自定义常用操作的键盘快捷键。",
     "pressShortcut": "请按下快捷键...",
     "resetAll": "全部重置",
+    "reset": "重置",
+    "clear": "清除",
+    "noShortcut": "未设置快捷键",
     "conflictTitle": "快捷键冲突",
     "conflictDescription": "「{{shortcut}}」已被「{{action}}」占用，是否重新分配？",
     "conflictReadOnly": "「{{shortcut}}」已被系统快捷键「{{action}}」占用，无法使用。",
@@ -577,6 +652,10 @@
       "polish": {
         "name": "润色",
         "description": "改写为更流畅、专业的表达"
+      },
+      "search": {
+        "name": "搜索",
+        "description": "使用搜索引擎搜索选中文本"
       }
     },
     "quickActions": {
@@ -653,5 +732,9 @@
     "db": {
       "notInitialized": "数据库尚未初始化，请先调用 initDatabase()。"
     }
+  },
+  "notification": {
+    "chatComplete": "助手回复已完成",
+    "translateComplete": "翻译已完成"
   }
 }

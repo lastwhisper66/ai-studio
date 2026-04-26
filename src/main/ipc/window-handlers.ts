@@ -25,6 +25,18 @@ export function registerWindowHandlers(): void {
     return BrowserWindow.fromWebContents(event.sender)?.isMaximized() ?? false
   })
 
+  ipcMain.handle(IpcChannels.WINDOW_TOGGLE_ALWAYS_ON_TOP, (event): boolean => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return false
+    const next = !win.isAlwaysOnTop()
+    win.setAlwaysOnTop(next)
+    return next
+  })
+
+  ipcMain.handle(IpcChannels.WINDOW_IS_ALWAYS_ON_TOP, (event): boolean => {
+    return BrowserWindow.fromWebContents(event.sender)?.isAlwaysOnTop() ?? false
+  })
+
   ipcMain.handle(IpcChannels.WINDOW_SET_ZOOM, (event, factor: number) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) return

@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/comp
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
+import { EmojiPicker } from '@renderer/components/ui/emoji-picker'
 import { ModelPickerDialog } from './ModelPickerDialog'
 import type { Assistant } from '@shared/types'
 import { cn } from '@renderer/lib/utils'
@@ -32,6 +33,7 @@ type TabId = 'assistant' | 'model' | 'prompt'
 
 interface FormState {
   name: string
+  icon: string
   description: string
   providerId: string
   model: string
@@ -50,6 +52,7 @@ interface FormState {
 function defaultFormState(): FormState {
   return {
     name: '',
+    icon: '',
     description: '',
     providerId: '',
     model: '',
@@ -71,6 +74,7 @@ function stateFromAssistant(a: Assistant): FormState {
     maybeTranslateSeed(v, (key, params) => i18n.t(key, params ?? {}) as string)
   return {
     name: translateSeed(a.name),
+    icon: a.icon ?? '',
     description: translateSeed(a.description),
     providerId: a.providerId ?? '',
     model: a.model,
@@ -252,6 +256,7 @@ export function AssistantSettingsDialog({
     if (isCreateMode) {
       onCreate?.({
         name: form.name.trim() || t('assistant.newAssistant'),
+        icon: form.icon,
         description: form.description,
         providerId: form.providerId || null,
         model: form.model,
@@ -265,6 +270,7 @@ export function AssistantSettingsDialog({
     } else {
       commit({
         name: sanitizeSeed('name', form.name),
+        icon: form.icon,
         description: sanitizeSeed('description', form.description),
         providerId: form.providerId || null,
         model: form.model,
@@ -350,15 +356,25 @@ export function AssistantSettingsDialog({
             <div className="space-y-4 p-5">
               {activeTab === 'assistant' && (
                 <>
-                  {/* Name */}
+                  {/* Name + Icon */}
                   <div className="space-y-1.5">
                     <Label className="text-sm">{t('assistant.settings.name')}</Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) => change('name', e.target.value)}
-                      onBlur={() => handleBlur('name')}
-                      placeholder={t('assistant.settings.namePlaceholder')}
-                    />
+                    <div className="flex items-center gap-2">
+                      <EmojiPicker
+                        value={form.icon}
+                        onChange={(emoji) => {
+                          change('icon', emoji)
+                          commit({ icon: emoji })
+                        }}
+                      />
+                      <Input
+                        value={form.name}
+                        onChange={(e) => change('name', e.target.value)}
+                        onBlur={() => handleBlur('name')}
+                        placeholder={t('assistant.settings.namePlaceholder')}
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
 
                   {/* Description */}

@@ -44,6 +44,7 @@ export function AssistantPickerDialog({
               key={a.id}
               onClick={() => handleSelect(a.id)}
               className="flex items-center gap-2.5 rounded-xl border bg-card/50 px-3 py-3 text-left transition-colors hover:bg-accent">
+              {a.icon && <span className="shrink-0 text-xl leading-none">{a.icon}</span>}
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{st(a.name)}</div>
                 {a.description && (

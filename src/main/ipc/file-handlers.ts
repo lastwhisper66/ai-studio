@@ -1,8 +1,8 @@
-import { ipcMain, dialog } from 'electron'
-import { readFileSync } from 'fs'
+import { BrowserWindow, ipcMain, dialog, type SaveDialogOptions } from 'electron'
+import { readFileSync, writeFileSync } from 'fs'
 import { basename } from 'path'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { IpcResult, FileData } from '@shared/types'
+import type { IpcResult, FileData, SaveFilePayload } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
 import { t } from '../i18n'
@@ -77,4 +77,29 @@ export function registerFileHandlers(): void {
       return { success: false, error: toLocalizedError(e) }
     }
   })
+
+  ipcMain.handle(
+    IpcChannels.FILE_SAVE,
+    async (event, payload: SaveFilePayload): Promise<IpcResult<boolean>> => {
+      try {
+        const options: SaveDialogOptions = {
+          defaultPath: payload.defaultPath,
+          filters: payload.filters,
+        }
+        const win = BrowserWindow.fromWebContents(event.sender)
+        const result = win
+          ? await dialog.showSaveDialog(win, options)
+          : await dialog.showSaveDialog(options)
+
+        if (result.canceled || !result.filePath) {
+          return { success: true, data: false }
+        }
+
+        writeFileSync(result.filePath, Buffer.from(payload.base64, 'base64'))
+        return { success: true, data: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 }

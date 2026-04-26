@@ -22,6 +22,7 @@ interface MessageListProps {
   onSend: (content: string) => void
   onLoadMore: () => void
   activeAssistant?: Assistant
+  userAvatarUrl?: string | null
   onEditSystemPrompt?: () => void
 }
 
@@ -37,6 +38,7 @@ export function MessageList({
   onSend,
   onLoadMore,
   activeAssistant,
+  userAvatarUrl,
   onEditSystemPrompt,
 }: MessageListProps): React.JSX.Element {
   const { t } = useTranslation()
@@ -84,7 +86,7 @@ export function MessageList({
     !isStreaming
 
   return (
-    <ScrollArea className="chat-scroll-area flex-1" viewportRef={scrollRef}>
+    <ScrollArea className="chat-scroll-area min-h-0 flex-1" viewportRef={scrollRef}>
       <div className="min-w-0 space-y-6 p-6">
         {/* System prompt banner — only when no messages yet */}
         {activeAssistant && onEditSystemPrompt && messages.length === 0 && !isStreaming && (
@@ -150,6 +152,8 @@ export function MessageList({
                     duration={msg.duration}
                     thinkingDuration={msg.thinkingDuration}
                     isEditing={editingMessageId === msg.id}
+                    assistantIcon={msg.role === 'assistant' ? activeAssistant?.icon : undefined}
+                    userAvatarUrl={msg.role === 'user' ? userAvatarUrl : undefined}
                     onDelete={deleteMessage}
                     onResend={handleResend}
                     onEdit={(id) => setEditingMessageId(id)}
@@ -166,6 +170,7 @@ export function MessageList({
                       isStreaming
                       isStreamingReasoning={!!throttledReasoning && !throttledContent}
                       streamStartTime={streamStartTime}
+                      assistantIcon={activeAssistant?.icon}
                     />
                   )}
                 </React.Fragment>
@@ -180,6 +185,7 @@ export function MessageList({
                 isStreaming
                 isStreamingReasoning={!!streamingReasoningContent && !streamingContent}
                 streamStartTime={streamStartTime}
+                assistantIcon={activeAssistant?.icon}
               />
             )}
           </>

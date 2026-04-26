@@ -23,6 +23,8 @@ import type {
   Assistant,
   Phrase,
   FileData,
+  SaveFilePayload,
+  ClipboardImagePayload,
   TranslateRequestPayload,
   TranslateChunkData,
   TranslateEndData,
@@ -120,6 +122,9 @@ const api = {
   openFileDialog: (): Promise<IpcResult<FileData[]>> =>
     ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG),
 
+  saveFile: (payload: SaveFilePayload): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.FILE_SAVE, payload),
+
   readAttachment: (relativePath: string): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.ATTACHMENT_READ, relativePath),
 
@@ -140,6 +145,13 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, lang: string): void => callback(lang)
     ipcRenderer.on(IpcChannels.SETTINGS_LANGUAGE_CHANGED, handler)
     return () => ipcRenderer.removeListener(IpcChannels.SETTINGS_LANGUAGE_CHANGED, handler)
+  },
+
+  onSettingsChanged: (callback: (entries: Record<string, string>) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, entries: Record<string, string>): void =>
+      callback(entries)
+    ipcRenderer.on(IpcChannels.SETTINGS_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.SETTINGS_CHANGED, handler)
   },
 
   // Providers
@@ -363,6 +375,9 @@ const api = {
   // App
   clearAppData: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_DATA),
 
+  copyPngToClipboard: (payload: ClipboardImagePayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.CLIPBOARD_WRITE_IMAGE, payload),
+
   getSystemFonts: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke(IpcChannels.APP_GET_FONTS),
 
   // Zoom
@@ -391,6 +406,19 @@ const api = {
       callback(isMaximized)
     ipcRenderer.on(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
     return () => ipcRenderer.removeListener(IpcChannels.WINDOW_MAXIMIZED_CHANGE, handler)
+  },
+
+  windowToggleAlwaysOnTop: (): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.WINDOW_TOGGLE_ALWAYS_ON_TOP),
+
+  windowIsAlwaysOnTop: (): Promise<boolean> =>
+    ipcRenderer.invoke(IpcChannels.WINDOW_IS_ALWAYS_ON_TOP),
+
+  onWindowAlwaysOnTopChange: (callback: (isAlwaysOnTop: boolean) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, isAlwaysOnTop: boolean): void =>
+      callback(isAlwaysOnTop)
+    ipcRenderer.on(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, handler)
   },
 
   // Quick Actions (CRUD)
@@ -601,6 +629,13 @@ const api = {
     ipcRenderer.on(IpcChannels.SELECTION_STATE_CHANGED, handler)
     return () => ipcRenderer.removeListener(IpcChannels.SELECTION_STATE_CHANGED, handler)
   },
+
+  // User profile
+  saveUserAvatar: (): Promise<IpcResult<string | null>> =>
+    ipcRenderer.invoke(IpcChannels.USER_SAVE_AVATAR),
+
+  readUserAvatar: (relativePath: string): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.USER_READ_AVATAR, relativePath),
 }
 
 export type ApiType = typeof api

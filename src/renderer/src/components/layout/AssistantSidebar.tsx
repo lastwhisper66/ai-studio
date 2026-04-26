@@ -50,6 +50,7 @@ interface GroupedAssistants {
   assistants: Array<{
     id: string
     name: string
+    icon?: string
     description: string
     isDefault: boolean
     sortOrder: number
@@ -202,6 +203,9 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
 
       const draggedAssistant = nonDefaultAssistants[oldIndex]
       const targetAssistant = nonDefaultAssistants[newIndex]
+
+      // Block drags across the pinned/unpinned boundary
+      if (isPinned(draggedAssistant) !== isPinned(targetAssistant)) return
 
       // Build new order: default assistant first, then reordered non-defaults
       const reordered = [...nonDefaultAssistants]
@@ -394,7 +398,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
 // --- Sub-components ---
 
 interface AssistantItemProps {
-  assistant: { id: string; name: string; isDefault: boolean; sortOrder: number }
+  assistant: { id: string; name: string; icon?: string; isDefault: boolean; sortOrder: number }
   isPinnedItem: boolean
   onClick: () => void
   onEdit: () => void
@@ -423,11 +427,12 @@ function AssistantItem({
       <ContextMenuTrigger asChild>
         <div className="flex flex-1 cursor-pointer items-center" onClick={onClick}>
           <div className="flex min-w-0 flex-1 items-center px-2 py-2">
-            {isPinnedItem && <Pin className="mr-1.5 h-3 w-3 shrink-0 text-muted-foreground" />}
+            {a.icon && <span className="mr-1.5 shrink-0 text-base leading-none">{a.icon}</span>}
             <span className={cn('min-w-0 truncate text-sm', a.isDefault && 'font-medium')}>
               {st(a.name)}
             </span>
           </div>
+          {isPinnedItem && <Pin className="mr-2 h-3 w-3 shrink-0 text-muted-foreground" />}
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>

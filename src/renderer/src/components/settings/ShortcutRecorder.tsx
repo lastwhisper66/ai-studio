@@ -16,7 +16,7 @@ function ShortcutDisplay({ accelerator }: { accelerator: string }): React.JSX.El
       {parts.map((part, i) => (
         <kbd
           key={i}
-          className="bg-background border-border inline-flex min-w-[24px] items-center justify-center rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm">
+          className="bg-background border-border inline-flex min-w-6 items-center justify-center rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm">
           {formatKeyLabel(part)}
         </kbd>
       ))}
@@ -94,7 +94,7 @@ export function ShortcutRecorder({
       tabIndex={disabled ? -1 : 0}
       role="button"
       className={cn(
-        'inline-flex min-w-[120px] cursor-pointer select-none items-center justify-center gap-1 rounded-md border px-3 py-1.5 text-sm',
+        'inline-flex h-9 min-w-30 cursor-pointer select-none items-center justify-center gap-1 rounded-md border px-3 py-1.5 text-sm',
         isRecording
           ? 'border-primary bg-primary/10 ring-primary/30 ring-2'
           : 'border-border bg-muted hover:bg-accent',

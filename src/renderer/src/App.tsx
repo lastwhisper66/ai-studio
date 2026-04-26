@@ -13,6 +13,11 @@ import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
 
+function isFromZoomablePreview(event: WheelEvent): boolean {
+  const target = event.target
+  return target instanceof Element && target.closest('[data-zoomable-preview]') !== null
+}
+
 function App(): React.JSX.Element {
   const loadConversations = useConversationStore((s) => s.loadConversations)
   const loadSettings = useSettingsStore((s) => s.loadSettings)
@@ -92,6 +97,7 @@ function App(): React.JSX.Element {
   useEffect(() => {
     const handler = (e: WheelEvent): void => {
       if (!e.ctrlKey) return
+      if (e.defaultPrevented || isFromZoomablePreview(e)) return
       e.preventDefault()
       const delta = e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP
       const next = clampZoom(zoomRef.current + delta)

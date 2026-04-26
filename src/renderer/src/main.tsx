@@ -29,19 +29,19 @@ if (
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      {mode === 'quick-assistant' ? (
-        <QuickAssistantApp />
-      ) : mode === 'screenshot' ? (
-        <ScreenshotApp />
-      ) : mode === 'selection-toolbar' ? (
-        <SelectionToolbarApp />
-      ) : mode === 'selection-bubble' ? (
-        <SelectionBubbleApp />
-      ) : (
-        <TooltipProvider>
+      <TooltipProvider>
+        {mode === 'quick-assistant' ? (
+          <QuickAssistantApp />
+        ) : mode === 'screenshot' ? (
+          <ScreenshotApp />
+        ) : mode === 'selection-toolbar' ? (
+          <SelectionToolbarApp />
+        ) : mode === 'selection-bubble' ? (
+          <SelectionBubbleApp />
+        ) : (
           <App />
-        </TooltipProvider>
-      )}
+        )}
+      </TooltipProvider>
     </ThemeProvider>
   </StrictMode>,
 )

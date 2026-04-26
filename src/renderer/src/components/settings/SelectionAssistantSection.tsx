@@ -8,18 +8,27 @@ import {
   Sparkles,
   MousePointerClick,
   Pin,
+  ClipboardCopy,
   ShieldAlert,
   X,
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@renderer/i18n'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
+import { cn } from '@renderer/lib/utils'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Textarea } from '@renderer/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 import {
   Dialog,
   DialogContent,
@@ -28,13 +37,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@renderer/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@renderer/components/ui/select'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useSelectionActionStore } from '@renderer/stores/selectionActionStore'
@@ -47,13 +49,25 @@ import {
   selectionActionIconMap,
   defaultSelectionActionIcon,
 } from '@renderer/components/selection-toolbar/icons'
-import { LANGUAGES, generateTranslatePrompt } from '@renderer/lib/languages'
 import type { SelectionAction } from '@shared/types'
-import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
+import type { SelectionTriggerMode } from '@shared/types'
+import {
+  BUILTIN_SEARCH_ACTION_ID,
+  DEFAULT_SELECTION_MAX_TEXT_LENGTH,
+  DEFAULT_SELECTION_MIN_TEXT_LENGTH,
+} from '@shared/types'
+import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 
 const SELECTION_ACTION = 'toggle-selection-assistant'
-const BUILTIN_SEL_TRANSLATE_ID = 'builtin-sel-translate'
 const PROGRAM_NAME_MAX_LENGTH = 120
+
+const SEARCH_ENGINE_OPTIONS = [
+  { value: 'google' },
+  { value: 'bing' },
+  { value: 'baidu' },
+  { value: 'duckduckgo' },
+  { value: 'custom' },
+]
 
 function parseProgramList(raw: string | undefined): string[] {
   if (!raw) return []
@@ -77,14 +91,17 @@ export function SelectionAssistantSection(): React.JSX.Element {
   // Keybinding
   const overrides = useKeybindingStore((s) => s.overrides)
   const getAccelerator = useKeybindingStore((s) => s.getAccelerator)
-  const getAllEffective = useKeybindingStore((s) => s.getAllEffective)
+  const getEffectiveAccelerator = useKeybindingStore((s) => s.getEffectiveAccelerator)
   const setOverride = useKeybindingStore((s) => s.setOverride)
   const resetAction = useKeybindingStore((s) => s.resetAction)
   const [shortcutRegistered, setShortcutRegistered] = useState(true)
 
   // Core toggles
-  const [enabled, setEnabled] = useState(true)
-  const [defaultPinned, setDefaultPinned] = useState(false)
+  const enabled = settings['selection.enabled'] === 'true'
+  const defaultPinned = settings['selection.defaultPinned'] === 'true'
+  const clipboardFallback = settings['selection.clipboardFallback'] !== 'false'
+  const triggerMode: SelectionTriggerMode =
+    settings['selection.triggerMode'] === 'selected' ? 'selected' : 'ctrlkey'
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
 
   // Action editor dialog
@@ -94,8 +111,10 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const [formName, setFormName] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formSystemPrompt, setFormSystemPrompt] = useState('')
-  const [formTargetLang, setFormTargetLang] = useState('')
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+
+  // Search action editor dialog
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false)
 
   // Excluded programs — live-edited list backed by settings
   const [programInput, setProgramInput] = useState('')
@@ -113,16 +132,16 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }, [loadActions])
 
   useEffect(() => {
-    setEnabled(settings['selection.enabled'] !== 'false')
-    setDefaultPinned(settings['selection.defaultPinned'] === 'true')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinLen(settings['selection.minTextLength'] ?? String(DEFAULT_SELECTION_MIN_TEXT_LENGTH))
     setMaxLen(settings['selection.maxTextLength'] ?? String(DEFAULT_SELECTION_MAX_TEXT_LENGTH))
   }, [settings])
 
-  // Keep the Switch in sync when the state flips externally (global shortcut / tray)
+  // Keep the enable state in sync when flipped externally (global shortcut / tray).
+  // The store's saveSettings drives both the derived `enabled` value and any
+  // listeners in other windows.
   useEffect(() => {
     const unsubscribe = window.api.onSelectionStateChanged((next) => {
-      setEnabled(next)
       saveSettings({ 'selection.enabled': String(next) })
     })
     return unsubscribe
@@ -140,20 +159,30 @@ export function SelectionAssistantSection(): React.JSX.Element {
     if (checked === enabled) return
     const result = await window.api.toggleSelectionAssistant()
     const next = result.success && typeof result.data === 'boolean' ? result.data : checked
-    setEnabled(next)
     await saveSettings({ 'selection.enabled': String(next) })
   }
 
   const handleDefaultPinnedToggle = (checked: boolean): void => {
-    setDefaultPinned(checked)
     saveSettings({ 'selection.defaultPinned': String(checked) })
   }
 
+  const handleClipboardFallbackToggle = async (checked: boolean): Promise<void> => {
+    await saveSettings({ 'selection.clipboardFallback': String(checked) })
+    await window.api.refreshSelectionFilter().catch((err) => {
+      console.warn('[SelectionAssistant] refreshSelectionFilter failed:', err)
+    })
+  }
+
+  const handleTriggerModeChange = async (mode: SelectionTriggerMode): Promise<void> => {
+    await saveSettings({ 'selection.triggerMode': mode })
+    await window.api.refreshSelectionFilter().catch(() => null)
+  }
+
   const handleShortcutChange = async (accel: string): Promise<void> => {
-    const effective = getAllEffective()
-    for (const [id, a] of Object.entries(effective)) {
+    for (const id of Object.keys(DEFAULT_KEYBINDINGS) as KeybindingActionId[]) {
       if (id === SELECTION_ACTION) continue
-      if (a.toLowerCase() === accel.toLowerCase()) return
+      const a = getEffectiveAccelerator(id)
+      if (a && a.toLowerCase() === accel.toLowerCase()) return
     }
     await setOverride(SELECTION_ACTION, accel)
     const result = await window.api.updateSelectionShortcut()
@@ -179,23 +208,18 @@ export function SelectionAssistantSection(): React.JSX.Element {
     setFormName('')
     setFormDescription('')
     setFormSystemPrompt('')
-    setFormTargetLang('')
     setEditDialogOpen(true)
   }
 
   const openEdit = (action: SelectionAction): void => {
+    if (action.id === BUILTIN_SEARCH_ACTION_ID) {
+      setSearchDialogOpen(true)
+      return
+    }
     setEditingAction(action)
     setFormName(st(action.name))
     setFormDescription(st(action.description))
-    if (action.id === BUILTIN_SEL_TRANSLATE_ID) {
-      const lang = settings['selection.translateTargetLang'] || i18n.language || 'en'
-      setFormTargetLang(lang)
-      const englishLabel = LANGUAGES.find((l) => l.code === lang)?.englishLabel ?? lang
-      setFormSystemPrompt(generateTranslatePrompt(englishLabel))
-    } else {
-      setFormSystemPrompt(action.systemPrompt)
-      setFormTargetLang('')
-    }
+    setFormSystemPrompt(action.systemPrompt)
     setEditDialogOpen(true)
   }
 
@@ -232,6 +256,11 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }
 
   const pendingDeleteAction = actions.find((a) => a.id === pendingDeleteId)
+
+  const currentSearchEngine = settings['selection.searchEngine'] || 'google'
+  const searchEngineLabel =
+    t(`settings.selectionAssistant.search.${currentSearchEngine}`, '') ||
+    t('settings.selectionAssistant.search.google')
 
   // ── Program exclusion list ──────────────────────────────────────
   const addExcludedProgram = async (): Promise<void> => {
@@ -309,6 +338,57 @@ export function SelectionAssistantSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={defaultPinned} onCheckedChange={handleDefaultPinnedToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <ClipboardCopy className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">
+                {t('settings.selectionAssistant.clipboardFallbackLabel')}
+              </Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.selectionAssistant.clipboardFallbackHint')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={clipboardFallback} onCheckedChange={handleClipboardFallbackToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <MousePointerClick className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <Label className="text-sm font-medium">
+              {t('settings.selectionAssistant.triggerModeLabel')}
+            </Label>
+          </div>
+          <div className="border-border inline-flex overflow-hidden rounded-md border">
+            {(['ctrlkey', 'selected'] as const).map((mode, i) => (
+              <Tooltip key={mode}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => handleTriggerModeChange(mode)}
+                    className={cn(
+                      'cursor-pointer px-3 py-1.5 text-xs font-medium transition-colors',
+                      i > 0 && 'border-border border-l',
+                      triggerMode === mode
+                        ? 'bg-primary text-primary-foreground'
+                        : 'hover:bg-muted/50',
+                    )}>
+                    {t(
+                      `settings.selectionAssistant.triggerMode${mode.charAt(0).toUpperCase() + mode.slice(1)}`,
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {t(
+                    `settings.selectionAssistant.triggerMode${mode.charAt(0).toUpperCase() + mode.slice(1)}Desc`,
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
@@ -424,6 +504,9 @@ export function SelectionAssistantSection(): React.JSX.Element {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {action.id === BUILTIN_SEARCH_ACTION_ID && (
+                    <span className="text-muted-foreground mr-1 text-xs">{searchEngineLabel}</span>
+                  )}
                   <Switch
                     checked={action.enabled}
                     onCheckedChange={(checked) => updateAction(action.id, { enabled: checked })}
@@ -551,7 +634,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
             setFormName('')
             setFormDescription('')
             setFormSystemPrompt('')
-            setFormTargetLang('')
           }
         }}>
         <DialogContent>
@@ -579,32 +661,6 @@ export function SelectionAssistantSection(): React.JSX.Element {
                 placeholder={t('settings.quickAssistant.descriptionPlaceholder')}
               />
             </div>
-            {editingAction?.id === BUILTIN_SEL_TRANSLATE_ID && (
-              <div className="space-y-2">
-                <Label>{t('settings.quickAssistant.targetLangLabel', '目标语言')}</Label>
-                <Select
-                  value={formTargetLang}
-                  onValueChange={(value) => {
-                    setFormTargetLang(value)
-                    const englishLabel =
-                      LANGUAGES.find((l) => l.code === value)?.englishLabel ?? value
-                    setFormSystemPrompt(generateTranslatePrompt(englishLabel))
-                    // Persist immediately so the bubble picks up the change
-                    saveSettings({ 'selection.translateTargetLang': value })
-                  }}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGUAGES.map((lang) => (
-                      <SelectItem key={lang.code} value={lang.code}>
-                        {lang.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="space-y-2">
               <Label>{t('settings.quickAssistant.systemPromptLabel')}</Label>
               <Textarea
@@ -647,6 +703,53 @@ export function SelectionAssistantSection(): React.JSX.Element {
             <Button variant="destructive" onClick={handleDelete}>
               {t('common.delete')}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Search Action Settings */}
+      <Dialog open={searchDialogOpen} onOpenChange={setSearchDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings.selectionAssistant.search.title')}</DialogTitle>
+            <DialogDescription>{t('settings.selectionAssistant.search.hint')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>{t('settings.selectionAssistant.search.engineLabel')}</Label>
+              <Select
+                value={currentSearchEngine}
+                onValueChange={(v) => saveSettings({ 'selection.searchEngine': v })}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SEARCH_ENGINE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {t(`settings.selectionAssistant.search.${opt.value}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {currentSearchEngine === 'custom' && (
+              <div className="space-y-2">
+                <Label>{t('settings.selectionAssistant.search.customUrlLabel')}</Label>
+                <Input
+                  value={settings['selection.searchEngineCustomUrl'] || ''}
+                  onChange={(e) =>
+                    saveSettings({ 'selection.searchEngineCustomUrl': e.target.value })
+                  }
+                  placeholder={t('settings.selectionAssistant.search.customUrlPlaceholder')}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t('settings.selectionAssistant.search.customUrlHint')}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSearchDialogOpen(false)}>{t('common.close')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

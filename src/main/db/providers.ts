@@ -15,6 +15,7 @@ interface ProviderRow {
   api_key: string
   base_url: string
   enabled: number
+  is_default: number
   sort_order: number
   created_at: string
   updated_at: string
@@ -28,6 +29,7 @@ function rowToProvider(row: ProviderRow): Provider {
     apiKey: row.api_key ? decrypt(row.api_key) : '',
     baseUrl: row.base_url,
     enabled: row.enabled === 1,
+    isDefault: row.is_default === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -55,6 +57,7 @@ export interface CreateProviderData {
   apiKey?: string
   baseUrl?: string
   enabled?: boolean
+  isDefault?: boolean
   sortOrder?: number
 }
 
@@ -63,8 +66,8 @@ export function createProvider(data: CreateProviderData): Provider {
   const apiKey = data.apiKey ? encrypt(data.apiKey) : ''
   getDb()
     .prepare(
-      `INSERT INTO providers (id, type, name, api_key, base_url, enabled, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO providers (id, type, name, api_key, base_url, enabled, is_default, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -73,6 +76,7 @@ export function createProvider(data: CreateProviderData): Provider {
       apiKey,
       data.baseUrl ?? '',
       data.enabled !== false ? 1 : 0,
+      data.isDefault ? 1 : 0,
       data.sortOrder ?? 0,
     )
 
@@ -146,23 +150,24 @@ export function reorderProviders(ids: string[]): void {
 
 /** Default provider templates to seed on first launch */
 const DEFAULT_PROVIDER_SEEDS: CreateProviderData[] = [
-  // {
-  //   type: 'fujitsu',
-  //   name: 'Fujitsu Azure OpenAI',
-  //   baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
-  // },
-  { type: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com' },
+  {
+    type: 'fujitsu',
+    name: 'Fujitsu Azure OpenAI',
+    baseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
+    enabled: false,
+  },
   { type: 'openai', name: 'OpenAI', baseUrl: 'https://api.openai.com' },
+  { type: 'deepseek', name: 'DeepSeek', baseUrl: 'https://api.deepseek.com' },
   { type: 'openai-response', name: 'OpenAI Response', baseUrl: 'https://api.openai.com' },
+  { type: 'gemini', name: 'Gemini', baseUrl: 'https://generativelanguage.googleapis.com' },
+  { type: 'claude', name: 'Claude', baseUrl: 'https://api.anthropic.com' },
+  { type: 'silicon', name: 'Silicon Flow', baseUrl: 'https://api.siliconflow.cn' },
+  { type: 'newapi', name: 'New API', baseUrl: 'https://api.example.com' },
   {
     type: 'azure',
     name: 'Azure OpenAI',
     baseUrl: 'https://your-resource.openai.azure.com/openai/v1',
   },
-  { type: 'gemini', name: 'Gemini', baseUrl: 'https://generativelanguage.googleapis.com' },
-  { type: 'claude', name: 'Claude', baseUrl: 'https://api.anthropic.com' },
-  { type: 'silicon', name: 'Silicon Flow', baseUrl: 'https://api.siliconflow.cn' },
-  { type: 'newapi', name: 'New API', baseUrl: 'https://api.example.com' },
 ]
 
 /** Seed default providers on first launch (when providers table is empty) */
@@ -171,6 +176,6 @@ export function seedDefaultProviders(): void {
   if (count.cnt > 0) return
 
   for (const [index, seed] of DEFAULT_PROVIDER_SEEDS.entries()) {
-    createProvider({ ...seed, sortOrder: index })
+    createProvider({ ...seed, sortOrder: index, isDefault: true })
   }
 }

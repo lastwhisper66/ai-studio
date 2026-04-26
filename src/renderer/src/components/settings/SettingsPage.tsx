@@ -9,7 +9,7 @@ import { ModelLibrarySection } from './ModelLibrarySection'
 import { ModelGroupSection } from './ModelGroupSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
-import { SecuritySection } from './SecuritySection'
+import { NetworkSection } from './NetworkSection'
 import { DataSection } from './DataSection'
 import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
@@ -20,17 +20,13 @@ export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
   const loadProviders = useProviderStore((s) => s.loadProviders)
   const consumePendingSection = useSettingsStore((s) => s.consumePendingSection)
-  const [activeSection, setActiveSection] = useState<SettingsSection>('provider')
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    () => consumePendingSection() ?? 'provider',
+  )
 
   useEffect(() => {
     loadProviders()
   }, [loadProviders])
-
-  useEffect(() => {
-    const pending = consumePendingSection()
-    if (pending) setActiveSection(pending)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col">
@@ -53,7 +49,7 @@ export function SettingsPage(): React.JSX.Element {
           <ScrollArea className="flex-1">
             <div className="p-6">
               {activeSection === 'general' && <GeneralSection />}
-              {activeSection === 'security' && <SecuritySection />}
+              {activeSection === 'network' && <NetworkSection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'data' && <DataSection />}
               {activeSection === 'phrases' && <PhrasesSection />}

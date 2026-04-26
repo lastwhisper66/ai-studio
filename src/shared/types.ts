@@ -13,6 +13,7 @@ export interface Conversation {
 export interface Assistant {
   id: string
   name: string
+  icon: string
   description: string
   systemPrompt: string
   providerId: string | null
@@ -44,6 +45,18 @@ export interface FileData {
   mimeType: string
   base64: string
   size: number
+}
+
+export interface SaveFilePayload {
+  base64: string
+  defaultPath: string
+  filters?: { name: string; extensions: string[] }[]
+}
+
+export interface ClipboardImagePayload {
+  pngBase64: string
+  html?: string
+  text?: string
 }
 
 /** Check whether a MIME type represents an image */
@@ -89,6 +102,7 @@ export interface Provider {
   apiKey: string
   baseUrl: string
   enabled: boolean
+  isDefault: boolean
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -227,6 +241,7 @@ export interface TitleUpdatedData {
 
 /** translate:request payload */
 export interface TranslateRequestPayload {
+  requestId: number
   text: string
   sourceLang: string
   targetLang: string
@@ -241,16 +256,19 @@ export interface TranslateRequestPayload {
 
 /** translate:chunk push data */
 export interface TranslateChunkData {
+  requestId: number
   delta: string
 }
 
 /** translate:end push data */
 export interface TranslateEndData {
+  requestId: number
   fullText: string
 }
 
 /** translate:error push data */
 export interface TranslateErrorData {
+  requestId: number
   error: LocalizedError
 }
 
@@ -331,10 +349,14 @@ export interface TranslationHistoryItem {
 
 // ── Selection Assistant ─────────────────────────────────────────
 
+export type SelectionTriggerMode = 'selected' | 'ctrlkey'
+
 /** Default cap on selection text length, applied if the user hasn't customized it. */
 export const DEFAULT_SELECTION_MAX_TEXT_LENGTH = 5000
 /** Default floor; overridden by `selection.minTextLength` setting. */
 export const DEFAULT_SELECTION_MIN_TEXT_LENGTH = 1
+
+export const BUILTIN_SEARCH_ACTION_ID = 'builtin-sel-search'
 
 /**
  * Anchor rectangle in DIP (device-independent pixels), describing the
@@ -350,6 +372,8 @@ export interface SelectionAnchor {
   width: number
   /** Height of the selection region (DIP); may be 0 when only a mouse point is known */
   height: number
+  /** When true the toolbar should appear above the anchor instead of below. */
+  preferTop?: boolean
 }
 
 /** Stored selection action — mirrors QuickAction */

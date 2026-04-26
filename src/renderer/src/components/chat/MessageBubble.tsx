@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
 import { Copy, Check, Trash2, User, Bot, Clock, RefreshCcw, Pencil } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
-import { Avatar, AvatarFallback } from '@renderer/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@renderer/components/ui/avatar'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
@@ -25,6 +25,8 @@ interface MessageBubbleProps {
   thinkingDuration?: number | null
   streamStartTime?: number | null
   isEditing?: boolean
+  assistantIcon?: string
+  userAvatarUrl?: string | null
   onDelete?: (id: string) => void
   onResend?: (messageId: string) => void
   onEdit?: (messageId: string) => void
@@ -113,6 +115,8 @@ export const MessageBubble = memo(function MessageBubble({
   thinkingDuration,
   streamStartTime,
   isEditing,
+  assistantIcon,
+  userAvatarUrl,
   onDelete,
   onResend,
   onEdit,
@@ -225,22 +229,32 @@ export const MessageBubble = memo(function MessageBubble({
 
   return (
     <div
-      className={`group flex min-w-0 items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+      className={`group flex min-w-0 items-start gap-3 ${isUser ? 'flex-row-reverse pl-11' : 'flex-row pr-11'}`}>
       <Avatar className="h-8 w-8 shrink-0">
+        {isUser && userAvatarUrl ? <AvatarImage src={userAvatarUrl} alt="User" /> : null}
         <AvatarFallback
           className={
             isUser ? 'bg-chat-user text-chat-user-foreground' : 'bg-muted text-muted-foreground'
           }>
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+          {isUser ? (
+            <User className="h-4 w-4" />
+          ) : assistantIcon ? (
+            <span className="text-base leading-none">{assistantIcon}</span>
+          ) : (
+            <Bot className="h-4 w-4" />
+          )}
         </AvatarFallback>
       </Avatar>
 
-      <div className={`relative min-w-0 max-w-[60%] overflow-hidden ${isEditing ? 'w-[60%]' : ''}`}>
+      <div
+        className={`relative min-w-0 flex-1 overflow-hidden ${
+          isUser ? 'flex flex-col items-end' : ''
+        }`}>
         <div
           className={`wrap-anywhere overflow-hidden rounded-2xl px-4 py-3 text-sm ${
             isUser
-              ? 'whitespace-pre-wrap bg-chat-user text-chat-user-foreground'
-              : 'text-foreground'
+              ? `max-w-full whitespace-pre-wrap bg-chat-user text-chat-user-foreground${isEditing ? ' w-full' : ''}`
+              : 'w-full text-foreground'
           }`}>
           {isWaiting ? (
             <div className="space-y-2">
@@ -300,7 +314,7 @@ export const MessageBubble = memo(function MessageBubble({
                   thinkingDuration={thinkingDuration}
                 />
               )}
-              <MarkdownRenderer content={content} />
+              <MarkdownRenderer content={content} isStreaming={isStreaming} />
             </>
           )}
           {isStreaming && !isWaiting && !isStreamingReasoning && (

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { X, Globe, SpellCheck, Power, EyeOff } from 'lucide-react'
+import { useEffect } from 'react'
+import { X, Globe, SpellCheck, Power, EyeOff, Bell } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
@@ -20,18 +20,15 @@ const LANGUAGES = [
 export function GeneralSection(): React.JSX.Element {
   const { t, i18n } = useTranslation()
   const { settings, saveSettings } = useSettingsStore()
-  const [closeToTray, setCloseToTray] = useState(true)
-  const [spellCheck, setSpellCheck] = useState(true)
-  const [autoLaunch, setAutoLaunch] = useState(false)
-  const [startMinimized, setStartMinimized] = useState(false)
+  const closeToTray = settings['app.closeToTray'] !== 'false'
+  const spellCheck = settings['app.spellCheck'] !== 'false'
+  const autoLaunch = settings['app.autoLaunch'] === 'true'
+  const startMinimized = settings['app.startMinimized'] === 'true'
+  const notifyAssistant = settings['notification.assistantMessage'] === 'true'
 
+  // Sync stored language with i18n on load — ensures the renderer respects
+  // what was persisted in SQLite (the authoritative source for the main process).
   useEffect(() => {
-    setCloseToTray(settings['app.closeToTray'] !== 'false')
-    setSpellCheck(settings['app.spellCheck'] !== 'false')
-    setAutoLaunch(settings['app.autoLaunch'] === 'true')
-    setStartMinimized(settings['app.startMinimized'] === 'true')
-    // Sync stored language with i18n on load — ensures the renderer respects
-    // what was persisted in SQLite (the authoritative source for the main process).
     const storedLang = settings['general.language']
     if (storedLang && storedLang !== i18n.resolvedLanguage) {
       i18n.changeLanguage(storedLang)
@@ -39,23 +36,23 @@ export function GeneralSection(): React.JSX.Element {
   }, [settings, i18n])
 
   const handleCloseToTrayToggle = (checked: boolean): void => {
-    setCloseToTray(checked)
     saveSettings({ 'app.closeToTray': String(checked) })
   }
 
   const handleSpellCheckToggle = (checked: boolean): void => {
-    setSpellCheck(checked)
     saveSettings({ 'app.spellCheck': String(checked) })
   }
 
   const handleAutoLaunchToggle = (checked: boolean): void => {
-    setAutoLaunch(checked)
     saveSettings({ 'app.autoLaunch': String(checked) })
   }
 
   const handleStartMinimizedToggle = (checked: boolean): void => {
-    setStartMinimized(checked)
     saveSettings({ 'app.startMinimized': String(checked) })
+  }
+
+  const handleNotifyAssistantToggle = (checked: boolean): void => {
+    saveSettings({ 'notification.assistantMessage': String(checked) })
   }
 
   const handleLanguageChange = (value: string): void => {
@@ -158,6 +155,26 @@ export function GeneralSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={spellCheck} onCheckedChange={handleSpellCheckToggle} />
+        </div>
+      </div>
+
+      {/* Notification */}
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-sm font-semibold">{t('settings.general.notification')}</h3>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Bell className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">
+                {t('settings.general.notifyAssistantMessage')}
+              </Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.general.notifyAssistantMessageDescription')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={notifyAssistant} onCheckedChange={handleNotifyAssistantToggle} />
         </div>
       </div>
     </div>

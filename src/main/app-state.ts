@@ -1,4 +1,4 @@
-import { app, session } from 'electron'
+import { app, session, type BrowserWindow } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { getSetting } from './db/settings'
 
@@ -60,14 +60,14 @@ export function applySpellCheckSetting(value?: string): void {
 
 // ── Quick Assistant ─────────────────────────────────────────────
 
-let quickAssistantEnabled = true
+let quickAssistantEnabled = false
 
 export function initQuickAssistant(): void {
-  quickAssistantEnabled = getSetting('quickAssistant.enabled') !== 'false'
+  quickAssistantEnabled = getSetting('quickAssistant.enabled') === 'true'
 }
 
 export function applyQuickAssistantEnabled(value?: string): void {
-  quickAssistantEnabled = value !== 'false'
+  quickAssistantEnabled = value === 'true'
 }
 
 export function getQuickAssistantEnabled(): boolean {
@@ -76,16 +76,26 @@ export function getQuickAssistantEnabled(): boolean {
 
 // ── Selection Assistant ─────────────────────────────────────────
 
-let selectionAssistantEnabled = true
+let selectionAssistantEnabled = false
 
 export function initSelectionAssistant(): void {
-  selectionAssistantEnabled = getSetting('selection.enabled') !== 'false'
+  selectionAssistantEnabled = getSetting('selection.enabled') === 'true'
 }
 
 export function applySelectionAssistantEnabled(value?: string): void {
-  selectionAssistantEnabled = value !== 'false'
+  selectionAssistantEnabled = value === 'true'
 }
 
 export function getSelectionAssistantEnabled(): boolean {
   return selectionAssistantEnabled
+}
+
+let mainWindowRef: BrowserWindow | null = null
+
+export function setMainWindow(win: BrowserWindow | null): void {
+  mainWindowRef = win
+}
+
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindowRef && !mainWindowRef.isDestroyed() ? mainWindowRef : null
 }

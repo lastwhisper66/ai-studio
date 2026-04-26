@@ -7,6 +7,7 @@ import { getDb } from './database'
 interface AssistantRow {
   id: string
   name: string
+  icon: string
   description: string
   system_prompt: string
   provider_id: string | null
@@ -33,6 +34,7 @@ function rowToAssistant(row: AssistantRow): Assistant {
   return {
     id: row.id,
     name: row.name,
+    icon: row.icon ?? '',
     description: row.description,
     systemPrompt: row.system_prompt,
     providerId: row.provider_id,
@@ -67,6 +69,7 @@ export function getAssistant(id: string): Assistant | undefined {
 
 export interface CreateAssistantData {
   name: string
+  icon?: string
   description?: string
   systemPrompt?: string
   providerId?: string | null
@@ -85,12 +88,13 @@ export function createAssistant(data: CreateAssistantData): Assistant {
   const promptSuggestions = JSON.stringify(data.promptSuggestions ?? [])
   getDb()
     .prepare(
-      `INSERT INTO assistants (id, name, description, system_prompt, provider_id, model, temperature, max_completion_tokens, top_p, context_count, prompt_suggestions, group_name, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO assistants (id, name, icon, description, system_prompt, provider_id, model, temperature, max_completion_tokens, top_p, context_count, prompt_suggestions, group_name, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
       data.name,
+      data.icon ?? '',
       data.description ?? '',
       data.systemPrompt ?? '',
       data.providerId ?? null,
@@ -108,6 +112,7 @@ export function createAssistant(data: CreateAssistantData): Assistant {
 
 export interface UpdateAssistantData {
   name?: string
+  icon?: string
   description?: string
   systemPrompt?: string
   providerId?: string | null
@@ -128,6 +133,10 @@ export function updateAssistant(id: string, data: UpdateAssistantData): Assistan
   if (data.name !== undefined) {
     fields.push('name = ?')
     values.push(data.name)
+  }
+  if (data.icon !== undefined) {
+    fields.push('icon = ?')
+    values.push(data.icon)
   }
   if (data.description !== undefined) {
     fields.push('description = ?')
@@ -198,8 +207,24 @@ export function deleteAssistant(id: string): void {
 
 export function reorderAssistants(ids: string[]): void {
   const db = getDb()
+  const query = db.prepare('SELECT sort_order, is_default FROM assistants WHERE id = ?')
   const update = db.prepare('UPDATE assistants SET sort_order = ? WHERE id = ?')
+
   db.transaction(() => {
-    ids.forEach((id, index) => update.run(index, id))
+    const pinned: string[] = []
+    const unpinned: string[] = []
+
+    for (const id of ids) {
+      const row = query.get(id) as { sort_order: number; is_default: number } | undefined
+      if (!row) continue
+      if (row.sort_order < 0 && !row.is_default) {
+        pinned.push(id)
+      } else {
+        unpinned.push(id)
+      }
+    }
+
+    pinned.forEach((id, i) => update.run(-(pinned.length - i), id))
+    unpinned.forEach((id, i) => update.run(i, id))
   })()
 }

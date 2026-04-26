@@ -1,12 +1,18 @@
-import { app, screen } from 'electron'
+import { app, screen, shell } from 'electron'
 import { basename } from 'path'
 import SelectionHook, {
+  type KeyboardEventData,
   type MouseEventData,
   type SelectionHookInstance,
   type TextSelectionData,
 } from 'selection-hook'
 import type { SelectionAction, SelectionAnchor, SelectionToolbarPayload } from '@shared/types'
-import { DEFAULT_SELECTION_MAX_TEXT_LENGTH, DEFAULT_SELECTION_MIN_TEXT_LENGTH } from '@shared/types'
+import {
+  BUILTIN_SEARCH_ACTION_ID,
+  DEFAULT_SELECTION_MAX_TEXT_LENGTH,
+  DEFAULT_SELECTION_MIN_TEXT_LENGTH,
+} from '@shared/types'
+import type { SelectionTriggerMode } from '@shared/types'
 import {
   getVisibleToolbarBounds,
   hideSelectionToolbar,
@@ -31,6 +37,36 @@ import { abortSelectionRequest } from './ipc/selection-handlers'
 const DEFAULT_MAX_TEXT_LENGTH = DEFAULT_SELECTION_MAX_TEXT_LENGTH
 const DEFAULT_MIN_TEXT_LENGTH = DEFAULT_SELECTION_MIN_TEXT_LENGTH
 
+const SEARCH_ENGINES: Record<string, string> = {
+  google: 'https://www.google.com/search?q={query}',
+  bing: 'https://www.bing.com/search?q={query}',
+  baidu: 'https://www.baidu.com/s?wd={query}',
+  duckduckgo: 'https://duckduckgo.com/?q={query}',
+}
+
+const DEFAULT_SEARCH_ENGINE = 'google'
+
+const ALLOWED_PROTOCOLS = ['https:', 'http:']
+
+function buildSearchUrl(text: string): string {
+  const engineId = getSetting('selection.searchEngine') || DEFAULT_SEARCH_ENGINE
+  let template: string
+  if (engineId === 'custom') {
+    const custom = getSetting('selection.searchEngineCustomUrl') || ''
+    try {
+      const { protocol } = new URL(custom.replaceAll('{query}', 'test'))
+      template = ALLOWED_PROTOCOLS.includes(protocol)
+        ? custom
+        : SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+    } catch {
+      template = SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+    }
+  } else {
+    template = SEARCH_ENGINES[engineId] || SEARCH_ENGINES[DEFAULT_SEARCH_ENGINE]
+  }
+  return template.replaceAll('{query}', encodeURIComponent(text))
+}
+
 let hookInstance: SelectionHookInstance | null = null
 let running = false
 
@@ -38,12 +74,16 @@ interface SelectionFilterConfig {
   excludedPrograms: string[]
   minTextLength: number
   maxTextLength: number
+  clipboardFallback: boolean
+  triggerMode: SelectionTriggerMode
 }
 
 let filterConfig: SelectionFilterConfig = {
   excludedPrograms: [],
   minTextLength: DEFAULT_MIN_TEXT_LENGTH,
   maxTextLength: DEFAULT_MAX_TEXT_LENGTH,
+  clipboardFallback: true,
+  triggerMode: 'ctrlkey',
 }
 
 function parseJsonArray(raw: string | undefined, fallback: string[]): string[] {
@@ -73,6 +113,8 @@ function loadFilterConfig(): SelectionFilterConfig {
       1,
       parseNumber(getSetting('selection.maxTextLength'), DEFAULT_MAX_TEXT_LENGTH),
     ),
+    clipboardFallback: getSetting('selection.clipboardFallback') !== 'false',
+    triggerMode: getSetting('selection.triggerMode') === 'selected' ? 'selected' : 'ctrlkey',
   }
 }
 
@@ -122,6 +164,14 @@ function getEffectiveExcludedPrograms(): string[] {
   return Array.from(set)
 }
 
+/**
+ * Pixel offset added to mouse-based Y coordinates (physical pixels, before
+ * DIP conversion) so the anchor clears the text line. Mouse cursors sit at
+ * the text baseline, not at the bottom of the line box. Cherry Studio uses
+ * 16px for the same purpose.
+ */
+const MOUSE_Y_OFFSET_PX = 16
+
 /** Check whether a coordinate pair is the INVALID_COORDINATE sentinel. */
 function isValidPoint(p: { x: number; y: number }): boolean {
   return p.x !== SelectionHook.INVALID_COORDINATE && p.y !== SelectionHook.INVALID_COORDINATE
@@ -131,53 +181,82 @@ function isValidPoint(p: { x: number; y: number }): boolean {
  * Compute an on-screen anchor rectangle (DIP) from a TextSelectionData.
  * selection-hook returns physical pixels; Electron's setBounds expects DIP,
  * so we convert via screen.screenToDipPoint().
+ *
+ * Offset strategy (mirrors Cherry Studio):
+ *  - MOUSE_SINGLE / MOUSE_DUAL: mouse cursor sits at the text baseline, so
+ *    we push the anchor bottom down by MOUSE_Y_OFFSET_PX before DIP conversion.
+ *  - MOUSE_DUAL with upward drag: the anchor top is pushed up so the toolbar
+ *    can flip above the selection without overlapping.
+ *  - SEL_FULL / SEL_DETAILED: real selection rectangles already include the
+ *    full line height, no extra offset needed.
  */
 function computeAnchor(data: TextSelectionData): SelectionAnchor | null {
   const { posLevel } = data
 
-  // Pick the best-available anchor based on the position level. Higher
-  // levels provide real selection rectangles; lower levels only have the
-  // mouse cursor position at selection end.
-  let startPx: { x: number; y: number } | null = null
-  let endPx: { x: number; y: number } | null = null
+  let topPx: { x: number; y: number } | null = null
+  let bottomPx: { x: number; y: number } | null = null
+  let preferTop = false
 
   if (
     posLevel === SelectionHook.PositionLevel.SEL_FULL ||
     posLevel === SelectionHook.PositionLevel.SEL_DETAILED
   ) {
     if (isValidPoint(data.startTop) && isValidPoint(data.endBottom)) {
-      startPx = data.startTop
-      endPx = data.endBottom
+      topPx = data.startTop
+      bottomPx = data.endBottom
+      // If mouse info is available, detect upward drag
+      if (isValidPoint(data.mousePosStart) && isValidPoint(data.mousePosEnd)) {
+        preferTop = data.mousePosEnd.y - data.mousePosStart.y < -14
+      }
     }
   } else if (posLevel === SelectionHook.PositionLevel.MOUSE_DUAL) {
     if (isValidPoint(data.mousePosStart) && isValidPoint(data.mousePosEnd)) {
-      startPx = data.mousePosStart
-      endPx = data.mousePosEnd
+      const yDist = data.mousePosEnd.y - data.mousePosStart.y
+
+      if (Math.abs(yDist) > 14) {
+        // Multi-line selection
+        if (yDist > 0) {
+          // Dragged downward — anchor bottom below the end point
+          topPx = data.mousePosStart
+          bottomPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y + MOUSE_Y_OFFSET_PX }
+        } else {
+          // Dragged upward — anchor top above the end point
+          topPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y - MOUSE_Y_OFFSET_PX }
+          bottomPx = data.mousePosStart
+          preferTop = true
+        }
+      } else {
+        // Same-line selection — push bottom down
+        const maxY = Math.max(data.mousePosStart.y, data.mousePosEnd.y)
+        const minX = Math.min(data.mousePosStart.x, data.mousePosEnd.x)
+        topPx = { x: minX, y: data.mousePosStart.y }
+        bottomPx = { x: data.mousePosEnd.x, y: maxY + MOUSE_Y_OFFSET_PX }
+      }
     }
   } else if (posLevel === SelectionHook.PositionLevel.MOUSE_SINGLE) {
     if (isValidPoint(data.mousePosEnd)) {
-      startPx = data.mousePosEnd
-      endPx = data.mousePosEnd
+      topPx = data.mousePosEnd
+      bottomPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y + MOUSE_Y_OFFSET_PX }
     }
   }
 
   // Fallback: try mousePosEnd regardless
-  if (!startPx && isValidPoint(data.mousePosEnd)) {
-    startPx = data.mousePosEnd
-    endPx = data.mousePosEnd
+  if (!topPx && isValidPoint(data.mousePosEnd)) {
+    topPx = data.mousePosEnd
+    bottomPx = { x: data.mousePosEnd.x, y: data.mousePosEnd.y + MOUSE_Y_OFFSET_PX }
   }
 
-  if (!startPx || !endPx) return null
+  if (!topPx || !bottomPx) return null
 
-  const startDip = screen.screenToDipPoint(startPx)
-  const endDip = screen.screenToDipPoint(endPx)
+  const startDip = screen.screenToDipPoint(topPx)
+  const endDip = screen.screenToDipPoint(bottomPx)
 
   const x = Math.min(startDip.x, endDip.x)
   const y = Math.min(startDip.y, endDip.y)
   const width = Math.abs(endDip.x - startDip.x)
   const height = Math.abs(endDip.y - startDip.y)
 
-  return { x, y, width, height }
+  return { x, y, width, height, preferTop }
 }
 
 function handleTextSelection(data: TextSelectionData): void {
@@ -251,12 +330,30 @@ function handleDismissEvent(): void {
   }
 }
 
+function handleKeyDismissEvent(data: KeyboardEventData): void {
+  if (filterConfig.triggerMode === 'ctrlkey' && isCtrlKey(data.vkCode)) return
+  handleDismissEvent()
+}
+
 function handleToolbarAction(actionId: string, payload: SelectionToolbarPayload): void {
+  if (actionId === BUILTIN_SEARCH_ACTION_ID) {
+    const url = buildSearchUrl(payload.text)
+    try {
+      const { protocol } = new URL(url)
+      if (!ALLOWED_PROTOCOLS.includes(protocol)) return
+    } catch {
+      return
+    }
+    shell.openExternal(url).catch((err) => {
+      console.warn('[SelectionService] openExternal failed:', err)
+    })
+    return
+  }
   showSelectionBubble({
     text: payload.text,
     anchor: payload.anchor,
     actionId,
-    actions: loadEnabledActions(),
+    actions: loadEnabledActions().filter((a) => a.id !== BUILTIN_SEARCH_ACTION_ID),
   })
 }
 
@@ -272,6 +369,102 @@ function applyHookFilterConfig(hook: SelectionHookInstance): void {
   } catch (err) {
     console.warn('[SelectionService] setGlobalFilterMode failed:', err)
   }
+  try {
+    if (filterConfig.clipboardFallback) {
+      hook.enableClipboard()
+    } else {
+      hook.disableClipboard()
+    }
+  } catch (err) {
+    if (err instanceof TypeError) {
+      console.warn('[SelectionService] selection-hook version does not support clipboard toggle')
+    } else {
+      console.warn('[SelectionService] clipboard fallback toggle failed:', err)
+    }
+  }
+}
+
+// ── Ctrlkey mode state ──────────────────────────────────────────
+let isCtrlkeyListenerActive = false
+let ctrlHoldTimer: ReturnType<typeof setTimeout> | null = null
+
+function isCtrlKey(vkCode: number): boolean {
+  return vkCode === 162 || vkCode === 163 // VK_LCONTROL, VK_RCONTROL
+}
+
+function clearCtrlHoldTimer(): void {
+  if (ctrlHoldTimer !== null) {
+    clearTimeout(ctrlHoldTimer)
+    ctrlHoldTimer = null
+  }
+}
+
+function handleKeyDownCtrlkeyMode(data: KeyboardEventData): void {
+  if (!hookInstance) return
+  if (!isCtrlKey(data.vkCode)) {
+    clearCtrlHoldTimer()
+    return
+  }
+  if (ctrlHoldTimer !== null) return
+
+  hookInstance.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
+  hookInstance.off('mouse-down', handleMouseDownCtrlkeyMode)
+  hookInstance.on('mouse-wheel', handleMouseWheelCtrlkeyMode)
+  hookInstance.on('mouse-down', handleMouseDownCtrlkeyMode)
+  ctrlHoldTimer = setTimeout(() => {
+    ctrlHoldTimer = null
+    if (!hookInstance) return
+    const selectionData = hookInstance.getCurrentSelection()
+    if (selectionData) {
+      // Passive mode: hook coordinates are unreliable (often 0,0).
+      const cursor = screen.getCursorScreenPoint()
+      selectionData.mousePosEnd = cursor
+      selectionData.mousePosStart = cursor
+      handleTextSelection(selectionData)
+    }
+  }, 350)
+}
+
+function handleKeyUpCtrlkeyMode(data: KeyboardEventData): void {
+  if (!hookInstance) return
+  if (!isCtrlKey(data.vkCode)) return
+  clearCtrlHoldTimer()
+  hookInstance.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
+  hookInstance.off('mouse-down', handleMouseDownCtrlkeyMode)
+}
+
+function handleMouseWheelCtrlkeyMode(): void {
+  clearCtrlHoldTimer()
+}
+
+function handleMouseDownCtrlkeyMode(): void {
+  clearCtrlHoldTimer()
+}
+
+// ── Trigger mode management ─────────────────────────────────────
+function applyTriggerMode(hook: SelectionHookInstance): void {
+  const mode = filterConfig.triggerMode
+
+  if (isCtrlkeyListenerActive) {
+    hook.off('key-down', handleKeyDownCtrlkeyMode)
+    hook.off('key-up', handleKeyUpCtrlkeyMode)
+    hook.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
+    hook.off('mouse-down', handleMouseDownCtrlkeyMode)
+    clearCtrlHoldTimer()
+    isCtrlkeyListenerActive = false
+  }
+
+  try {
+    hook.setSelectionPassiveMode(mode === 'ctrlkey')
+  } catch (err) {
+    console.warn('[SelectionService] setSelectionPassiveMode not supported:', err)
+  }
+
+  if (mode === 'ctrlkey') {
+    hook.on('key-down', handleKeyDownCtrlkeyMode)
+    hook.on('key-up', handleKeyUpCtrlkeyMode)
+    isCtrlkeyListenerActive = true
+  }
 }
 
 /** Lazily create the hook instance (does not start it). */
@@ -282,12 +475,13 @@ function ensureHook(): SelectionHookInstance | null {
     hook.on('text-selection', handleTextSelection)
     hook.on('mouse-down', handleMouseDown)
     hook.on('mouse-wheel', handleDismissEvent)
-    hook.on('key-down', handleDismissEvent)
+    hook.on('key-down', handleKeyDismissEvent)
     hook.on('error', (err) => {
       console.error('[SelectionService] hook error:', err)
     })
     hookInstance = hook
     applyHookFilterConfig(hook)
+    applyTriggerMode(hook)
     return hook
   } catch (err) {
     console.error('[SelectionService] Failed to construct SelectionHook:', err)
@@ -355,8 +549,14 @@ export function toggleSelectionAssistant(): boolean {
  * options in Settings → Selection Assistant.
  */
 export function refreshSelectionFilterConfig(): void {
+  const oldMode = filterConfig.triggerMode
   filterConfig = loadFilterConfig()
-  if (hookInstance) applyHookFilterConfig(hookInstance)
+  if (hookInstance) {
+    applyHookFilterConfig(hookInstance)
+    if (oldMode !== filterConfig.triggerMode) {
+      applyTriggerMode(hookInstance)
+    }
+  }
 }
 
 export function isSelectionServiceRunning(): boolean {

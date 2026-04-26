@@ -16,7 +16,11 @@
     "comingSoon": "Coming soon",
     "noModelSet": "No model set",
     "noModelConfigured": "No models configured",
-    "copied": "Copied"
+    "copied": "Copied",
+    "targetLang": {
+      "off": "Off",
+      "hint": "Overrides output language; \"Off\" uses the prompt's default."
+    }
   },
   "titleBar": {
     "expandSidebar": "Expand sidebar",
@@ -24,7 +28,18 @@
     "minimize": "Minimize",
     "maximize": "Maximize",
     "restore": "Restore",
-    "close": "Close"
+    "close": "Close",
+    "pinOnTop": "Pin on top",
+    "unpinFromTop": "Unpin from top",
+    "userProfile": "User profile"
+  },
+  "userProfile": {
+    "title": "User Profile",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Enter your name",
+    "avatar": "Avatar",
+    "changeAvatar": "Change Avatar",
+    "removeAvatar": "Remove Avatar"
   },
   "nav": {
     "chat": "Chat",
@@ -74,7 +89,32 @@
     "noPhrasesYet": "No phrases yet. Go to Settings to add.",
     "managePhrases": "Manage Quick Phrases",
     "placeholderHint": "{{count}} placeholder(s) — Tab / Shift+Tab to navigate",
-    "systemPromptPlaceholder": "Click to set assistant system prompt"
+    "systemPromptPlaceholder": "Click to set assistant system prompt",
+    "mermaid": {
+      "rendering": "Rendering...",
+      "error": "Mermaid render failed",
+      "copyCode": "Copy code",
+      "copyImage": "Copy image",
+      "compare": "Compare view",
+      "fullscreen": "Fullscreen",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Reset zoom",
+      "exportSvg": "Export SVG",
+      "exportPng": "Export PNG"
+    },
+    "math": {
+      "error": "Formula render failed",
+      "copyCode": "Copy LaTeX",
+      "copyImage": "Copy image",
+      "fullscreen": "Zoom in",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "zoomReset": "Reset zoom"
+    },
+    "code": {
+      "expand": "Expand all code"
+    }
   },
   "welcome": {
     "title": "Welcome to AI Studio",
@@ -157,7 +197,7 @@
       "modelLibrary": "Model Library",
       "modelGroup": "Model Groups",
       "general": "General",
-      "security": "Security",
+      "network": "Network",
       "display": "Display",
       "data": "Data",
       "keyboardShortcuts": "Shortcuts",
@@ -214,7 +254,9 @@
       "confirmDeleteDescription": "Are you sure you want to delete \"{{name}}\"? All model configurations under this provider will also be deleted. This cannot be undone.",
       "removeAll": "Remove All",
       "removeAllTitle": "Remove All Models",
-      "removeAllDescription": "Are you sure you want to remove all {{count}} models under \"{{name}}\"? This cannot be undone."
+      "removeAllDescription": "Are you sure you want to remove all {{count}} models under \"{{name}}\"? This cannot be undone.",
+      "defaultProviderRenameHint": "Built-in providers cannot be renamed.",
+      "defaultProviderDeleteHint": "Built-in providers cannot be deleted."
     },
     "general": {
       "title": "General",
@@ -230,6 +272,9 @@
       "closeToTrayDescription": "When enabled, clicking the close button hides the window to the system tray instead of quitting the application.",
       "spellCheck": "Spell check",
       "spellCheckDescription": "Enable the built-in spell checker for text input fields.",
+      "notification": "Notification",
+      "notifyAssistantMessage": "Assistant message notification",
+      "notifyAssistantMessageDescription": "Show a Windows system notification when an assistant reply completes while the app is not in the foreground.",
       "languageLabel": "Display Language",
       "languageHint": "Language changes take effect immediately."
     },
@@ -243,10 +288,10 @@
       "clearDataConfirmDescription": "This action cannot be undone. All conversations, settings, provider configurations, and attachment files will be deleted. The app will restart automatically.",
       "clearDataConfirmButton": "Confirm Clear"
     },
-    "security": {
-      "title": "Security",
-      "description": "Network security and certificate settings.",
-      "network": "Network",
+    "network": {
+      "title": "Network",
+      "description": "Network related settings.",
+      "certificate": "Certificate",
       "skipSsl": "Skip SSL certificate verification",
       "skipSslDescription": "In enterprise VPN or proxy environments, enable this option if self-signed certificates cause connection failures."
     },
@@ -274,6 +319,10 @@
       "fontFamilyHint": "Set the default display font for the application.",
       "codeFontFamily": "Code Font",
       "codeFontFamilyHint": "Set the display font for code blocks.",
+      "mathEngine": "Math Engine",
+      "mathEngineHint": "Choose the engine for rendering math formulas. KaTeX is faster and lighter, MathJax is more comprehensive.",
+      "mathEngineKatex": "KaTeX",
+      "mathEngineMathjax": "MathJax",
       "fontDefault": "System Default",
       "fontNotFound": "No fonts found."
     },
@@ -300,7 +349,6 @@
       "enableHint": "When enabled, press the shortcut to summon the Quick Assistant from anywhere.",
       "shortcutLabel": "Toggle Shortcut",
       "shortcutHint": "Global shortcut to toggle the Quick Assistant.",
-      "targetLangLabel": "Target language",
       "model": "Model",
       "modelLabel": "AI Model",
       "modelHint": "Select the AI model used by Quick Assistant.",
@@ -373,6 +421,14 @@
       "excludedPrograms": "Excluded Programs",
       "excludedProgramsHint": "Enter executable names (e.g. Chrome.exe). Selections inside those apps will not trigger the toolbar.",
       "excludedProgramsPlaceholder": "e.g. Chrome.exe",
+      "clipboardFallbackLabel": "Clipboard Fallback",
+      "clipboardFallbackHint": "Some apps cannot provide selected text directly. Enable this to simulate a copy operation as a fallback.",
+      "triggerModeLabel": "Trigger Mode",
+      "triggerModeHint": "Choose how the selection assistant is triggered",
+      "triggerModeSelected": "On Selection",
+      "triggerModeSelectedDesc": "Show toolbar automatically after selecting text",
+      "triggerModeCtrlkey": "Hold Ctrl",
+      "triggerModeCtrlkeyDesc": "Show toolbar after selecting text and holding Ctrl",
       "textLength": "Text Length",
       "textLengthHint": "Skip selections that are too short or too long.",
       "minLength": "Minimum",
@@ -391,6 +447,20 @@
       },
       "toolbar": {
         "waitingSelection": "Waiting for selection…"
+      },
+      "search": {
+        "title": "Web Search",
+        "hint": "Configure the search engine used by the search action. Opens in the default browser.",
+        "engineLabel": "Search Engine",
+        "customUrlLabel": "Custom Search URL",
+        "customUrlPlaceholder": "https://example.com/search?q={query}",
+        "customUrlHint": "Use {query} as the search keyword placeholder.",
+        "buttonTitle": "Search",
+        "google": "Google",
+        "bing": "Bing",
+        "baidu": "Baidu",
+        "duckduckgo": "DuckDuckGo",
+        "custom": "Custom"
       }
     }
   },
@@ -418,7 +488,9 @@
       "temperatureHint": "Lower values produce more accurate translations, higher values are more creative. Default 0.3.",
       "resetDefault": "Reset default",
       "wordWrap": "Word wrap",
-      "wordWrapHint": "Wrap long lines in translation results. When off, use horizontal scrollbar to view."
+      "wordWrapHint": "Wrap long lines in translation results. When off, use horizontal scrollbar to view.",
+      "markdownPreview": "Markdown preview",
+      "markdownPreviewHint": "Render Markdown formatting in translation results. Copy still uses the original translated text."
     },
     "history": {
       "title": "History",
@@ -519,6 +591,9 @@
     "description": "Customize keyboard shortcuts for common actions.",
     "pressShortcut": "Press shortcut...",
     "resetAll": "Reset All",
+    "reset": "Reset",
+    "clear": "Clear",
+    "noShortcut": "No shortcut set",
     "conflictTitle": "Shortcut Conflict",
     "conflictDescription": "\"{{shortcut}}\" is already assigned to \"{{action}}\". Reassign it?",
     "conflictReadOnly": "\"{{shortcut}}\" is reserved by the system shortcut \"{{action}}\" and cannot be used.",
@@ -577,6 +652,10 @@
       "polish": {
         "name": "Polish",
         "description": "Rewrite for a more fluent, professional tone"
+      },
+      "search": {
+        "name": "Search",
+        "description": "Search the selected text with a search engine"
       }
     },
     "quickActions": {
@@ -653,5 +732,9 @@
     "db": {
       "notInitialized": "Database not initialized. Call initDatabase() first."
     }
+  },
+  "notification": {
+    "chatComplete": "Assistant reply completed",
+    "translateComplete": "Translation completed"
   }
 }
