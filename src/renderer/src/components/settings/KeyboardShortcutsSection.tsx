@@ -112,7 +112,7 @@ export function KeyboardShortcutsSection(): React.JSX.Element {
                 const modified = isModified(actionId)
 
                 return (
-                  <div key={actionId} className="flex items-center justify-between gap-4">
+                  <div key={actionId} className="flex min-h-9 items-center justify-between gap-4">
                     <span
                       className={actionDisabledVal ? 'text-muted-foreground text-sm' : 'text-sm'}>
                       {t(def.labelKey)}
@@ -126,7 +126,7 @@ export function KeyboardShortcutsSection(): React.JSX.Element {
                       ) : (
                         <>
                           {actionClearedVal ? (
-                            <div className="border-border bg-muted inline-flex h-[34px] min-w-[120px] items-center justify-center rounded-md border px-3">
+                            <div className="border-border bg-muted inline-flex h-9 min-w-30 items-center justify-center rounded-md border px-3">
                               <span className="text-muted-foreground text-xs">
                                 {t('keybindings.noShortcut')}
                               </span>

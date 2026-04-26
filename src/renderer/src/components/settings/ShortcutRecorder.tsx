@@ -94,7 +94,7 @@ export function ShortcutRecorder({
       tabIndex={disabled ? -1 : 0}
       role="button"
       className={cn(
-        'inline-flex min-w-[120px] cursor-pointer select-none items-center justify-center gap-1 rounded-md border px-3 py-1.5 text-sm',
+        'inline-flex h-9 min-w-30 cursor-pointer select-none items-center justify-center gap-1 rounded-md border px-3 py-1.5 text-sm',
         isRecording
           ? 'border-primary bg-primary/10 ring-primary/30 ring-2'
           : 'border-border bg-muted hover:bg-accent',
