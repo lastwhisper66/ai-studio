@@ -353,15 +353,21 @@ function ProviderForm({
                 value={renameDraft}
                 onChange={(e) => setRenameDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && renameDraft.trim()) {
+                  if (e.key === 'Enter' && renameDraft.trim() && !provider.isDefault) {
                     const newName = renameDraft.trim()
                     change('name', newName)
                     onUpdate(provider.id, { ...draft, name: newName })
                     setShowRenameDialog(false)
                   }
                 }}
-                autoFocus
+                autoFocus={!provider.isDefault}
+                disabled={provider.isDefault}
               />
+              {provider.isDefault && (
+                <p className="text-muted-foreground mt-1.5 text-xs">
+                  {t('settings.provider.defaultProviderRenameHint')}
+                </p>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" size="sm" onClick={() => setShowRenameDialog(false)}>
@@ -369,7 +375,7 @@ function ProviderForm({
               </Button>
               <Button
                 size="sm"
-                disabled={!renameDraft.trim()}
+                disabled={!renameDraft.trim() || provider.isDefault}
                 onClick={() => {
                   const newName = renameDraft.trim()
                   change('name', newName)
@@ -670,14 +676,24 @@ function ProviderForm({
 
         {/* Bottom actions */}
         <div className="flex items-center justify-end border-t pt-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={handleDelete}>
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-            {t('settings.provider.delete')}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  disabled={provider.isDefault}
+                  onClick={handleDelete}>
+                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                  {t('settings.provider.delete')}
+                </Button>
+              </span>
+            </TooltipTrigger>
+            {provider.isDefault && (
+              <TooltipContent>{t('settings.provider.defaultProviderDeleteHint')}</TooltipContent>
+            )}
+          </Tooltip>
         </div>
 
         {/* Delete confirmation dialog */}

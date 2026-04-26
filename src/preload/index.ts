@@ -623,8 +623,8 @@ const api = {
   },
 
   // User profile
-  saveUserAvatar: (oldRelativePath: string | null): Promise<IpcResult<string | null>> =>
-    ipcRenderer.invoke(IpcChannels.USER_SAVE_AVATAR, oldRelativePath),
+  saveUserAvatar: (): Promise<IpcResult<string | null>> =>
+    ipcRenderer.invoke(IpcChannels.USER_SAVE_AVATAR),
 
   readUserAvatar: (relativePath: string): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.USER_READ_AVATAR, relativePath),

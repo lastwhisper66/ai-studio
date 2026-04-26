@@ -33,7 +33,7 @@ export function UserProfileDialog({
   }, [open, displayName])
 
   const handleChangeAvatar = async (): Promise<void> => {
-    const result = await window.api.saveUserAvatar(avatarPath || null)
+    const result = await window.api.saveUserAvatar()
     if (result.success && result.data) {
       await saveSettings({ 'user.avatarPath': result.data })
     }

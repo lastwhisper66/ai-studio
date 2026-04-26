@@ -229,7 +229,9 @@
       "confirmDeleteDescription": "确定要删除服务商「{{name}}」吗？该服务商下的所有模型配置也将被删除，此操作不可撤销。",
       "removeAll": "移除所有",
       "removeAllTitle": "移除所有模型",
-      "removeAllDescription": "确定要移除「{{name}}」下的全部 {{count}} 个模型吗？此操作不可撤销。"
+      "removeAllDescription": "确定要移除「{{name}}」下的全部 {{count}} 个模型吗？此操作不可撤销。",
+      "defaultProviderRenameHint": "内置服务商不可重命名",
+      "defaultProviderDeleteHint": "内置服务商不可删除"
     },
     "general": {
       "title": "通用设置",

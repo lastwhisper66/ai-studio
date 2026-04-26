@@ -1,7 +1,6 @@
 import { ipcMain, dialog } from 'electron'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, unlinkSync } from 'fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from 'fs'
 import { join, extname, normalize, resolve } from 'path'
-import { randomUUID } from 'crypto'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { IpcResult } from '@shared/types'
 import { toLocalizedError } from '../errors'
@@ -20,45 +19,42 @@ function ensureAvatarsDir(): void {
 }
 
 export function registerUserHandlers(): void {
-  ipcMain.handle(
-    IpcChannels.USER_SAVE_AVATAR,
-    async (_, oldRelativePath: string | null): Promise<IpcResult<string | null>> => {
-      try {
-        const result = await dialog.showOpenDialog({
-          properties: ['openFile'],
-          filters: [
-            {
-              name: t('dialog.filePicker.image'),
-              extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-            },
-          ],
-        })
-        if (result.canceled || result.filePaths.length === 0) {
-          return { success: true, data: null }
-        }
-        const srcPath = result.filePaths[0]
-        const ext = extname(srcPath).toLowerCase() || '.png'
-        const filename = `user-avatar-${randomUUID()}${ext}`
-        ensureAvatarsDir()
-        const destPath = join(getAvatarsDir(), filename)
-        copyFileSync(srcPath, destPath)
-
-        if (oldRelativePath) {
-          const baseDir = normalize(resolve(getAvatarsDir()))
-          const oldFull = normalize(resolve(getDataDir(), oldRelativePath))
-          if (oldFull.startsWith(baseDir + '\\') && existsSync(oldFull)) {
-            try {
-              unlinkSync(oldFull)
-            } catch {}
-          }
-        }
-
-        return { success: true, data: `avatars/${filename}` }
-      } catch (e) {
-        return { success: false, error: toLocalizedError(e) }
+  ipcMain.handle(IpcChannels.USER_SAVE_AVATAR, async (): Promise<IpcResult<string | null>> => {
+    try {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+          {
+            name: t('dialog.filePicker.image'),
+            extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+          },
+        ],
+      })
+      if (result.canceled || result.filePaths.length === 0) {
+        return { success: true, data: null }
       }
-    },
-  )
+      const srcPath = result.filePaths[0]
+      const ext = extname(srcPath).toLowerCase() || '.png'
+      const filename = `user-avatar${ext}`
+      ensureAvatarsDir()
+      const avatarsDir = getAvatarsDir()
+
+      for (const f of readdirSync(avatarsDir)) {
+        if (f.startsWith('user-avatar')) {
+          try {
+            unlinkSync(join(avatarsDir, f))
+          } catch {}
+        }
+      }
+
+      const destPath = join(avatarsDir, filename)
+      copyFileSync(srcPath, destPath)
+
+      return { success: true, data: `avatars/${filename}` }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
 
   ipcMain.handle(IpcChannels.USER_READ_AVATAR, (_, relativePath: string): IpcResult<string> => {
     try {

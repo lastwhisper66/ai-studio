@@ -229,7 +229,9 @@
       "confirmDeleteDescription": "Are you sure you want to delete \"{{name}}\"? All model configurations under this provider will also be deleted. This cannot be undone.",
       "removeAll": "Remove All",
       "removeAllTitle": "Remove All Models",
-      "removeAllDescription": "Are you sure you want to remove all {{count}} models under \"{{name}}\"? This cannot be undone."
+      "removeAllDescription": "Are you sure you want to remove all {{count}} models under \"{{name}}\"? This cannot be undone.",
+      "defaultProviderRenameHint": "Built-in providers cannot be renamed.",
+      "defaultProviderDeleteHint": "Built-in providers cannot be deleted."
     },
     "general": {
       "title": "General",

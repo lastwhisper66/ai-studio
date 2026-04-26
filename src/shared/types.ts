@@ -90,6 +90,7 @@ export interface Provider {
   apiKey: string
   baseUrl: string
   enabled: boolean
+  isDefault: boolean
   sortOrder: number
   createdAt: string
   updatedAt: string
