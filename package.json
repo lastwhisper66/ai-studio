@@ -40,6 +40,7 @@
     "mermaid": "^11.14.0",
     "node-screenshots": "^0.2.8",
     "openai": "^6.27.0",
+    "react-zoom-pan-pinch": "^4.0.3",
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-math": "^6.0.0",

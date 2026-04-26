@@ -325,12 +325,12 @@ function FontCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between text-sm font-normal">
+          className="w-50 justify-between text-sm font-normal">
           <span className="truncate">{value || placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="end">
+      <PopoverContent className="w-50 p-0" align="end">
         <Command>
           <CommandInput placeholder={placeholder} />
           <CommandList>

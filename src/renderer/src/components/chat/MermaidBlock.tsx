@@ -1,17 +1,5 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react'
-import {
-  Copy,
-  Check,
-  Image,
-  Maximize2,
-  Columns2,
-  Download,
-  AlertTriangle,
-  X,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-} from 'lucide-react'
+import { Copy, Check, Image, Maximize2, Columns2, Download, AlertTriangle } from 'lucide-react'
 import mermaid from 'mermaid'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
@@ -32,6 +20,7 @@ import {
   saveBlobAsFile,
 } from '@renderer/lib/canvas'
 import { BlockToolbarBtn } from './BlockToolbarBtn'
+import { ZoomablePreviewDialog } from './ZoomablePreviewDialog'
 
 interface MermaidBlockProps {
   code: string
@@ -67,7 +56,6 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
   const [error, setError] = useState<string>('')
   const [showCompare, setShowCompare] = useState(false)
   const [showFullscreen, setShowFullscreen] = useState(false)
-  const [fullscreenScale, setFullscreenScale] = useState(1)
   const [highlightedCode, setHighlightedCode] = useState('')
   const [imgCopied, setImgCopied] = useState(false)
   const svgContainerRef = useRef<HTMLDivElement>(null)
@@ -109,22 +97,6 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
       cancelled = true
     }
   }, [showCompare, code, resolvedTheme])
-
-  useEffect(() => {
-    if (!showFullscreen) return
-    setFullscreenScale(1)
-    const handler = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setShowFullscreen(false)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [showFullscreen])
-
-  const handleFullscreenWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.ctrlKey && !e.metaKey) return
-    e.preventDefault()
-    setFullscreenScale((s) => Math.min(4, Math.max(0.25, s - e.deltaY * 0.001)))
-  }, [])
 
   const copyImage = useCallback(async () => {
     if (!svg) return
@@ -278,51 +250,15 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
       </div>
 
       {showFullscreen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setShowFullscreen(false)}
-          onWheel={handleFullscreenWheel}>
-          <div
-            className="relative flex h-[92vh] w-[92vw] max-w-[1600px] flex-col overflow-hidden rounded-xl bg-background"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b px-4 py-2">
-              <div className="flex items-center gap-1">
-                <BlockToolbarBtn
-                  icon={ZoomOut}
-                  tooltip={t('chat.mermaid.zoomOut')}
-                  onClick={() => setFullscreenScale((s) => Math.max(0.25, s - 0.25))}
-                />
-                <span className="min-w-[3.5rem] text-center text-xs text-muted-foreground">
-                  {Math.round(fullscreenScale * 100)}%
-                </span>
-                <BlockToolbarBtn
-                  icon={ZoomIn}
-                  tooltip={t('chat.mermaid.zoomIn')}
-                  onClick={() => setFullscreenScale((s) => Math.min(4, s + 0.25))}
-                />
-                <BlockToolbarBtn
-                  icon={RotateCcw}
-                  tooltip={t('chat.mermaid.zoomReset')}
-                  onClick={() => setFullscreenScale(1)}
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowFullscreen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto p-6" onWheel={handleFullscreenWheel}>
-              <div
-                className="mermaid-svg-container inline-block min-w-full origin-top-left [&>svg]:mx-auto"
-                style={{ zoom: fullscreenScale }}
-                dangerouslySetInnerHTML={{ __html: svg }}
-              />
-            </div>
-          </div>
-        </div>
+        <ZoomablePreviewDialog
+          zoomInTooltip={t('chat.mermaid.zoomIn')}
+          zoomOutTooltip={t('chat.mermaid.zoomOut')}
+          zoomResetTooltip={t('chat.mermaid.zoomReset')}
+          initialView="fit"
+          contentClassName="mermaid-svg-container [&_svg]:!max-w-none [&_svg]:mx-auto"
+          onClose={() => setShowFullscreen(false)}>
+          <div dangerouslySetInnerHTML={{ __html: svg }} />
+        </ZoomablePreviewDialog>
       )}
     </>
   )

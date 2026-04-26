@@ -1,22 +1,12 @@
 import { useState, useEffect, useRef, useCallback, memo } from 'react'
-import {
-  Copy,
-  Check,
-  Image,
-  Maximize2,
-  AlertTriangle,
-  X,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-} from 'lucide-react'
+import { Copy, Check, Image, Maximize2, AlertTriangle } from 'lucide-react'
 import katex, { type TrustContext } from 'katex'
 import { useTranslation } from 'react-i18next'
-import { Button } from '@renderer/components/ui/button'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
 import { PORTABLE_IMAGE_OPTIONS, copySvgAsImage, sanitizeSvgMarkup } from '@renderer/lib/canvas'
 import { BlockToolbarBtn } from './BlockToolbarBtn'
+import { ZoomablePreviewDialog } from './ZoomablePreviewDialog'
 
 interface MathBlockProps {
   value: string
@@ -49,7 +39,9 @@ function getMathJaxDoc(): Promise<MathJaxDoc> {
 
       return {
         convert: (t: string, opts: { display: boolean }) => doc.convert(t, opts),
-        adaptor: { outerHTML: (node: unknown) => adaptor.outerHTML(node as never) },
+        adaptor: {
+          outerHTML: (node: unknown) => adaptor.outerHTML(node as never),
+        },
       }
     })()
   }
@@ -119,7 +111,6 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
   const [html, setHtml] = useState('')
   const [error, setError] = useState('')
   const [showFullscreen, setShowFullscreen] = useState(false)
-  const [fullscreenScale, setFullscreenScale] = useState(1)
   const [imgCopied, setImgCopied] = useState(false)
   const containerRef = useRef<HTMLSpanElement>(null)
   const { copied: codeCopied, copy: copyCode } = useCopyToClipboard()
@@ -163,22 +154,6 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
     }
   }, [value, displayMode, engine])
 
-  useEffect(() => {
-    if (!showFullscreen) return
-    setFullscreenScale(1)
-    const handler = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') setShowFullscreen(false)
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [showFullscreen])
-
-  const handleFullscreenWheel = useCallback((e: React.WheelEvent) => {
-    if (!e.ctrlKey && !e.metaKey) return
-    e.preventDefault()
-    setFullscreenScale((s) => Math.min(4, Math.max(0.25, s - e.deltaY * 0.001)))
-  }, [])
-
   const copyImage = useCallback(async () => {
     try {
       await copySvgAsImage(await renderMathSvg(value, displayMode), {
@@ -203,9 +178,16 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
     }
     return (
       <div className="my-3 overflow-hidden rounded-lg border border-destructive/30 bg-muted">
-        <div className="flex items-center gap-2 px-4 py-1.5 text-xs text-destructive">
-          <AlertTriangle className="h-3.5 w-3.5" />
-          <span>{t('chat.math.error')}</span>
+        <div className="flex items-center justify-between border-b border-destructive/30 px-4 py-1.5 text-xs text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>{t('chat.math.error')}</span>
+          </div>
+          <BlockToolbarBtn
+            icon={codeCopied ? Check : Copy}
+            tooltip={t('chat.math.copyCode')}
+            onClick={() => copyCode(value)}
+          />
         </div>
         <div className="p-3 text-xs text-destructive/80">{error}</div>
         <div className="border-t p-4">
@@ -225,82 +207,45 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
 
   return (
     <>
-      <div className="math-block group/math relative my-3 overflow-hidden rounded-lg border bg-muted">
-        <div className="overflow-x-auto px-4 py-2">
+      <div className="math-block my-3 overflow-hidden rounded-lg border bg-muted">
+        <div className="flex items-center justify-between border-b px-4 py-1.5 text-xs text-muted-foreground">
+          <span>math</span>
+          <div className="flex items-center gap-0.5">
+            <BlockToolbarBtn
+              icon={codeCopied ? Check : Copy}
+              tooltip={t('chat.math.copyCode')}
+              onClick={() => copyCode(value)}
+            />
+            <BlockToolbarBtn
+              icon={imgCopied ? Check : Image}
+              tooltip={t('chat.math.copyImage')}
+              onClick={copyImage}
+            />
+            <BlockToolbarBtn
+              icon={Maximize2}
+              tooltip={t('chat.math.fullscreen')}
+              onClick={() => setShowFullscreen(true)}
+            />
+          </div>
+        </div>
+        <div className="overflow-x-auto p-4">
           <span
             ref={containerRef}
             className="math-display"
             dangerouslySetInnerHTML={{ __html: html }}
           />
         </div>
-        <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 transition-opacity group-hover/math:opacity-100">
-          <BlockToolbarBtn
-            icon={codeCopied ? Check : Copy}
-            tooltip={t('chat.math.copyCode')}
-            className="bg-background/80 backdrop-blur-sm"
-            onClick={() => copyCode(value)}
-          />
-          <BlockToolbarBtn
-            icon={imgCopied ? Check : Image}
-            tooltip={t('chat.math.copyImage')}
-            className="bg-background/80 backdrop-blur-sm"
-            onClick={copyImage}
-          />
-          <BlockToolbarBtn
-            icon={Maximize2}
-            tooltip={t('chat.math.fullscreen')}
-            className="bg-background/80 backdrop-blur-sm"
-            onClick={() => setShowFullscreen(true)}
-          />
-        </div>
       </div>
 
       {showFullscreen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-          onClick={() => setShowFullscreen(false)}
-          onWheel={handleFullscreenWheel}>
-          <div
-            className="relative flex h-[92vh] w-[92vw] max-w-[1600px] flex-col overflow-hidden rounded-xl bg-background"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b px-4 py-2">
-              <div className="flex items-center gap-1">
-                <BlockToolbarBtn
-                  icon={ZoomOut}
-                  tooltip={t('chat.math.zoomOut')}
-                  onClick={() => setFullscreenScale((s) => Math.max(0.25, s - 0.25))}
-                />
-                <span className="min-w-[3.5rem] text-center text-xs text-muted-foreground">
-                  {Math.round(fullscreenScale * 100)}%
-                </span>
-                <BlockToolbarBtn
-                  icon={ZoomIn}
-                  tooltip={t('chat.math.zoomIn')}
-                  onClick={() => setFullscreenScale((s) => Math.min(4, s + 0.25))}
-                />
-                <BlockToolbarBtn
-                  icon={RotateCcw}
-                  tooltip={t('chat.math.zoomReset')}
-                  onClick={() => setFullscreenScale(1)}
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowFullscreen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-auto p-8" onWheel={handleFullscreenWheel}>
-              <div
-                className="math-display inline-block min-w-full text-center text-2xl"
-                style={{ zoom: fullscreenScale }}
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
-            </div>
-          </div>
-        </div>
+        <ZoomablePreviewDialog
+          zoomInTooltip={t('chat.math.zoomIn')}
+          zoomOutTooltip={t('chat.math.zoomOut')}
+          zoomResetTooltip={t('chat.math.zoomReset')}
+          contentClassName="math-display text-2xl"
+          onClose={() => setShowFullscreen(false)}>
+          <div dangerouslySetInnerHTML={{ __html: html }} />
+        </ZoomablePreviewDialog>
       )}
     </>
   )
