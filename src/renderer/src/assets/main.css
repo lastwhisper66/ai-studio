@@ -185,15 +185,32 @@ pre.shiki {
   display: block !important;
 }
 
-/* ── Translate: no-wrap mode ── */
-/* Forces all text to not wrap; code blocks keep original formatting */
-.translate-no-wrap * {
-  white-space: nowrap !important;
+/* ── Translate result wrapping ── */
+.translate-result-wrap .translate-plain {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
-.translate-no-wrap pre,
-.translate-no-wrap pre * {
-  white-space: pre !important;
+.translate-result-nowrap .translate-plain {
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.translate-result-wrap .markdown-body p,
+.translate-result-wrap .markdown-body li,
+.translate-result-wrap .markdown-body blockquote,
+.translate-result-wrap .markdown-body td,
+.translate-result-wrap .markdown-body th {
+  overflow-wrap: anywhere;
+}
+
+.translate-result-nowrap .markdown-body p,
+.translate-result-nowrap .markdown-body li,
+.translate-result-nowrap .markdown-body blockquote,
+.translate-result-nowrap .markdown-body td,
+.translate-result-nowrap .markdown-body th {
+  white-space: pre;
+  overflow-wrap: normal;
 }
 
 /* ── Math formula styles ── */

@@ -241,6 +241,7 @@ export interface TitleUpdatedData {
 
 /** translate:request payload */
 export interface TranslateRequestPayload {
+  requestId: number
   text: string
   sourceLang: string
   targetLang: string
@@ -255,16 +256,19 @@ export interface TranslateRequestPayload {
 
 /** translate:chunk push data */
 export interface TranslateChunkData {
+  requestId: number
   delta: string
 }
 
 /** translate:end push data */
 export interface TranslateEndData {
+  requestId: number
   fullText: string
 }
 
 /** translate:error push data */
 export interface TranslateErrorData {
+  requestId: number
   error: LocalizedError
 }
 

@@ -488,7 +488,9 @@
       "temperatureHint": "较低值产生更准确的翻译，较高值更具创造性。默认 0.3。",
       "resetDefault": "重置默认",
       "wordWrap": "自动换行",
-      "wordWrapHint": "当翻译结果内容过长时自动换行显示。关闭后可通过水平滚动条查看。"
+      "wordWrapHint": "当翻译结果内容过长时自动换行显示。关闭后可通过水平滚动条查看。",
+      "markdownPreview": "Markdown 预览",
+      "markdownPreviewHint": "在翻译结果中渲染 Markdown 格式。复制仍使用原始译文。"
     },
     "history": {
       "title": "翻译历史",

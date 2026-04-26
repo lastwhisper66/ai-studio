@@ -15,6 +15,19 @@ interface MarkdownRendererProps {
   isStreaming?: boolean
 }
 
+interface LatexDelimiter {
+  open: string
+  close: string
+  className: string
+}
+
+const latexDelimiters: LatexDelimiter[] = [
+  { open: '\\\\[', close: '\\\\]', className: 'language-math math-display' },
+  { open: '\\[', close: '\\]', className: 'language-math math-display' },
+  { open: '\\\\(', close: '\\\\)', className: 'language-math math-inline' },
+  { open: '\\(', close: '\\)', className: 'language-math math-inline' },
+]
+
 const sanitizeSchema = {
   ...defaultSchema,
   tagNames: [
@@ -39,6 +52,128 @@ const sanitizeSchema = {
     math: ['value'],
     inlinemath: ['value'],
   },
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function renderLatexDelimiter(value: string, className: string): string {
+  const code = `<code class="${className}">${escapeHtml(value)}</code>`
+
+  if (className.includes('math-display')) {
+    return `\n\n<pre>${code}</pre>\n\n`
+  }
+
+  return code
+}
+
+function convertLatexDelimitersInPlainText(value: string): string {
+  let output = ''
+  let index = 0
+
+  while (index < value.length) {
+    const delimiter = latexDelimiters.find((item) => value.startsWith(item.open, index))
+
+    if (!delimiter) {
+      output += value[index]
+      index += 1
+      continue
+    }
+
+    const contentStart = index + delimiter.open.length
+    const contentEnd = value.indexOf(delimiter.close, contentStart)
+
+    if (contentEnd === -1) {
+      output += delimiter.open
+      index = contentStart
+      continue
+    }
+
+    output += renderLatexDelimiter(value.slice(contentStart, contentEnd), delimiter.className)
+    index = contentEnd + delimiter.close.length
+  }
+
+  return output
+}
+
+function convertOutsideInlineCode(value: string): string {
+  let output = ''
+  let index = 0
+
+  while (index < value.length) {
+    const tickStart = value.indexOf('`', index)
+
+    if (tickStart === -1) {
+      output += convertLatexDelimitersInPlainText(value.slice(index))
+      break
+    }
+
+    output += convertLatexDelimitersInPlainText(value.slice(index, tickStart))
+
+    let tickEnd = tickStart + 1
+    while (value[tickEnd] === '`') tickEnd += 1
+
+    const tickFence = value.slice(tickStart, tickEnd)
+    const codeEnd = value.indexOf(tickFence, tickEnd)
+
+    if (codeEnd === -1) {
+      output += value.slice(tickStart)
+      break
+    }
+
+    output += value.slice(tickStart, codeEnd + tickFence.length)
+    index = codeEnd + tickFence.length
+  }
+
+  return output
+}
+
+function normalizeLatexMathDelimiters(content: string): string {
+  const lines = content.match(/[^\r\n]*(?:\r\n|\n|\r|$)/g)?.filter(Boolean) ?? []
+  let output = ''
+  let pendingText = ''
+  let fenceMarker = ''
+  let fenceLength = 0
+
+  const flushText = (): void => {
+    if (!pendingText) return
+    output += convertOutsideInlineCode(pendingText)
+    pendingText = ''
+  }
+
+  for (const line of lines) {
+    if (!fenceMarker) {
+      const openingFence = /^( {0,3})(`{3,}|~{3,})/.exec(line)
+
+      if (openingFence) {
+        flushText()
+        fenceMarker = openingFence[2][0]
+        fenceLength = openingFence[2].length
+        output += line
+        continue
+      }
+
+      pendingText += line
+      continue
+    }
+
+    output += line
+
+    const closingFence = new RegExp(`^ {0,3}\\${fenceMarker}{${fenceLength},}(?:\\s|$)`)
+    if (closingFence.test(line)) {
+      fenceMarker = ''
+      fenceLength = 0
+    }
+  }
+
+  flushText()
+
+  return output
 }
 
 function InlineCode({ children, ...props }: ComponentPropsWithoutRef<'code'>): React.JSX.Element {
@@ -264,11 +399,12 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   isStreaming = false,
 }: MarkdownRendererProps) {
   const components = useMemo(() => createComponents(isStreaming), [isStreaming])
+  const normalizedContent = useMemo(() => normalizeLatexMathDelimiters(content), [content])
 
   return (
     <div className="markdown-body">
       <Markdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={components}>
-        {content}
+        {normalizedContent}
       </Markdown>
     </div>
   )

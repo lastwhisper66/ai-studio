@@ -488,7 +488,9 @@
       "temperatureHint": "Lower values produce more accurate translations, higher values are more creative. Default 0.3.",
       "resetDefault": "Reset default",
       "wordWrap": "Word wrap",
-      "wordWrapHint": "Wrap long lines in translation results. When off, use horizontal scrollbar to view."
+      "wordWrapHint": "Wrap long lines in translation results. When off, use horizontal scrollbar to view.",
+      "markdownPreview": "Markdown preview",
+      "markdownPreviewHint": "Render Markdown formatting in translation results. Copy still uses the original translated text."
     },
     "history": {
       "title": "History",

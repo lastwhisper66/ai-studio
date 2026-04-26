@@ -11,6 +11,8 @@ import {
   X,
   Trash2,
   History,
+  WrapText,
+  FileText,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
@@ -67,11 +69,13 @@ export function TranslateView(): React.JSX.Element {
     systemPrompt: '',
     temperature: 0.3,
     wordWrap: true,
+    markdownPreview: false,
   })
   const [history, setHistory] = useState<TranslationHistoryItem[]>([])
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const currentTranslationRef = useRef<{
+    requestId: number
     sourceText: string
     sourceLang: string
     targetLang: string
@@ -97,6 +101,7 @@ export function TranslateView(): React.JSX.Element {
         srcLangResult,
         tgtLangResult,
         wordWrapResult,
+        markdownPreviewResult,
       ] = await Promise.all([
         window.api.getSetting('translate.systemPrompt'),
         window.api.getSetting('translate.temperature'),
@@ -105,11 +110,13 @@ export function TranslateView(): React.JSX.Element {
         window.api.getSetting('translate.sourceLang'),
         window.api.getSetting('translate.targetLang'),
         window.api.getSetting('translate.wordWrap'),
+        window.api.getSetting('translate.markdownPreview'),
       ])
       setTranslateSettings({
         systemPrompt: promptResult.data ?? '',
         temperature: tempResult.data ? parseFloat(tempResult.data) : 0.3,
         wordWrap: wordWrapResult.data !== 'false',
+        markdownPreview: markdownPreviewResult.data === 'true',
       })
       if (providerResult.data) setLocalProviderId(providerResult.data)
       if (modelResult.data) setLocalModelId(modelResult.data)
@@ -152,12 +159,14 @@ export function TranslateView(): React.JSX.Element {
       const targetLabel = LANGUAGES.find((l) => l.code === tgtLang)?.englishLabel ?? tgtLang
 
       currentTranslationRef.current = {
+        requestId: id,
         sourceText: text,
         sourceLang: sourceLabel,
         targetLang: targetLabel,
       }
 
       const result = await window.api.translate({
+        requestId: id,
         text,
         sourceLang: sourceLabel,
         targetLang: targetLabel,
@@ -182,8 +191,8 @@ export function TranslateView(): React.JSX.Element {
       setTargetLang(value)
       window.api.setSetting('translate.targetLang', value)
 
-      const text = sourceText.trim()
-      if (!text) return
+      const text = sourceText
+      if (!text.trim()) return
 
       doTranslate(text, sourceLang, value).catch(() => {})
     },
@@ -209,13 +218,13 @@ export function TranslateView(): React.JSX.Element {
   // Register streaming listeners
   useEffect(() => {
     const unsubChunk = window.api.onTranslateChunk((data) => {
-      if (!currentTranslationRef.current) return
+      if (data.requestId !== currentTranslationRef.current?.requestId) return
       setTranslatedText((prev) => prev + data.delta)
     })
 
     const unsubEnd = window.api.onTranslateEnd((data) => {
       const params = currentTranslationRef.current
-      if (!params) return
+      if (!params || data.requestId !== params.requestId) return
       currentTranslationRef.current = null
       setIsTranslating(false)
       if (data.fullText) {
@@ -235,7 +244,7 @@ export function TranslateView(): React.JSX.Element {
     })
 
     const unsubError = window.api.onTranslateError((data) => {
-      if (!currentTranslationRef.current) return
+      if (data.requestId !== currentTranslationRef.current?.requestId) return
       currentTranslationRef.current = null
       setError(data.error)
       setIsTranslating(false)
@@ -250,8 +259,8 @@ export function TranslateView(): React.JSX.Element {
   }, [])
 
   const handleTranslate = useCallback(async () => {
-    const text = sourceText.trim()
-    if (!text || isTranslating) return
+    const text = sourceText
+    if (!text.trim() || isTranslating) return
 
     await doTranslate(text, sourceLang, targetLang)
   }, [sourceText, sourceLang, targetLang, isTranslating, doTranslate])
@@ -294,6 +303,18 @@ export function TranslateView(): React.JSX.Element {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }, [translatedText])
+
+  const handleToggleWordWrap = useCallback(() => {
+    const next = !translateSettings.wordWrap
+    setTranslateSettings((prev) => ({ ...prev, wordWrap: next }))
+    window.api.setSetting('translate.wordWrap', String(next))
+  }, [translateSettings.wordWrap])
+
+  const handleToggleMarkdownPreview = useCallback(() => {
+    const next = !translateSettings.markdownPreview
+    setTranslateSettings((prev) => ({ ...prev, markdownPreview: next }))
+    window.api.setSetting('translate.markdownPreview', String(next))
+  }, [translateSettings.markdownPreview])
 
   const handleClear = useCallback(() => {
     setSourceText('')
@@ -389,16 +410,50 @@ export function TranslateView(): React.JSX.Element {
 
         <div className="flex-1" />
 
-        {(sourceText || translatedText) && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClear}>
-                <Eraser className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t('translate.clear')}</TooltipContent>
-          </Tooltip>
-        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClear}>
+              <Eraser className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('translate.clear')}</TooltipContent>
+        </Tooltip>
+
+        <div className="h-5 w-px bg-border" aria-hidden="true" />
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 ${
+                translateSettings.wordWrap ? 'bg-accent text-accent-foreground' : ''
+              }`}
+              onClick={handleToggleWordWrap}
+              aria-label={t('translate.settings.wordWrap')}>
+              <WrapText className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('translate.settings.wordWrap')}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-8 w-8 ${
+                translateSettings.markdownPreview ? 'bg-accent text-accent-foreground' : ''
+              }`}
+              onClick={handleToggleMarkdownPreview}
+              aria-label={t('translate.settings.markdownPreview')}>
+              <FileText className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{t('translate.settings.markdownPreview')}</TooltipContent>
+        </Tooltip>
+
+        <div className="h-5 w-px bg-border" aria-hidden="true" />
 
         {/* Model selector */}
         <button
@@ -493,13 +548,21 @@ export function TranslateView(): React.JSX.Element {
 
           <div className="flex-1 overflow-auto">
             <div
-              className={`p-4 ${translateSettings.wordWrap ? 'break-words' : 'translate-no-wrap w-max min-w-full'}`}>
+              className={`p-4 ${
+                translateSettings.wordWrap
+                  ? 'min-w-0 translate-result-wrap'
+                  : 'w-max min-w-full translate-result-nowrap'
+              }`}>
               {error ? (
                 <p className="text-sm text-destructive">{resolveError(error)}</p>
               ) : translatedText ? (
-                <div className="text-sm leading-relaxed">
-                  <MarkdownRenderer content={translatedText} />
-                </div>
+                translateSettings.markdownPreview ? (
+                  <div className="translate-result-markdown text-sm leading-relaxed">
+                    <MarkdownRenderer content={translatedText} isStreaming={isTranslating} />
+                  </div>
+                ) : (
+                  <div className="translate-plain text-sm leading-relaxed">{translatedText}</div>
+                )
               ) : (
                 <p className="text-sm text-muted-foreground">
                   {isTranslating ? t('translate.translating') : t('translate.resultPlaceholder')}
@@ -585,6 +648,7 @@ export function TranslateView(): React.JSX.Element {
             'translate.systemPrompt': s.systemPrompt,
             'translate.temperature': String(s.temperature),
             'translate.wordWrap': String(s.wordWrap),
+            'translate.markdownPreview': String(s.markdownPreview),
           })
         }}
       />

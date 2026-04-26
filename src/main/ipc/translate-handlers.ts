@@ -9,6 +9,7 @@ import { getProvider } from '../db/providers'
 import { getModel } from '../db/models'
 
 let activeController: AbortController | null = null
+let activeRequestId: number | null = null
 
 function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettings {
   if (!providerId) {
@@ -70,8 +71,16 @@ export function registerTranslateHandlers(): void {
       event: IpcMainInvokeEvent,
       payload: TranslateRequestPayload,
     ): Promise<IpcResult<void>> => {
-      const { text, sourceLang, targetLang, providerId, modelId, systemPrompt, temperature } =
-        payload
+      const {
+        requestId,
+        text,
+        sourceLang,
+        targetLang,
+        providerId,
+        modelId,
+        systemPrompt,
+        temperature,
+      } = payload
       const sender = event.sender
       let fullText = ''
       let controller: AbortController | null = null
@@ -86,8 +95,12 @@ export function registerTranslateHandlers(): void {
 
         controller = new AbortController()
         activeController = controller
+        activeRequestId = requestId
 
         const prompt = buildSystemPrompt(systemPrompt, sourceLang, targetLang)
+
+        const isStillActive = (): boolean =>
+          activeController === controller && activeRequestId === requestId
 
         await streamChat(
           {
@@ -101,39 +114,45 @@ export function registerTranslateHandlers(): void {
           {
             onChunk: (delta) => {
               fullText += delta
-              if (!sender.isDestroyed()) {
-                sender.send(IpcChannels.TRANSLATE_CHUNK, { delta })
+              if (isStillActive() && !sender.isDestroyed()) {
+                sender.send(IpcChannels.TRANSLATE_CHUNK, { requestId, delta })
               }
             },
           },
         )
 
-        const stillActive = activeController === controller
-        if (stillActive) activeController = null
+        const stillActive = isStillActive()
+        if (stillActive) {
+          activeController = null
+          activeRequestId = null
+        }
 
         if (stillActive && !sender.isDestroyed()) {
-          sender.send(IpcChannels.TRANSLATE_END, { fullText })
+          sender.send(IpcChannels.TRANSLATE_END, { requestId, fullText })
           showCompletionNotification('translate')
         }
         return { success: true }
       } catch (error: unknown) {
         // If a newer request replaced us, silently discard — the new stream owns the UI now
-        const stillActive = activeController === controller
-        if (stillActive) activeController = null
+        const stillActive = activeController === controller && activeRequestId === requestId
+        if (stillActive) {
+          activeController = null
+          activeRequestId = null
+        }
 
         const isAborted =
           error instanceof Error &&
           (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
           if (stillActive && !sender.isDestroyed()) {
-            sender.send(IpcChannels.TRANSLATE_END, { fullText })
+            sender.send(IpcChannels.TRANSLATE_END, { requestId, fullText })
           }
           return { success: true }
         }
 
         const localized = toLocalizedError(error)
         if (stillActive && !sender.isDestroyed()) {
-          sender.send(IpcChannels.TRANSLATE_ERROR, { error: localized })
+          sender.send(IpcChannels.TRANSLATE_ERROR, { requestId, error: localized })
         }
         return { success: false, error: localized }
       }
@@ -144,6 +163,7 @@ export function registerTranslateHandlers(): void {
     if (activeController) {
       activeController.abort()
       activeController = null
+      activeRequestId = null
     }
     return { success: true }
   })
