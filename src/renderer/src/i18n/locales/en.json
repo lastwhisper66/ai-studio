@@ -172,7 +172,7 @@
       "modelLibrary": "Model Library",
       "modelGroup": "Model Groups",
       "general": "General",
-      "security": "Security",
+      "network": "Network",
       "display": "Display",
       "data": "Data",
       "keyboardShortcuts": "Shortcuts",
@@ -261,10 +261,10 @@
       "clearDataConfirmDescription": "This action cannot be undone. All conversations, settings, provider configurations, and attachment files will be deleted. The app will restart automatically.",
       "clearDataConfirmButton": "Confirm Clear"
     },
-    "security": {
-      "title": "Security",
-      "description": "Network security and certificate settings.",
-      "network": "Network",
+    "network": {
+      "title": "Network",
+      "description": "Network related settings.",
+      "certificate": "Certificate",
       "skipSsl": "Skip SSL certificate verification",
       "skipSslDescription": "In enterprise VPN or proxy environments, enable this option if self-signed certificates cause connection failures."
     },

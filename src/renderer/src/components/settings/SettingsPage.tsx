@@ -9,7 +9,7 @@ import { ModelLibrarySection } from './ModelLibrarySection'
 import { ModelGroupSection } from './ModelGroupSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
-import { SecuritySection } from './SecuritySection'
+import { NetworkSection } from './NetworkSection'
 import { DataSection } from './DataSection'
 import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
@@ -49,7 +49,7 @@ export function SettingsPage(): React.JSX.Element {
           <ScrollArea className="flex-1">
             <div className="p-6">
               {activeSection === 'general' && <GeneralSection />}
-              {activeSection === 'security' && <SecuritySection />}
+              {activeSection === 'network' && <NetworkSection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'data' && <DataSection />}
               {activeSection === 'phrases' && <PhrasesSection />}

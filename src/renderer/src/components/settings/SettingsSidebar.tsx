@@ -3,7 +3,7 @@ import {
   Library,
   FolderTree,
   Settings2,
-  ShieldCheck,
+  Globe,
   Monitor,
   Keyboard,
   Database,
@@ -20,7 +20,7 @@ export type SettingsSection =
   | 'model-library'
   | 'model-group'
   | 'general'
-  | 'security'
+  | 'network'
   | 'display'
   | 'data'
   | 'phrases'
@@ -43,7 +43,7 @@ const sectionGroups: SectionItem[][] = [
   ],
   [
     { id: 'general', labelKey: 'settings.sections.general', icon: Settings2 },
-    { id: 'security', labelKey: 'settings.sections.security', icon: ShieldCheck },
+    { id: 'network', labelKey: 'settings.sections.network', icon: Globe },
     { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
     { id: 'data', labelKey: 'settings.sections.data', icon: Database },
   ],

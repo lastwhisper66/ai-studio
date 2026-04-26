@@ -172,7 +172,7 @@
       "modelLibrary": "模型库",
       "modelGroup": "模型分组",
       "general": "通用设置",
-      "security": "安全设置",
+      "network": "网络设置",
       "display": "显示设置",
       "data": "数据设置",
       "keyboardShortcuts": "快捷键",
@@ -261,10 +261,10 @@
       "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
       "clearDataConfirmButton": "确认清除"
     },
-    "security": {
-      "title": "安全设置",
-      "description": "网络安全与证书相关配置。",
-      "network": "网络",
+    "network": {
+      "title": "网络设置",
+      "description": "网络相关配置。",
+      "certificate": "证书",
       "skipSsl": "跳过 SSL 证书验证",
       "skipSslDescription": "在企业 VPN 或代理环境下，如果遇到自签名证书导致连接失败，可以开启此选项。"
     },
