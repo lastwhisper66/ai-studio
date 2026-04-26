@@ -273,18 +273,19 @@ export function DisplaySection(): React.JSX.Element {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            {(['katex', 'mathjax'] as const).map((eng) => (
+          <div className="border-border inline-flex overflow-hidden rounded-md border">
+            {(['katex', 'mathjax'] as const).map((eng, i) => (
               <button
                 key={eng}
                 type="button"
                 aria-pressed={(settings['display.mathEngine'] || 'katex') === eng}
                 onClick={() => saveSettings({ 'display.mathEngine': eng })}
                 className={cn(
-                  'rounded-lg border px-4 py-2 text-sm transition-colors',
+                  'cursor-pointer px-3 py-1.5 text-xs font-medium transition-colors',
+                  i > 0 && 'border-border border-l',
                   (settings['display.mathEngine'] || 'katex') === eng
-                    ? 'border-primary bg-primary/10 text-primary font-medium'
-                    : 'border-border hover:bg-accent text-muted-foreground',
+                    ? 'bg-primary text-primary-foreground'
+                    : 'hover:bg-muted/50',
                 )}>
                 {t(`settings.display.mathEngine${eng === 'katex' ? 'Katex' : 'Mathjax'}`)}
               </button>
