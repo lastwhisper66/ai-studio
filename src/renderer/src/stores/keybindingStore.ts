@@ -3,20 +3,29 @@ import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybinding
 import { useSettingsStore } from './settingsStore'
 
 const STORAGE_KEY = 'app.keybindings'
+const DISABLED_KEY = 'app.keybindingsDisabled'
 
 type Overrides = Partial<Record<KeybindingActionId, string>>
+type DisabledSet = Partial<Record<KeybindingActionId, true>>
 
 interface KeybindingState {
   overrides: Overrides
+  disabled: DisabledSet
   isLoaded: boolean
 
   init: () => void
   getAccelerator: (actionId: KeybindingActionId) => string
+  getEffectiveAccelerator: (actionId: KeybindingActionId) => string | null
   getAllEffective: () => Record<KeybindingActionId, string>
+  isDisabled: (actionId: KeybindingActionId) => boolean
+  isCleared: (actionId: KeybindingActionId) => boolean
+  isOverridden: (actionId: KeybindingActionId) => boolean
   setOverride: (actionId: KeybindingActionId, accelerator: string) => Promise<void>
   removeOverride: (actionId: KeybindingActionId) => Promise<void>
+  clearAction: (actionId: KeybindingActionId) => Promise<void>
   resetAction: (actionId: KeybindingActionId) => Promise<void>
   resetAll: () => Promise<void>
+  toggleDisabled: (actionId: KeybindingActionId) => Promise<void>
 }
 
 function parseOverrides(raw: string | undefined): Overrides {
@@ -28,12 +37,25 @@ function parseOverrides(raw: string | undefined): Overrides {
   }
 }
 
+function parseDisabled(raw: string | undefined): DisabledSet {
+  if (!raw) return {}
+  try {
+    return JSON.parse(raw) as DisabledSet
+  } catch {
+    return {}
+  }
+}
+
 async function persistOverrides(overrides: Overrides): Promise<void> {
   const clean = Object.fromEntries(Object.entries(overrides).filter(([, v]) => v !== undefined))
   await useSettingsStore.getState().saveSettings({ [STORAGE_KEY]: JSON.stringify(clean) })
 }
 
-/** Notify main process to re-register the quick-assistant global shortcut */
+async function persistDisabled(disabled: DisabledSet): Promise<void> {
+  const clean = Object.fromEntries(Object.entries(disabled).filter(([, v]) => v))
+  await useSettingsStore.getState().saveSettings({ [DISABLED_KEY]: JSON.stringify(clean) })
+}
+
 async function syncQuickAssistantShortcut(): Promise<void> {
   try {
     await window.api.updateQuickAssistantShortcut()
@@ -42,7 +64,6 @@ async function syncQuickAssistantShortcut(): Promise<void> {
   }
 }
 
-/** Notify main process to re-register the summon-window global shortcut */
 async function syncSummonWindowShortcut(): Promise<void> {
   try {
     await window.api.updateSummonWindowShortcut()
@@ -51,7 +72,6 @@ async function syncSummonWindowShortcut(): Promise<void> {
   }
 }
 
-/** Notify main process to re-register the screenshot global shortcut */
 async function syncScreenshotShortcut(): Promise<void> {
   try {
     await window.api.updateScreenshotShortcut()
@@ -60,7 +80,6 @@ async function syncScreenshotShortcut(): Promise<void> {
   }
 }
 
-/** Notify main process to re-register the selection-assistant toggle shortcut */
 async function syncSelectionShortcut(): Promise<void> {
   try {
     await window.api.updateSelectionShortcut()
@@ -69,7 +88,6 @@ async function syncSelectionShortcut(): Promise<void> {
   }
 }
 
-/** Sync global shortcut with main process when a global-shortcut action changes */
 async function syncGlobalShortcut(actionId: KeybindingActionId): Promise<void> {
   if (actionId === 'toggle-quick-assistant') await syncQuickAssistantShortcut()
   if (actionId === 'summon-window') await syncSummonWindowShortcut()
@@ -79,16 +97,31 @@ async function syncGlobalShortcut(actionId: KeybindingActionId): Promise<void> {
 
 export const useKeybindingStore = create<KeybindingState>((set, get) => ({
   overrides: {},
+  disabled: {},
   isLoaded: false,
 
   init: () => {
-    const raw = useSettingsStore.getState().settings[STORAGE_KEY]
-    set({ overrides: parseOverrides(raw), isLoaded: true })
+    const settings = useSettingsStore.getState().settings
+    set({
+      overrides: parseOverrides(settings[STORAGE_KEY]),
+      disabled: parseDisabled(settings[DISABLED_KEY]),
+      isLoaded: true,
+    })
   },
 
   getAccelerator: (actionId) => {
     const { overrides } = get()
-    return overrides[actionId] ?? DEFAULT_KEYBINDINGS[actionId].defaultAccelerator
+    const val = overrides[actionId]
+    if (val === '') return ''
+    return val ?? DEFAULT_KEYBINDINGS[actionId].defaultAccelerator
+  },
+
+  // Returns null when the action is disabled or has no binding (cleared)
+  getEffectiveAccelerator: (actionId) => {
+    const { disabled } = get()
+    if (disabled[actionId]) return null
+    const accel = get().getAccelerator(actionId)
+    return accel || null
   },
 
   getAllEffective: () => {
@@ -96,13 +129,26 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     const result = {} as Record<KeybindingActionId, string>
     for (const [id, def] of Object.entries(DEFAULT_KEYBINDINGS)) {
       const actionId = id as KeybindingActionId
-      result[actionId] = overrides[actionId] ?? def.defaultAccelerator
+      const val = overrides[actionId]
+      if (val === '') {
+        result[actionId] = ''
+      } else {
+        result[actionId] = val ?? def.defaultAccelerator
+      }
     }
     return result
   },
 
+  isDisabled: (actionId) => !!get().disabled[actionId],
+
+  isCleared: (actionId) => get().overrides[actionId] === '',
+
+  isOverridden: (actionId) => {
+    const val = get().overrides[actionId]
+    return val !== undefined && val !== ''
+  },
+
   setOverride: async (actionId, accelerator) => {
-    // If the new accelerator matches the default, remove the override instead
     if (accelerator === DEFAULT_KEYBINDINGS[actionId].defaultAccelerator) {
       await get().removeOverride(actionId)
       return
@@ -122,16 +168,43 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     await syncGlobalShortcut(actionId)
   },
 
+  clearAction: async (actionId) => {
+    const next = { ...get().overrides, [actionId]: '' }
+    set({ overrides: next })
+    await persistOverrides(next)
+    await syncGlobalShortcut(actionId)
+  },
+
   resetAction: async (actionId) => {
-    await get().removeOverride(actionId)
+    const nextOverrides = { ...get().overrides }
+    delete nextOverrides[actionId]
+    set({ overrides: nextOverrides })
+    await persistOverrides(nextOverrides)
+    await syncGlobalShortcut(actionId)
   },
 
   resetAll: async () => {
-    set({ overrides: {} })
-    await useSettingsStore.getState().saveSettings({ [STORAGE_KEY]: JSON.stringify({}) })
-    await syncQuickAssistantShortcut()
-    await syncSummonWindowShortcut()
-    await syncScreenshotShortcut()
-    await syncSelectionShortcut()
+    set({ overrides: {}, disabled: {} })
+    const save = useSettingsStore.getState().saveSettings
+    await save({ [STORAGE_KEY]: JSON.stringify({}), [DISABLED_KEY]: JSON.stringify({}) })
+    await Promise.all([
+      syncQuickAssistantShortcut(),
+      syncSummonWindowShortcut(),
+      syncScreenshotShortcut(),
+      syncSelectionShortcut(),
+    ])
+  },
+
+  toggleDisabled: async (actionId) => {
+    const { disabled } = get()
+    const next = { ...disabled }
+    if (next[actionId]) {
+      delete next[actionId]
+    } else {
+      next[actionId] = true
+    }
+    set({ disabled: next })
+    await persistDisabled(next)
+    await syncGlobalShortcut(actionId)
   },
 }))

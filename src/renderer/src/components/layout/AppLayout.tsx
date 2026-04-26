@@ -48,13 +48,13 @@ export function AppLayout(): React.JSX.Element {
     })
   }, [])
 
-  const getAccelerator = useKeybindingStore((s) => s.getAccelerator)
+  const getEffectiveAccelerator = useKeybindingStore((s) => s.getEffectiveAccelerator)
 
   // Configurable sidebar toggle shortcut — only active on chat view
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if (useSettingsStore.getState().activeView !== 'chat') return
-      const accel = getAccelerator('toggle-sidebar')
+      const accel = getEffectiveAccelerator('toggle-sidebar')
       if (matchesShortcut(e, accel)) {
         e.preventDefault()
         toggleSidebar()
@@ -62,13 +62,13 @@ export function AppLayout(): React.JSX.Element {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar, getAccelerator])
+  }, [toggleSidebar, getEffectiveAccelerator])
 
   // Configurable topic panel toggle shortcut — only active on chat view
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if (useSettingsStore.getState().activeView !== 'chat') return
-      const accel = getAccelerator('toggle-topic')
+      const accel = getEffectiveAccelerator('toggle-topic')
       if (matchesShortcut(e, accel)) {
         e.preventDefault()
         toggleTopic()
@@ -76,7 +76,7 @@ export function AppLayout(): React.JSX.Element {
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [toggleTopic, getAccelerator])
+  }, [toggleTopic, getEffectiveAccelerator])
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden">

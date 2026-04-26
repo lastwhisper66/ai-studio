@@ -118,7 +118,17 @@ function toElectronAccelerator(accel: string): string {
     .join('+')
 }
 
-function getSummonWindowAccelerator(): string {
+function getEffectiveGlobalAccelerator(actionId: KeybindingActionId): string | null {
+  const rawDisabled = getSetting('app.keybindingsDisabled')
+  if (rawDisabled) {
+    try {
+      const disabled = JSON.parse(rawDisabled) as Partial<Record<KeybindingActionId, boolean>>
+      if (disabled[actionId]) return null
+    } catch {
+      // ignore
+    }
+  }
+
   const raw = getSetting('app.keybindings')
   let overrides: Partial<Record<KeybindingActionId, string>> = {}
   if (raw) {
@@ -128,7 +138,9 @@ function getSummonWindowAccelerator(): string {
       // ignore
     }
   }
-  return overrides['summon-window'] ?? DEFAULT_KEYBINDINGS['summon-window'].defaultAccelerator
+  const val = overrides[actionId]
+  if (val === '') return null
+  return val ?? DEFAULT_KEYBINDINGS[actionId].defaultAccelerator
 }
 
 let currentSummonShortcut: string | null = null
@@ -139,9 +151,10 @@ function registerSummonWindowShortcut(): void {
     currentSummonShortcut = null
   }
 
-  const accel = getSummonWindowAccelerator()
-  const electronAccel = toElectronAccelerator(accel)
+  const accel = getEffectiveGlobalAccelerator('summon-window')
+  if (!accel) return
 
+  const electronAccel = toElectronAccelerator(accel)
   const ok = globalShortcut.register(electronAccel, () => {
     if (mainWindow) showWindow(mainWindow)
   })
@@ -153,34 +166,18 @@ function registerSummonWindowShortcut(): void {
   }
 }
 
-function getQuickAssistantAccelerator(): string {
-  const raw = getSetting('app.keybindings')
-  let overrides: Partial<Record<KeybindingActionId, string>> = {}
-  if (raw) {
-    try {
-      overrides = JSON.parse(raw)
-    } catch {
-      // ignore
-    }
-  }
-  return (
-    overrides['toggle-quick-assistant'] ??
-    DEFAULT_KEYBINDINGS['toggle-quick-assistant'].defaultAccelerator
-  )
-}
-
 let currentQaShortcut: string | null = null
 
 function registerQuickAssistantShortcut(): void {
-  // Unregister previous shortcut
   if (currentQaShortcut) {
     globalShortcut.unregister(currentQaShortcut)
     currentQaShortcut = null
   }
 
-  const accel = getQuickAssistantAccelerator()
-  const electronAccel = toElectronAccelerator(accel)
+  const accel = getEffectiveGlobalAccelerator('toggle-quick-assistant')
+  if (!accel) return
 
+  const electronAccel = toElectronAccelerator(accel)
   const ok = globalShortcut.register(electronAccel, () => {
     if (!getQuickAssistantEnabled()) return
     toggleQuickAssistantWindow()
@@ -193,22 +190,6 @@ function registerQuickAssistantShortcut(): void {
   }
 }
 
-function getScreenshotAccelerator(): string {
-  const raw = getSetting('app.keybindings')
-  let overrides: Partial<Record<KeybindingActionId, string>> = {}
-  if (raw) {
-    try {
-      overrides = JSON.parse(raw)
-    } catch {
-      // ignore
-    }
-  }
-  return (
-    overrides['screenshot-translate'] ??
-    DEFAULT_KEYBINDINGS['screenshot-translate'].defaultAccelerator
-  )
-}
-
 let currentScreenshotShortcut: string | null = null
 
 function registerScreenshotShortcut(): void {
@@ -217,9 +198,10 @@ function registerScreenshotShortcut(): void {
     currentScreenshotShortcut = null
   }
 
-  const accel = getScreenshotAccelerator()
-  const electronAccel = toElectronAccelerator(accel)
+  const accel = getEffectiveGlobalAccelerator('screenshot-translate')
+  if (!accel) return
 
+  const electronAccel = toElectronAccelerator(accel)
   const ok = globalShortcut.register(electronAccel, () => {
     if (!getQuickAssistantEnabled()) return
     startScreenshot()
@@ -232,22 +214,6 @@ function registerScreenshotShortcut(): void {
   }
 }
 
-function getSelectionToggleAccelerator(): string {
-  const raw = getSetting('app.keybindings')
-  let overrides: Partial<Record<KeybindingActionId, string>> = {}
-  if (raw) {
-    try {
-      overrides = JSON.parse(raw)
-    } catch {
-      // ignore
-    }
-  }
-  return (
-    overrides['toggle-selection-assistant'] ??
-    DEFAULT_KEYBINDINGS['toggle-selection-assistant'].defaultAccelerator
-  )
-}
-
 let currentSelectionToggleShortcut: string | null = null
 
 function registerSelectionToggleShortcut(): boolean {
@@ -256,9 +222,10 @@ function registerSelectionToggleShortcut(): boolean {
     currentSelectionToggleShortcut = null
   }
 
-  const accel = getSelectionToggleAccelerator()
-  const electronAccel = toElectronAccelerator(accel)
+  const accel = getEffectiveGlobalAccelerator('toggle-selection-assistant')
+  if (!accel) return false
 
+  const electronAccel = toElectronAccelerator(accel)
   const ok = globalShortcut.register(electronAccel, () => {
     const enabled = toggleSelectionAssistant()
     if (mainWindow && !mainWindow.isDestroyed()) {

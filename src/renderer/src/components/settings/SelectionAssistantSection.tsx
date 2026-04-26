@@ -56,6 +56,7 @@ import {
   DEFAULT_SELECTION_MAX_TEXT_LENGTH,
   DEFAULT_SELECTION_MIN_TEXT_LENGTH,
 } from '@shared/types'
+import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 
 const SELECTION_ACTION = 'toggle-selection-assistant'
 const PROGRAM_NAME_MAX_LENGTH = 120
@@ -90,7 +91,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
   // Keybinding
   const overrides = useKeybindingStore((s) => s.overrides)
   const getAccelerator = useKeybindingStore((s) => s.getAccelerator)
-  const getAllEffective = useKeybindingStore((s) => s.getAllEffective)
+  const getEffectiveAccelerator = useKeybindingStore((s) => s.getEffectiveAccelerator)
   const setOverride = useKeybindingStore((s) => s.setOverride)
   const resetAction = useKeybindingStore((s) => s.resetAction)
   const [shortcutRegistered, setShortcutRegistered] = useState(true)
@@ -178,10 +179,10 @@ export function SelectionAssistantSection(): React.JSX.Element {
   }
 
   const handleShortcutChange = async (accel: string): Promise<void> => {
-    const effective = getAllEffective()
-    for (const [id, a] of Object.entries(effective)) {
+    for (const id of Object.keys(DEFAULT_KEYBINDINGS) as KeybindingActionId[]) {
       if (id === SELECTION_ACTION) continue
-      if (a.toLowerCase() === accel.toLowerCase()) return
+      const a = getEffectiveAccelerator(id)
+      if (a && a.toLowerCase() === accel.toLowerCase()) return
     }
     await setOverride(SELECTION_ACTION, accel)
     const result = await window.api.updateSelectionShortcut()

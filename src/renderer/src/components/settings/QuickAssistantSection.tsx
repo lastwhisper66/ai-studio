@@ -38,6 +38,7 @@ import {
   defaultQuickActionIcon,
 } from '@renderer/components/quick-assistant/icons'
 import type { QuickAction } from '@shared/types'
+import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 
 const QUICK_ASSISTANT_ACTION = 'toggle-quick-assistant'
 
@@ -63,7 +64,7 @@ export function QuickAssistantSection(): React.JSX.Element {
   // Keybinding
   const overrides = useKeybindingStore((s) => s.overrides)
   const getAccelerator = useKeybindingStore((s) => s.getAccelerator)
-  const getAllEffective = useKeybindingStore((s) => s.getAllEffective)
+  const getEffectiveAccelerator = useKeybindingStore((s) => s.getEffectiveAccelerator)
   const setOverride = useKeybindingStore((s) => s.setOverride)
   const resetAction = useKeybindingStore((s) => s.resetAction)
 
@@ -71,10 +72,10 @@ export function QuickAssistantSection(): React.JSX.Element {
   const shortcutOverridden = QUICK_ASSISTANT_ACTION in overrides
 
   const handleShortcutChange = async (accel: string): Promise<void> => {
-    const effective = getAllEffective()
-    for (const [id, a] of Object.entries(effective)) {
+    for (const id of Object.keys(DEFAULT_KEYBINDINGS) as KeybindingActionId[]) {
       if (id === QUICK_ASSISTANT_ACTION) continue
-      if (a.toLowerCase() === accel.toLowerCase()) return
+      const a = getEffectiveAccelerator(id)
+      if (a && a.toLowerCase() === accel.toLowerCase()) return
     }
     await setOverride(QUICK_ASSISTANT_ACTION, accel)
   }
