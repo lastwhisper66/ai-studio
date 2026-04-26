@@ -5,23 +5,15 @@ const cache = new Map<string, string>()
 
 export function useUserAvatar(): string | null {
   const avatarPath = useSettingsStore((s) => s.settings['user.avatarPath'] ?? '')
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(() => cache.get(avatarPath) ?? null)
+  const [fetchResult, setFetchResult] = useState<{ path: string; url: string } | null>(null)
 
   useEffect(() => {
-    if (!avatarPath) {
-      setAvatarUrl(null)
-      return
-    }
-    const cached = cache.get(avatarPath)
-    if (cached) {
-      setAvatarUrl(cached)
-      return
-    }
+    if (!avatarPath || cache.has(avatarPath)) return
     let cancelled = false
     window.api.readUserAvatar(avatarPath).then((result) => {
       if (!cancelled && result.success && result.data) {
         cache.set(avatarPath, result.data)
-        setAvatarUrl(result.data)
+        setFetchResult({ path: avatarPath, url: result.data })
       }
     })
     return () => {
@@ -29,5 +21,6 @@ export function useUserAvatar(): string | null {
     }
   }, [avatarPath])
 
-  return avatarUrl
+  if (!avatarPath) return null
+  return cache.get(avatarPath) ?? (fetchResult?.path === avatarPath ? fetchResult.url : null)
 }

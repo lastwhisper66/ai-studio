@@ -43,7 +43,9 @@ export function registerUserHandlers(): void {
         if (f.startsWith('user-avatar')) {
           try {
             unlinkSync(join(avatarsDir, f))
-          } catch {}
+          } catch {
+            // best-effort cleanup of old avatar files
+          }
         }
       }
 

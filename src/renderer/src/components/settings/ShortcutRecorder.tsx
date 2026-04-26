@@ -16,7 +16,7 @@ function ShortcutDisplay({ accelerator }: { accelerator: string }): React.JSX.El
       {parts.map((part, i) => (
         <kbd
           key={i}
-          className="bg-background border-border inline-flex min-w-[24px] items-center justify-center rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm">
+          className="bg-background border-border inline-flex min-w-6 items-center justify-center rounded border px-1.5 py-0.5 font-mono text-xs shadow-sm">
           {formatKeyLabel(part)}
         </kbd>
       ))}

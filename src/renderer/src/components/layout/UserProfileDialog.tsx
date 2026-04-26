@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
@@ -18,6 +18,14 @@ export function UserProfileDialog({
   open,
   onOpenChange,
 }: UserProfileDialogProps): React.JSX.Element {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open && <UserProfileContent />}
+    </Dialog>
+  )
+}
+
+function UserProfileContent(): React.JSX.Element {
   const { t } = useTranslation()
   const settings = useSettingsStore((s) => s.settings)
   const saveSettings = useSettingsStore((s) => s.saveSettings)
@@ -27,10 +35,6 @@ export function UserProfileDialog({
 
   const [name, setName] = useState(displayName)
   const avatarUrl = useUserAvatar()
-
-  useEffect(() => {
-    if (open) setName(displayName)
-  }, [open, displayName])
 
   const handleChangeAvatar = async (): Promise<void> => {
     const result = await window.api.saveUserAvatar()
@@ -51,39 +55,37 @@ export function UserProfileDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{t('userProfile.title')}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col items-center gap-4 py-2">
-          <Avatar className="h-20 w-20" key={avatarUrl ?? 'no-avatar'}>
-            {avatarUrl && <AvatarImage src={avatarUrl} alt="User" />}
-            <AvatarFallback className="bg-foreground/10 text-2xl">
-              <User className="h-8 w-8" />
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleChangeAvatar}>
-              {t('userProfile.changeAvatar')}
+    <DialogContent className="max-w-sm">
+      <DialogHeader>
+        <DialogTitle>{t('userProfile.title')}</DialogTitle>
+      </DialogHeader>
+      <div className="flex flex-col items-center gap-4 py-2">
+        <Avatar className="h-20 w-20" key={avatarUrl ?? 'no-avatar'}>
+          {avatarUrl && <AvatarImage src={avatarUrl} alt="User" />}
+          <AvatarFallback className="bg-foreground/10 text-2xl">
+            <User className="h-8 w-8" />
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleChangeAvatar}>
+            {t('userProfile.changeAvatar')}
+          </Button>
+          {avatarPath && (
+            <Button variant="ghost" size="sm" onClick={handleRemoveAvatar}>
+              {t('userProfile.removeAvatar')}
             </Button>
-            {avatarPath && (
-              <Button variant="ghost" size="sm" onClick={handleRemoveAvatar}>
-                {t('userProfile.removeAvatar')}
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-        <div className="space-y-1.5">
-          <Label className="text-sm">{t('userProfile.displayName')}</Label>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={handleNameBlur}
-            placeholder={t('userProfile.displayNamePlaceholder')}
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-sm">{t('userProfile.displayName')}</Label>
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={handleNameBlur}
+          placeholder={t('userProfile.displayNamePlaceholder')}
+        />
+      </div>
+    </DialogContent>
   )
 }
