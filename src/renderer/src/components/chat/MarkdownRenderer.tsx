@@ -28,12 +28,16 @@ const sanitizeSchema = {
     'summary',
     'ins',
     'del',
+    'math',
+    'inlinemath',
   ],
   attributes: {
     ...defaultSchema.attributes,
     code: [['className', /^language-.|^math-/]],
     abbr: [...(defaultSchema.attributes?.abbr || []), 'title'],
     details: [...(defaultSchema.attributes?.details || []), 'open'],
+    math: ['value'],
+    inlinemath: ['value'],
   },
 }
 

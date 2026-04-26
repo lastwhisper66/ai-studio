@@ -255,7 +255,7 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
           <div className="grid min-w-0 grid-cols-2 divide-x">
             <div
               ref={svgContainerRef}
-              className="mermaid-svg-container min-w-0 overflow-auto p-4 [&>svg]:mx-auto"
+              className="mermaid-svg-container min-w-0 overflow-auto p-4"
               dangerouslySetInnerHTML={{ __html: svg }}
             />
             <div className="min-w-0 overflow-auto p-4 text-sm">
@@ -271,7 +271,7 @@ export const MermaidBlock = memo(function MermaidBlock({ code, isStreaming }: Me
         ) : (
           <div
             ref={svgContainerRef}
-            className="mermaid-svg-container overflow-auto p-4 [&>svg]:mx-auto"
+            className="mermaid-svg-container overflow-auto p-4"
             dangerouslySetInnerHTML={{ __html: svg }}
           />
         )}

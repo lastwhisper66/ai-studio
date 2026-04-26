@@ -225,8 +225,8 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
 
   return (
     <>
-      <div className="math-block group/math relative my-3">
-        <div className="flex justify-center overflow-x-auto py-2">
+      <div className="math-block group/math relative my-3 overflow-hidden rounded-lg border bg-muted">
+        <div className="overflow-x-auto px-4 py-2">
           <span
             ref={containerRef}
             className="math-display"
