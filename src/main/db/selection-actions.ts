@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { SelectionAction } from '@shared/types'
 import { getDb } from './database'
+import { SELECTION_ACTION_SEEDS } from './seeds/actions'
 
 interface SelectionActionRow {
   id: string
@@ -153,61 +154,13 @@ export function reorderSelectionActions(ids: string[]): void {
 export function seedSelectionActions(): void {
   const db = getDb()
   const now = new Date().toISOString()
-  const builtins = [
-    {
-      id: 'builtin-sel-translate',
-      name: 'seed.selectionActions.translate.name',
-      description: 'seed.selectionActions.translate.description',
-      systemPrompt:
-        'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
-      icon: 'Languages',
-      sortOrder: 0,
-    },
-    {
-      id: 'builtin-sel-explain',
-      name: 'seed.selectionActions.explain.name',
-      description: 'seed.selectionActions.explain.description',
-      systemPrompt:
-        'You are an expert explainer. Clearly and concisely explain the meaning, concept, or context of the given text.',
-      icon: 'BookOpen',
-      sortOrder: 1,
-    },
-    {
-      id: 'builtin-sel-summarize',
-      name: 'seed.selectionActions.summarize.name',
-      description: 'seed.selectionActions.summarize.description',
-      systemPrompt:
-        'You are a summarization expert. Provide a clear, concise summary that captures the key points of the input text. Use bullet points when it improves clarity.',
-      icon: 'FileText',
-      sortOrder: 2,
-    },
-    {
-      id: 'builtin-sel-rewrite',
-      name: 'seed.selectionActions.polish.name',
-      description: 'seed.selectionActions.polish.description',
-      systemPrompt:
-        'You are a professional editor. Rewrite the given text to be clearer, more fluent, and more polished while preserving its original meaning and tone. Only output the rewritten text.',
-      icon: 'Wand2',
-      sortOrder: 3,
-    },
-    {
-      id: 'builtin-sel-search',
-      name: 'seed.selectionActions.search.name',
-      description: 'seed.selectionActions.search.description',
-      systemPrompt: '',
-      icon: 'Search',
-      sortOrder: 4,
-    },
-  ]
-
   const stmt = db.prepare(
     `INSERT OR IGNORE INTO selection_actions (id, name, description, system_prompt, icon, is_builtin, sort_order, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
   )
-  // Only insert if the row doesn't exist — never overwrite user edits to
-  // built-in prompts on app restart.
+  // Only insert missing built-ins; existing rows may contain user-edited prompts.
   const seed = db.transaction(() => {
-    for (const b of builtins) {
+    for (const b of SELECTION_ACTION_SEEDS) {
       stmt.run(b.id, b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, now, now)
     }
   })

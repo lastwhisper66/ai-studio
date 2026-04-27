@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import type { ModelDefinition, ModelCapability, ProviderType } from '@shared/types'
 import { getDb } from './database'
+import { MODEL_DEFINITION_SEEDS, MODEL_DEFINITIONS_SEED_VERSION } from './seeds/catalogs'
 
 interface ModelDefinitionRow {
   id: string
@@ -176,19 +177,6 @@ export function resolveModelDefinition(modelName: string): ModelDefinition | und
  * INSERT OR IGNORE ensures existing (user-modified) rows are never touched.
  */
 
-const SEED_VERSION = 3
-
-interface SeedEntry {
-  name: string
-  group: string
-  capabilities: ModelCapability[]
-  providerTypes: ProviderType[]
-}
-
-// Seed data lives in a standalone JSON file for easier maintenance
-import seedData from './seed-model-definitions.json'
-const SEED_DATA: SeedEntry[] = seedData as SeedEntry[]
-
 export function seedModelDefinitions(): void {
   const db = getDb()
 
@@ -196,7 +184,7 @@ export function seedModelDefinitions(): void {
     .prepare("SELECT value FROM settings WHERE key = 'model_definitions_seed_version'")
     .get() as { value: string } | undefined
   const currentVersion = row ? Number(row.value) : 0
-  if (currentVersion >= SEED_VERSION) return
+  if (currentVersion >= MODEL_DEFINITIONS_SEED_VERSION) return
 
   const insert = db.prepare(
     `INSERT INTO model_definitions (id, name, group_name, capabilities, provider_types)
@@ -209,7 +197,7 @@ export function seedModelDefinitions(): void {
      WHERE updated_at = created_at`,
   )
   const tx = db.transaction(() => {
-    for (const s of SEED_DATA) {
+    for (const s of MODEL_DEFINITION_SEEDS) {
       insert.run(
         randomUUID(),
         s.name,
@@ -221,7 +209,7 @@ export function seedModelDefinitions(): void {
     db.prepare(
       `INSERT INTO settings (key, value) VALUES ('model_definitions_seed_version', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-    ).run(String(SEED_VERSION))
+    ).run(String(MODEL_DEFINITIONS_SEED_VERSION))
   })
   tx()
 }

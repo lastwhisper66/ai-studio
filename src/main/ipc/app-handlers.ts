@@ -5,12 +5,8 @@ import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
 import { toLocalizedError } from '../errors'
 import type { ClipboardImagePayload, IpcResult } from '@shared/types'
-import { getDb, seedDefaultAssistant } from '../db/database'
-import { seedModelDefinitions } from '../db/model-definitions'
-import { seedModelGroups } from '../db/model-groups'
-import { seedDefaultProviders } from '../db/providers'
-import { seedQuickActions } from '../db/quick-actions'
-import { seedSelectionActions } from '../db/selection-actions'
+import { getDb } from '../db/database'
+import { seedDatabaseDefaults } from '../db/seeds'
 import { getDataDir } from '../utils/paths'
 
 export function registerAppHandlers(): void {
@@ -57,12 +53,7 @@ export function registerAppHandlers(): void {
       }
 
       // Re-seed defaults
-      seedModelDefinitions()
-      seedModelGroups()
-      seedDefaultProviders()
-      seedDefaultAssistant()
-      seedQuickActions()
-      seedSelectionActions()
+      seedDatabaseDefaults()
 
       // Relaunch the app — app.exit(0) terminates the process,
       // so the return below is unreachable but required by the type signature
