@@ -104,7 +104,11 @@ export function registerSelectionHandlers(): void {
         const controller = new AbortController()
         activeController = controller
 
-        const userMessage: ChatCompletionMessageParam = { role: 'user', content: text }
+        const isTranslateAction = actionId === 'builtin-sel-translate'
+        const wrappedText = isTranslateAction
+          ? `<translate_input>\n${text}\n</translate_input>`
+          : text
+        const userMessage: ChatCompletionMessageParam = { role: 'user', content: wrappedText }
 
         await streamChat(
           {

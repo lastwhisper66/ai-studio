@@ -88,12 +88,16 @@ export function registerQuickAssistantHandlers(): void {
         activeController = controller
 
         // Build user message — multimodal if images are attached
+        const isTranslateAction =
+          actionId === 'builtin-translate' || actionId === 'builtin-image-translate'
+        const wrapText = (t: string): string =>
+          isTranslateAction ? `<translate_input>\n${t}\n</translate_input>` : t
         const imageFiles = (files ?? []).filter((f: FileData) => isImageMime(f.mimeType))
         let userMessage: ChatCompletionMessageParam
         if (imageFiles.length > 0) {
           const parts: ChatCompletionContentPart[] = []
           if (text) {
-            parts.push({ type: 'text', text })
+            parts.push({ type: 'text', text: wrapText(text) })
           }
           for (const file of imageFiles) {
             parts.push({
@@ -103,7 +107,7 @@ export function registerQuickAssistantHandlers(): void {
           }
           userMessage = { role: 'user', content: parts }
         } else {
-          userMessage = { role: 'user', content: text }
+          userMessage = { role: 'user', content: wrapText(text) }
         }
 
         await streamChat(

@@ -206,9 +206,11 @@ export function SelectionBubbleApp(): React.JSX.Element {
       } else {
         const englishLabel = getLanguageEnglishLabel(lang)
         const basePrompt = action.systemPrompt?.trim() ?? ''
-        systemPromptOverride = basePrompt
-          ? `${basePrompt}\n\nPlease respond in ${englishLabel}.`
-          : `Please respond in ${englishLabel}.`
+        const isTranslateAction = action.id === 'builtin-sel-translate'
+        const langSuffix = isTranslateAction
+          ? `\n\nTarget language: ${englishLabel}. Translate the user's text into ${englishLabel}. Output only the translation.`
+          : `\n\nPlease respond in ${englishLabel}.`
+        systemPromptOverride = basePrompt ? `${basePrompt}${langSuffix}` : langSuffix.trimStart()
       }
 
       let cleanedUp = false

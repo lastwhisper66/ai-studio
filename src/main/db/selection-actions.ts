@@ -167,3 +167,20 @@ export function seedSelectionActions(): void {
   seed()
   invalidateCache()
 }
+
+const OLD_SELECTION_TRANSLATE_PROMPTS = [
+  'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
+]
+
+export function migrateBuiltinSelectionTranslatePrompts(): void {
+  const db = getDb()
+  const seed = SELECTION_ACTION_SEEDS.find((s) => s.id === 'builtin-sel-translate')
+  if (!seed) return
+  for (const oldPrompt of OLD_SELECTION_TRANSLATE_PROMPTS) {
+    db.prepare(
+      `UPDATE selection_actions SET system_prompt = ?, updated_at = datetime('now')
+       WHERE id = ? AND is_builtin = 1 AND system_prompt = ?`,
+    ).run(seed.systemPrompt, seed.id, oldPrompt)
+  }
+  invalidateCache()
+}
