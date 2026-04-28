@@ -116,7 +116,8 @@ export function registerSelectionHandlers(): void {
             signal: controller.signal,
           },
           {
-            onChunk: (delta) => {
+            onChunk: (delta, isReasoning) => {
+              if (isReasoning) return
               fullText += delta
               if (!isCurrent()) return
               if (!sender.isDestroyed()) {

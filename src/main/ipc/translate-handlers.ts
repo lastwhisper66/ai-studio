@@ -112,7 +112,8 @@ export function registerTranslateHandlers(): void {
             signal: controller.signal,
           },
           {
-            onChunk: (delta) => {
+            onChunk: (delta, isReasoning) => {
+              if (isReasoning) return
               fullText += delta
               if (isStillActive() && !sender.isDestroyed()) {
                 sender.send(IpcChannels.TRANSLATE_CHUNK, { requestId, delta })

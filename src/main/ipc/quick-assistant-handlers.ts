@@ -116,7 +116,8 @@ export function registerQuickAssistantHandlers(): void {
             signal: controller.signal,
           },
           {
-            onChunk: (delta) => {
+            onChunk: (delta, isReasoning) => {
+              if (isReasoning) return
               fullText += delta
               if (!sender.isDestroyed()) {
                 sender.send(IpcChannels.QUICK_ASSISTANT_CHUNK, { delta })
