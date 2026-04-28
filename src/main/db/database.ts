@@ -210,6 +210,96 @@ function createTables(): void {
       ON selection_actions(sort_order);
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mcp_servers (
+      id            TEXT PRIMARY KEY,
+      name          TEXT NOT NULL,
+      type          TEXT NOT NULL CHECK (type IN ('stdio', 'sse', 'streamable-http')),
+      command       TEXT NOT NULL DEFAULT '',
+      args          TEXT NOT NULL DEFAULT '[]',
+      env           TEXT NOT NULL DEFAULT '{}',
+      url           TEXT NOT NULL DEFAULT '',
+      headers       TEXT NOT NULL DEFAULT '{}',
+      enabled       INTEGER NOT NULL DEFAULT 1,
+      auto_approve  INTEGER NOT NULL DEFAULT 0,
+      sort_order    INTEGER NOT NULL DEFAULT 0,
+      created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS mcp_tools (
+      id            TEXT PRIMARY KEY,
+      server_id     TEXT NOT NULL,
+      name          TEXT NOT NULL,
+      description   TEXT NOT NULL DEFAULT '',
+      input_schema  TEXT NOT NULL DEFAULT '{}',
+      enabled       INTEGER NOT NULL DEFAULT 1,
+      FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_mcp_tools_server_id
+      ON mcp_tools(server_id);
+  `)
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS skills (
+      id              TEXT PRIMARY KEY,
+      name            TEXT NOT NULL,
+      description     TEXT NOT NULL DEFAULT '',
+      icon            TEXT NOT NULL DEFAULT '',
+      system_prompt   TEXT NOT NULL DEFAULT '',
+      provider_id     TEXT,
+      model           TEXT NOT NULL DEFAULT '',
+      tool_server_ids TEXT NOT NULL DEFAULT '[]',
+      is_builtin      INTEGER NOT NULL DEFAULT 0,
+      enabled         INTEGER NOT NULL DEFAULT 1,
+      sort_order      INTEGER NOT NULL DEFAULT 0,
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_skills_sort_order
+      ON skills(sort_order);
+  `)
+
+  // Migration: add tool_calls and tool_results columns to messages
+  try {
+    database.exec('ALTER TABLE messages ADD COLUMN tool_calls TEXT')
+  } catch {
+    /* column already exists */
+  }
+  try {
+    database.exec('ALTER TABLE messages ADD COLUMN tool_results TEXT')
+  } catch {
+    /* column already exists */
+  }
+
+  try {
+    database.exec('ALTER TABLE conversations ADD COLUMN skill_id TEXT')
+  } catch {
+    /* column already exists */
+  }
+
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS tool_call_audit_log (
+      id              TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      server_id       TEXT NOT NULL,
+      server_name     TEXT NOT NULL DEFAULT '',
+      tool_name       TEXT NOT NULL,
+      arguments       TEXT NOT NULL DEFAULT '{}',
+      result          TEXT,
+      status          TEXT NOT NULL CHECK (status IN ('completed','error','rejected')),
+      is_error        INTEGER NOT NULL DEFAULT 0,
+      duration_ms     INTEGER,
+      round_index     INTEGER NOT NULL DEFAULT 0,
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_audit_log_conversation
+      ON tool_call_audit_log(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_audit_log_created
+      ON tool_call_audit_log(created_at);
+  `)
+
   // Seed built-in defaults after all tables exist.
   seedDatabaseDefaults()
 }

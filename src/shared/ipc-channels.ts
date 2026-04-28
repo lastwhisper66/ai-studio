@@ -157,4 +157,40 @@ export const IpcChannels = {
   SELECTION_UPDATE_SHORTCUT: 'selection:update-shortcut',
   SELECTION_STATE_CHANGED: 'selection:state-changed',
   SELECTION_REFRESH_FILTER: 'selection:refresh-filter',
+  // MCP Server
+  MCP_SERVER_LIST: 'mcp-server:list',
+  MCP_SERVER_GET: 'mcp-server:get',
+  MCP_SERVER_CREATE: 'mcp-server:create',
+  MCP_SERVER_UPDATE: 'mcp-server:update',
+  MCP_SERVER_DELETE: 'mcp-server:delete',
+  MCP_SERVER_REORDER: 'mcp-server:reorder',
+  MCP_SERVER_CONNECT: 'mcp-server:connect',
+  MCP_SERVER_DISCONNECT: 'mcp-server:disconnect',
+  MCP_SERVER_RECONNECT: 'mcp-server:reconnect',
+  MCP_SERVER_TEST: 'mcp-server:test',
+  MCP_SERVER_STATUS_CHANGED: 'mcp-server:status-changed',
+  // MCP Tool
+  MCP_TOOL_LIST: 'mcp-tool:list',
+  MCP_TOOL_UPDATE: 'mcp-tool:update',
+  // Tool Calling (chat)
+  CHAT_TOOL_CALLS_REQUESTED: 'chat:tool-calls-requested',
+  CHAT_TOOL_CALL_PROGRESS: 'chat:tool-call-progress',
+  CHAT_TOOL_CALL_APPROVE: 'chat:tool-call-approve',
+  // Skill
+  SKILL_LIST: 'skill:list',
+  SKILL_GET: 'skill:get',
+  SKILL_CREATE: 'skill:create',
+  SKILL_UPDATE: 'skill:update',
+  SKILL_DELETE: 'skill:delete',
+  SKILL_REORDER: 'skill:reorder',
+  // MCP Resource
+  MCP_RESOURCE_LIST: 'mcp-resource:list',
+  MCP_RESOURCE_READ: 'mcp-resource:read',
+  // MCP Prompt
+  MCP_PROMPT_LIST: 'mcp-prompt:list',
+  MCP_PROMPT_GET: 'mcp-prompt:get',
+  // Tool Call Audit Log
+  AUDIT_LOG_LIST: 'audit-log:list',
+  AUDIT_LOG_GET: 'audit-log:get',
+  AUDIT_LOG_CLEAR: 'audit-log:clear',
 } as const

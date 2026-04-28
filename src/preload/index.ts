@@ -46,6 +46,23 @@ import type {
   SelectionChunkData,
   SelectionEndData,
   SelectionErrorData,
+  McpServer,
+  McpTool,
+  McpServerState,
+  CreateMcpServerPayload,
+  UpdateMcpServerPayload,
+  ToolCallsRequestedData,
+  ToolCallProgressData,
+  ToolCallApprovalPayload,
+  Skill,
+  CreateSkillPayload,
+  UpdateSkillPayload,
+  ToolCallAuditEntry,
+  ToolCallAuditFilter,
+  McpResource,
+  McpResourceContent,
+  McpPrompt,
+  McpPromptMessage,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -317,7 +334,27 @@ const api = {
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_END)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_STREAM_ERROR)
     ipcRenderer.removeAllListeners(IpcChannels.CHAT_TITLE_UPDATED)
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_TOOL_CALLS_REQUESTED)
+    ipcRenderer.removeAllListeners(IpcChannels.CHAT_TOOL_CALL_PROGRESS)
   },
+
+  // Tool Calling
+  onToolCallsRequested: (callback: (data: ToolCallsRequestedData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: ToolCallsRequestedData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_TOOL_CALLS_REQUESTED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_TOOL_CALLS_REQUESTED, handler)
+  },
+
+  onToolCallProgress: (callback: (data: ToolCallProgressData) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, data: ToolCallProgressData): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.CHAT_TOOL_CALL_PROGRESS, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.CHAT_TOOL_CALL_PROGRESS, handler)
+  },
+
+  approveToolCalls: (payload: ToolCallApprovalPayload): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.CHAT_TOOL_CALL_APPROVE, payload),
 
   // Translate (streaming)
   translate: (payload: TranslateRequestPayload): Promise<IpcResult<void>> =>
@@ -636,6 +673,104 @@ const api = {
 
   readUserAvatar: (relativePath: string): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.USER_READ_AVATAR, relativePath),
+
+  // MCP Servers
+  listMcpServers: (): Promise<IpcResult<McpServer[]>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_LIST),
+
+  getMcpServer: (id: string): Promise<IpcResult<McpServer | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_GET, id),
+
+  createMcpServer: (data: CreateMcpServerPayload): Promise<IpcResult<McpServer>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_CREATE, data),
+
+  updateMcpServer: (
+    id: string,
+    data: UpdateMcpServerPayload,
+  ): Promise<IpcResult<McpServer | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_UPDATE, id, data),
+
+  deleteMcpServer: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_DELETE, id),
+
+  reorderMcpServers: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_REORDER, ids),
+
+  connectMcpServer: (id: string): Promise<IpcResult<McpServerState>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_CONNECT, id),
+
+  disconnectMcpServer: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_DISCONNECT, id),
+
+  reconnectMcpServer: (id: string): Promise<IpcResult<McpServerState>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_RECONNECT, id),
+
+  testMcpServer: (id: string): Promise<IpcResult<{ success: boolean; error?: string }>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_SERVER_TEST, id),
+
+  onMcpServerStatusChanged: (callback: (state: McpServerState) => void): (() => void) => {
+    const handler = (_: unknown, data: McpServerState): void => callback(data)
+    ipcRenderer.on(IpcChannels.MCP_SERVER_STATUS_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.MCP_SERVER_STATUS_CHANGED, handler)
+  },
+
+  // MCP Tools
+  listMcpTools: (serverId?: string): Promise<IpcResult<McpTool[]>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_TOOL_LIST, serverId),
+
+  updateMcpTool: (
+    id: string,
+    data: { enabled?: boolean },
+  ): Promise<IpcResult<McpTool | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_TOOL_UPDATE, id, data),
+
+  // Skills
+  listSkills: (): Promise<IpcResult<Skill[]>> => ipcRenderer.invoke(IpcChannels.SKILL_LIST),
+
+  getSkill: (id: string): Promise<IpcResult<Skill | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.SKILL_GET, id),
+
+  createSkill: (data: CreateSkillPayload): Promise<IpcResult<Skill>> =>
+    ipcRenderer.invoke(IpcChannels.SKILL_CREATE, data),
+
+  updateSkill: (id: string, data: UpdateSkillPayload): Promise<IpcResult<Skill | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.SKILL_UPDATE, id, data),
+
+  deleteSkill: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SKILL_DELETE, id),
+
+  reorderSkills: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.SKILL_REORDER, ids),
+
+  // MCP Resources
+  listMcpResources: (serverId: string): Promise<IpcResult<McpResource[]>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_RESOURCE_LIST, serverId),
+
+  readMcpResource: (serverId: string, uri: string): Promise<IpcResult<McpResourceContent>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_RESOURCE_READ, serverId, uri),
+
+  // MCP Prompts
+  listMcpPrompts: (serverId: string): Promise<IpcResult<McpPrompt[]>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_PROMPT_LIST, serverId),
+
+  getMcpPrompt: (
+    serverId: string,
+    name: string,
+    args?: Record<string, string>,
+  ): Promise<IpcResult<McpPromptMessage[]>> =>
+    ipcRenderer.invoke(IpcChannels.MCP_PROMPT_GET, serverId, name, args),
+
+  // Audit Log
+  listAuditEntries: (
+    filter: ToolCallAuditFilter,
+  ): Promise<IpcResult<{ entries: ToolCallAuditEntry[]; total: number }>> =>
+    ipcRenderer.invoke(IpcChannels.AUDIT_LOG_LIST, filter),
+
+  getAuditEntry: (id: string): Promise<IpcResult<ToolCallAuditEntry | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.AUDIT_LOG_GET, id),
+
+  clearAuditEntries: (conversationId?: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.AUDIT_LOG_CLEAR, conversationId),
 }
 
 export type ApiType = typeof api

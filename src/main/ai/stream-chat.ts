@@ -1,13 +1,21 @@
 import type { ApiSettings } from '@shared/types'
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
+import type { OpenAIFunctionTool } from '../mcp/tool-converter'
 import { streamOpenAIChat } from './openai-stream'
 import { streamOpenAIResponse } from './openai-response-stream'
 import { streamGeminiChat } from './gemini-stream'
 import { streamClaudeChat } from './claude-stream'
 
+export interface ToolCallFromProvider {
+  id: string
+  functionName: string
+  arguments: string
+}
+
 /** Callbacks for streaming chat responses. */
 export interface StreamCallbacks {
   onChunk: (delta: string, isReasoning?: boolean) => void
+  onToolCalls?: (toolCalls: ToolCallFromProvider[]) => void
   onEnd?: () => void
 }
 
@@ -26,6 +34,7 @@ export interface StreamChatOptions {
   messages: ChatCompletionMessageParam[]
   signal: AbortSignal
   reasoningEffort?: string
+  tools?: OpenAIFunctionTool[]
 }
 
 /**

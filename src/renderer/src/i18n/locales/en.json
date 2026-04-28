@@ -203,7 +203,10 @@
       "keyboardShortcuts": "Shortcuts",
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
-      "selectionAssistant": "Selection Assistant"
+      "selectionAssistant": "Selection Assistant",
+      "mcpServer": "MCP Servers",
+      "skill": "Skills",
+      "auditLog": "Audit Log"
     },
     "provider": {
       "list": "Provider list",
@@ -462,6 +465,75 @@
         "duckduckgo": "DuckDuckGo",
         "custom": "Custom"
       }
+    },
+    "mcp": {
+      "searchPlaceholder": "Search MCP servers...",
+      "noServers": "No MCP servers",
+      "noSearchResults": "No matching servers",
+      "addServer": "Add MCP Server",
+      "serverName": "Server Name",
+      "serverNamePlaceholder": "Enter server name",
+      "serverType": "Connection Type",
+      "command": "Command",
+      "args": "Arguments",
+      "selectServer": "Select an MCP server",
+      "autoApprove": "Auto-approve tool calls",
+      "tools": "Tools",
+      "noTools": "No tools available. Connect the server to discover tools.",
+      "connect": "Connect",
+      "disconnect": "Disconnect",
+      "reconnect": "Reconnect",
+      "deleteConfirmTitle": "Delete MCP Server",
+      "deleteConfirmDesc": "Are you sure you want to delete \"{{name}}\"? This will disconnect and remove all configuration.",
+      "statusConnected": "Connected",
+      "statusConnecting": "Connecting...",
+      "statusError": "Connection error",
+      "statusDisconnected": "Disconnected",
+      "resources": "Resources",
+      "noResources": "No resources exposed by this server.",
+      "binaryContent": "[Binary content]",
+      "prompts": "Prompts",
+      "noPrompts": "No prompts exposed by this server.",
+      "promptArgs": "Arguments",
+      "promptResult": "Prompt Content",
+      "toolCall": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "approveAll": "Approve All",
+        "rejectAll": "Reject All",
+        "running": "Running...",
+        "completed": "Completed",
+        "error": "Error",
+        "rejected": "Rejected",
+        "arguments": "Arguments",
+        "result": "Result",
+        "autoApproved": "Auto-approved"
+      }
+    },
+    "skill": {
+      "searchPlaceholder": "Search skills...",
+      "noSkills": "No skills yet",
+      "noSearchResults": "No matching skills",
+      "addSkill": "Add Skill",
+      "skillName": "Skill Name",
+      "skillNamePlaceholder": "Enter skill name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter skill description",
+      "icon": "Icon",
+      "iconPlaceholder": "Enter icon name (Lucide icon)",
+      "systemPrompt": "System Prompt",
+      "systemPromptPlaceholder": "Enter system prompt...",
+      "provider": "Provider",
+      "selectProvider": "Select provider",
+      "model": "Model",
+      "selectModel": "Select model",
+      "toolServers": "MCP Tool Servers",
+      "noToolServers": "No MCP servers available",
+      "selectServer": "Select a skill",
+      "deleteConfirmTitle": "Delete Skill",
+      "deleteConfirmDesc": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "enabled": "Enabled",
+      "builtin": "Built-in"
     }
   },
   "translate": {
@@ -718,6 +790,20 @@
       "fetchFailed": "Failed to fetch models",
       "fetchTimeout": "Fetch models timed out (15s)"
     },
+    "mcp": {
+      "serverNotFound": "MCP server not found",
+      "connectionFailed": "MCP server connection failed",
+      "connectionTimeout": "MCP server connection timed out",
+      "toolExecutionFailed": "Tool execution failed",
+      "toolNotFound": "Tool not found",
+      "serverAlreadyConnected": "MCP server is already connected",
+      "toolCallRejected": "Tool call rejected by user",
+      "toolCallTimeout": "Tool call timed out",
+      "maxRoundsExceeded": "Maximum tool call rounds exceeded"
+    },
+    "skill": {
+      "notFound": "Skill not found"
+    },
     "file": {
       "tooLarge": "Files too large (max 10MB): {{names}}",
       "invalidAttachmentPath": "Invalid attachment path",
@@ -736,5 +822,18 @@
   "notification": {
     "chatComplete": "Assistant reply completed",
     "translateComplete": "Translation completed"
+  },
+  "auditLog": {
+    "filterToolName": "Search tool name...",
+    "allStatuses": "All statuses",
+    "completed": "Completed",
+    "error": "Error",
+    "rejected": "Rejected",
+    "totalEntries": "{{count}} entries",
+    "arguments": "Arguments",
+    "result": "Result",
+    "empty": "No audit log entries",
+    "prev": "Previous",
+    "next": "Next"
   }
 }

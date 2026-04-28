@@ -68,6 +68,22 @@ export const ERROR_CODES = {
   MESSAGE_NOT_FOUND: 'errors.message.notFound',
   DB_NOT_INITIALIZED: 'errors.db.notInitialized',
 
+  // mcp
+  MCP_SERVER_NOT_FOUND: 'errors.mcp.serverNotFound',
+  MCP_CONNECTION_FAILED: 'errors.mcp.connectionFailed',
+  MCP_CONNECTION_TIMEOUT: 'errors.mcp.connectionTimeout',
+  MCP_TOOL_EXECUTION_FAILED: 'errors.mcp.toolExecutionFailed',
+  MCP_TOOL_NOT_FOUND: 'errors.mcp.toolNotFound',
+  MCP_SERVER_ALREADY_CONNECTED: 'errors.mcp.serverAlreadyConnected',
+  MCP_TOOL_CALL_REJECTED: 'errors.mcp.toolCallRejected',
+  MCP_TOOL_CALL_TIMEOUT: 'errors.mcp.toolCallTimeout',
+  MCP_MAX_ROUNDS_EXCEEDED: 'errors.mcp.maxRoundsExceeded',
+  MCP_RESOURCE_READ_FAILED: 'errors.mcp.resourceReadFailed',
+  MCP_PROMPT_GET_FAILED: 'errors.mcp.promptGetFailed',
+
+  // skill
+  SKILL_NOT_FOUND: 'errors.skill.notFound',
+
   // fallback
   INTERNAL: 'errors.internal',
 } as const

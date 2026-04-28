@@ -8,9 +8,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { ThinkingBlock } from './ThinkingBlock'
+import { ToolCallBubble } from './ToolCallBubble'
 import { useElapsedTime } from '@renderer/hooks/useElapsedTime'
 import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
-import type { MessageRole, AttachmentMeta } from '@shared/types'
+import type { MessageRole, AttachmentMeta, ToolCallData, ToolCallResultData } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 interface MessageBubbleProps {
@@ -33,6 +34,12 @@ interface MessageBubbleProps {
   onEditSave?: (messageId: string, newContent: string) => void
   onEditSaveAndResend?: (messageId: string, newContent: string) => void
   onEditCancel?: () => void
+  toolCalls?: ToolCallData[]
+  toolResults?: ToolCallResultData[]
+  onApproveToolCall?: (callId: string) => void
+  onRejectToolCall?: (callId: string) => void
+  onApproveAllToolCalls?: () => void
+  onRejectAllToolCalls?: () => void
 }
 
 function formatDuration(ms: number): string {
@@ -123,6 +130,12 @@ export const MessageBubble = memo(function MessageBubble({
   onEditSave,
   onEditSaveAndResend,
   onEditCancel,
+  toolCalls,
+  toolResults,
+  onApproveToolCall,
+  onRejectToolCall,
+  onApproveAllToolCalls,
+  onRejectAllToolCalls,
 }: MessageBubbleProps) {
   const { t } = useTranslation()
   const isUser = role === 'user'
@@ -312,6 +325,16 @@ export const MessageBubble = memo(function MessageBubble({
                   isStreaming={isStreamingReasoning}
                   thinkingStartTime={isStreamingReasoning ? streamStartTime : null}
                   thinkingDuration={thinkingDuration}
+                />
+              )}
+              {toolCalls && toolCalls.length > 0 && (
+                <ToolCallBubble
+                  toolCalls={toolCalls}
+                  toolResults={toolResults}
+                  onApprove={onApproveToolCall}
+                  onReject={onRejectToolCall}
+                  onApproveAll={onApproveAllToolCalls}
+                  onRejectAll={onRejectAllToolCalls}
                 />
               )}
               <MarkdownRenderer content={content} isStreaming={isStreaming} />
