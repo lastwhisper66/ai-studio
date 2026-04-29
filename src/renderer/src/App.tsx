@@ -9,8 +9,6 @@ import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
-import { useMcpStore } from '@renderer/stores/mcpStore'
-import { useSkillStore } from '@renderer/stores/skillStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
@@ -29,9 +27,6 @@ function App(): React.JSX.Element {
   const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
   const loadModelGroups = useModelGroupStore((s) => s.load)
   const initKeybindings = useKeybindingStore((s) => s.init)
-  const loadMcpServers = useMcpStore((s) => s.loadServers)
-  const handleMcpStatusChanged = useMcpStore((s) => s.handleStatusChanged)
-  const loadSkills = useSkillStore((s) => s.loadSkills)
   const settingsLoaded = useSettingsStore((s) => s.isLoaded)
 
   useEffect(() => {
@@ -42,8 +37,6 @@ function App(): React.JSX.Element {
     loadPhrases()
     loadModelDefinitions()
     loadModelGroups()
-    loadMcpServers()
-    loadSkills()
   }, [
     loadConversations,
     loadSettings,
@@ -52,8 +45,6 @@ function App(): React.JSX.Element {
     loadPhrases,
     loadModelDefinitions,
     loadModelGroups,
-    loadMcpServers,
-    loadSkills,
   ])
 
   // Refresh settings when the main window regains focus so that changes made
@@ -70,12 +61,6 @@ function App(): React.JSX.Element {
   useEffect(() => {
     if (settingsLoaded) initKeybindings()
   }, [settingsLoaded, initKeybindings])
-
-  // Listen for MCP server status changes pushed from main process
-  useEffect(() => {
-    const unsub = window.api.onMcpServerStatusChanged(handleMcpStatusChanged)
-    return unsub
-  }, [handleMcpStatusChanged])
 
   // Reconcile i18n with the persisted `general.language` setting exactly once
   // after settings load. On a fresh install the setting is empty, so we adopt

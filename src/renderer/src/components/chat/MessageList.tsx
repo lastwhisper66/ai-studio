@@ -49,10 +49,6 @@ export function MessageList({
   const editingMessageId = useConversationStore((s) => s.editingMessageId)
   const setEditingMessageId = useConversationStore((s) => s.setEditingMessageId)
   const resendTargetId = useConversationStore((s) => s.resendTargetId)
-  const activeToolCalls = useConversationStore((s) => s.activeToolCalls)
-  const toolCallResults = useConversationStore((s) => s.toolCallResults)
-  const pendingToolCalls = useConversationStore((s) => s.pendingToolCalls)
-  const approveToolCalls = useConversationStore((s) => s.approveToolCalls)
   const throttledContent = useThrottledValue(streamingContent, isStreaming)
   const throttledReasoning = useThrottledValue(streamingReasoningContent, isStreaming)
 
@@ -164,8 +160,6 @@ export function MessageList({
                     onEditSave={editMessage}
                     onEditSaveAndResend={editAndResendMessage}
                     onEditCancel={() => setEditingMessageId(null)}
-                    toolCalls={msg.toolCalls}
-                    toolResults={msg.toolResults}
                   />
                   {/* Show streaming bubble right after the resend target user message */}
                   {isStreaming && resendTargetId === msg.id && (
@@ -177,20 +171,6 @@ export function MessageList({
                       isStreamingReasoning={!!throttledReasoning && !throttledContent}
                       streamStartTime={streamStartTime}
                       assistantIcon={activeAssistant?.icon}
-                      toolCalls={activeToolCalls.length > 0 ? activeToolCalls : undefined}
-                      toolResults={toolCallResults.length > 0 ? toolCallResults : undefined}
-                      onApproveToolCall={(id) => approveToolCalls([{ callId: id, approved: true }])}
-                      onRejectToolCall={(id) => approveToolCalls([{ callId: id, approved: false }])}
-                      onApproveAllToolCalls={() =>
-                        approveToolCalls(
-                          pendingToolCalls.map((tc) => ({ callId: tc.id, approved: true })),
-                        )
-                      }
-                      onRejectAllToolCalls={() =>
-                        approveToolCalls(
-                          pendingToolCalls.map((tc) => ({ callId: tc.id, approved: false })),
-                        )
-                      }
                     />
                   )}
                 </React.Fragment>
@@ -206,20 +186,6 @@ export function MessageList({
                 isStreamingReasoning={!!streamingReasoningContent && !streamingContent}
                 streamStartTime={streamStartTime}
                 assistantIcon={activeAssistant?.icon}
-                toolCalls={activeToolCalls.length > 0 ? activeToolCalls : undefined}
-                toolResults={toolCallResults.length > 0 ? toolCallResults : undefined}
-                onApproveToolCall={(id) => approveToolCalls([{ callId: id, approved: true }])}
-                onRejectToolCall={(id) => approveToolCalls([{ callId: id, approved: false }])}
-                onApproveAllToolCalls={() =>
-                  approveToolCalls(
-                    pendingToolCalls.map((tc) => ({ callId: tc.id, approved: true })),
-                  )
-                }
-                onRejectAllToolCalls={() =>
-                  approveToolCalls(
-                    pendingToolCalls.map((tc) => ({ callId: tc.id, approved: false })),
-                  )
-                }
               />
             )}
           </>

@@ -19,7 +19,6 @@ import { initDatabase, closeDatabase } from './db'
 import { getSetting, setSetting } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
-import { McpManager } from './mcp/mcp-manager'
 import { initMainI18n, onLanguageChange, t } from './i18n'
 import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
@@ -350,8 +349,6 @@ function createWindow(): void {
   })
   mainWindow = win
   setMainWindow(win)
-  McpManager.getInstance().setMainWindow(win)
-  McpManager.getInstance().connectAllEnabled()
 
   win.on('ready-to-show', () => {
     // Restore saved zoom factor
@@ -564,7 +561,6 @@ if (!gotTheLock) {
 // all windows are destroyed (e.g. during a true quit).
 app.on('before-quit', () => {
   isQuitting = true
-  McpManager.getInstance().disconnectAll()
   cleanupSelectionService()
 })
 

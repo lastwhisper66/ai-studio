@@ -203,10 +203,7 @@
       "keyboardShortcuts": "快捷键",
       "phrases": "快捷短语",
       "quickAssistant": "快捷助手",
-      "selectionAssistant": "划词助手",
-      "mcpServer": "MCP 服务",
-      "skill": "技能",
-      "auditLog": "审计日志"
+      "selectionAssistant": "划词助手"
     },
     "provider": {
       "list": "服务商列表",
@@ -465,75 +462,6 @@
         "duckduckgo": "DuckDuckGo",
         "custom": "自定义"
       }
-    },
-    "mcp": {
-      "searchPlaceholder": "搜索 MCP 服务...",
-      "noServers": "暂无 MCP 服务",
-      "noSearchResults": "没有匹配的服务",
-      "addServer": "添加 MCP 服务",
-      "serverName": "服务名称",
-      "serverNamePlaceholder": "输入服务名称",
-      "serverType": "连接类型",
-      "command": "命令",
-      "args": "参数",
-      "selectServer": "请选择一个 MCP 服务",
-      "autoApprove": "自动批准工具调用",
-      "tools": "工具",
-      "noTools": "暂无工具。连接服务后将自动发现可用工具。",
-      "connect": "连接",
-      "disconnect": "断开",
-      "reconnect": "重新连接",
-      "deleteConfirmTitle": "删除 MCP 服务",
-      "deleteConfirmDesc": "确定要删除「{{name}}」吗？此操作将断开连接并删除所有配置。",
-      "statusConnected": "已连接",
-      "statusConnecting": "连接中...",
-      "statusError": "连接错误",
-      "statusDisconnected": "未连接",
-      "resources": "资源",
-      "noResources": "此服务未暴露资源。",
-      "binaryContent": "[二进制内容]",
-      "prompts": "提示模板",
-      "noPrompts": "此服务未暴露提示模板。",
-      "promptArgs": "参数",
-      "promptResult": "提示内容",
-      "toolCall": {
-        "approve": "批准",
-        "reject": "拒绝",
-        "approveAll": "全部批准",
-        "rejectAll": "全部拒绝",
-        "running": "执行中...",
-        "completed": "已完成",
-        "error": "执行错误",
-        "rejected": "已拒绝",
-        "arguments": "参数",
-        "result": "结果",
-        "autoApproved": "自动批准"
-      }
-    },
-    "skill": {
-      "searchPlaceholder": "搜索技能...",
-      "noSkills": "暂无技能",
-      "noSearchResults": "没有匹配的技能",
-      "addSkill": "添加技能",
-      "skillName": "技能名称",
-      "skillNamePlaceholder": "输入技能名称",
-      "description": "描述",
-      "descriptionPlaceholder": "输入技能描述",
-      "icon": "图标",
-      "iconPlaceholder": "输入图标名称（Lucide 图标）",
-      "systemPrompt": "系统提示词",
-      "systemPromptPlaceholder": "输入系统提示词...",
-      "provider": "模型服务",
-      "selectProvider": "选择模型服务",
-      "model": "模型",
-      "selectModel": "选择模型",
-      "toolServers": "MCP 工具服务",
-      "noToolServers": "暂无可用的 MCP 服务",
-      "selectServer": "请选择一个技能",
-      "deleteConfirmTitle": "删除技能",
-      "deleteConfirmDesc": "确定要删除「{{name}}」吗？此操作不可撤销。",
-      "enabled": "启用",
-      "builtin": "内置"
     }
   },
   "translate": {
@@ -790,20 +718,6 @@
       "fetchFailed": "获取模型列表失败",
       "fetchTimeout": "获取模型列表超时（15 秒）"
     },
-    "mcp": {
-      "serverNotFound": "未找到 MCP 服务",
-      "connectionFailed": "MCP 服务连接失败",
-      "connectionTimeout": "MCP 服务连接超时",
-      "toolExecutionFailed": "工具执行失败",
-      "toolNotFound": "未找到工具",
-      "serverAlreadyConnected": "MCP 服务已连接",
-      "toolCallRejected": "工具调用被拒绝",
-      "toolCallTimeout": "工具调用超时",
-      "maxRoundsExceeded": "工具调用轮次超过上限"
-    },
-    "skill": {
-      "notFound": "未找到技能"
-    },
     "file": {
       "tooLarge": "文件过大（最大 10MB）：{{names}}",
       "invalidAttachmentPath": "附件路径无效",
@@ -822,18 +736,5 @@
   "notification": {
     "chatComplete": "助手回复已完成",
     "translateComplete": "翻译已完成"
-  },
-  "auditLog": {
-    "filterToolName": "搜索工具名称...",
-    "allStatuses": "全部状态",
-    "completed": "已完成",
-    "error": "错误",
-    "rejected": "已拒绝",
-    "totalEntries": "共 {{count}} 条记录",
-    "arguments": "参数",
-    "result": "结果",
-    "empty": "暂无审计日志记录",
-    "prev": "上一页",
-    "next": "下一页"
   }
 }

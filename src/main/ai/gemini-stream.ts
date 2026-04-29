@@ -1,12 +1,12 @@
 import { GoogleGenAI } from '@google/genai'
-import type { StreamChatOptions, StreamCallbacks, ToolCallFromProvider } from './stream-chat'
+import type { StreamChatOptions, StreamCallbacks } from './stream-chat'
 
 /** Stream chat using Google Gemini native SDK. */
 export async function streamGeminiChat(
   options: StreamChatOptions,
   callbacks: StreamCallbacks,
 ): Promise<void> {
-  const { settings, messages, signal, tools } = options
+  const { settings, messages, signal } = options
 
   const ai = new GoogleGenAI({
     apiKey: settings.apiKey,
@@ -34,20 +34,6 @@ export async function streamGeminiChat(
     parts: [{ text: m.text }],
   }))
 
-  // Convert OpenAI function tools to Gemini format
-  const geminiTools =
-    tools && tools.length > 0
-      ? [
-          {
-            functionDeclarations: tools.map((t) => ({
-              name: t.function.name,
-              description: t.function.description,
-              parameters: t.function.parameters,
-            })),
-          },
-        ]
-      : undefined
-
   const response = await ai.models.generateContentStream({
     model: settings.model,
     contents,
@@ -60,32 +46,19 @@ export async function streamGeminiChat(
         : {}),
       ...(settings.topP !== undefined ? { topP: settings.topP } : {}),
     },
-    ...(geminiTools ? { tools: geminiTools } : {}),
   })
-
-  const pendingFunctionCalls: ToolCallFromProvider[] = []
 
   for await (const chunk of response) {
     const parts = chunk.candidates?.[0]?.content?.parts
     if (parts) {
       for (const part of parts) {
         if (part.text) {
+          // Gemini thinking models include a `thought` boolean on reasoning parts;
+          // the SDK types don't expose it yet, so we use a type assertion.
           callbacks.onChunk(part.text, (part as Record<string, unknown>).thought === true)
-        }
-        if (part.functionCall) {
-          pendingFunctionCalls.push({
-            id: `gemini-${Date.now()}-${pendingFunctionCalls.length}`,
-            functionName: part.functionCall.name || '',
-            arguments: JSON.stringify(part.functionCall.args || {}),
-          })
         }
       }
     }
-  }
-
-  if (pendingFunctionCalls.length > 0) {
-    callbacks.onToolCalls?.(pendingFunctionCalls)
-    return
   }
 
   callbacks.onEnd?.()

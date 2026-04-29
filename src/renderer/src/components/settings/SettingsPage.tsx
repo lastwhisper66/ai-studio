@@ -15,9 +15,6 @@ import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 import { QuickAssistantSection } from './QuickAssistantSection'
 import { SelectionAssistantSection } from './SelectionAssistantSection'
-import { McpSection } from './McpSection'
-import { SkillSection } from './SkillSection'
-import { AuditLogSection } from './AuditLogSection'
 
 export function SettingsPage(): React.JSX.Element {
   const { t } = useTranslation()
@@ -48,12 +45,6 @@ export function SettingsPage(): React.JSX.Element {
           <ModelLibrarySection />
         ) : activeSection === 'model-group' ? (
           <ModelGroupSection />
-        ) : activeSection === 'mcp-server' ? (
-          <McpSection />
-        ) : activeSection === 'skill' ? (
-          <SkillSection />
-        ) : activeSection === 'audit-log' ? (
-          <AuditLogSection />
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6">

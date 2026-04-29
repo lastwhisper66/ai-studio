@@ -1,11 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import type {
-  Message,
-  MessageRole,
-  AttachmentMeta,
-  ToolCallData,
-  ToolCallResultData,
-} from '@shared/types'
+import type { Message, MessageRole, AttachmentMeta } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { getDb } from './database'
@@ -22,8 +16,6 @@ interface MessageRow {
   duration: number | null
   thinking_duration: number | null
   attachments: string | null
-  tool_calls: string | null
-  tool_results: string | null
 }
 
 function rowToMessage(row: MessageRow): Message {
@@ -43,20 +35,6 @@ function rowToMessage(row: MessageRow): Message {
       msg.attachments = JSON.parse(row.attachments) as AttachmentMeta[]
     } catch {
       // ignore malformed JSON
-    }
-  }
-  if (row.tool_calls) {
-    try {
-      msg.toolCalls = JSON.parse(row.tool_calls) as ToolCallData[]
-    } catch {
-      /* ignore */
-    }
-  }
-  if (row.tool_results) {
-    try {
-      msg.toolResults = JSON.parse(row.tool_results) as ToolCallResultData[]
-    } catch {
-      /* ignore */
     }
   }
   return msg
@@ -103,8 +81,6 @@ interface CreateMessageOptions {
   duration?: number
   reasoningContent?: string
   thinkingDuration?: number
-  toolCalls?: ToolCallData[]
-  toolResults?: ToolCallResultData[]
 }
 
 export function createMessage(
@@ -113,18 +89,15 @@ export function createMessage(
   content: string,
   options?: CreateMessageOptions,
 ): Message {
-  const { attachments, duration, reasoningContent, thinkingDuration, toolCalls, toolResults } =
-    options ?? {}
+  const { attachments, duration, reasoningContent, thinkingDuration } = options ?? {}
   const id = uuidv4()
   const now = new Date().toISOString()
   const db = getDb()
   const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null
-  const toolCallsJson = toolCalls && toolCalls.length > 0 ? JSON.stringify(toolCalls) : null
-  const toolResultsJson = toolResults && toolResults.length > 0 ? JSON.stringify(toolResults) : null
 
   db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, attachments, duration, thinking_duration, tool_calls, tool_results)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, attachments, duration, thinking_duration)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     conversationId,
@@ -135,8 +108,6 @@ export function createMessage(
     attachmentsJson,
     duration ?? null,
     thinkingDuration ?? null,
-    toolCallsJson,
-    toolResultsJson,
   )
 
   // Update conversation's updated_at timestamp

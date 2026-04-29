@@ -10,9 +10,6 @@ import {
   TextQuote,
   Zap,
   TextSelect,
-  Plug,
-  Sparkles,
-  ScrollText,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -30,9 +27,6 @@ export type SettingsSection =
   | 'keyboard-shortcuts'
   | 'quick-assistant'
   | 'selection-assistant'
-  | 'mcp-server'
-  | 'skill'
-  | 'audit-log'
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection
@@ -64,9 +58,6 @@ const sectionGroups: SectionItem[][] = [
       labelKey: 'settings.sections.selectionAssistant',
       icon: TextSelect,
     },
-    { id: 'mcp-server', labelKey: 'settings.sections.mcpServer', icon: Plug },
-    { id: 'skill', labelKey: 'settings.sections.skill', icon: Sparkles },
-    { id: 'audit-log', labelKey: 'settings.sections.auditLog', icon: ScrollText },
   ],
 ]
 

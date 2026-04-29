@@ -6,8 +6,6 @@ import type {
   FileData,
   ReasoningEffort,
   SendMessagePayload,
-  ToolCallData,
-  ToolCallResultData,
 } from '@shared/types'
 import { isImageMime } from '@shared/types'
 import type { LocalizedError } from '@shared/errors'
@@ -31,9 +29,6 @@ interface ConversationState {
   /** ID of the user message currently being edited; null = no edit active */
   editingMessageId: string | null
   focusInputTrigger: number
-  pendingToolCalls: ToolCallData[]
-  activeToolCalls: ToolCallData[]
-  toolCallResults: ToolCallResultData[]
 
   requestInputFocus: () => void
   loadConversations: () => Promise<void>
@@ -58,7 +53,6 @@ interface ConversationState {
   editAndResendMessage: (messageId: string, newContent: string) => Promise<void>
   setEditingMessageId: (id: string | null) => void
   stopGeneration: () => void
-  approveToolCalls: (approvals: { callId: string; approved: boolean }[]) => void
   clearError: () => void
 }
 
@@ -135,9 +129,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
               streamingReasoningContent: '',
               streamStartTime: null,
               resendTargetId: null,
-              pendingToolCalls: [],
-              activeToolCalls: [],
-              toolCallResults: [],
             }
           })
         } else {
@@ -147,9 +138,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             streamingReasoningContent: '',
             streamStartTime: null,
             resendTargetId: null,
-            pendingToolCalls: [],
-            activeToolCalls: [],
-            toolCallResults: [],
           })
         }
         cleanup()
@@ -165,37 +153,9 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           streamingReasoningContent: '',
           streamStartTime: null,
           resendTargetId: null,
-          pendingToolCalls: [],
-          activeToolCalls: [],
-          toolCallResults: [],
           error: data.error,
         })
         cleanup()
-      }),
-    )
-
-    cleanups.push(
-      window.api.onToolCallsRequested((data) => {
-        if (data.conversationId !== conversationId) return
-        set((state) => ({
-          pendingToolCalls: data.toolCalls.filter((tc) => !tc.autoApprove),
-          activeToolCalls: [...state.activeToolCalls, ...data.toolCalls],
-        }))
-      }),
-    )
-
-    cleanups.push(
-      window.api.onToolCallProgress((data) => {
-        if (data.conversationId !== conversationId) return
-        set((state) => ({
-          activeToolCalls: state.activeToolCalls.map((tc) =>
-            tc.id === data.callId ? { ...tc, status: data.status } : tc,
-          ),
-          toolCallResults: data.result
-            ? [...state.toolCallResults, data.result]
-            : state.toolCallResults,
-          pendingToolCalls: state.pendingToolCalls.filter((tc) => tc.id !== data.callId),
-        }))
       }),
     )
 
@@ -242,9 +202,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     resendTargetId: null,
     editingMessageId: null,
     focusInputTrigger: 0,
-    pendingToolCalls: [],
-    activeToolCalls: [],
-    toolCallResults: [],
 
     requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
 
@@ -613,13 +570,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           resendTargetId: null,
         })
       }
-    },
-
-    approveToolCalls: (approvals) => {
-      const conversationId = get().activeConversationId
-      if (!conversationId) return
-      window.api.approveToolCalls({ conversationId, approvals })
-      set({ pendingToolCalls: [] })
     },
   }
 })

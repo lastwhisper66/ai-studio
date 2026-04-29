@@ -26,7 +26,6 @@
     "@anthropic-ai/sdk": "^0.82.0",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.48.0",
-    "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^12.6.2",
     "emoji-mart": "^5.6.0",
     "font-list": "^2.0.2",
