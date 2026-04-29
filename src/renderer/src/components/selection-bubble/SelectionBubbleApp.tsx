@@ -27,6 +27,8 @@ import {
   selectionActionIconMap,
 } from '@renderer/components/selection-toolbar/icons'
 
+const TRANSLATE_TAG_RE = /<\/?translate_input>\n?/g
+
 export function SelectionBubbleApp(): React.JSX.Element {
   const { t } = useTranslation()
   const resolveError = useLocalizedError()
@@ -222,7 +224,8 @@ export function SelectionBubbleApp(): React.JSX.Element {
         unsubError()
       }
       const unsubChunk = window.api.onSelectionChunk((data) => {
-        setContent((prev) => prev + data.delta)
+        const cleaned = data.delta.replace(TRANSLATE_TAG_RE, '')
+        if (cleaned) setContent((prev) => prev + cleaned)
       })
       const unsubEnd = window.api.onSelectionEnd(() => {
         setIsStreaming(false)

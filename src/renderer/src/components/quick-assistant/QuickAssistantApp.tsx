@@ -29,6 +29,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 /** Single source-of-truth setting key for the target-language override. */
 const TARGET_LANG_KEY = 'quickAssistant.translateTargetLang'
 
+const TRANSLATE_TAG_RE = /<\/?translate_input>\n?/g
+
 type ViewState = 'input' | 'result'
 
 export function QuickAssistantApp(): React.JSX.Element {
@@ -224,7 +226,8 @@ export function QuickAssistantApp(): React.JSX.Element {
       }
 
       const unsubChunk = window.api.onQuickAssistantChunk((data) => {
-        setResultContent((prev) => prev + data.delta)
+        const cleaned = data.delta.replace(TRANSLATE_TAG_RE, '')
+        if (cleaned) setResultContent((prev) => prev + cleaned)
       })
 
       const unsubEnd = window.api.onQuickAssistantEnd(() => {
