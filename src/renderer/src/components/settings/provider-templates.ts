@@ -56,12 +56,12 @@ export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
     color: '#f97316',
     defaultBaseUrl: '',
   },
-  // {
-  //   type: 'fujitsu',
-  //   name: 'Fujitsu Azure OpenAI',
-  //   color: '#e60012',
-  //   defaultBaseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
-  // },
+  {
+    type: 'fujitsu',
+    name: 'Fujitsu Azure OpenAI',
+    color: '#e60012',
+    defaultBaseUrl: 'https://api.ai-service.global.fujitsu.com/ai-foundation/chat-ai/gpt',
+  },
 ]
 
 export function getTemplateByType(type: ProviderType): ProviderTemplate | undefined {
