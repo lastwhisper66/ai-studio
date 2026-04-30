@@ -203,8 +203,7 @@ function ProviderForm({
     onReorderModels(reordered)
   }
 
-  const canFetchModels =
-    provider.type !== 'fujitsu' && !!draft.apiKey && !!(draft.baseUrl || template?.defaultBaseUrl)
+  const canFetchModels = !!draft.apiKey && !!(draft.baseUrl || template?.defaultBaseUrl)
   const [isFetchingModels, setIsFetchingModels] = useState(false)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [showRemoteModelDialog, setShowRemoteModelDialog] = useState(false)

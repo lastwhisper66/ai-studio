@@ -93,7 +93,6 @@ export type ProviderType =
   | 'deepseek'
   | 'silicon'
   | 'newapi'
-  | 'fujitsu'
 
 export interface Provider {
   id: string

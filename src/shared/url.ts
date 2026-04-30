@@ -3,23 +3,9 @@ import type { ProviderType } from './types'
 /** Return the default API path suffix for a given provider type. */
 export function getDefaultApiPath(provider: ProviderType): string {
   if (provider === 'azure') return '/openai/v1'
-  if (provider === 'fujitsu') return ''
   if (provider === 'gemini') return '/v1beta'
   if (provider === 'claude') return ''
   return '/v1'
-}
-
-/**
- * For providers that require the model name in the URL path (e.g. Fujitsu),
- * append the model segment to the base URL if not already present.
- */
-export function buildProviderBaseUrl(
-  baseUrl: string,
-  provider: ProviderType,
-  model: string,
-): string {
-  if (provider !== 'fujitsu' || !model) return baseUrl
-  return baseUrl.replace(/\/+$/, '') + '/' + model
 }
 
 /**
