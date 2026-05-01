@@ -1,6 +1,6 @@
 {
   "name": "ai-studio",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "description": "AI Studio - Windows desktop AI chat application",
   "main": "./out/main/index.js",
   "author": {
