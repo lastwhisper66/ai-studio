@@ -12,14 +12,7 @@ export interface StreamCallbacks {
 }
 
 /** Provider types that use the OpenAI-compatible chat completions API. */
-export const OPENAI_COMPATIBLE_TYPES = new Set([
-  'openai',
-  'azure',
-  'deepseek',
-  'silicon',
-  'newapi',
-  'fujitsu',
-])
+export const OPENAI_COMPATIBLE_TYPES = new Set(['openai', 'azure', 'deepseek', 'silicon', 'newapi'])
 
 export interface StreamChatOptions {
   settings: ApiSettings

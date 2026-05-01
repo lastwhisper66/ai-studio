@@ -4,11 +4,7 @@ import { join } from 'path'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { getDataDir } from '../utils/paths'
-import { seedModelDefinitions } from './model-definitions'
-import { seedModelGroups } from './model-groups'
-import { seedDefaultProviders } from './providers'
-import { seedQuickActions } from './quick-actions'
-import { seedSelectionActions } from './selection-actions'
+import { seedDatabaseDefaults } from './seeds'
 
 let db: Database.Database | null = null
 
@@ -214,36 +210,6 @@ function createTables(): void {
       ON selection_actions(sort_order);
   `)
 
-  // Seed: ensure a default assistant exists
-  seedDefaultAssistant()
-
-  // Seed: populate model definitions from static catalog
-  seedModelDefinitions()
-
-  // Seed: populate model groups from static catalog
-  seedModelGroups()
-
-  // Seed: populate default providers on first launch
-  seedDefaultProviders()
-
-  // Seed: populate quick actions on first launch
-  seedQuickActions()
-
-  // Seed: populate selection actions on first launch
-  seedSelectionActions()
-}
-
-export function seedDefaultAssistant(): void {
-  const database = getDb()
-  const hasDefault = database
-    .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
-    .get() as { cnt: number }
-  if (hasDefault.cnt === 0) {
-    database
-      .prepare(
-        `INSERT INTO assistants (id, name, description, is_default, sort_order)
-         VALUES ('default-assistant', 'seed.assistants.default.name', 'seed.assistants.default.description', 1, -1)`,
-      )
-      .run()
-  }
+  // Seed built-in defaults after all tables exist.
+  seedDatabaseDefaults()
 }

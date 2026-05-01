@@ -283,6 +283,22 @@ function handleTextSelection(data: TextSelectionData): void {
     if (userExcluded) return
   }
 
+  // In ctrlkey mode, cache the selection for later use when Ctrl is held.
+  // The toolbar is not shown until the user actually holds Ctrl.
+  if (filterConfig.triggerMode === 'ctrlkey') {
+    cacheSelection(data)
+    return
+  }
+
+  showToolbarForSelection(data)
+}
+
+function showToolbarForSelection(data: TextSelectionData): void {
+  const text = (data.text ?? '').trim()
+  if (!text) return
+  if (text.length < filterConfig.minTextLength) return
+  if (text.length > filterConfig.maxTextLength) return
+
   const anchor = computeAnchor(data)
   if (!anchor) return
 
@@ -307,6 +323,7 @@ function handleTextSelection(data: TextSelectionData): void {
  * bounds (which are also DIP).
  */
 function handleMouseDown(data: MouseEventData): void {
+  invalidateSelectionCache()
   const bounds = getVisibleToolbarBounds()
   if (!bounds) return
   if (data.x === SelectionHook.INVALID_COORDINATE || data.y === SelectionHook.INVALID_COORDINATE) {
@@ -388,6 +405,17 @@ function applyHookFilterConfig(hook: SelectionHookInstance): void {
 let isCtrlkeyListenerActive = false
 let ctrlHoldTimer: ReturnType<typeof setTimeout> | null = null
 
+// ── Cached selection for ctrlkey mode ──────────────────────────
+// In ctrlkey mode the hook stays in active mode so text-selection events fire
+// on every mouse-up after drag. We cache the latest event data and use it when
+// Ctrl is held, avoiding the less reliable getCurrentSelection() path.
+interface CachedSelection {
+  data: TextSelectionData
+  timestamp: number
+}
+let cachedSelection: CachedSelection | null = null
+const SELECTION_CACHE_TTL_MS = 30_000
+
 function isCtrlKey(vkCode: number): boolean {
   return vkCode === 162 || vkCode === 163 // VK_LCONTROL, VK_RCONTROL
 }
@@ -397,6 +425,23 @@ function clearCtrlHoldTimer(): void {
     clearTimeout(ctrlHoldTimer)
     ctrlHoldTimer = null
   }
+}
+
+function cacheSelection(data: TextSelectionData): void {
+  cachedSelection = { data, timestamp: Date.now() }
+}
+
+function consumeCachedSelection(): TextSelectionData | null {
+  if (!cachedSelection) return null
+  if (Date.now() - cachedSelection.timestamp > SELECTION_CACHE_TTL_MS) {
+    cachedSelection = null
+    return null
+  }
+  return cachedSelection.data
+}
+
+function invalidateSelectionCache(): void {
+  cachedSelection = null
 }
 
 function handleKeyDownCtrlkeyMode(data: KeyboardEventData): void {
@@ -414,13 +459,20 @@ function handleKeyDownCtrlkeyMode(data: KeyboardEventData): void {
   ctrlHoldTimer = setTimeout(() => {
     ctrlHoldTimer = null
     if (!hookInstance) return
-    const selectionData = hookInstance.getCurrentSelection()
+
+    // Prefer cached selection from the last text-selection event (active mode).
+    // Falls back to getCurrentSelection() when no cache exists (e.g. keyboard-
+    // based selection that doesn't fire a text-selection event, or stale cache).
+    let selectionData = consumeCachedSelection()
+    if (!selectionData) {
+      selectionData = hookInstance.getCurrentSelection()
+    }
+
     if (selectionData) {
-      // Passive mode: hook coordinates are unreliable (often 0,0).
       const cursor = screen.getCursorScreenPoint()
       selectionData.mousePosEnd = cursor
       selectionData.mousePosStart = cursor
-      handleTextSelection(selectionData)
+      showToolbarForSelection(selectionData)
     }
   }, 350)
 }
@@ -454,11 +506,16 @@ function applyTriggerMode(hook: SelectionHookInstance): void {
     isCtrlkeyListenerActive = false
   }
 
+  // Always keep active mode so text-selection events fire even in ctrlkey mode.
+  // In ctrlkey mode, handleTextSelection caches the data instead of showing
+  // the toolbar, so the user experience is unchanged.
   try {
-    hook.setSelectionPassiveMode(mode === 'ctrlkey')
+    hook.setSelectionPassiveMode(false)
   } catch (err) {
     console.warn('[SelectionService] setSelectionPassiveMode not supported:', err)
   }
+
+  invalidateSelectionCache()
 
   if (mode === 'ctrlkey') {
     hook.on('key-down', handleKeyDownCtrlkeyMode)
@@ -508,6 +565,7 @@ function stopHook(): void {
     hookInstance.stop()
     running = false
   }
+  invalidateSelectionCache()
   // Also hide any visible UI when disabling
   hideSelectionToolbar()
   hideSelectionBubble()

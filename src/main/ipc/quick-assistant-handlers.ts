@@ -13,6 +13,7 @@ import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
 import { getQuickAction } from '../db/quick-actions'
 import { getSetting } from '../db/settings'
+import { stripTranslateInputTags } from '../utils/strip-translate-tags'
 
 let activeController: AbortController | null = null
 
@@ -88,12 +89,16 @@ export function registerQuickAssistantHandlers(): void {
         activeController = controller
 
         // Build user message — multimodal if images are attached
+        const isTranslateAction =
+          actionId === 'builtin-translate' || actionId === 'builtin-image-translate'
+        const wrapText = (t: string): string =>
+          isTranslateAction ? `<translate_input>\n${t}\n</translate_input>` : t
         const imageFiles = (files ?? []).filter((f: FileData) => isImageMime(f.mimeType))
         let userMessage: ChatCompletionMessageParam
         if (imageFiles.length > 0) {
           const parts: ChatCompletionContentPart[] = []
           if (text) {
-            parts.push({ type: 'text', text })
+            parts.push({ type: 'text', text: wrapText(text) })
           }
           for (const file of imageFiles) {
             parts.push({
@@ -103,20 +108,23 @@ export function registerQuickAssistantHandlers(): void {
           }
           userMessage = { role: 'user', content: parts }
         } else {
-          userMessage = { role: 'user', content: text }
+          userMessage = { role: 'user', content: wrapText(text) }
         }
+
+        const baseSystemPrompt = systemPromptOverride ?? action.systemPrompt
+        const systemPrompt = isTranslateAction
+          ? `${baseSystemPrompt}\n- NEVER include <translate_input> or </translate_input> tags in your output.`
+          : baseSystemPrompt
 
         await streamChat(
           {
             settings,
-            messages: [
-              { role: 'system', content: systemPromptOverride ?? action.systemPrompt },
-              userMessage,
-            ],
+            messages: [{ role: 'system', content: systemPrompt }, userMessage],
             signal: controller.signal,
           },
           {
-            onChunk: (delta) => {
+            onChunk: (delta, isReasoning) => {
+              if (isReasoning) return
               fullText += delta
               if (!sender.isDestroyed()) {
                 sender.send(IpcChannels.QUICK_ASSISTANT_CHUNK, { delta })
@@ -126,7 +134,8 @@ export function registerQuickAssistantHandlers(): void {
         )
 
         if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.QUICK_ASSISTANT_END, { fullText })
+          const result = isTranslateAction ? stripTranslateInputTags(fullText) : fullText
+          sender.send(IpcChannels.QUICK_ASSISTANT_END, { fullText: result })
         }
         activeController = null
         return { success: true }
@@ -138,7 +147,9 @@ export function registerQuickAssistantHandlers(): void {
           (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
           if (!sender.isDestroyed()) {
-            sender.send(IpcChannels.QUICK_ASSISTANT_END, { fullText })
+            sender.send(IpcChannels.QUICK_ASSISTANT_END, {
+              fullText: stripTranslateInputTags(fullText),
+            })
           }
           return { success: true }
         }

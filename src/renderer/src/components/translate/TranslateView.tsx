@@ -44,6 +44,8 @@ import type { TranslationHistoryItem } from '@shared/types'
 import type { LocalizedError } from '@shared/errors'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 
+const TRANSLATE_TAG_RE = /<\/?translate_input>\n?/g
+
 export function TranslateView(): React.JSX.Element {
   const { t } = useTranslation()
   const resolveError = useLocalizedError()
@@ -219,7 +221,8 @@ export function TranslateView(): React.JSX.Element {
   useEffect(() => {
     const unsubChunk = window.api.onTranslateChunk((data) => {
       if (data.requestId !== currentTranslationRef.current?.requestId) return
-      setTranslatedText((prev) => prev + data.delta)
+      const cleaned = data.delta.replace(TRANSLATE_TAG_RE, '')
+      if (cleaned) setTranslatedText((prev) => prev + cleaned)
     })
 
     const unsubEnd = window.api.onTranslateEnd((data) => {
@@ -227,7 +230,9 @@ export function TranslateView(): React.JSX.Element {
       if (!params || data.requestId !== params.requestId) return
       currentTranslationRef.current = null
       setIsTranslating(false)
-      if (data.fullText) {
+      const cleanedFull = data.fullText?.replace(TRANSLATE_TAG_RE, '') || ''
+      if (cleanedFull) {
+        setTranslatedText(cleanedFull)
         window.api
           .createTranslationHistory(
             params.sourceText,

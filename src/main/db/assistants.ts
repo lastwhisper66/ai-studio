@@ -3,6 +3,7 @@ import type { Assistant } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { getDb } from './database'
+import { DEFAULT_ASSISTANT_SEED } from './seeds/assistants'
 
 interface AssistantRow {
   id: string
@@ -227,4 +228,25 @@ export function reorderAssistants(ids: string[]): void {
     pinned.forEach((id, i) => update.run(-(pinned.length - i), id))
     unpinned.forEach((id, i) => update.run(i, id))
   })()
+}
+
+export function seedDefaultAssistant(): void {
+  const database = getDb()
+  const hasDefault = database
+    .prepare('SELECT COUNT(*) as cnt FROM assistants WHERE is_default = 1')
+    .get() as { cnt: number }
+  if (hasDefault.cnt === 0) {
+    database
+      .prepare(
+        `INSERT INTO assistants (id, name, description, is_default, sort_order)
+         VALUES (?, ?, ?, ?, ?)`,
+      )
+      .run(
+        DEFAULT_ASSISTANT_SEED.id,
+        DEFAULT_ASSISTANT_SEED.name,
+        DEFAULT_ASSISTANT_SEED.description,
+        DEFAULT_ASSISTANT_SEED.isDefault ? 1 : 0,
+        DEFAULT_ASSISTANT_SEED.sortOrder,
+      )
+  }
 }

@@ -27,6 +27,8 @@ import {
   selectionActionIconMap,
 } from '@renderer/components/selection-toolbar/icons'
 
+const TRANSLATE_TAG_RE = /<\/?translate_input>\n?/g
+
 export function SelectionBubbleApp(): React.JSX.Element {
   const { t } = useTranslation()
   const resolveError = useLocalizedError()
@@ -206,9 +208,11 @@ export function SelectionBubbleApp(): React.JSX.Element {
       } else {
         const englishLabel = getLanguageEnglishLabel(lang)
         const basePrompt = action.systemPrompt?.trim() ?? ''
-        systemPromptOverride = basePrompt
-          ? `${basePrompt}\n\nPlease respond in ${englishLabel}.`
-          : `Please respond in ${englishLabel}.`
+        const isTranslateAction = action.id === 'builtin-sel-translate'
+        const langSuffix = isTranslateAction
+          ? `\n\nTarget language: ${englishLabel}. Translate the user's text into ${englishLabel}. Output only the translation.`
+          : `\n\nPlease respond in ${englishLabel}.`
+        systemPromptOverride = basePrompt ? `${basePrompt}${langSuffix}` : langSuffix.trimStart()
       }
 
       let cleanedUp = false
@@ -220,7 +224,8 @@ export function SelectionBubbleApp(): React.JSX.Element {
         unsubError()
       }
       const unsubChunk = window.api.onSelectionChunk((data) => {
-        setContent((prev) => prev + data.delta)
+        const cleaned = data.delta.replace(TRANSLATE_TAG_RE, '')
+        if (cleaned) setContent((prev) => prev + cleaned)
       })
       const unsubEnd = window.api.onSelectionEnd(() => {
         setIsStreaming(false)

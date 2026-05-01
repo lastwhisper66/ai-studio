@@ -9,6 +9,7 @@ import { getProvider } from '../db/providers'
 import { listModelsByProvider } from '../db/models'
 import { getSelectionAction } from '../db/selection-actions'
 import { getSetting } from '../db/settings'
+import { stripTranslateInputTags } from '../utils/strip-translate-tags'
 
 let activeController: AbortController | null = null
 /**
@@ -104,19 +105,26 @@ export function registerSelectionHandlers(): void {
         const controller = new AbortController()
         activeController = controller
 
-        const userMessage: ChatCompletionMessageParam = { role: 'user', content: text }
+        const isTranslateAction = actionId === 'builtin-sel-translate'
+        const wrappedText = isTranslateAction
+          ? `<translate_input>\n${text}\n</translate_input>`
+          : text
+        const userMessage: ChatCompletionMessageParam = { role: 'user', content: wrappedText }
+
+        const baseSystemPrompt = systemPromptOverride ?? action.systemPrompt
+        const systemPrompt = isTranslateAction
+          ? `${baseSystemPrompt}\n- NEVER include <translate_input> or </translate_input> tags in your output.`
+          : baseSystemPrompt
 
         await streamChat(
           {
             settings,
-            messages: [
-              { role: 'system', content: systemPromptOverride ?? action.systemPrompt },
-              userMessage,
-            ],
+            messages: [{ role: 'system', content: systemPrompt }, userMessage],
             signal: controller.signal,
           },
           {
-            onChunk: (delta) => {
+            onChunk: (delta, isReasoning) => {
+              if (isReasoning) return
               fullText += delta
               if (!isCurrent()) return
               if (!sender.isDestroyed()) {
@@ -127,7 +135,8 @@ export function registerSelectionHandlers(): void {
         )
 
         if (isCurrent() && !sender.isDestroyed()) {
-          sender.send(IpcChannels.SELECTION_END, { fullText })
+          const result = isTranslateAction ? stripTranslateInputTags(fullText) : fullText
+          sender.send(IpcChannels.SELECTION_END, { fullText: result })
         }
         if (isCurrent()) activeController = null
         return { success: true }
@@ -139,7 +148,9 @@ export function registerSelectionHandlers(): void {
           (error.name === 'AbortError' || error.name === 'APIUserAbortError')
         if (isAborted) {
           if (isCurrent() && !sender.isDestroyed()) {
-            sender.send(IpcChannels.SELECTION_END, { fullText })
+            sender.send(IpcChannels.SELECTION_END, {
+              fullText: stripTranslateInputTags(fullText),
+            })
           }
           return { success: true }
         }

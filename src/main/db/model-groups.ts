@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import type { ModelGroup } from '@shared/types'
 import { getDb } from './database'
+import { MODEL_GROUP_SEEDS, MODEL_GROUPS_SEED_VERSION } from './seeds/catalogs'
 
 interface ModelGroupRow {
   id: string
@@ -117,18 +118,6 @@ export function resolveModelGroup(modelName: string): ModelGroup | undefined {
   return undefined
 }
 
-/* ─── Seed ─── */
-
-const SEED_VERSION = 1
-
-interface SeedEntry {
-  pattern: string
-  displayName: string
-}
-
-import seedData from './seed-model-groups.json'
-const SEED_DATA: SeedEntry[] = seedData as SeedEntry[]
-
 export function seedModelGroups(): void {
   const db = getDb()
 
@@ -136,7 +125,7 @@ export function seedModelGroups(): void {
     .prepare("SELECT value FROM settings WHERE key = 'model_groups_seed_version'")
     .get() as { value: string } | undefined
   const currentVersion = row ? Number(row.value) : 0
-  if (currentVersion >= SEED_VERSION) return
+  if (currentVersion >= MODEL_GROUPS_SEED_VERSION) return
 
   const insert = db.prepare(
     `INSERT INTO model_groups (id, pattern, display_name)
@@ -147,13 +136,13 @@ export function seedModelGroups(): void {
      WHERE updated_at = created_at`,
   )
   const tx = db.transaction(() => {
-    for (const s of SEED_DATA) {
+    for (const s of MODEL_GROUP_SEEDS) {
       insert.run(randomUUID(), s.pattern, s.displayName)
     }
     db.prepare(
       `INSERT INTO settings (key, value) VALUES ('model_groups_seed_version', ?)
        ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-    ).run(String(SEED_VERSION))
+    ).run(String(MODEL_GROUPS_SEED_VERSION))
   })
   tx()
 }

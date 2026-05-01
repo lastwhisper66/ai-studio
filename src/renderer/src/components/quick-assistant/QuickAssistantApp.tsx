@@ -29,6 +29,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 /** Single source-of-truth setting key for the target-language override. */
 const TARGET_LANG_KEY = 'quickAssistant.translateTargetLang'
 
+const TRANSLATE_TAG_RE = /<\/?translate_input>\n?/g
+
 type ViewState = 'input' | 'result'
 
 export function QuickAssistantApp(): React.JSX.Element {
@@ -194,9 +196,12 @@ export function QuickAssistantApp(): React.JSX.Element {
       } else {
         const englishLabel = getLanguageEnglishLabel(lang)
         const basePrompt = action.systemPrompt?.trim() ?? ''
-        systemPromptOverride = basePrompt
-          ? `${basePrompt}\n\nPlease respond in ${englishLabel}.`
-          : `Please respond in ${englishLabel}.`
+        const isTranslateAction =
+          action.id === 'builtin-translate' || action.id === 'builtin-image-translate'
+        const langSuffix = isTranslateAction
+          ? `\n\nTarget language: ${englishLabel}. Translate the user's text into ${englishLabel}. Output only the translation.`
+          : `\n\nPlease respond in ${englishLabel}.`
+        systemPromptOverride = basePrompt ? `${basePrompt}${langSuffix}` : langSuffix.trimStart()
       }
       activeTargetLangRef.current = lang
 
@@ -221,7 +226,8 @@ export function QuickAssistantApp(): React.JSX.Element {
       }
 
       const unsubChunk = window.api.onQuickAssistantChunk((data) => {
-        setResultContent((prev) => prev + data.delta)
+        const cleaned = data.delta.replace(TRANSLATE_TAG_RE, '')
+        if (cleaned) setResultContent((prev) => prev + cleaned)
       })
 
       const unsubEnd = window.api.onQuickAssistantEnd(() => {
