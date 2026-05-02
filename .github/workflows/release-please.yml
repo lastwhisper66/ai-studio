@@ -2,7 +2,7 @@ name: Release Please
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -20,7 +20,7 @@ jobs:
       version: ${{ steps.release.outputs.version }}
     steps:
       - name: Run release-please
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v6
         id: release
         with:
           config-file: release-please-config.json
@@ -96,7 +96,7 @@ jobs:
 
   upload-assets:
     name: Upload Release Assets
-    needs: [release-please, build]
+    needs: [ release-please, build ]
     runs-on: ubuntu-latest
     permissions:
       contents: write
