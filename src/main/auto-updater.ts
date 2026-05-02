@@ -1,13 +1,16 @@
 import { app, BrowserWindow, shell, net } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import type { UpdaterState, UpdaterDownloadProgress } from '@shared/types'
+import type { AppReleaseInfo, UpdaterState, UpdaterDownloadProgress } from '@shared/types'
 import { IpcChannels } from '@shared/ipc-channels'
 import { getAutoUpdateEnabled } from './app-state'
 
-const GITHUB_OWNER = 'lastwhisper66'
-const GITHUB_REPO = 'ai-studio'
-const RELEASE_PAGE_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`
+export const GITHUB_OWNER = 'lastwhisper66'
+export const GITHUB_REPO = 'ai-studio'
+export const PROJECT_PAGE_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`
+export const RELEASES_PAGE_URL = `${PROJECT_PAGE_URL}/releases`
+const RELEASE_PAGE_URL = `${RELEASES_PAGE_URL}/latest`
 const STARTUP_CHECK_DELAY_MS = 5_000
+const CHECK_FOR_UPDATE_TIMEOUT_MS = 20_000
 
 const isMacFallback = process.platform === 'darwin'
 
@@ -25,6 +28,16 @@ function setState(patch: Partial<UpdaterState>): void {
     if (win.isDestroyed()) continue
     win.webContents.send(IpcChannels.UPDATER_STATE_CHANGED, state)
   }
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeout = setTimeout(() => reject(new Error(message)), timeoutMs)
+  })
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeout) clearTimeout(timeout)
+  })
 }
 
 export function getUpdaterState(): UpdaterState {
@@ -50,11 +63,20 @@ function compareVersions(a: string, b: string): number {
   return 0
 }
 
-async function fetchLatestReleaseFromGitHub(): Promise<{
-  version: string
-  notes: string
-  url: string
-}> {
+function normalizeReleaseNotes(releaseNotes: unknown): string {
+  if (typeof releaseNotes === 'string') return releaseNotes
+  if (!Array.isArray(releaseNotes)) return ''
+
+  return releaseNotes
+    .map((item) =>
+      item && typeof item === 'object' && 'note' in item
+        ? String((item as { note?: unknown }).note ?? '')
+        : '',
+    )
+    .join('\n')
+}
+
+export async function fetchLatestReleaseFromGitHub(): Promise<AppReleaseInfo> {
   return new Promise((resolve, reject) => {
     const request = net.request({
       method: 'GET',
@@ -77,8 +99,10 @@ async function fetchLatestReleaseFromGitHub(): Promise<{
         try {
           const json = JSON.parse(body) as {
             tag_name?: string
+            name?: string
             body?: string
             html_url?: string
+            published_at?: string
           }
           if (!json.tag_name) {
             reject(new Error('GitHub response missing tag_name'))
@@ -86,8 +110,10 @@ async function fetchLatestReleaseFromGitHub(): Promise<{
           }
           resolve({
             version: json.tag_name.replace(/^v/, ''),
+            name: json.name,
             notes: json.body ?? '',
             url: json.html_url ?? RELEASE_PAGE_URL,
+            publishedAt: json.published_at,
           })
         } catch (e) {
           reject(e instanceof Error ? e : new Error(String(e)))
@@ -135,12 +161,7 @@ function bindElectronUpdaterEvents(): void {
     setState({
       status: 'available',
       latestVersion: info.version,
-      releaseNotes:
-        typeof info.releaseNotes === 'string'
-          ? info.releaseNotes
-          : Array.isArray(info.releaseNotes)
-            ? info.releaseNotes.map((n) => n.note ?? '').join('\n')
-            : '',
+      releaseNotes: normalizeReleaseNotes(info.releaseNotes),
       releaseUrl: RELEASE_PAGE_URL,
       error: undefined,
     })
@@ -184,9 +205,36 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
     return
   }
   try {
-    setState({ status: 'checking', manualCheck: manual, error: undefined })
-    // Don't await — events drive state transitions.
-    await autoUpdater.checkForUpdates()
+    setState({
+      status: 'checking',
+      manualCheck: manual,
+      error: undefined,
+      downloadProgress: undefined,
+    })
+    const result = await withTimeout(
+      autoUpdater.checkForUpdates(),
+      CHECK_FOR_UPDATE_TIMEOUT_MS,
+      'Update check timed out. Please check your network and try again.',
+    )
+
+    // electron-updater normally emits update-available / update-not-available.
+    // Some environments resolve the promise without a terminal event; make sure
+    // the shared UI state never remains stuck at "checking".
+    if (state.status === 'checking') {
+      const latestVersion = result?.updateInfo?.version
+      if (latestVersion && compareVersions(latestVersion, state.currentVersion) > 0) {
+        setState({
+          status: 'available',
+          latestVersion,
+          releaseNotes: normalizeReleaseNotes(result.updateInfo.releaseNotes),
+          releaseUrl: RELEASE_PAGE_URL,
+          manualCheck: manual,
+          error: undefined,
+        })
+      } else {
+        setState({ status: 'not-available', manualCheck: manual, error: undefined })
+      }
+    }
   } catch (e) {
     setState({
       status: 'error',

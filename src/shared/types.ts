@@ -450,6 +450,14 @@ export interface UpdaterDownloadProgress {
   bytesPerSecond: number
 }
 
+export interface AppReleaseInfo {
+  version: string
+  name?: string
+  notes: string
+  url: string
+  publishedAt?: string
+}
+
 export interface UpdaterState {
   status: UpdaterStatus
   currentVersion: string

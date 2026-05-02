@@ -203,7 +203,8 @@
       "keyboardShortcuts": "快捷键",
       "phrases": "快捷短语",
       "quickAssistant": "快捷助手",
-      "selectionAssistant": "划词助手"
+      "selectionAssistant": "划词助手",
+      "about": "关于"
     },
     "provider": {
       "list": "服务商列表",
@@ -283,6 +284,59 @@
       "autoCheckUpdatesDescription": "应用启动时自动在后台检查新版本。",
       "checkForUpdatesNow": "立即检查更新",
       "checking": "检查中..."
+    },
+    "about": {
+      "version": "v{{version}}",
+      "currentVersion": "当前版本：{{version}}",
+      "description": "AI Studio 是一款面向 Windows 桌面的本地 AI 工作台，聚合多模型对话、翻译、快捷助手和划词助手，让常用的 AI 工作流留在同一个轻量界面里。",
+      "tagline": "你的服务商配置、助手、短语和历史数据保存在本机，便于稳定、可控地完成日常写作、阅读、代码和资料处理。",
+      "featureTitle": "应用能力",
+      "features": {
+        "chat": {
+          "title": "多模型会话",
+          "description": "连接 OpenAI 兼容服务、Claude、Gemini 等模型，按助手和场景组织对话。"
+        },
+        "quickAssistant": {
+          "title": "快捷助手",
+          "description": "通过全局快捷键快速唤起轻量助手，处理临时提问、改写和总结。"
+        },
+        "selectionAssistant": {
+          "title": "划词助手",
+          "description": "选中文本后直接翻译、解释、润色或执行自定义动作。"
+        },
+        "localData": {
+          "title": "本地数据管理",
+          "description": "对话、配置和附件存储在本机数据库中，并提供清理和外观设置。"
+        }
+      },
+      "actionsTitle": "项目与更新",
+      "checkUpdates": "检查更新",
+      "checkUpdatesDescription": "立即触发一次更新检查，结果会通过应用更新窗口展示。",
+      "checking": "检查中...",
+      "checkFailed": "检查更新失败",
+      "openGitHub": "查看 GitHub 项目",
+      "openGitHubDescription": "打开项目仓库，查看源码、问题反馈和发布信息。",
+      "projectOpenFailed": "无法打开 GitHub 项目页",
+      "viewChangelog": "更新日志",
+      "viewChangelogDescription": "查看最新发布版本的更新内容，并可跳转到完整发布记录。",
+      "changelogTitle": "更新日志",
+      "changelogDescription": "来自 GitHub 最新 Release 的发布说明。",
+      "loadingChangelog": "正在加载更新日志...",
+      "changelogLoadFailed": "更新日志加载失败",
+      "changelogEmpty": "最新版本暂无更新说明。",
+      "latestRelease": "最新版本 v{{version}}",
+      "publishedAt": "发布于 {{date}}",
+      "openAllReleases": "查看全部发布",
+      "releasesOpenFailed": "无法打开发布记录页",
+      "status": {
+        "idle": "待检查",
+        "checking": "正在检查",
+        "available": "发现新版本",
+        "not-available": "已是最新",
+        "downloading": "正在下载",
+        "downloaded": "等待安装",
+        "error": "检查失败"
+      }
     },
     "data": {
       "title": "数据设置",

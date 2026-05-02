@@ -203,7 +203,8 @@
       "keyboardShortcuts": "Shortcuts",
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
-      "selectionAssistant": "Selection Assistant"
+      "selectionAssistant": "Selection Assistant",
+      "about": "About"
     },
     "provider": {
       "list": "Provider list",
@@ -283,6 +284,59 @@
       "autoCheckUpdatesDescription": "Silently check for a new version in the background at application startup.",
       "checkForUpdatesNow": "Check for updates now",
       "checking": "Checking..."
+    },
+    "about": {
+      "version": "v{{version}}",
+      "currentVersion": "Current version: {{version}}",
+      "description": "AI Studio is a local Windows desktop AI workspace that brings multi-model chat, translation, quick assistant, and selection assistant workflows into one focused interface.",
+      "tagline": "Provider configuration, assistants, phrases, and history stay on this device, giving you a stable and controlled workspace for writing, reading, coding, and knowledge work.",
+      "featureTitle": "What it does",
+      "features": {
+        "chat": {
+          "title": "Multi-model chat",
+          "description": "Connect OpenAI-compatible services, Claude, Gemini, and other models, then organize conversations by assistant and use case."
+        },
+        "quickAssistant": {
+          "title": "Quick Assistant",
+          "description": "Summon a lightweight assistant with a global shortcut for ad hoc questions, rewrites, and summaries."
+        },
+        "selectionAssistant": {
+          "title": "Selection Assistant",
+          "description": "Translate, explain, polish, or run custom actions directly from selected text."
+        },
+        "localData": {
+          "title": "Local data control",
+          "description": "Conversations, configuration, and attachments are stored locally with cleanup and appearance controls."
+        }
+      },
+      "actionsTitle": "Project and updates",
+      "checkUpdates": "Check updates",
+      "checkUpdatesDescription": "Trigger an update check immediately. Results appear in the application update dialog.",
+      "checking": "Checking...",
+      "checkFailed": "Failed to check for updates",
+      "openGitHub": "View GitHub project",
+      "openGitHubDescription": "Open the repository to inspect source code, issues, and release information.",
+      "projectOpenFailed": "Failed to open the GitHub project page",
+      "viewChangelog": "Changelog",
+      "viewChangelogDescription": "Read the latest release notes and jump to the full release history.",
+      "changelogTitle": "Changelog",
+      "changelogDescription": "Release notes from the latest GitHub Release.",
+      "loadingChangelog": "Loading changelog...",
+      "changelogLoadFailed": "Failed to load changelog",
+      "changelogEmpty": "The latest release has no notes.",
+      "latestRelease": "Latest version v{{version}}",
+      "publishedAt": "Published {{date}}",
+      "openAllReleases": "View all releases",
+      "releasesOpenFailed": "Failed to open the releases page",
+      "status": {
+        "idle": "Ready to check",
+        "checking": "Checking",
+        "available": "Update available",
+        "not-available": "Up to date",
+        "downloading": "Downloading",
+        "downloaded": "Ready to install",
+        "error": "Check failed"
+      }
     },
     "data": {
       "title": "Data",

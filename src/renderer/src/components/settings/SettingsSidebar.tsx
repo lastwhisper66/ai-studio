@@ -10,6 +10,7 @@ import {
   TextQuote,
   Zap,
   TextSelect,
+  Info,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -27,6 +28,7 @@ export type SettingsSection =
   | 'keyboard-shortcuts'
   | 'quick-assistant'
   | 'selection-assistant'
+  | 'about'
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection
@@ -59,6 +61,7 @@ const sectionGroups: SectionItem[][] = [
       icon: TextSelect,
     },
   ],
+  [{ id: 'about', labelKey: 'settings.sections.about', icon: Info }],
 ]
 
 export function SettingsSidebar({
@@ -66,30 +69,31 @@ export function SettingsSidebar({
   onSectionChange,
 }: SettingsSidebarProps): React.JSX.Element {
   const { t } = useTranslation()
+  const renderSectionButton = ({ id, labelKey, icon: Icon }: SectionItem): React.JSX.Element => (
+    <button
+      key={id}
+      onClick={() => onSectionChange(id)}
+      className={cn(
+        'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors',
+        activeSection === id
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
+      )}>
+      <Icon className="h-4 w-4" />
+      {t(labelKey)}
+    </button>
+  )
 
   return (
-    <nav className="w-52 shrink-0 border-r p-3">
-      {sectionGroups.map((group, groupIndex) => (
-        <div key={groupIndex}>
-          {groupIndex > 0 && <Separator className="my-2" />}
-          <div className="space-y-1">
-            {group.map(({ id, labelKey, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => onSectionChange(id)}
-                className={cn(
-                  'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors',
-                  activeSection === id
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground',
-                )}>
-                <Icon className="h-4 w-4" />
-                {t(labelKey)}
-              </button>
-            ))}
+    <nav className="flex h-full w-52 shrink-0 flex-col border-r p-3">
+      <div>
+        {sectionGroups.map((group, groupIndex) => (
+          <div key={groupIndex}>
+            {groupIndex > 0 && <Separator className="my-2" />}
+            <div className="space-y-1">{group.map(renderSectionButton)}</div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </nav>
   )
 }

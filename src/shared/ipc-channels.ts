@@ -98,6 +98,9 @@ export const IpcChannels = {
   APP_GET_FONTS: 'app:get-fonts',
   // App
   APP_CLEAR_DATA: 'app:clear-data',
+  APP_OPEN_PROJECT_PAGE: 'app:open-project-page',
+  APP_OPEN_RELEASES_PAGE: 'app:open-releases-page',
+  APP_GET_LATEST_RELEASE: 'app:get-latest-release',
   CLIPBOARD_WRITE_IMAGE: 'clipboard:write-image',
   // User
   USER_SAVE_AVATAR: 'user:save-avatar',

@@ -46,6 +46,7 @@ import type {
   SelectionChunkData,
   SelectionEndData,
   SelectionErrorData,
+  AppReleaseInfo,
   UpdaterState,
 } from '@shared/types'
 
@@ -380,6 +381,15 @@ const api = {
     ipcRenderer.invoke(IpcChannels.CLIPBOARD_WRITE_IMAGE, payload),
 
   getSystemFonts: (): Promise<IpcResult<string[]>> => ipcRenderer.invoke(IpcChannels.APP_GET_FONTS),
+
+  openProjectPage: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.APP_OPEN_PROJECT_PAGE),
+
+  openReleasesPage: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.APP_OPEN_RELEASES_PAGE),
+
+  getLatestRelease: (): Promise<IpcResult<AppReleaseInfo>> =>
+    ipcRenderer.invoke(IpcChannels.APP_GET_LATEST_RELEASE),
 
   // Zoom
   setZoom: (factor: number): Promise<void> =>

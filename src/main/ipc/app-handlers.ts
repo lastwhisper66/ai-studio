@@ -1,13 +1,14 @@
-import { app, clipboard, ipcMain, nativeImage } from 'electron'
+import { app, clipboard, ipcMain, nativeImage, shell } from 'electron'
 import { existsSync, rmSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
 import { toLocalizedError } from '../errors'
-import type { ClipboardImagePayload, IpcResult } from '@shared/types'
+import type { AppReleaseInfo, ClipboardImagePayload, IpcResult } from '@shared/types'
 import { getDb } from '../db/database'
 import { seedDatabaseDefaults } from '../db/seeds'
 import { getDataDir } from '../utils/paths'
+import { fetchLatestReleaseFromGitHub, PROJECT_PAGE_URL, RELEASES_PAGE_URL } from '../auto-updater'
 
 export function registerAppHandlers(): void {
   ipcMain.handle(IpcChannels.APP_CLEAR_DATA, (): IpcResult<void> => {
@@ -76,6 +77,35 @@ export function registerAppHandlers(): void {
       return { success: false, error: toLocalizedError(e) }
     }
   })
+
+  ipcMain.handle(IpcChannels.APP_OPEN_PROJECT_PAGE, async (): Promise<IpcResult<void>> => {
+    try {
+      await shell.openExternal(PROJECT_PAGE_URL)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.APP_OPEN_RELEASES_PAGE, async (): Promise<IpcResult<void>> => {
+    try {
+      await shell.openExternal(RELEASES_PAGE_URL)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(
+    IpcChannels.APP_GET_LATEST_RELEASE,
+    async (): Promise<IpcResult<AppReleaseInfo>> => {
+      try {
+        return { success: true, data: await fetchLatestReleaseFromGitHub() }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 
   ipcMain.handle(
     IpcChannels.CLIPBOARD_WRITE_IMAGE,
