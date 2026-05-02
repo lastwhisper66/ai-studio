@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download, ExternalLink, RotateCw, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize from 'rehype-sanitize'
 import {
   Dialog,
   DialogContent,
@@ -111,8 +115,10 @@ export function UpdateDialog(): React.JSX.Element | null {
                 <p className="text-muted-foreground text-xs font-medium">
                   {t('updater.releaseNotes')}
                 </p>
-                <div className="max-h-48 overflow-y-auto rounded-md border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
-                  {state.releaseNotes}
+                <div className="release-notes max-h-48 overflow-y-auto rounded-md border bg-muted/30 p-3 text-xs">
+                  <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>
+                    {state.releaseNotes}
+                  </Markdown>
                 </div>
               </div>
             )}

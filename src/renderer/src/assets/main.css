@@ -170,6 +170,71 @@ pre.shiki {
   margin-bottom: 0;
 }
 
+/* ── Update-dialog release notes ── */
+.release-notes > :first-child {
+  margin-top: 0;
+}
+.release-notes > :last-child {
+  margin-bottom: 0;
+}
+.release-notes p {
+  margin: 0.35em 0;
+  line-height: 1.55;
+}
+.release-notes ul,
+.release-notes ol {
+  margin: 0.35em 0;
+  padding-left: 1.25rem;
+}
+.release-notes ul {
+  list-style: disc;
+}
+.release-notes ol {
+  list-style: decimal;
+}
+.release-notes li {
+  margin: 0.15em 0;
+}
+.release-notes h1,
+.release-notes h2,
+.release-notes h3,
+.release-notes h4 {
+  margin: 0.6em 0 0.3em;
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+.release-notes a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+.release-notes code {
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  background: var(--color-muted);
+  font-size: 0.95em;
+}
+.release-notes pre {
+  margin: 0.4em 0;
+  padding: 0.6em 0.75em;
+  border-radius: 4px;
+  background: var(--color-muted);
+  overflow-x: auto;
+}
+.release-notes pre code {
+  padding: 0;
+  background: transparent;
+}
+.release-notes hr {
+  margin: 0.6em 0;
+  border-top: 1px solid var(--color-border);
+}
+.release-notes blockquote {
+  margin: 0.4em 0;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--color-border);
+  color: var(--color-muted-foreground);
+}
+
 /* ── Chat bubble overflow control ── */
 /* overflow-wrap: anywhere behaves like break-word but also affects
    min-content sizing, allowing flex children to shrink properly */
