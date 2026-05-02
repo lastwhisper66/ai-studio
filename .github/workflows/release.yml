@@ -86,10 +86,10 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Create GitHub Draft Release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          draft: true
+          draft: false
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           generate_release_notes: true
