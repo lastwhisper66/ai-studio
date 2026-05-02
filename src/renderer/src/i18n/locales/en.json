@@ -276,7 +276,13 @@
       "notifyAssistantMessage": "Assistant message notification",
       "notifyAssistantMessageDescription": "Show a Windows system notification when an assistant reply completes while the app is not in the foreground.",
       "languageLabel": "Display Language",
-      "languageHint": "Language changes take effect immediately."
+      "languageHint": "Language changes take effect immediately.",
+      "updates": "Application Updates",
+      "currentVersion": "Current version",
+      "autoCheckUpdates": "Check for updates automatically",
+      "autoCheckUpdatesDescription": "Silently check for a new version in the background at application startup.",
+      "checkForUpdatesNow": "Check for updates now",
+      "checking": "Checking..."
     },
     "data": {
       "title": "Data",
@@ -736,5 +742,25 @@
   "notification": {
     "chatComplete": "Assistant reply completed",
     "translateComplete": "Translation completed"
+  },
+  "updater": {
+    "title": "Application Update",
+    "checking": "Checking for updates...",
+    "upToDate": "Already up to date",
+    "upToDateDescription": "You are running the latest version ({{version}}).",
+    "available": "Update available",
+    "availableDescription": "{{name}} {{version}} has been released. Current version: {{current}}.",
+    "releaseNotes": "Release notes",
+    "downloadNow": "Download now",
+    "openDownloadPage": "Open download page",
+    "remindLater": "Remind me later",
+    "downloading": "Downloading update...",
+    "downloadProgress": "{{percent}}%  ({{transferred}} / {{total}})",
+    "downloaded": "Update downloaded",
+    "downloadedDescription": "The new version has been downloaded. Restart the app to install.",
+    "installNow": "Restart and install now",
+    "installLater": "Install later",
+    "errorTitle": "Update check failed",
+    "retry": "Retry"
   }
 }

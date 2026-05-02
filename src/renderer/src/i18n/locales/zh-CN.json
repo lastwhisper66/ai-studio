@@ -276,7 +276,13 @@
       "notifyAssistantMessage": "助手消息通知",
       "notifyAssistantMessageDescription": "当应用不在前台时，助手回复完成后显示 Windows 系统通知。",
       "languageLabel": "显示语言",
-      "languageHint": "语言更改立即生效。"
+      "languageHint": "语言更改立即生效。",
+      "updates": "应用更新",
+      "currentVersion": "当前版本",
+      "autoCheckUpdates": "自动检查更新",
+      "autoCheckUpdatesDescription": "应用启动时自动在后台检查新版本。",
+      "checkForUpdatesNow": "立即检查更新",
+      "checking": "检查中..."
     },
     "data": {
       "title": "数据设置",
@@ -736,5 +742,25 @@
   "notification": {
     "chatComplete": "助手回复已完成",
     "translateComplete": "翻译已完成"
+  },
+  "updater": {
+    "title": "应用更新",
+    "checking": "正在检查更新...",
+    "upToDate": "已是最新版本",
+    "upToDateDescription": "你已经在使用最新版本（{{version}}）。",
+    "available": "发现新版本",
+    "availableDescription": "{{name}} {{version}} 已发布。当前版本 {{current}}。",
+    "releaseNotes": "更新内容",
+    "downloadNow": "立即下载",
+    "openDownloadPage": "打开下载页",
+    "remindLater": "稍后提醒",
+    "downloading": "正在下载更新...",
+    "downloadProgress": "{{percent}}%  ({{transferred}} / {{total}})",
+    "downloaded": "更新已下载",
+    "downloadedDescription": "新版本已下载完成，重启应用即可安装。",
+    "installNow": "立即重启安装",
+    "installLater": "稍后安装",
+    "errorTitle": "更新检查失败",
+    "retry": "重试"
   }
 }

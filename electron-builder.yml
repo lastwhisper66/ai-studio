@@ -65,4 +65,7 @@ appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
 npmRebuild: false
-publish: null
+publish:
+  provider: github
+  owner: lastwhisper66
+  repo: ai-studio

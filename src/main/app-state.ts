@@ -90,6 +90,22 @@ export function getSelectionAssistantEnabled(): boolean {
   return selectionAssistantEnabled
 }
 
+// ── Auto Update ─────────────────────────────────────────────────
+
+let autoUpdateEnabled = true
+
+export function initAutoUpdateEnabled(): void {
+  autoUpdateEnabled = getSetting('app.autoUpdateEnabled') !== 'false'
+}
+
+export function applyAutoUpdateEnabledSetting(value?: string): void {
+  autoUpdateEnabled = value !== 'false'
+}
+
+export function getAutoUpdateEnabled(): boolean {
+  return autoUpdateEnabled
+}
+
 let mainWindowRef: BrowserWindow | null = null
 
 export function setMainWindow(win: BrowserWindow | null): void {

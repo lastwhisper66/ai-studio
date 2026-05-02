@@ -157,4 +157,11 @@ export const IpcChannels = {
   SELECTION_UPDATE_SHORTCUT: 'selection:update-shortcut',
   SELECTION_STATE_CHANGED: 'selection:state-changed',
   SELECTION_REFRESH_FILTER: 'selection:refresh-filter',
+  // Auto Updater
+  UPDATER_CHECK: 'updater:check',
+  UPDATER_DOWNLOAD: 'updater:download',
+  UPDATER_QUIT_AND_INSTALL: 'updater:quit-and-install',
+  UPDATER_OPEN_RELEASE_PAGE: 'updater:open-release-page',
+  UPDATER_GET_STATE: 'updater:get-state',
+  UPDATER_STATE_CHANGED: 'updater:state-changed',
 } as const

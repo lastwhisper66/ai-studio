@@ -431,3 +431,35 @@ export interface SelectionEndData {
 export interface SelectionErrorData {
   error: LocalizedError
 }
+
+// ── Auto Updater ────────────────────────────────────────────────
+
+export type UpdaterStatus =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+
+export interface UpdaterDownloadProgress {
+  percent: number
+  transferred: number
+  total: number
+  bytesPerSecond: number
+}
+
+export interface UpdaterState {
+  status: UpdaterStatus
+  currentVersion: string
+  latestVersion?: string
+  releaseNotes?: string
+  releaseUrl?: string
+  downloadProgress?: UpdaterDownloadProgress
+  error?: string
+  /** true when running on macOS without a signed build — UI should show "open download page" instead of "download now". */
+  isMacFallback: boolean
+  /** true when the user explicitly triggered a check (vs silent startup check); controls whether "already up to date" UI is shown. */
+  manualCheck?: boolean
+}

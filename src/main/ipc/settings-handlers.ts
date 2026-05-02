@@ -12,6 +12,7 @@ import {
   applySpellCheckSetting,
   applyStartMinimizedSetting,
   applyQuickAssistantEnabled,
+  applyAutoUpdateEnabledSetting,
 } from '../app-state'
 
 function applyZoomSetting(value: string): void {
@@ -44,6 +45,7 @@ const settingSideEffects: Record<string, (value: string) => void> = {
   'app.autoLaunch': applyAutoLaunchSetting,
   'app.spellCheck': applySpellCheckSetting,
   'app.startMinimized': applyStartMinimizedSetting,
+  'app.autoUpdateEnabled': applyAutoUpdateEnabledSetting,
   'display.zoomFactor': applyZoomSetting,
   'quickAssistant.enabled': applyQuickAssistantEnabled,
   [LANGUAGE_SETTING_KEY]: applyLanguageSetting,

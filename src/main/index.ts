@@ -32,6 +32,7 @@ import {
   initQuickAssistant,
   getSelectionAssistantEnabled,
   setMainWindow,
+  initAutoUpdateEnabled,
 } from './app-state'
 import { getDataDir } from './utils/paths'
 import {
@@ -45,6 +46,7 @@ import {
   initSelectionToolbarIpc,
 } from './selection-toolbar-window'
 import { preCreateSelectionBubbleWindow, initSelectionBubbleIpc } from './selection-bubble-window'
+import { initAutoUpdater } from './auto-updater'
 import {
   cleanupSelectionService,
   initSelectionService,
@@ -475,6 +477,7 @@ if (!gotTheLock) {
     initAutoLaunch()
     initSpellCheck()
     initQuickAssistant()
+    initAutoUpdateEnabled()
     registerAllIpcHandlers()
     initQuickAssistantIpc()
     initScreenshotIpc()
@@ -538,6 +541,9 @@ if (!gotTheLock) {
 
     // Global shortcut: Alt+H to toggle Selection Assistant (user-configurable)
     registerSelectionToggleShortcut()
+
+    // Kick off auto-updater (delayed check inside; respects app.autoUpdateEnabled)
+    initAutoUpdater()
 
     // ── System tray ───────────────────────────────────────────────
     const iconPath = join(app.getAppPath(), 'resources', 'icon.png')

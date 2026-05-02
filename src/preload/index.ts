@@ -46,6 +46,7 @@ import type {
   SelectionChunkData,
   SelectionEndData,
   SelectionErrorData,
+  UpdaterState,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -636,6 +637,26 @@ const api = {
 
   readUserAvatar: (relativePath: string): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.USER_READ_AVATAR, relativePath),
+
+  // Auto Updater
+  getUpdaterState: (): Promise<IpcResult<UpdaterState>> =>
+    ipcRenderer.invoke(IpcChannels.UPDATER_GET_STATE),
+
+  checkForUpdates: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.UPDATER_CHECK),
+
+  downloadUpdate: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.UPDATER_DOWNLOAD),
+
+  quitAndInstallUpdate: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.UPDATER_QUIT_AND_INSTALL),
+
+  openReleasePage: (): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.UPDATER_OPEN_RELEASE_PAGE),
+
+  onUpdaterStateChanged: (callback: (state: UpdaterState) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, state: UpdaterState): void => callback(state)
+    ipcRenderer.on(IpcChannels.UPDATER_STATE_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.UPDATER_STATE_CHANGED, handler)
+  },
 }
 
 export type ApiType = typeof api

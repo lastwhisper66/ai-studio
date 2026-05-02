@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import i18n from '@renderer/i18n'
 import { AppLayout } from '@renderer/components/layout/AppLayout'
+import { UpdateDialog } from '@renderer/components/UpdateDialog'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
@@ -110,7 +111,12 @@ function App(): React.JSX.Element {
   useFontSettings()
   useKeyboardShortcuts()
 
-  return <AppLayout />
+  return (
+    <>
+      <AppLayout />
+      <UpdateDialog />
+    </>
+  )
 }
 
 export default App

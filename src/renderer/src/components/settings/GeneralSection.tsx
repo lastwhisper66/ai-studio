@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
-import { X, Globe, SpellCheck, Power, EyeOff, Bell } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { X, Globe, SpellCheck, Power, EyeOff, Bell, RefreshCw, Download } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
+import { Button } from '@renderer/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -25,6 +26,21 @@ export function GeneralSection(): React.JSX.Element {
   const autoLaunch = settings['app.autoLaunch'] === 'true'
   const startMinimized = settings['app.startMinimized'] === 'true'
   const notifyAssistant = settings['notification.assistantMessage'] === 'true'
+  const autoUpdateEnabled = settings['app.autoUpdateEnabled'] !== 'false'
+
+  const [currentVersion, setCurrentVersion] = useState('')
+  const [checking, setChecking] = useState(false)
+
+  useEffect(() => {
+    window.api.getUpdaterState().then((result) => {
+      if (result.success && result.data) setCurrentVersion(result.data.currentVersion)
+    })
+    const unsub = window.api.onUpdaterStateChanged((state) => {
+      setCurrentVersion(state.currentVersion)
+      setChecking(state.status === 'checking')
+    })
+    return unsub
+  }, [])
 
   // Sync stored language with i18n on load — ensures the renderer respects
   // what was persisted in SQLite (the authoritative source for the main process).
@@ -53,6 +69,15 @@ export function GeneralSection(): React.JSX.Element {
 
   const handleNotifyAssistantToggle = (checked: boolean): void => {
     saveSettings({ 'notification.assistantMessage': String(checked) })
+  }
+
+  const handleAutoUpdateToggle = (checked: boolean): void => {
+    saveSettings({ 'app.autoUpdateEnabled': String(checked) })
+  }
+
+  const handleCheckForUpdatesNow = (): void => {
+    setChecking(true)
+    window.api.checkForUpdates()
   }
 
   const handleLanguageChange = (value: string): void => {
@@ -175,6 +200,44 @@ export function GeneralSection(): React.JSX.Element {
             </div>
           </div>
           <Switch checked={notifyAssistant} onCheckedChange={handleNotifyAssistantToggle} />
+        </div>
+      </div>
+
+      {/* Application Updates */}
+      <div className="rounded-xl border bg-card/50 p-5">
+        <h3 className="text-sm font-semibold">{t('settings.general.updates')}</h3>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Download className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">
+                {t('settings.general.autoCheckUpdates')}
+              </Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.general.autoCheckUpdatesDescription')}
+              </p>
+            </div>
+          </div>
+          <Switch checked={autoUpdateEnabled} onCheckedChange={handleAutoUpdateToggle} />
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <RefreshCw className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">{t('settings.general.currentVersion')}</Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">{currentVersion || '—'}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleCheckForUpdatesNow}
+            disabled={checking}>
+            <RefreshCw className={checking ? 'size-4 animate-spin' : 'size-4'} />
+            {checking ? t('settings.general.checking') : t('settings.general.checkForUpdatesNow')}
+          </Button>
         </div>
       </div>
     </div>

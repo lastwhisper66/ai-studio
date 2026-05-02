@@ -18,6 +18,7 @@ import { registerQuickAssistantHandlers } from './quick-assistant-handlers'
 import { registerSelectionActionHandlers } from './selection-action-handlers'
 import { registerSelectionHandlers } from './selection-handlers'
 import { registerUserHandlers } from './user-handlers'
+import { registerUpdaterHandlers } from './updater-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -40,4 +41,5 @@ export function registerAllIpcHandlers(): void {
   registerSelectionActionHandlers()
   registerSelectionHandlers()
   registerUserHandlers()
+  registerUpdaterHandlers()
 }
