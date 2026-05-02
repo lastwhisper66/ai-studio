@@ -75,9 +75,9 @@ export function GeneralSection(): React.JSX.Element {
     saveSettings({ 'app.autoUpdateEnabled': String(checked) })
   }
 
-  const handleCheckForUpdatesNow = (): void => {
+  const handleCheckForUpdatesNow = async (): Promise<void> => {
     setChecking(true)
-    window.api.checkForUpdates()
+    await window.api.checkForUpdates()
   }
 
   const handleLanguageChange = (value: string): void => {

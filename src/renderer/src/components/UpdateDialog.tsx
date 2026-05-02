@@ -69,8 +69,9 @@ export function UpdateDialog(): React.JSX.Element | null {
       case 'available':
       case 'downloading':
       case 'downloaded':
-      case 'error':
         return true
+      case 'error':
+        return state.manualCheck === true
       default:
         return false
     }
