@@ -1,7 +1,12 @@
 import { safeStorage } from 'electron'
 import { getDb } from './database'
 
-const SENSITIVE_KEYS = new Set(['api.apiKey'])
+const SENSITIVE_KEYS = new Set([
+  'api.apiKey',
+  'backup.remote.password',
+  'backup.remote.secretAccessKey',
+  'backup.syncPassphrase',
+])
 
 export function encrypt(value: string): string {
   if (safeStorage.isEncryptionAvailable()) {

@@ -1,11 +1,22 @@
 import { dialog, BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
-import type { BackupFileMeta, BackupImportMode, BackupProgress, BackupSummary } from '@shared/types'
+import type {
+  BackupFileMeta,
+  BackupImportMode,
+  BackupProgress,
+  BackupSummary,
+  RemoteConfig,
+} from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { IpcChannels } from '@shared/ipc-channels'
 import { decodeBackupFile, encodeBackupFile, peekBackupFile } from './codec'
 import { applySnapshot, collectSnapshot } from './snapshot'
+import { getDb } from '../db/database'
+import { getSetting, setSetting } from '../db/settings'
+import { WebDAVRemote } from './remote/webdav'
+import { S3Remote } from './remote/s3'
+import type { BackupRemote } from './remote/types'
 
 function broadcast(progress: BackupProgress): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -91,3 +102,114 @@ export function applyEncryptedBytes(
 // Re-exports so tests / future code can reach internals through one entry.
 export { collectSnapshot, applySnapshot } from './snapshot'
 export { peekBackupFile } from './codec'
+
+// ---------------------------------------------------------------------------
+// Remote-config persistence + factory
+// ---------------------------------------------------------------------------
+
+/**
+ * Load the cloud-backup remote config from settings.
+ *
+ * Layout:
+ * - `backup.remote.type` ∈ `'webdav' | 's3'` selects the variant.
+ * - `backup.remote.config` is a JSON blob with the non-sensitive fields.
+ * - Sensitive fields (`password` / `secretAccessKey`) live in dedicated keys
+ *   so `SENSITIVE_KEYS` encrypts them via `safeStorage`.
+ *
+ * Returns `null` when no remote is configured (so callers can branch on
+ * "first sync" vs. configured).
+ */
+export function loadRemoteConfig(): RemoteConfig | null {
+  const type = getSetting('backup.remote.type')
+  if (type !== 'webdav' && type !== 's3') return null
+  const cfgRaw = getSetting('backup.remote.config')
+  if (!cfgRaw) return null
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(cfgRaw)
+  } catch {
+    return null
+  }
+  if (type === 'webdav') {
+    return {
+      type: 'webdav',
+      url: String(parsed.url ?? ''),
+      username: String(parsed.username ?? ''),
+      password: getSetting('backup.remote.password') ?? '',
+      subPath: String(parsed.subPath ?? ''),
+    }
+  }
+  return {
+    type: 's3',
+    endpoint: String(parsed.endpoint ?? ''),
+    region: String(parsed.region ?? 'auto'),
+    bucket: String(parsed.bucket ?? ''),
+    accessKeyId: String(parsed.accessKeyId ?? ''),
+    secretAccessKey: getSetting('backup.remote.secretAccessKey') ?? '',
+    forcePathStyle: parsed.forcePathStyle === true,
+    prefix: String(parsed.prefix ?? ''),
+  }
+}
+
+export function saveRemoteConfig(cfg: RemoteConfig): void {
+  if (cfg.type === 'webdav') {
+    setSetting('backup.remote.type', 'webdav')
+    setSetting(
+      'backup.remote.config',
+      JSON.stringify({ url: cfg.url, username: cfg.username, subPath: cfg.subPath }),
+    )
+    setSetting('backup.remote.password', cfg.password)
+  } else {
+    setSetting('backup.remote.type', 's3')
+    setSetting(
+      'backup.remote.config',
+      JSON.stringify({
+        endpoint: cfg.endpoint,
+        region: cfg.region,
+        bucket: cfg.bucket,
+        accessKeyId: cfg.accessKeyId,
+        forcePathStyle: cfg.forcePathStyle,
+        prefix: cfg.prefix,
+      }),
+    )
+    setSetting('backup.remote.secretAccessKey', cfg.secretAccessKey)
+  }
+}
+
+export function clearRemoteConfig(): void {
+  const db = getDb()
+  db.prepare(`DELETE FROM settings WHERE key LIKE 'backup.remote.%'`).run()
+}
+
+export function buildRemote(cfg: RemoteConfig): BackupRemote {
+  if (cfg.type === 'webdav') {
+    return new WebDAVRemote({
+      url: cfg.url,
+      username: cfg.username,
+      password: cfg.password,
+      subPath: cfg.subPath,
+    })
+  }
+  return new S3Remote({
+    endpoint: cfg.endpoint,
+    region: cfg.region,
+    bucket: cfg.bucket,
+    accessKeyId: cfg.accessKeyId,
+    secretAccessKey: cfg.secretAccessKey,
+    forcePathStyle: cfg.forcePathStyle,
+    prefix: cfg.prefix,
+  })
+}
+
+/** Probe the remote with a tiny PUT/GET/DELETE round-trip. */
+export async function testRemote(cfg: RemoteConfig): Promise<{ ok: boolean; latency: number }> {
+  const remote = buildRemote(cfg)
+  const probeKey = `aistudio-probe-${Date.now()}.txt`
+  const start = Date.now()
+  await remote.put(probeKey, new TextEncoder().encode('aistudio-probe'))
+  await remote.get(probeKey)
+  await remote.delete(probeKey).catch(() => {
+    /* best-effort */
+  })
+  return { ok: true, latency: Date.now() - start }
+}

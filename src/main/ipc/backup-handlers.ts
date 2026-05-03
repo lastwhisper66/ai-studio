@@ -10,7 +10,16 @@ import type {
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
-import { exportToFile, importFromFile, peekFile } from '../backup'
+import {
+  clearRemoteConfig,
+  exportToFile,
+  importFromFile,
+  loadRemoteConfig,
+  peekFile,
+  saveRemoteConfig,
+  testRemote,
+} from '../backup'
+import { setSetting } from '../db/settings'
 
 export function registerBackupHandlers(): void {
   ipcMain.handle(
@@ -87,9 +96,53 @@ export function registerBackupHandlers(): void {
   // Phase 5 (sync-service). Registered now so the renderer's initBackupStore()
   // doesn't blow up at boot.
   ipcMain.handle(IpcChannels.BACKUP_GET_REMOTE_CONFIG, (): IpcResult<RemoteConfig | null> => {
-    return { success: true, data: null }
+    try {
+      return { success: true, data: loadRemoteConfig() }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
   })
 
+  ipcMain.handle(
+    IpcChannels.BACKUP_SET_REMOTE_CONFIG,
+    (_, payload: { config: RemoteConfig; passphrase?: string }): IpcResult<void> => {
+      try {
+        saveRemoteConfig(payload.config)
+        // Sync passphrase (used by Phase 5's encrypt-on-upload flow) is optional;
+        // persist it only when the renderer actually supplied one. Stored under a
+        // SENSITIVE_KEYS-encrypted key so safeStorage protects it at rest.
+        if (typeof payload.passphrase === 'string' && payload.passphrase.length > 0) {
+          setSetting('backup.syncPassphrase', payload.passphrase)
+        }
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
+
+  ipcMain.handle(IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG, (): IpcResult<void> => {
+    try {
+      clearRemoteConfig()
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(
+    IpcChannels.BACKUP_TEST_REMOTE,
+    async (_, cfg: RemoteConfig): Promise<IpcResult<{ ok: boolean; latency?: number }>> => {
+      try {
+        const data = await testRemote(cfg)
+        return { success: true, data }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
+
+  // Phase 5 placeholder — replaced with real implementation by the sync-service.
   ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<SyncStatus> => {
     return {
       success: true,
@@ -100,7 +153,7 @@ export function registerBackupHandlers(): void {
         lastRemoteSeenAt: null,
         lastError: null,
         lastWarning: null,
-        hasRemoteConfigured: false,
+        hasRemoteConfigured: loadRemoteConfig() !== null,
         autoSyncIntervalMinutes: 0,
       },
     }

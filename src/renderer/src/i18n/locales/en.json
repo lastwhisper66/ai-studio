@@ -536,6 +536,12 @@
       "passwordHint": "Backup files are always encrypted with your password.",
       "cloudTitle": "Cloud sync",
       "cloudComingSoon": "Configurable in a later release.",
+      "cloudConfigured": "Configured ({{type}})",
+      "cloudNotConfigured": "Not configured.",
+      "configureButton": "Configure remote…",
+      "reconfigureButton": "Reconfigure…",
+      "clearConfigButton": "Clear",
+      "syncButtonsComingSoon": "Sync controls available once configured.",
       "exportSuccess": "Backup written to {{path}}",
       "importSuccess": "Imported {{providers}} providers, {{assistants}} assistants, {{settings}} settings.",
       "peek": {
@@ -553,6 +559,28 @@
         "required": "Password is required.",
         "mismatch": "Passwords do not match.",
         "unlock": "Unlock"
+      },
+      "remote": {
+        "dialogTitle": "Cloud backup destination",
+        "dialogDesc": "Test the connection before saving. Credentials are stored encrypted by your OS keychain.",
+        "testButton": "Test connection",
+        "testing": "Testing…",
+        "testOk": "Connection OK ({{latency}} ms)",
+        "webdav": {
+          "url": "Server URL",
+          "username": "Username",
+          "password": "Password",
+          "subPath": "Sub-path"
+        },
+        "s3": {
+          "endpoint": "Endpoint",
+          "region": "Region",
+          "bucket": "Bucket",
+          "accessKeyId": "Access Key ID",
+          "secretAccessKey": "Secret Access Key",
+          "prefix": "Object key prefix",
+          "forcePathStyle": "Force path-style addressing"
+        }
       }
     }
   },

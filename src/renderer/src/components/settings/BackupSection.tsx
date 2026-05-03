@@ -6,8 +6,9 @@ import { useBackupStore } from '@renderer/stores/backupStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import { ERROR_CODES } from '@shared/errors'
-import type { BackupFileMeta, BackupImportMode } from '@shared/types'
+import type { BackupFileMeta, BackupImportMode, RemoteConfig } from '@shared/types'
 import { BackupPasswordDialog } from './BackupPasswordDialog'
+import { BackupRemoteDialog } from './BackupRemoteDialog'
 
 export function BackupSection(): React.JSX.Element {
   const { t } = useTranslation()
@@ -15,6 +16,8 @@ export function BackupSection(): React.JSX.Element {
   const exportToFile = useBackupStore((s) => s.exportToFile)
   const importFromFile = useBackupStore((s) => s.importFromFile)
   const peekFile = useBackupStore((s) => s.peekFile)
+  const remoteConfig = useBackupStore((s) => s.remoteConfig)
+  const clearRemoteConfig = useBackupStore((s) => s.clearRemoteConfig)
 
   const [importMode, setImportMode] = useState<BackupImportMode>('replace')
   const [exportOpen, setExportOpen] = useState(false)
@@ -23,6 +26,7 @@ export function BackupSection(): React.JSX.Element {
   const [peekMeta, setPeekMeta] = useState<BackupFileMeta | null>(null)
   const [pwError, setPwError] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [remoteDialogOpen, setRemoteDialogOpen] = useState(false)
 
   const openExport = (): void => {
     setPwError(null)
@@ -144,11 +148,19 @@ export function BackupSection(): React.JSX.Element {
         )}
       </div>
 
-      {/* Cloud sync placeholder — fleshed out in Phase 4/5 */}
-      <div className="rounded-xl border bg-card/50 p-5">
-        <h3 className="text-sm font-semibold">{t('settings.backup.cloudTitle')}</h3>
-        <p className="text-xs text-muted-foreground mt-1">{t('settings.backup.cloudComingSoon')}</p>
-      </div>
+      {/* Cloud sync card */}
+      <CloudCard
+        remoteConfig={remoteConfig}
+        onConfigure={() => setRemoteDialogOpen(true)}
+        onClear={clearRemoteConfig}
+      />
+
+      <BackupRemoteDialog
+        open={remoteDialogOpen}
+        initial={remoteConfig}
+        onCancel={() => setRemoteDialogOpen(false)}
+        onSaved={() => setRemoteDialogOpen(false)}
+      />
 
       <BackupPasswordDialog
         open={exportOpen}
@@ -204,5 +216,55 @@ function ModeButton({
       )}>
       {label}
     </button>
+  )
+}
+
+/**
+ * Cloud-sync configuration card. Splits into two states:
+ *   - configured  → show provider type, "Reconfigure" + "Clear" buttons
+ *   - unconfigured → show "Configure remote…" button
+ *
+ * Sync action buttons (sync now / restore from cloud) are intentionally absent
+ * here — they land in Phase 5 once the BackupSyncService is online.
+ */
+function CloudCard({
+  remoteConfig,
+  onConfigure,
+  onClear,
+}: {
+  remoteConfig: RemoteConfig | null
+  onConfigure: () => void
+  onClear: () => Promise<void>
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  return (
+    <div className="rounded-xl border bg-card/50 space-y-3 p-5">
+      <h3 className="text-sm font-semibold">{t('settings.backup.cloudTitle')}</h3>
+      {remoteConfig ? (
+        <>
+          <p className="text-muted-foreground text-xs">
+            {t('settings.backup.cloudConfigured', {
+              type: remoteConfig.type === 'webdav' ? 'WebDAV' : 'S3',
+            })}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={onConfigure}>
+              {t('settings.backup.reconfigureButton')}
+            </Button>
+            <Button variant="ghost" onClick={() => onClear()}>
+              {t('settings.backup.clearConfigButton')}
+            </Button>
+          </div>
+          <p className="text-muted-foreground text-xs italic">
+            {t('settings.backup.syncButtonsComingSoon')}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-muted-foreground text-xs">{t('settings.backup.cloudNotConfigured')}</p>
+          <Button onClick={onConfigure}>{t('settings.backup.configureButton')}</Button>
+        </>
+      )}
+    </div>
   )
 }
