@@ -19,6 +19,7 @@ import { registerSelectionActionHandlers } from './selection-action-handlers'
 import { registerSelectionHandlers } from './selection-handlers'
 import { registerUserHandlers } from './user-handlers'
 import { registerUpdaterHandlers } from './updater-handlers'
+import { registerBackupHandlers } from './backup-handlers'
 
 export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
@@ -42,4 +43,5 @@ export function registerAllIpcHandlers(): void {
   registerSelectionHandlers()
   registerUserHandlers()
   registerUpdaterHandlers()
+  registerBackupHandlers()
 }
