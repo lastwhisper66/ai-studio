@@ -11,6 +11,7 @@ import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { NetworkSection } from './NetworkSection'
 import { DataSection } from './DataSection'
+import { BackupSection } from './BackupSection'
 import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 import { QuickAssistantSection } from './QuickAssistantSection'
@@ -53,6 +54,7 @@ export function SettingsPage(): React.JSX.Element {
               {activeSection === 'network' && <NetworkSection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'data' && <DataSection />}
+              {activeSection === 'backup' && <BackupSection />}
               {activeSection === 'phrases' && <PhrasesSection />}
               {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
               {activeSection === 'quick-assistant' && <QuickAssistantSection />}

@@ -10,6 +10,7 @@ import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
+import { initBackupStore } from '@renderer/stores/backupStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
@@ -38,6 +39,7 @@ function App(): React.JSX.Element {
     loadPhrases()
     loadModelDefinitions()
     loadModelGroups()
+    initBackupStore()
   }, [
     loadConversations,
     loadSettings,

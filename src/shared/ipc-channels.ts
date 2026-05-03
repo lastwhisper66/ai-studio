@@ -164,6 +164,7 @@ export const IpcChannels = {
   BACKUP_EXPORT_TO_FILE: 'backup:export-to-file',
   BACKUP_IMPORT_FROM_FILE: 'backup:import-from-file',
   BACKUP_PEEK_FILE: 'backup:peek-file',
+  BACKUP_PICK_FILE: 'backup:pick-file',
   BACKUP_GET_REMOTE_CONFIG: 'backup:get-remote-config',
   BACKUP_SET_REMOTE_CONFIG: 'backup:set-remote-config',
   BACKUP_CLEAR_REMOTE_CONFIG: 'backup:clear-remote-config',

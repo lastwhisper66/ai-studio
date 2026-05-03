@@ -200,6 +200,7 @@
       "network": "Network",
       "display": "Display",
       "data": "Data",
+      "backup": "Backup",
       "keyboardShortcuts": "Shortcuts",
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
@@ -521,6 +522,37 @@
         "baidu": "Baidu",
         "duckduckgo": "DuckDuckGo",
         "custom": "Custom"
+      }
+    },
+    "backup": {
+      "title": "Backup",
+      "description": "Export and restore your AI Studio configuration. Chat history is not backed up.",
+      "localTitle": "Local backup",
+      "exportButton": "Export to file…",
+      "importButton": "Import from file…",
+      "importMode": "Import mode",
+      "modeReplace": "Replace (clear existing, then load)",
+      "modeMerge": "Merge (backup wins on collision)",
+      "passwordHint": "Backup files are always encrypted with your password.",
+      "cloudTitle": "Cloud sync",
+      "cloudComingSoon": "Configurable in a later release.",
+      "exportSuccess": "Backup written to {{path}}",
+      "importSuccess": "Imported {{providers}} providers, {{assistants}} assistants, {{settings}} settings.",
+      "peek": {
+        "created": "Created",
+        "appVersion": "App version"
+      },
+      "password": {
+        "exportTitle": "Set backup password",
+        "exportDesc": "This password will encrypt the backup file. Don't lose it — there's no recovery.",
+        "importTitle": "Unlock backup",
+        "importDesc": "Enter the password used when this backup was created.",
+        "restoreTitle": "Restore from cloud backup",
+        "label": "Password",
+        "confirmLabel": "Confirm password",
+        "required": "Password is required.",
+        "mismatch": "Passwords do not match.",
+        "unlock": "Unlock"
       }
     }
   },

@@ -10,6 +10,7 @@ import {
   TextQuote,
   Zap,
   TextSelect,
+  ShieldCheck,
   Info,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -24,6 +25,7 @@ export type SettingsSection =
   | 'network'
   | 'display'
   | 'data'
+  | 'backup'
   | 'phrases'
   | 'keyboard-shortcuts'
   | 'quick-assistant'
@@ -48,6 +50,7 @@ const sectionGroups: SectionItem[][] = [
     { id: 'network', labelKey: 'settings.sections.network', icon: Globe },
     { id: 'display', labelKey: 'settings.sections.display', icon: Monitor },
     { id: 'data', labelKey: 'settings.sections.data', icon: Database },
+    { id: 'backup', labelKey: 'settings.sections.backup', icon: ShieldCheck },
   ],
   [
     { id: 'phrases', labelKey: 'settings.sections.phrases', icon: TextQuote },

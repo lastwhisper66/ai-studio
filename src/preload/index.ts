@@ -684,6 +684,9 @@ const api = {
     peekFile: (filePath: string): Promise<IpcResult<BackupFileMeta>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_PEEK_FILE, { filePath }),
 
+    pickFile: (): Promise<IpcResult<{ filePath: string } | null>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_PICK_FILE),
+
     importFromFile: (payload: {
       filePath?: string
       password: string

@@ -31,6 +31,25 @@ export function registerBackupHandlers(): void {
   )
 
   ipcMain.handle(
+    IpcChannels.BACKUP_PICK_FILE,
+    async (): Promise<IpcResult<{ filePath: string } | null>> => {
+      try {
+        const result = await dialog.showOpenDialog({
+          title: 'Import AI Studio backup',
+          filters: [{ name: 'AI Studio Backup', extensions: ['aibackup'] }],
+          properties: ['openFile'],
+        })
+        if (result.canceled || result.filePaths.length === 0) {
+          return { success: true, data: null }
+        }
+        return { success: true, data: { filePath: result.filePaths[0] } }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
+
+  ipcMain.handle(
     IpcChannels.BACKUP_IMPORT_FROM_FILE,
     async (
       _,
