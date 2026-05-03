@@ -471,3 +471,117 @@ export interface UpdaterState {
   /** true when the user explicitly triggered a check (vs silent startup check); controls whether "already up to date" UI is shown. */
   manualCheck?: boolean
 }
+
+// =============================================================================
+// Backup & Cloud Sync
+// =============================================================================
+
+/** Plain (decrypted) snapshot of all "config-like" data. */
+export interface BackupSnapshot {
+  schemaVersion: 1
+  exportedAt: string
+  app: { version: string }
+  /** All settings.* keys, with safeStorage-encrypted values already decrypted to plaintext. */
+  settings: Record<string, string>
+  /** Provider rows with `apiKey` already decrypted. */
+  providers: Provider[]
+  models: Model[]
+  modelDefinitions: ModelDefinition[]
+  modelGroups: ModelGroup[]
+  assistants: Assistant[]
+  phrases: Phrase[]
+  quickActions: QuickAction[]
+  selectionActions: SelectionAction[]
+  avatars: BackupAvatar[]
+}
+
+export interface BackupAvatar {
+  fileName: string
+  mimeType: string
+  /** base64 encoded file content. */
+  data: string
+}
+
+export interface BackupSummary {
+  providers: number
+  models: number
+  assistants: number
+  phrases: number
+  quickActions: number
+  selectionActions: number
+  modelDefinitions: number
+  modelGroups: number
+  settings: number
+  avatars: number
+}
+
+/** Metadata embedded in the plaintext header of the .aibackup file. */
+export interface BackupFileMeta {
+  schemaVersion: 1
+  appVersion: string
+  createdAt: string
+}
+
+export type BackupImportMode = 'replace' | 'merge'
+
+export type RemoteConfig =
+  | {
+      type: 'webdav'
+      url: string
+      username: string
+      password: string
+      subPath: string
+    }
+  | {
+      type: 's3'
+      endpoint: string
+      region: string
+      bucket: string
+      accessKeyId: string
+      secretAccessKey: string
+      forcePathStyle: boolean
+      prefix: string
+    }
+
+export interface SyncStatus {
+  isSyncing: boolean
+  lastLocalChangeAt: string | null
+  lastSyncedAt: string | null
+  lastRemoteSeenAt: string | null
+  lastError: LocalizedError | null
+  lastWarning: string | null
+  hasRemoteConfigured: boolean
+  autoSyncIntervalMinutes: number
+}
+
+export interface SyncResult {
+  direction: 'upload' | 'download' | 'noop' | 'cancelled'
+  /** ISO timestamp of the backup that became authoritative this round (when applicable). */
+  createdAt?: string
+}
+
+export interface RemoteBackupItem {
+  /** Object key relative to the remote root (e.g. `backups/2026-05-03T12-34-56-789Z.aibackup`). */
+  key: string
+  size: number
+  /** Last-modified time reported by the remote. */
+  lastModified: string
+  /** `createdAt` parsed from the .aibackup plaintext header (or, if unavailable, derived from the key). */
+  createdAt: string
+  appVersion: string
+}
+
+export type BackupPhase =
+  | 'collect'
+  | 'encrypt'
+  | 'upload'
+  | 'download'
+  | 'decrypt'
+  | 'apply'
+  | 'cleanup'
+
+export interface BackupProgress {
+  phase: BackupPhase
+  /** 0–100; absent for indeterminate phases. */
+  percent?: number
+}
