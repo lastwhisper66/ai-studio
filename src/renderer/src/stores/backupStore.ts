@@ -73,6 +73,7 @@ export const useBackupStore = create<BackupState>((set, get) => ({
 
   exportToFile: async (password) => {
     const r = await window.api.backup.exportToFile(password)
+    set({ progress: null })
     if (r.success && r.data) return r.data
     return { error: fallbackError(r.error) }
   },
@@ -85,6 +86,7 @@ export const useBackupStore = create<BackupState>((set, get) => ({
 
   importFromFile: async (filePath, password, mode) => {
     const r = await window.api.backup.importFromFile({ filePath, password, mode })
+    set({ progress: null })
     if (r.success && r.data) {
       // After import, refresh status (lastLocalChangeAt etc may have shifted).
       get().loadStatus()
@@ -117,6 +119,7 @@ export const useBackupStore = create<BackupState>((set, get) => ({
 
   syncNow: async () => {
     const r = await window.api.backup.syncNow()
+    set({ progress: null })
     if (r.success && r.data) {
       get().loadStatus()
       return r.data
@@ -136,6 +139,7 @@ export const useBackupStore = create<BackupState>((set, get) => ({
 
   restoreFromRemote: async (key, password, mode) => {
     const r = await window.api.backup.restoreFromRemote({ key, password, mode })
+    set({ progress: null })
     if (r.success) {
       get().loadStatus()
       return

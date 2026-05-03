@@ -24,6 +24,7 @@ export function BackupSection(): React.JSX.Element {
   const status = useBackupStore((s) => s.status)
   const syncNow = useBackupStore((s) => s.syncNow)
   const loadStatus = useBackupStore((s) => s.loadStatus)
+  const progress = useBackupStore((s) => s.progress)
   // Read raw setting strings for the cloud-card form fields. The values are
   // pushed in by the main process via `settings:changed`, so this stays in
   // sync without a manual refetch when another window mutates them.
@@ -161,6 +162,16 @@ export function BackupSection(): React.JSX.Element {
         <h2 className="text-base font-semibold">{t('settings.backup.title')}</h2>
         <p className="text-muted-foreground mt-1 text-sm">{t('settings.backup.description')}</p>
       </div>
+
+      {/* In-flight progress indicator. Hidden during the `apply` phase since
+          DB writes happen inside a single transaction and finish in <100ms —
+          flashing a label is more distracting than informative. */}
+      {progress && progress.phase !== 'apply' && (
+        <div className="bg-card/50 text-muted-foreground rounded-md border px-3 py-2 text-xs">
+          {t(`settings.backup.progress.${progress.phase}`)}
+          {typeof progress.percent === 'number' ? ` (${progress.percent}%)` : ''}
+        </div>
+      )}
 
       {/* Local backup card */}
       <div className="rounded-xl border bg-card/50 p-5 space-y-4">

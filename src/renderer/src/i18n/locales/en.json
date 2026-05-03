@@ -570,6 +570,15 @@
         "restoreMerge": "Restore (merge)",
         "restoreOk": "Snapshot restored."
       },
+      "progress": {
+        "collect": "Collecting configuration…",
+        "encrypt": "Encrypting…",
+        "upload": "Uploading…",
+        "download": "Downloading…",
+        "decrypt": "Decrypting…",
+        "apply": "Applying…",
+        "cleanup": "Cleaning up old backups…"
+      },
       "exportSuccess": "Backup written to {{path}}",
       "importSuccess": "Imported {{providers}} providers, {{assistants}} assistants, {{settings}} settings.",
       "peek": {
