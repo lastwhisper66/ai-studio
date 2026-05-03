@@ -2,6 +2,7 @@ import type { BackupRemote, RemoteObject } from './types'
 import { classifyRemoteError, isNotFound } from './types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../../errors'
+import { XMLParser } from 'fast-xml-parser'
 
 export interface WebDAVOptions {
   url: string
@@ -172,24 +173,71 @@ export class WebDAVRemote implements BackupRemote {
   }
 }
 
-/** Tolerant PROPFIND XML parser (no external dep). */
+/**
+ * Parse a PROPFIND multistatus response into a flat list of file resources.
+ *
+ * Uses fast-xml-parser with `removeNSPrefix: true` so the parser tolerates
+ * any namespace prefix (`D:response`, `d:response`, `dav:response`, plain
+ * `response`, …). The previous regex-based implementation broke on a few
+ * non-mainstream WebDAV servers that emit prefixes other than `D:` or
+ * include extra whitespace inside tags.
+ *
+ * Collections (directories) are filtered out — callers want files only.
+ */
 function parsePropfind(xml: string, baseUrl: string, _prefix: string): RemoteObject[] {
-  const out: RemoteObject[] = []
-  const responseRegex = /<(?:\w+:)?response\b[^>]*>([\s\S]*?)<\/(?:\w+:)?response>/g
-  const pickInner = (block: string, tag: string): string | undefined => {
-    const m = new RegExp(`<(?:\\w+:)?${tag}\\b[^>]*>([\\s\\S]*?)</(?:\\w+:)?${tag}>`, 'i').exec(
-      block,
-    )
-    return m?.[1]?.trim()
+  // `response` and `propstat` may appear multiple times; force them as arrays
+  // so we don't have to special-case "exactly one" in the loop below. Other
+  // tags can stay as scalars.
+  const ALWAYS_ARRAY = new Set(['multistatus.response', 'multistatus.response.propstat'])
+  const parser = new XMLParser({
+    ignoreAttributes: true,
+    removeNSPrefix: true,
+    parseTagValue: false, // keep `getcontentlength` etc as strings; we coerce explicitly
+    trimValues: true,
+    isArray: (_name, jpath) => ALWAYS_ARRAY.has(String(jpath)),
+  })
+
+  let doc: unknown
+  try {
+    doc = parser.parse(xml)
+  } catch {
+    return []
   }
+  const responses = pickResponses(doc)
+  if (responses.length === 0) return []
+
+  const out: RemoteObject[] = []
   const baseUrlNoTrail = baseUrl.replace(/\/+$/, '')
-  for (const m of xml.matchAll(responseRegex)) {
-    const block = m[1]
-    if (/<(?:\w+:)?collection\b/.test(block)) continue // skip directories
-    const href = pickInner(block, 'href')
+  for (const r of responses) {
+    if (!r || typeof r !== 'object') continue
+    const rec = r as Record<string, unknown>
+    const href = typeof rec.href === 'string' ? rec.href : undefined
     if (!href) continue
-    const lengthStr = pickInner(block, 'getcontentlength') ?? '0'
-    const lastModStr = pickInner(block, 'getlastmodified') ?? ''
+
+    // Find the first <propstat> with a 2xx <status>; PROPFIND can split props
+    // across multiple propstat blocks (e.g. one for HTTP 200 props, one for
+    // HTTP 404 props). For our use-case (existence + size + lastModified)
+    // any block that exposes the props we want is fine.
+    const propstats = (rec.propstat ?? []) as Array<Record<string, unknown>>
+    let prop: Record<string, unknown> | undefined
+    for (const ps of propstats) {
+      if (!ps || typeof ps !== 'object') continue
+      const candidate = ps.prop as Record<string, unknown> | undefined
+      if (candidate && typeof candidate === 'object') {
+        prop = candidate
+        break
+      }
+    }
+    if (!prop) continue
+
+    // <resourcetype><collection/></resourcetype> → directory; skip.
+    const resourcetype = prop.resourcetype as Record<string, unknown> | string | undefined
+    const isCollection =
+      typeof resourcetype === 'object' && resourcetype !== null && 'collection' in resourcetype
+    if (isCollection) continue
+
+    const lengthStr = String(prop.getcontentlength ?? '0')
+    const lastModStr = String(prop.getlastmodified ?? '')
 
     let absoluteHref: string
     try {
@@ -207,4 +255,14 @@ function parsePropfind(xml: string, baseUrl: string, _prefix: string): RemoteObj
     })
   }
   return out
+}
+
+function pickResponses(doc: unknown): unknown[] {
+  if (!doc || typeof doc !== 'object') return []
+  const root = (doc as Record<string, unknown>).multistatus
+  if (!root || typeof root !== 'object') return []
+  const r = (root as Record<string, unknown>).response
+  if (Array.isArray(r)) return r
+  if (r && typeof r === 'object') return [r]
+  return []
 }
