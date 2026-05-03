@@ -123,25 +123,47 @@ export class WebDAVRemote implements BackupRemote {
     return parsePropfind(xml, this.base(), prefix)
   }
 
+  /**
+   * MKCOL the chain of directories from the WebDAV root URL down to the
+   * file's parent. This MUST include the configured `subPath` segments —
+   * otherwise the first PUT into an existing-but-unprovisioned subPath fails:
+   *   - 坚果云 (Jianguoyun) responds **403 Forbidden** for "PUT into a
+   *     directory that doesn't exist yet"
+   *   - other servers commonly use **409 Conflict** for the same condition
+   *
+   * MKCOL responses we treat as success:
+   *   - 200/201 → created
+   *   - 301      → redirect (server normalized the URL)
+   *   - 405      → method-not-allowed, i.e. already exists as a collection
+   *   - 403/409  → server may return either when the collection already
+   *               exists and disallows MKCOL on it; the subsequent PUT will
+   *               surface a real error if the path is genuinely inaccessible
+   */
   private async ensureDirsFor(path: string): Promise<void> {
-    const parts = path.split('/').filter(Boolean)
-    if (parts.length <= 1) return
-    let cumulative = ''
-    for (let i = 0; i < parts.length - 1; i++) {
-      cumulative += (i === 0 ? '' : '/') + parts[i]
+    const root = this.opts.url.replace(/\/+$/, '')
+    const subPathParts = (this.opts.subPath || '')
+      .replace(/^\/+|\/+$/g, '')
+      .split('/')
+      .filter(Boolean)
+    const fileParts = path.replace(/^\/+/, '').split('/').filter(Boolean)
+    // Everything before the file name itself: subPath segments + file's
+    // intermediate dirs (drop the last element which is the filename).
+    const dirSegments = [...subPathParts, ...fileParts.slice(0, -1)]
+    if (dirSegments.length === 0) return
+
+    let cumulative = root
+    for (const segment of dirSegments) {
+      cumulative += '/' + segment
       let res: Response
       try {
-        res = await fetch(this.url(cumulative + '/'), {
+        res = await fetch(cumulative + '/', {
           method: 'MKCOL',
           headers: { Authorization: this.auth() },
         })
       } catch (e) {
         classifyRemoteError(null, e)
       }
-      // 201 created, 200 ok, 301 redirect, 405 method-not-allowed (already exists) — all fine
-      if (![200, 201, 301, 405].includes(res.status)) {
-        // Some servers return 409 when an intermediate parent doesn't exist;
-        // since we create top-down, that shouldn't happen — but if it does, error out.
+      if (![200, 201, 301, 403, 405, 409].includes(res.status)) {
         if (res.status >= 400) {
           classifyRemoteError(res.status, new Error(`MKCOL ${cumulative} → ${res.status}`))
         }
