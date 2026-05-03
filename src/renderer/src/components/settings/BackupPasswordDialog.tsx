@@ -56,7 +56,9 @@ export function BackupPasswordDialog({
   const descKey =
     mode === 'export'
       ? 'settings.backup.password.exportDesc'
-      : 'settings.backup.password.importDesc'
+      : mode === 'import'
+        ? 'settings.backup.password.importDesc'
+        : 'settings.backup.password.restoreDesc'
   const submitKey = mode === 'export' ? 'common.confirm' : 'settings.backup.password.unlock'
 
   const submit = async (): Promise<void> => {
