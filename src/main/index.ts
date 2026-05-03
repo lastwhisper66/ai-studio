@@ -20,6 +20,7 @@ import { getSetting, setSetting } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
 import { initMainI18n, onLanguageChange, t } from './i18n'
+import { backupSyncService } from './backup/sync-service'
 import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
   initCloseToTray,
@@ -483,6 +484,11 @@ if (!gotTheLock) {
     initScreenshotIpc()
     initSelectionToolbarIpc()
     initSelectionBubbleIpc()
+
+    // Boot the auto-sync timer per current settings. Re-runs whenever the
+    // user changes `backup.autoSyncIntervalMinutes` (wired in
+    // settings-handlers.ts via the side-effect map).
+    backupSyncService.scheduleAuto()
 
     // IPC: re-register quick assistant shortcut when user changes it
     ipcMain.handle(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT, () => {

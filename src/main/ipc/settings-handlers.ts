@@ -14,6 +14,7 @@ import {
   applyQuickAssistantEnabled,
   applyAutoUpdateEnabledSetting,
 } from '../app-state'
+import { backupSyncService } from '../backup/sync-service'
 
 function applyZoomSetting(value: string): void {
   const factor = parseFloat(value)
@@ -48,6 +49,9 @@ const settingSideEffects: Record<string, (value: string) => void> = {
   'app.autoUpdateEnabled': applyAutoUpdateEnabledSetting,
   'display.zoomFactor': applyZoomSetting,
   'quickAssistant.enabled': applyQuickAssistantEnabled,
+  // Re-arm the auto-sync timer with the new interval. scheduleAuto() reads
+  // the value back from settings, so we don't pass it explicitly.
+  'backup.autoSyncIntervalMinutes': () => backupSyncService.scheduleAuto(),
   [LANGUAGE_SETTING_KEY]: applyLanguageSetting,
 }
 
