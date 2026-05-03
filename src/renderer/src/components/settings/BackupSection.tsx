@@ -1,14 +1,17 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { useBackupStore } from '@renderer/stores/backupStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import { ERROR_CODES } from '@shared/errors'
-import type { BackupFileMeta, BackupImportMode, RemoteConfig } from '@shared/types'
+import type { BackupFileMeta, BackupImportMode, RemoteConfig, SyncStatus } from '@shared/types'
 import { BackupPasswordDialog } from './BackupPasswordDialog'
 import { BackupRemoteDialog } from './BackupRemoteDialog'
+import { BackupHistoryDialog } from './BackupHistoryDialog'
 
 export function BackupSection(): React.JSX.Element {
   const { t } = useTranslation()
@@ -18,6 +21,13 @@ export function BackupSection(): React.JSX.Element {
   const peekFile = useBackupStore((s) => s.peekFile)
   const remoteConfig = useBackupStore((s) => s.remoteConfig)
   const clearRemoteConfig = useBackupStore((s) => s.clearRemoteConfig)
+  const status = useBackupStore((s) => s.status)
+  const syncNow = useBackupStore((s) => s.syncNow)
+  const loadStatus = useBackupStore((s) => s.loadStatus)
+  // Read raw setting strings for the cloud-card form fields. The values are
+  // pushed in by the main process via `settings:changed`, so this stays in
+  // sync without a manual refetch when another window mutates them.
+  const maxRetainedSetting = useSettingsStore((s) => s.settings['backup.maxRetainedBackups'])
 
   const [importMode, setImportMode] = useState<BackupImportMode>('replace')
   const [exportOpen, setExportOpen] = useState(false)
@@ -26,7 +36,9 @@ export function BackupSection(): React.JSX.Element {
   const [peekMeta, setPeekMeta] = useState<BackupFileMeta | null>(null)
   const [pwError, setPwError] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [cloudMsg, setCloudMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [remoteDialogOpen, setRemoteDialogOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const openExport = (): void => {
     setPwError(null)
@@ -100,6 +112,48 @@ export function BackupSection(): React.JSX.Element {
     closeImport()
   }
 
+  // ---------------- Cloud handlers ----------------
+
+  const handleSyncNow = async (): Promise<void> => {
+    setCloudMsg(null)
+    const r = await syncNow()
+    if ('error' in r) {
+      setCloudMsg({ kind: 'err', text: localizedError(r.error) })
+      return
+    }
+    setCloudMsg({
+      kind: 'ok',
+      text: t(`settings.backup.syncResult.${r.direction}`),
+    })
+  }
+
+  const handleClearRemote = async (): Promise<void> => {
+    setCloudMsg(null)
+    await clearRemoteConfig()
+  }
+
+  const handleIntervalChange = async (minutes: number): Promise<void> => {
+    setCloudMsg(null)
+    const r = await window.api.setSetting('backup.autoSyncIntervalMinutes', String(minutes))
+    if (!r.success) {
+      setCloudMsg({ kind: 'err', text: localizedError(r.error) })
+      return
+    }
+    // Refresh status so the <select> reflects the persisted value (the
+    // setting also flows back via the settings:changed broadcast, but
+    // the SyncStatus snapshot only refreshes on demand).
+    await loadStatus()
+  }
+
+  const handleMaxRetainedChange = async (n: number): Promise<void> => {
+    setCloudMsg(null)
+    const clamped = Math.max(1, Math.min(50, n || 5))
+    const r = await window.api.setSetting('backup.maxRetainedBackups', String(clamped))
+    if (!r.success) {
+      setCloudMsg({ kind: 'err', text: localizedError(r.error) })
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -151,8 +205,18 @@ export function BackupSection(): React.JSX.Element {
       {/* Cloud sync card */}
       <CloudCard
         remoteConfig={remoteConfig}
+        status={status}
+        cloudMsg={cloudMsg}
+        maxRetained={parseInt(maxRetainedSetting ?? '5', 10)}
         onConfigure={() => setRemoteDialogOpen(true)}
-        onClear={clearRemoteConfig}
+        onClear={handleClearRemote}
+        onSyncNow={handleSyncNow}
+        onOpenHistory={() => {
+          setCloudMsg(null)
+          setHistoryOpen(true)
+        }}
+        onIntervalChange={handleIntervalChange}
+        onMaxRetainedChange={handleMaxRetainedChange}
       />
 
       <BackupRemoteDialog
@@ -161,6 +225,8 @@ export function BackupSection(): React.JSX.Element {
         onCancel={() => setRemoteDialogOpen(false)}
         onSaved={() => setRemoteDialogOpen(false)}
       />
+
+      <BackupHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
 
       <BackupPasswordDialog
         open={exportOpen}
@@ -220,50 +286,139 @@ function ModeButton({
 }
 
 /**
- * Cloud-sync configuration card. Splits into two states:
- *   - configured  → show provider type, "Reconfigure" + "Clear" buttons
- *   - unconfigured → show "Configure remote…" button
+ * Cloud-sync card. Splits into two states:
+ *   - **unconfigured**: prompt to configure a remote.
+ *   - **configured**: show last-synced/last-changed/last-error, sync-now /
+ *     history / reconfigure / clear buttons, plus the auto-sync interval and
+ *     retention selectors.
  *
- * Sync action buttons (sync now / restore from cloud) are intentionally absent
- * here — they land in Phase 5 once the BackupSyncService is online.
+ * Status messages are inline (no toast), passed in from the parent so the
+ * "sync now" outcome can persist after the request completes.
  */
 function CloudCard({
   remoteConfig,
+  status,
+  cloudMsg,
+  maxRetained,
   onConfigure,
   onClear,
+  onSyncNow,
+  onOpenHistory,
+  onIntervalChange,
+  onMaxRetainedChange,
 }: {
   remoteConfig: RemoteConfig | null
+  status: SyncStatus | null
+  cloudMsg: { kind: 'ok' | 'err'; text: string } | null
+  maxRetained: number
   onConfigure: () => void
   onClear: () => Promise<void>
+  onSyncNow: () => Promise<void>
+  onOpenHistory: () => void
+  onIntervalChange: (minutes: number) => Promise<void>
+  onMaxRetainedChange: (n: number) => Promise<void>
 }): React.JSX.Element {
   const { t } = useTranslation()
+  const localizedError = useLocalizedError()
+
+  if (!remoteConfig) {
+    return (
+      <div className="rounded-xl border bg-card/50 space-y-3 p-5">
+        <h3 className="text-sm font-semibold">{t('settings.backup.cloudTitle')}</h3>
+        <p className="text-muted-foreground text-xs">{t('settings.backup.cloudNotConfigured')}</p>
+        <Button onClick={onConfigure}>{t('settings.backup.configureButton')}</Button>
+      </div>
+    )
+  }
+
+  const interval = status?.autoSyncIntervalMinutes ?? 0
+
   return (
-    <div className="rounded-xl border bg-card/50 space-y-3 p-5">
-      <h3 className="text-sm font-semibold">{t('settings.backup.cloudTitle')}</h3>
-      {remoteConfig ? (
-        <>
-          <p className="text-muted-foreground text-xs">
+    <div className="rounded-xl border bg-card/50 space-y-4 p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold">{t('settings.backup.cloudTitle')}</h3>
+          <p className="text-muted-foreground mt-1 text-xs">
             {t('settings.backup.cloudConfigured', {
               type: remoteConfig.type === 'webdav' ? 'WebDAV' : 'S3',
             })}
           </p>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={onConfigure}>
-              {t('settings.backup.reconfigureButton')}
-            </Button>
-            <Button variant="ghost" onClick={() => onClear()}>
-              {t('settings.backup.clearConfigButton')}
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-xs italic">
-            {t('settings.backup.syncButtonsComingSoon')}
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="text-muted-foreground text-xs">{t('settings.backup.cloudNotConfigured')}</p>
-          <Button onClick={onConfigure}>{t('settings.backup.configureButton')}</Button>
-        </>
+        </div>
+        <div className="flex flex-col items-end gap-1 text-xs">
+          {status?.lastSyncedAt && (
+            <span className="text-muted-foreground">
+              {t('settings.backup.lastSynced', {
+                at: new Date(status.lastSyncedAt).toLocaleString(),
+              })}
+            </span>
+          )}
+          {status?.lastLocalChangeAt && (
+            <span className="text-muted-foreground">
+              {t('settings.backup.lastChanged', {
+                at: new Date(status.lastLocalChangeAt).toLocaleString(),
+              })}
+            </span>
+          )}
+          {status?.lastError && (
+            <span className="text-destructive">{localizedError(status.lastError)}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <Button onClick={onSyncNow} disabled={status?.isSyncing}>
+          {status?.isSyncing ? t('settings.backup.syncing') : t('settings.backup.syncNowButton')}
+        </Button>
+        <Button variant="outline" onClick={onOpenHistory}>
+          {t('settings.backup.historyButton')}
+        </Button>
+        <Button variant="ghost" onClick={onConfigure}>
+          {t('settings.backup.reconfigureButton')}
+        </Button>
+        <Button variant="ghost" onClick={() => onClear()}>
+          {t('settings.backup.clearConfigButton')}
+        </Button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <Label className="text-xs">{t('settings.backup.intervalLabel')}</Label>
+          <select
+            className="bg-background mt-1 h-9 w-full rounded-md border px-2 text-sm"
+            value={interval}
+            onChange={(e) => onIntervalChange(parseInt(e.target.value, 10))}>
+            <option value={0}>{t('settings.backup.intervalOff')}</option>
+            <option value={15}>{t('settings.backup.interval15')}</option>
+            <option value={30}>{t('settings.backup.interval30')}</option>
+            <option value={60}>{t('settings.backup.interval60')}</option>
+            <option value={180}>{t('settings.backup.interval180')}</option>
+            <option value={720}>{t('settings.backup.interval720')}</option>
+          </select>
+        </div>
+        <div>
+          <Label className="text-xs">{t('settings.backup.maxRetainedLabel')}</Label>
+          <Input
+            type="number"
+            min={1}
+            max={50}
+            className="mt-1"
+            value={maxRetained}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10)
+              if (Number.isFinite(n)) onMaxRetainedChange(n)
+            }}
+          />
+        </div>
+      </div>
+
+      {cloudMsg && (
+        <p
+          className={cn(
+            'text-xs',
+            cloudMsg.kind === 'ok' ? 'text-emerald-600' : 'text-destructive',
+          )}>
+          {cloudMsg.text}
+        </p>
       )}
     </div>
   )

@@ -69,6 +69,12 @@ export function BackupRemoteDialog({
     initial?.type === 's3' ? initial.prefix : 'aistudio-backup',
   )
 
+  // Sync passphrase — encrypts every snapshot uploaded to the cloud. Required
+  // on save so the sync-service has a key to encrypt with on the first auto-sync.
+  // We never read the existing one back into the dialog (safeStorage decrypt
+  // happens in main only); a blank field on reconfigure means "keep current".
+  const [passphrase, setPassphrase] = useState('')
+
   // Reset transient state every time the dialog opens, and rehydrate the
   // tab from `initial`. Form fields are kept across opens (initial values
   // applied by useState init) — switching tabs preserves user typing within
@@ -80,6 +86,7 @@ export function BackupRemoteDialog({
       setTestMsg(null)
       setTestOk(false)
       setSaving(false)
+      setPassphrase('')
     }
   }, [open, initial])
 
@@ -120,8 +127,15 @@ export function BackupRemoteDialog({
 
   const doSave = async (): Promise<void> => {
     if (!testOk || saving) return
+    // First-time configure must include a passphrase; reconfigure can leave
+    // it blank to keep the previously-saved one (the store/IPC simply skips
+    // overwriting when the field is empty).
+    if (!initial && !passphrase) {
+      setTestMsg(t('settings.backup.remote.passphraseRequired'))
+      return
+    }
     setSaving(true)
-    const r = await setRemoteConfig(buildCfg())
+    const r = await setRemoteConfig(buildCfg(), passphrase || undefined)
     setSaving(false)
     if (r && 'error' in r) {
       setTestMsg(localizedError(r.error))
@@ -252,6 +266,27 @@ export function BackupRemoteDialog({
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Sync passphrase — separate from the bucket/server credentials.
+            It encrypts the snapshot bytes uploaded to the cloud, so even a
+            compromised remote can't read them without it. Blank on reconfigure
+            keeps the previously-saved passphrase. */}
+        <div className="grid gap-1.5 border-t pt-3">
+          <Label className="text-xs">{t('settings.backup.remote.passphrase')}</Label>
+          <Input
+            type="password"
+            placeholder={
+              initial
+                ? t('settings.backup.remote.passphrasePlaceholderKeep')
+                : t('settings.backup.remote.passphrasePlaceholderNew')
+            }
+            value={passphrase}
+            onChange={(e) => setPassphrase(e.target.value)}
+          />
+          <p className="text-muted-foreground text-xs">
+            {t('settings.backup.remote.passphraseHint')}
+          </p>
+        </div>
 
         {testMsg && (
           <p className={testOk ? 'text-emerald-600 text-xs' : 'text-destructive text-xs'}>
