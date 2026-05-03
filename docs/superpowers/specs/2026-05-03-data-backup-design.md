@@ -2,7 +2,8 @@
 
 - 日期：2026-05-03
 - 范围：AI Studio（Electron + React）新增"数据备份"功能：本地导出/导入 + 可选的云端同步
-- 状态：设计稿，待实现
+- 状态：✅ **已实现**（`feat/data-backup` 分支，自 develop 起 27 个 commit）
+- 实施偏差与后续增强：见末尾 **§11 实施备注**
 
 ## 1. 目标与非目标
 
@@ -106,29 +107,31 @@ src/main/backup/
 ├── codec.ts                  # encodeBackupFile / decodeBackupFile（含 magic / schemaVersion 校验）
 ├── remote/
 │   ├── types.ts              # BackupRemote 接口
-│   ├── webdav.ts             # WebDAV 实现（fetch + Basic Auth + PROPFIND XML）
-│   └── s3.ts                 # S3 兼容（s3-lite-client）
+│   ├── webdav.ts             # WebDAV 实现（fetch + Basic Auth + PROPFIND；fast-xml-parser）
+│   └── s3.ts                 # S3 兼容（@aws-sdk/client-s3）
 ├── sync-service.ts           # BackupSyncService 单例：定时器、互斥锁、LWW、回滚副本、清理
 └── dirty-tracker.ts          # 写型 IPC handler 包装层，更新 backup.lastLocalChangeAt
 
 src/main/ipc/backup-handlers.ts   # 注册所有 backup:* 通道
 src/shared/ipc-channels.ts        # 增加 backup 域常量
-src/shared/types.ts               # BackupSnapshot / BackupMeta / RemoteConfig / SyncStatus / SyncResult
+src/shared/types.ts               # BackupSnapshot / BackupMeta / RemoteConfig / SyncStatus / SyncResult / RollbackBackupItem
 src/shared/errors.ts              # 增加 BACKUP_* 错误码
 src/preload/index.ts              # 暴露 window.api.backup.*
 
-src/renderer/src/components/settings/sections/BackupSection.tsx
-src/renderer/src/components/settings/dialogs/BackupRemoteDialog.tsx
-src/renderer/src/components/settings/dialogs/BackupHistoryDialog.tsx
+src/renderer/src/components/settings/BackupSection.tsx
+src/renderer/src/components/settings/BackupPasswordDialog.tsx     # export/import/restore 三模式共用
+src/renderer/src/components/settings/BackupRemoteDialog.tsx
+src/renderer/src/components/settings/BackupHistoryDialog.tsx
+src/renderer/src/components/settings/BackupRollbackDialog.tsx     # 浏览/恢复本地 auto-rollback 副本
 src/renderer/src/stores/backupStore.ts
 ```
 
 ### 关键决定理由
 
 - 所有加密、远端 IO、DB 读写都在 main 进程，沿用项目 "AI 调用 / DB 访问只在 main" 的既有约定。
-- `BackupRemote` 是窄接口（5 个方法），把传输层细节封掉；将来加 GitHub/HTTP 端点零成本，且方便从 `s3-lite-client` 切换到 `@aws-sdk/client-s3`。
+- `BackupRemote` 是窄接口（5 个方法），把传输层细节封掉；将来加 GitHub/HTTP 端点零成本。
 - `dirty-tracker` 用 IPC 包装层而不是散布 `markDirty()` 到每个 db 文件，保持业务代码干净。
-- v1 用 `s3-lite-client`（~100 KB、零依赖、原生支持 S3 兼容）。如未来需要预签名 URL 等高级特性再切官方 SDK——`BackupRemote` 接口已隔离这一变更。
+- **S3 客户端选 `@aws-sdk/client-s3`**（modular，~2-3 MB tree-shakable）。设计稿原本规划用 `s3-lite-client`（轻量、零依赖），但实施时发现该包已于 2026-03-29 从 npm 下架；切换到官方 SDK 既保证长期可用，又对 R2/B2/MinIO/坚果云等 S3 兼容端点支持完整。`BackupRemote` 接口已隔离这一变更——切换只改 `s3.ts`。
 
 ### `BackupRemote` 接口
 
@@ -241,21 +244,24 @@ LWW 是"两台设备共用同一个 bucket / WebDAV 路径"的简单冲突解决
 
 新增一个 `backup` 域，加进 `src/shared/ipc-channels.ts` 的 `IpcChannels`。
 
-| 通道                         | 类型   | 入参                                                                  | 返回 / 推送                                                                                             |
-| ---------------------------- | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `backup:export-to-file`      | invoke | `{ password: string }`                                                | `IpcResult<{ filePath: string }>`（用 `dialog.showSaveDialog`）                                         |
-| `backup:import-from-file`    | invoke | `{ filePath?: string; password: string; mode: 'replace' \| 'merge' }` | `IpcResult<{ applied: BackupSummary }>`                                                                 |
-| `backup:peek-file`           | invoke | `{ filePath: string }`                                                | `IpcResult<{ schemaVersion, appVersion, createdAt }>`（不解密）                                         |
-| `backup:get-remote-config`   | invoke | —                                                                     | `IpcResult<RemoteConfig \| null>`                                                                       |
-| `backup:set-remote-config`   | invoke | `RemoteConfig`                                                        | `IpcResult<void>`                                                                                       |
-| `backup:test-remote`         | invoke | `RemoteConfig`                                                        | `IpcResult<{ ok: boolean; latency?: number }>`（PUT/GET 探针）                                          |
-| `backup:sync-now`            | invoke | —                                                                     | `IpcResult<SyncResult>`                                                                                 |
-| `backup:sync-cancel`         | invoke | —                                                                     | `IpcResult<void>`                                                                                       |
-| `backup:list-remote`         | invoke | —                                                                     | `IpcResult<RemoteBackupItem[]>`                                                                         |
-| `backup:restore-from-remote` | invoke | `{ key: string; mode: 'replace' \| 'merge' }`                         | `IpcResult<void>`                                                                                       |
-| `backup:get-status`          | invoke | —                                                                     | `IpcResult<SyncStatus>`                                                                                 |
-| `backup:status-changed`      | push   | —                                                                     | `SyncStatus`                                                                                            |
-| `backup:progress`            | push   | —                                                                     | `{ phase: 'collect' \| 'encrypt' \| 'upload' \| 'download' \| 'decrypt' \| 'apply'; percent?: number }` |
+| 通道                         | 类型   | 入参                                                                  | 返回 / 推送                                                                                                          |
+| ---------------------------- | ------ | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `backup:export-to-file`      | invoke | `{ password: string }`                                                | `IpcResult<{ filePath: string }>`（用 `dialog.showSaveDialog`）                                                      |
+| `backup:import-from-file`    | invoke | `{ filePath?: string; password: string; mode: 'replace' \| 'merge' }` | `IpcResult<{ applied: BackupSummary }>`                                                                              |
+| `backup:peek-file`           | invoke | `{ filePath: string }`                                                | `IpcResult<{ schemaVersion, appVersion, createdAt }>`（不解密）                                                      |
+| `backup:pick-file`           | invoke | —                                                                     | `IpcResult<{ filePath: string } \| null>`（包装 `dialog.showOpenDialog`，给渲染端用）                                |
+| `backup:get-remote-config`   | invoke | —                                                                     | `IpcResult<RemoteConfig \| null>`                                                                                    |
+| `backup:set-remote-config`   | invoke | `{ config: RemoteConfig; passphrase?: string }`                       | `IpcResult<void>`（passphrase 留空保持现有口令）                                                                     |
+| `backup:clear-remote-config` | invoke | —                                                                     | `IpcResult<void>`（DELETE FROM settings WHERE key LIKE 'backup.remote.%'）                                           |
+| `backup:test-remote`         | invoke | `RemoteConfig`                                                        | `IpcResult<{ ok: boolean; latency?: number }>`（PUT/GET 探针）                                                       |
+| `backup:sync-now`            | invoke | —                                                                     | `IpcResult<SyncResult>`                                                                                              |
+| `backup:sync-cancel`         | invoke | —                                                                     | `IpcResult<void>`                                                                                                    |
+| `backup:list-remote`         | invoke | —                                                                     | `IpcResult<RemoteBackupItem[]>`                                                                                      |
+| `backup:list-rollbacks`      | invoke | —                                                                     | `IpcResult<RollbackBackupItem[]>`（本地 auto-rollback 目录）                                                         |
+| `backup:restore-from-remote` | invoke | `{ key: string; password: string; mode: 'replace' \| 'merge' }`       | `IpcResult<void>`                                                                                                    |
+| `backup:get-status`          | invoke | —                                                                     | `IpcResult<SyncStatus>`                                                                                              |
+| `backup:status-changed`      | push   | —                                                                     | `SyncStatus`                                                                                                         |
+| `backup:progress`            | push   | —                                                                     | `{ phase: 'collect' \| 'encrypt' \| 'upload' \| 'download' \| 'decrypt' \| 'apply' \| 'cleanup'; percent?: number }` |
 
 ### preload
 
@@ -300,6 +306,14 @@ interface RemoteBackupItem {
   createdAt: string
   appVersion: string
 }
+
+/** 本地 pre-apply 回滚副本（auto-rollback 目录下的 .aibackup 文件）。 */
+interface RollbackBackupItem {
+  filePath: string // 绝对路径，可直接传给 importFromFile
+  fileName: string
+  createdAt: string // 从文件名 ISO 时间戳逆解析；失败回落 mtime
+  size: number
+}
 ```
 
 ## 7. 渲染端 UI
@@ -332,28 +346,55 @@ interface RemoteBackupItem {
 
 ### 关键交互
 
-- **配置远端**：`BackupRemoteDialog` 顶部 Tab 切 WebDAV / S3；底部"测试并保存"按钮——只有连通才允许保存。S3 Tab 默认 `forcePathStyle = true`，加一个"我的服务商需要关掉它"开关。
-- **历史版本**：`BackupHistoryDialog` 列出 `backup:list-remote` 的结果（key / createdAt / appVersion / 大小），单条上的"恢复"按钮先要口令再要模式选择。
+- **配置远端**：`BackupRemoteDialog` 顶部 Tab 切 WebDAV / S3；底部"测试连接"按钮——只有连通后"保存"按钮才解锁。S3 Tab 默认 `forcePathStyle = true`，加一个"强制 path-style 寻址"开关。同步加密口令字段独立列出，重新配置时留空保持现有口令。
+- **历史版本**：`BackupHistoryDialog` 列出 `backup:list-remote` 的结果（key / createdAt / appVersion / 大小），单条上的"恢复（替换）/ 恢复（合并）"按钮均要先输口令。
+- **回滚副本**：`BackupRollbackDialog` 列出 `<dataDir>/backups/auto-rollback/` 下的 `.aibackup` 副本，复用 `importFromFile` 流程恢复。每次云端 apply 前会自动写一份。
 - **导入对话框**：文件名以 `.aibackup` 结尾时先调 `backup:peek-file` 显示元信息再要密码，避免用户输入密码后才发现选错文件。
-- **进度条**：长操作期间订阅 `backup:progress`，用 `Sonner` toast 或一个轻量横向进度条。
+- **口令对话框**：`BackupPasswordDialog` 三模式共用——`export` 要求 confirm；`import` / `restore` 只问一次。三模式各自的描述文案使用独立 i18n 键。
+- **进度指示**：长操作期间订阅 `backup:progress`，在 BackupSection 顶部展示一行 inline 文本（如 "Uploading…"）。`apply` 阶段过短不显示。每个 store action 在完成时清空 progress 避免残留。
+- **错误反馈**：项目约定不引入 sonner toast；所有错误/成功消息以 inline `<p class="text-xs ...">` 渲染在所属卡片或对话框底部。
 - **状态实时刷新**：`BackupSection` mount 时订阅 `backup:status-changed`，更新 `backupStore` 中的 `SyncStatus`。
 
 ### 新 store
 
-`src/renderer/src/stores/backupStore.ts`，Zustand：
+`src/renderer/src/stores/backupStore.ts`，Zustand。每个 action 返回 success-shape 或 `{ error: LocalizedError }` 让组件可判别（项目不用抛错给渲染端）。
 
 ```ts
 interface BackupStore {
   status: SyncStatus | null
   remoteConfig: RemoteConfig | null
+  progress: BackupProgress | null
+  isLoadingStatus: boolean
+
   loadStatus: () => Promise<void>
   loadRemoteConfig: () => Promise<void>
-  syncNow: () => Promise<SyncResult>
+
+  exportToFile: (password: string) => Promise<{ filePath: string } | { error: LocalizedError }>
+  peekFile: (filePath: string) => Promise<BackupFileMeta | { error: LocalizedError }>
+  importFromFile: (
+    filePath: string | undefined,
+    password: string,
+    mode: BackupImportMode,
+  ) => Promise<BackupSummary | { error: LocalizedError }>
+
+  setRemoteConfig: (
+    cfg: RemoteConfig,
+    passphrase?: string,
+  ) => Promise<void | { error: LocalizedError }>
+  clearRemoteConfig: () => Promise<void>
+  testRemote: (
+    cfg: RemoteConfig,
+  ) => Promise<{ ok: boolean; latency?: number; error?: LocalizedError }>
+
+  syncNow: () => Promise<SyncResult | { error: LocalizedError }>
   cancelSync: () => Promise<void>
-  exportToFile: (password: string) => Promise<string>
-  importFromFile: (filePath: string, password: string, mode: 'replace' | 'merge') => Promise<void>
-  setRemoteConfig: (cfg: RemoteConfig) => Promise<void>
-  testRemote: (cfg: RemoteConfig) => Promise<boolean>
+  listRemote: () => Promise<RemoteBackupItem[] | { error: LocalizedError }>
+  listRollbacks: () => Promise<RollbackBackupItem[] | { error: LocalizedError }>
+  restoreFromRemote: (
+    key: string,
+    password: string,
+    mode: BackupImportMode,
+  ) => Promise<void | { error: LocalizedError }>
 }
 ```
 
@@ -365,18 +406,19 @@ interface BackupStore {
 
 沿用项目现有 `AppError` + `LocalizedError` + `ERROR_CODES` 模型。新增以下错误码到 `src/shared/errors.ts`：
 
-| 错误码                    | 触发场景                                                           |
-| ------------------------- | ------------------------------------------------------------------ |
-| `BACKUP_FILE_INVALID`     | `magic` 头不匹配、JSON 损坏、`schemaVersion` 不被支持              |
-| `BACKUP_PASSWORD_WRONG`   | AES-GCM `final()` 抛 auth-tag 错（同时覆盖"口令错"和"文件被篡改"） |
-| `BACKUP_SCHEMA_TOO_NEW`   | 备份是更高 schemaVersion——独立提示让用户升级应用                   |
-| `BACKUP_REMOTE_AUTH`      | WebDAV 401/403、S3 SignatureDoesNotMatch / InvalidAccessKeyId      |
-| `BACKUP_REMOTE_NOT_FOUND` | 远端目标 bucket / 路径不存在                                       |
-| `BACKUP_REMOTE_NETWORK`   | 超时 / DNS / TLS 失败——可重试场景                                  |
-| `BACKUP_REMOTE_FORBIDDEN` | 已认证但权限不够                                                   |
-| `BACKUP_BUSY`             | 并发触发，已有同步在跑                                             |
-| `BACKUP_CANCELLED`        | 用户主动取消（仅用于内部信号；对外 resolve 而非 reject）           |
-| `BACKUP_APPLY_FAILED`     | 导入回写 DB 阶段失败                                               |
+| 错误码                         | 触发场景                                                           |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `BACKUP_FILE_INVALID`          | `magic` 头不匹配、JSON 损坏、`schemaVersion` 不被支持              |
+| `BACKUP_PASSWORD_WRONG`        | AES-GCM `final()` 抛 auth-tag 错（同时覆盖"口令错"和"文件被篡改"） |
+| `BACKUP_SCHEMA_TOO_NEW`        | 备份是更高 schemaVersion——独立提示让用户升级应用                   |
+| `BACKUP_REMOTE_AUTH`           | WebDAV 401/403、S3 SignatureDoesNotMatch / InvalidAccessKeyId      |
+| `BACKUP_REMOTE_NOT_FOUND`      | 远端目标 bucket / 路径不存在                                       |
+| `BACKUP_REMOTE_NETWORK`        | 超时 / DNS / TLS 失败——可重试场景                                  |
+| `BACKUP_REMOTE_FORBIDDEN`      | 已认证但权限不够                                                   |
+| `BACKUP_REMOTE_NOT_CONFIGURED` | `syncNow / listRemote / restoreFromKey` 调用时没有保存的远端配置   |
+| `BACKUP_BUSY`                  | 并发触发，已有同步在跑                                             |
+| `BACKUP_CANCELLED`             | 用户主动取消（仅用于内部信号；对外 resolve 而非 reject）           |
+| `BACKUP_APPLY_FAILED`          | 导入回写 DB 阶段失败                                               |
 
 每个码都加 i18n 文案到两份 locale。
 
@@ -452,3 +494,31 @@ UI 按"立即同步" → backup:sync-now
   → settings.set(backup.lastSyncedAt, ...)
   → emit backup:status-changed
 ```
+
+## 11. 实施备注（设计与实现的偏差与增强）
+
+本节记录设计稿到 `feat/data-backup` 分支落地之间的实质偏差，便于后续维护者反查 commit 历史。
+
+### 偏差
+
+- **S3 客户端**：原计划 `s3-lite-client`（~100 KB）。实施时该包已于 2026-03-29 从 npm 下架（`code: ENOVERSIONS`）；切换到 `@aws-sdk/client-s3` v3（modular，~2-3 MB tree-shakable）。错误处理依赖 `$metadata.httpStatusCode` + `error.name`（`NotFound` / `NoSuchKey` / `AccessDenied` 等）双兜底；list 走 `ListObjectsV2Command` 的 `ContinuationToken` 分页。`BackupRemote` 接口隔离了这次替换，没有对外波及。
+- **`backup:set-remote-config` payload**：design 写的是 `RemoteConfig`，实际为 `{ config: RemoteConfig; passphrase?: string }` —— passphrase 字段允许同步加密口令在保存远端配置时一并写入；留空表示保持现有口令（重新配置场景）。
+- **`backup:restore-from-remote` payload**：design 写 `{ key, mode }`，实际加了 `password` —— 历史恢复用用户当场输入的口令而非存储的 syncPassphrase，让用户即使忘了存储口令也能从历史里挑一份恢复。
+- **`backup:get-status` 默认值**：在 sync-service 接管前的 stub 阶段，`hasRemoteConfigured` 直接读 `loadRemoteConfig() !== null`，而非常量 `false`，避免 UI 在 stub 期误显示"未配置"。
+- **错误反馈**：design §7 提到"用 Sonner toast"；实际项目约定不引入 sonner，所有错误/成功消息以 inline `<p>` 渲染在所属卡片或对话框底部。
+- **进度指示**：以 inline 文本（如 "Uploading…"）展示，不弹 toast。`apply` 阶段过短（事务内 < 100ms）不显示。每个 store action 在完成时 `set({ progress: null })` 清空残留。
+- **设置 store 集成**：`maxRetainedBackups` 等 UI 显示值通过 `useSettingsStore((s) => s.settings[key])` 直接订阅，不引入新的"useSettingValue" 包装 hook。
+
+### 修复
+
+- **WebDAV subPath 403**：`ensureDirsFor()` 原本只 MKCOL 文件路径内部的中间目录，跳过了 `subPath` 段。坚果云对"PUT 到不存在的父目录"返回 403（其它服务器常用 409）。修复：MKCOL 链从 WebDAV 根 URL 起，依次创建 `subPath` 每段 + 文件父目录；容忍 403/405/409（已存在 / 服务端拒绝重建集合）。
+
+### 增强（计划外）
+
+- **`fast-xml-parser` 取代正则 PROPFIND 解析**：原解析器对偏离规范的命名空间前缀（非 `D:` / `d:`）容错差。换用 `fast-xml-parser@5` + `removeNSPrefix: true` + `isArray` 强制 `response` / `propstat` 数组化，处理多 propstat（取首个含 `prop` 的）。
+- **同步加密口令文案**：`BackupPasswordDialog` 在 `restore` 模式新增独立 `restoreDesc` 文案，明确告诉用户输入"配置远端时设置的同步加密口令"。`BackupRemoteDialog` 的 `passphraseHint` 补充"所有需要解密这些备份的设备使用同一口令；丢失无法恢复"，覆盖跨设备迁移场景。
+- **本地回滚副本 UI**：新增 `BackupRollbackDialog` + `backup:list-rollbacks` IPC + `RollbackBackupItem` 类型 + `listRollbacks()` 主进程实现。文件名解析 `pre-apply-<safeIso>.aibackup` 还原 ISO 时间戳；恢复直接复用 `importFromFile(filePath, password, mode)`，不需新 handler。BackupSection 本地卡片新增"从回滚副本恢复…"按钮。
+
+### 跳过
+
+- **Phase 6 / Task 23 手动冒烟**：按项目"不引入测试基础设施"约定不执行；交由用户在分支合并前实测。

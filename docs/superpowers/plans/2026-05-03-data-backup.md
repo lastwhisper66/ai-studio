@@ -2,15 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **状态：✅ 已完成。** `feat/data-backup` 分支自 develop 起 27 个 commit。Task-by-task 的实施偏差与计划外增强见末尾 **§Implementation Log**。
+
 **Goal:** 为 AI Studio 增加"配置备份"功能：本地导出/导入加密备份文件，以及通过 WebDAV 或 S3 兼容存储进行多设备云端同步（手动 + 定时，LWW 冲突解决）。
 
 **Architecture:** main 进程持有所有 DB 读写、加密、远端 IO；通过 `BackupRemote` 接口隔离 WebDAV/S3 实现。备份文件 = 明文 JSON 头 + AES-256-GCM 加密的 base64 payload。同步引擎用一个 `manifest.json` 做 LWW 决策，先传 backup 再更新 manifest 保证崩溃安全。
 
-**Tech Stack:** Node `crypto`（加密，零依赖）、`s3-lite-client`（S3 兼容传输，~100KB）、原生 fetch（WebDAV）、better-sqlite3（事务）、Zustand 5（renderer 状态）、Shadcn/UI（对话框/表单）。
+**Tech Stack:** Node `crypto`（加密，零依赖）、`@aws-sdk/client-s3` v3（S3 兼容传输；原计划用的 `s3-lite-client` 已下架）、原生 fetch + `fast-xml-parser`（WebDAV）、better-sqlite3（事务）、Zustand 5（renderer 状态）、Shadcn/UI（对话框/表单）。
 
 **Spec 引用：** [`docs/superpowers/specs/2026-05-03-data-backup-design.md`](../specs/2026-05-03-data-backup-design.md)
 
-**测试策略：** 用户明确要求**不引入测试基础设施**——所有任务只做实现 + 类型检查 + 阶段末手动冒烟。
+**测试策略：** 用户明确要求**不引入测试基础设施**——所有任务只做实现 + 类型检查 + 阶段末手动冒烟。Phase 6 的 Task 23 冒烟由用户在分支合并前自行执行。
 
 ---
 
@@ -18,41 +20,43 @@
 
 ### Create
 
-| 路径 | 职责 |
-|---|---|
-| `src/main/backup/crypto.ts` | PBKDF2 派生 + AES-256-GCM 加解密 |
-| `src/main/backup/codec.ts` | `.aibackup` 文件格式编解码（含 magic、schemaVersion 校验） |
-| `src/main/backup/snapshot.ts` | `collectSnapshot()` / `applySnapshot()` |
-| `src/main/backup/index.ts` | 对外门面：`exportToFile` / `importFromFile` / `peekFile` |
-| `src/main/backup/dirty-tracker.ts` | IPC handler 包装层，更新 `backup.lastLocalChangeAt` |
-| `src/main/backup/sync-service.ts` | `BackupSyncService` 单例：定时器、互斥锁、LWW、保留份数 |
-| `src/main/backup/remote/types.ts` | `BackupRemote` 接口 + 共用类型 |
-| `src/main/backup/remote/webdav.ts` | WebDAV 实现 |
-| `src/main/backup/remote/s3.ts` | S3 兼容（`s3-lite-client`） |
-| `src/main/ipc/backup-handlers.ts` | 注册所有 `backup:*` 通道 |
-| `src/renderer/src/components/settings/BackupSection.tsx` | 设置页主面板 |
-| `src/renderer/src/components/settings/BackupPasswordDialog.tsx` | 输入口令对话框（导出/导入/历史恢复共用） |
-| `src/renderer/src/components/settings/BackupRemoteDialog.tsx` | 配置 WebDAV / S3 后端 |
-| `src/renderer/src/components/settings/BackupHistoryDialog.tsx` | 列出云端历史备份并恢复 |
-| `src/renderer/src/stores/backupStore.ts` | renderer 状态 |
+| 路径                                                                       | 职责                                                                |
+| -------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| `src/main/backup/crypto.ts`                                                | PBKDF2 派生 + AES-256-GCM 加解密                                    |
+| `src/main/backup/codec.ts`                                                 | `.aibackup` 文件格式编解码（含 magic、schemaVersion 校验）          |
+| `src/main/backup/snapshot.ts`                                              | `collectSnapshot()` / `applySnapshot()`                             |
+| `src/main/backup/index.ts`                                                 | 对外门面：`exportToFile` / `importFromFile` / `peekFile` / `listRollbacks` / 远端配置 helpers |
+| `src/main/backup/dirty-tracker.ts`                                         | IPC handler 包装层，更新 `backup.lastLocalChangeAt`                 |
+| `src/main/backup/sync-service.ts`                                          | `BackupSyncService` 单例：定时器、互斥锁、LWW、保留份数             |
+| `src/main/backup/remote/types.ts`                                          | `BackupRemote` 接口 + 共用类型                                      |
+| `src/main/backup/remote/webdav.ts`                                         | WebDAV 实现（fetch + Basic Auth + `fast-xml-parser` 解析 PROPFIND） |
+| `src/main/backup/remote/s3.ts`                                             | S3 兼容（`@aws-sdk/client-s3`；原计划 `s3-lite-client` 已下架）     |
+| `src/main/ipc/backup-handlers.ts`                                          | 注册所有 `backup:*` 通道                                            |
+| `src/renderer/src/components/settings/BackupSection.tsx`                   | 设置页主面板                                                        |
+| `src/renderer/src/components/settings/BackupPasswordDialog.tsx`            | 输入口令对话框（export/import/restore 三模式共用）                  |
+| `src/renderer/src/components/settings/BackupRemoteDialog.tsx`              | 配置 WebDAV / S3 后端                                               |
+| `src/renderer/src/components/settings/BackupHistoryDialog.tsx`             | 列出云端历史备份并恢复                                              |
+| `src/renderer/src/components/settings/BackupRollbackDialog.tsx`            | 浏览/恢复本地 auto-rollback 副本（计划外增强）                      |
+| `src/renderer/src/stores/backupStore.ts`                                   | renderer 状态                                                       |
 
 ### Modify
 
-| 路径 | 改动 |
-|---|---|
-| `src/shared/errors.ts` | 增加 `BACKUP_*` 错误码 |
-| `src/shared/ipc-channels.ts` | 增加 `BACKUP_*` 通道常量 |
-| `src/shared/types.ts` | 增加 `BackupSnapshot` / `BackupSummary` / `RemoteConfig` / `SyncStatus` / `SyncResult` / `RemoteBackupItem` / `BackupProgress` |
-| `src/main/db/settings.ts` | 扩展 `SENSITIVE_KEYS` |
-| `src/main/ipc/index.ts` | 注册 backup handlers + 接入 dirty-tracker |
-| `src/main/index.ts` | 启动 BackupSyncService（应用启动时） |
-| `src/preload/index.ts` | 暴露 `window.api.backup.*` |
-| `src/renderer/src/components/settings/SettingsSidebar.tsx` | 增加 `'backup'` section |
-| `src/renderer/src/components/settings/SettingsPage.tsx` | 路由 `'backup'` 到 `BackupSection` |
-| `src/renderer/src/App.tsx` | 调用 `initBackupStore()` |
-| `src/renderer/src/i18n/locales/en.json` | 新 i18n 键 |
-| `src/renderer/src/i18n/locales/zh-CN.json` | 新 i18n 键 |
-| `package.json` | 加 `s3-lite-client` 依赖 |
+| 路径                                                          | 改动                                                                                                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/shared/errors.ts`                                        | 增加 `BACKUP_*` 错误码                                                                                                                                |
+| `src/shared/ipc-channels.ts`                                  | 增加 `BACKUP_*` 通道常量                                                                                                                              |
+| `src/shared/types.ts`                                         | 增加 `BackupSnapshot` / `BackupSummary` / `RemoteConfig` / `SyncStatus` / `SyncResult` / `RemoteBackupItem` / `RollbackBackupItem` / `BackupProgress` |
+| `src/main/db/settings.ts`                                     | 扩展 `SENSITIVE_KEYS`                                                                                                                                 |
+| `src/main/ipc/index.ts`                                       | 注册 backup handlers + 接入 dirty-tracker                                                                                                             |
+| `src/main/ipc/settings-handlers.ts`                           | `settingSideEffects` 加 `backup.autoSyncIntervalMinutes` → `scheduleAuto()`                                                                           |
+| `src/main/index.ts`                                           | 启动 BackupSyncService（应用启动时）                                                                                                                  |
+| `src/preload/index.ts`                                        | 暴露 `window.api.backup.*`                                                                                                                            |
+| `src/renderer/src/components/settings/SettingsSidebar.tsx`    | 增加 `'backup'` section                                                                                                                               |
+| `src/renderer/src/components/settings/SettingsPage.tsx`       | 路由 `'backup'` 到 `BackupSection`                                                                                                                    |
+| `src/renderer/src/App.tsx`                                    | 调用 `initBackupStore()`                                                                                                                              |
+| `src/renderer/src/i18n/locales/en.json`                       | 新 i18n 键                                                                                                                                            |
+| `src/renderer/src/i18n/locales/zh-CN.json`                    | 新 i18n 键                                                                                                                                            |
+| `package.json`                                                | 加 `@aws-sdk/client-s3` + `fast-xml-parser` 依赖                                                                                                      |
 
 ---
 
@@ -4205,7 +4209,59 @@ npm run dev
 
 # 已知妥协
 
-- **WebDAV PROPFIND 解析** 用正则。一旦遇到偏离规范的服务器（特别是命名空间前缀奇怪的），可能漏识别——后续可换 `fast-xml-parser`。
-- **`s3-lite-client` API 假设**：本计划写于库 v1 的接口约定。安装后若 `node_modules/s3-lite-client/dist/index.d.ts` 与 Task 16 中的方法名/参数不一致，按实际类型修改 Task 16 的 S3Remote 实现，不要修改其他 Task。
+- **WebDAV PROPFIND 解析** 用正则。一旦遇到偏离规范的服务器（特别是命名空间前缀奇怪的），可能漏识别——后续可换 `fast-xml-parser`。 _（实施时已切换；见 Implementation Log）_
+- **`s3-lite-client` API 假设**：本计划写于库 v1 的接口约定。安装后若 `node_modules/s3-lite-client/dist/index.d.ts` 与 Task 16 中的方法名/参数不一致，按实际类型修改 Task 16 的 S3Remote 实现，不要修改其他 Task。 _（实施时该包已下架；改用 `@aws-sdk/client-s3`，见 Implementation Log）_
 - **同步口令丢失**：用户清除 safeStorage（重装系统、删除用户配置目录）后，本机存的 `backup.syncPassphrase` 会丢，要求用户重新输入。这是设计选择（密钥永不离开设备）。
 - **跨进程的 `ipcMain.handle` 包装**：Task 18 通过 monkey-patch `ipcMain.handle` 来植入 dirty-tracker。这要求 `installDirtyTracker()` 必须在所有 `register*Handlers()` 之前调用——已经按这个顺序写了。
+
+---
+
+# Implementation Log
+
+实施完成后回写。Commit 范围：`develop..feat/data-backup`（27 commits）。
+
+## Phase 偏差汇总
+
+| Task | Status | 实际 commit | 偏差 / 备注 |
+|------|--------|-------------|-------------|
+| 1 错误码 + i18n | ✅ | `32cee7e` | 按计划 |
+| 2 IPC 通道常量 | ✅ | `53c7e49` | 按计划 |
+| 3 共享类型 | ✅ | `a880acc` | 按计划 |
+| 4 crypto.ts | ✅ | `33aa280` | 按计划 |
+| 5 codec.ts | ✅ | `a4fa0d1` | 按计划 |
+| 6 collectSnapshot | ✅ | `0ef1615` | 按计划 |
+| 7 applySnapshot | ✅ | `db5eccd` | 按计划 |
+| 8 facade | ✅ | `f3bde7b` | 按计划 |
+| 9 IPC handlers (本地) | ✅ | `5dd47ab` | 按计划 |
+| 10 preload window.api.backup.* | ✅ | `dd7f671` | 按计划 |
+| 11 backupStore | ✅ | `eb9af6f` | 按计划 |
+| 12 BackupPasswordDialog | ✅ | `3ce612c` | 按计划 |
+| 13 BackupSection 本地部分 + i18n | ✅ | `3829a3c` | 按计划 |
+| — hotfix stub | ✅ | `7b1585c` | 注册 `get-status` / `get-remote-config` stub，避免 Task 14-17 完成前 renderer 启动报错 |
+| 14 BackupRemote 接口 | ✅ | `5c53581` | 按计划 |
+| 15 WebDAV 实现 | ✅ | `a6c3d1f` | 按计划 |
+| 16 S3 实现 | ⚠️ | `2f93075` | **`s3-lite-client` 已于 2026-03-29 从 npm 下架（ENOVERSIONS）。改用 `@aws-sdk/client-s3` v3。** 错误处理依赖 `$metadata.httpStatusCode` + `error.name` 双兜底；list 走 `ListObjectsV2Command` 的 `ContinuationToken` 分页 |
+| 17 远端配置 + IPC + UI | ⚠️ | `3be862d` | preload 实际发的 `setRemoteConfig` payload 是 `{ config, passphrase }` 不是裸 `cfg`——handler 适配；同时把 Task 20 Step 3 的 passphrase 持久化在此 task 预实现；GET_STATUS stub 改为读 `loadRemoteConfig() !== null` 而非常量 false |
+| 18 dirty-tracker | ✅ | `493e983` | 按计划 |
+| 19 BackupSyncService | ✅ | `a984c7d` | 按计划。`autoSyncIntervalMinutes` side-effect 走 settings-handlers 的 `settingSideEffects` map（更轻量） |
+| 20 sync IPC handlers | ⚠️ | `ffc1107` | Step 3（passphrase 持久化）已在 Task 17 完成，此 task 跳过；`GET_STATUS` 改为代理 `service.getStatus()` |
+| 21 sync UI | ⚠️ | `4ff163b` | **不用 sonner toast，全部 inline 错误消息**（项目约定）；`useSettingValue` helper 改为直接订阅 `useSettingsStore((s) => s.settings[key])`；BackupRemoteDialog 加独立 passphrase 字段，重新配置时留空保持现有口令 |
+| — fix WebDAV subPath | 🐛 | `577f655` | `ensureDirsFor()` 跳过了 `subPath` 段，导致 PUT 到不存在的父目录被坚果云返回 403。修复：MKCOL 链从 WebDAV 根 URL 起，依次创建 `subPath` 每段 + 文件父目录；容忍 403/405/409 |
+| 22 progress + i18n polish | ✅ | `1019c7d` | 按计划。`apply` 阶段过短不显示；store action 完成时清空 progress 避免残留 |
+| 23 终末手动冒烟 | ⏭️ | — | 按"不引入测试基础设施"约定跳过；交由用户在合并前自测 |
+
+## 计划外增强（plan 末尾未列，但由用户明确要求加进来）
+
+| Item | Commit | 内容 |
+|------|--------|------|
+| syncPassphrase 文案改进 | `65e39d1` | `BackupPasswordDialog` `restore` 模式独立 `restoreDesc`；`BackupRemoteDialog` `passphraseHint` 补充"所有需要解密的设备使用同一口令；丢失无法恢复"，明示跨设备使用预期 |
+| `fast-xml-parser` 取代正则 PROPFIND | `bd8957d` | 装 `fast-xml-parser@5.7.2`。`removeNSPrefix: true` + `isArray` 强制 `response`/`propstat` 为数组；多 propstat 取首个含 prop 的；保留同样的 `RemoteObject` 输出。修复对偏离规范的命名空间前缀的容错 |
+| 本地回滚副本 UI | `13805dc` | 新增 `BACKUP_LIST_ROLLBACKS` IPC + `RollbackBackupItem` 类型 + `listRollbacks()` 主进程实现（解析 `pre-apply-<safeIso>.aibackup` 文件名时间戳，stat 兜底）。BackupRollbackDialog 复用 `importFromFile` 流程恢复，无需新 restore handler。BackupSection 本地卡新增"从回滚副本恢复…"按钮 |
+
+## 教训 / 给未来维护者
+
+- **依赖可能消失**：写 plan 时活的 npm 包，开始实施时可能已不存在。锁定到最近的 npm view 时间，或在 plan 顶部注明"如果 X 不可用，备选 Y"。
+- **payload shape 与 plan 不一致很常见**：preload/store/handler 三层都有可能各自演化。实施前先 grep 既有 preload/store 的真实签名，按真实签名调整 handler，而不是反过来。
+- **toast vs inline**：项目早就在 CLAUDE.md 里写明"不用 sonner toast"。任何 plan 抄来的 toast 调用都得改 inline。
+- **PostToolUse formatter 会改动文件**：每次 Edit 后 prettier 可能重排 markdown 表格列宽；下次 Edit 之前先 Read。
+
