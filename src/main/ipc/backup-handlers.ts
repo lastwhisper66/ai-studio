@@ -5,7 +5,9 @@ import type {
   BackupImportMode,
   BackupSummary,
   IpcResult,
+  RemoteBackupItem,
   RemoteConfig,
+  SyncResult,
   SyncStatus,
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
@@ -19,6 +21,7 @@ import {
   saveRemoteConfig,
   testRemote,
 } from '../backup'
+import { backupSyncService } from '../backup/sync-service'
 import { setSetting } from '../db/settings'
 
 export function registerBackupHandlers(): void {
@@ -142,20 +145,60 @@ export function registerBackupHandlers(): void {
     },
   )
 
-  // Phase 5 placeholder — replaced with real implementation by the sync-service.
+  // Phase 5 sync engine — delegates to BackupSyncService. The status push
+  // channel (BACKUP_STATUS_CHANGED) is fired from inside the service whenever
+  // sync state transitions, so the renderer's snapshot from this handler is
+  // only used at boot.
   ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<SyncStatus> => {
-    return {
-      success: true,
-      data: {
-        isSyncing: false,
-        lastLocalChangeAt: null,
-        lastSyncedAt: null,
-        lastRemoteSeenAt: null,
-        lastError: null,
-        lastWarning: null,
-        hasRemoteConfigured: loadRemoteConfig() !== null,
-        autoSyncIntervalMinutes: 0,
-      },
+    try {
+      return { success: true, data: backupSyncService.getStatus() }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
     }
   })
+
+  ipcMain.handle(IpcChannels.BACKUP_SYNC_NOW, async (): Promise<IpcResult<SyncResult>> => {
+    try {
+      const data = await backupSyncService.syncNow()
+      return { success: true, data }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.BACKUP_SYNC_CANCEL, (): IpcResult<void> => {
+    try {
+      backupSyncService.cancel()
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(
+    IpcChannels.BACKUP_LIST_REMOTE,
+    async (): Promise<IpcResult<RemoteBackupItem[]>> => {
+      try {
+        const data = await backupSyncService.listRemote()
+        return { success: true, data }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    IpcChannels.BACKUP_RESTORE_FROM_REMOTE,
+    async (
+      _,
+      payload: { key: string; password: string; mode: BackupImportMode },
+    ): Promise<IpcResult<void>> => {
+      try {
+        await backupSyncService.restoreFromKey(payload.key, payload.password, payload.mode)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 }
