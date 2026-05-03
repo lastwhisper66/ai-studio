@@ -791,6 +791,19 @@
     },
     "db": {
       "notInitialized": "数据库尚未初始化，请先调用 initDatabase()。"
+    },
+    "backup": {
+      "fileInvalid": "选择的文件不是合法的备份文件。",
+      "passwordWrong": "口令错误，或备份文件已被篡改。",
+      "schemaTooNew": "该备份由更高版本的应用创建，请先升级再尝试。",
+      "remoteAuth": "远端存储认证失败，请检查凭据。",
+      "remoteNotFound": "未找到远端备份位置。",
+      "remoteNetwork": "联系远端存储时发生网络错误。",
+      "remoteForbidden": "远端存储拒绝了该请求（权限不足）。",
+      "remoteNotConfigured": "尚未配置云端备份目的地。",
+      "busy": "已有备份操作正在进行。",
+      "cancelled": "操作已取消。",
+      "applyFailed": "应用备份失败；现有数据未被修改。"
     }
   },
   "notification": {
