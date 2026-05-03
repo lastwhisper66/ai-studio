@@ -1,6 +1,13 @@
 import { ipcMain, dialog } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { BackupFileMeta, BackupImportMode, BackupSummary, IpcResult } from '@shared/types'
+import type {
+  BackupFileMeta,
+  BackupImportMode,
+  BackupSummary,
+  IpcResult,
+  RemoteConfig,
+  SyncStatus,
+} from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
 import { exportToFile, importFromFile, peekFile } from '../backup'
@@ -75,4 +82,27 @@ export function registerBackupHandlers(): void {
       }
     },
   )
+
+  // Stubs — replaced with real implementations in Phase 4 (remote-config) /
+  // Phase 5 (sync-service). Registered now so the renderer's initBackupStore()
+  // doesn't blow up at boot.
+  ipcMain.handle(IpcChannels.BACKUP_GET_REMOTE_CONFIG, (): IpcResult<RemoteConfig | null> => {
+    return { success: true, data: null }
+  })
+
+  ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<SyncStatus> => {
+    return {
+      success: true,
+      data: {
+        isSyncing: false,
+        lastLocalChangeAt: null,
+        lastSyncedAt: null,
+        lastRemoteSeenAt: null,
+        lastError: null,
+        lastWarning: null,
+        hasRemoteConfigured: false,
+        autoSyncIntervalMinutes: 0,
+      },
+    }
+  })
 }
