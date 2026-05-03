@@ -54,6 +54,7 @@ import type {
   BackupSummary,
   RemoteBackupItem,
   RemoteConfig,
+  RollbackBackupItem,
   SyncResult,
   SyncStatus,
 } from '@shared/types'
@@ -722,6 +723,9 @@ const api = {
 
     getStatus: (): Promise<IpcResult<SyncStatus>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_GET_STATUS),
+
+    listRollbacks: (): Promise<IpcResult<RollbackBackupItem[]>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_LIST_ROLLBACKS),
 
     onStatusChanged: (cb: (status: SyncStatus) => void): (() => void) => {
       const fn = (_e: Electron.IpcRendererEvent, status: SyncStatus): void => cb(status)

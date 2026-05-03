@@ -6,6 +6,7 @@ import type {
   BackupSummary,
   RemoteBackupItem,
   RemoteConfig,
+  RollbackBackupItem,
   SyncResult,
   SyncStatus,
 } from '@shared/types'
@@ -43,6 +44,7 @@ interface BackupState {
   syncNow: () => Promise<SyncResult | { error: LocalizedError }>
   cancelSync: () => Promise<void>
   listRemote: () => Promise<RemoteBackupItem[] | { error: LocalizedError }>
+  listRollbacks: () => Promise<RollbackBackupItem[] | { error: LocalizedError }>
   restoreFromRemote: (
     key: string,
     password: string,
@@ -133,6 +135,12 @@ export const useBackupStore = create<BackupState>((set, get) => ({
 
   listRemote: async () => {
     const r = await window.api.backup.listRemote()
+    if (r.success && r.data) return r.data
+    return { error: fallbackError(r.error) }
+  },
+
+  listRollbacks: async () => {
+    const r = await window.api.backup.listRollbacks()
     if (r.success && r.data) return r.data
     return { error: fallbackError(r.error) }
   },

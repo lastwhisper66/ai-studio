@@ -12,6 +12,7 @@ import type { BackupFileMeta, BackupImportMode, RemoteConfig, SyncStatus } from 
 import { BackupPasswordDialog } from './BackupPasswordDialog'
 import { BackupRemoteDialog } from './BackupRemoteDialog'
 import { BackupHistoryDialog } from './BackupHistoryDialog'
+import { BackupRollbackDialog } from './BackupRollbackDialog'
 
 export function BackupSection(): React.JSX.Element {
   const { t } = useTranslation()
@@ -40,6 +41,7 @@ export function BackupSection(): React.JSX.Element {
   const [cloudMsg, setCloudMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [remoteDialogOpen, setRemoteDialogOpen] = useState(false)
   const [historyOpen, setHistoryOpen] = useState(false)
+  const [rollbackOpen, setRollbackOpen] = useState(false)
 
   const openExport = (): void => {
     setPwError(null)
@@ -182,6 +184,14 @@ export function BackupSection(): React.JSX.Element {
           <Button variant="outline" onClick={openImport}>
             {t('settings.backup.importButton')}
           </Button>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setStatusMsg(null)
+              setRollbackOpen(true)
+            }}>
+            {t('settings.backup.rollback.button')}
+          </Button>
         </div>
 
         <div>
@@ -238,6 +248,8 @@ export function BackupSection(): React.JSX.Element {
       />
 
       <BackupHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
+
+      <BackupRollbackDialog open={rollbackOpen} onClose={() => setRollbackOpen(false)} />
 
       <BackupPasswordDialog
         open={exportOpen}

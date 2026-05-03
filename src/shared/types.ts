@@ -571,6 +571,22 @@ export interface RemoteBackupItem {
   appVersion: string
 }
 
+/**
+ * Local pre-apply rollback snapshot (lives under
+ * `<dataDir>/backups/auto-rollback/`). Written every time the sync-service
+ * is about to overwrite local DB; the user can recover from one if a
+ * cloud-applied state turns out to be wrong.
+ */
+export interface RollbackBackupItem {
+  /** Absolute path on disk; passed back to `importFromFile` to restore. */
+  filePath: string
+  /** File name (without directory) — useful for keying lists. */
+  fileName: string
+  /** ISO timestamp parsed from the file name; falls back to mtime. */
+  createdAt: string
+  size: number
+}
+
 export type BackupPhase =
   | 'collect'
   | 'encrypt'

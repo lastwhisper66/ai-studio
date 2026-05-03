@@ -570,6 +570,17 @@
         "restoreMerge": "恢复（合并）",
         "restoreOk": "快照已恢复。"
       },
+      "rollback": {
+        "button": "从回滚副本恢复…",
+        "title": "本地回滚副本",
+        "desc": "每次应用云端备份前，本地都会保留当时的状态副本。如果某次同步效果不对，可以从这里撤回。",
+        "loading": "正在加载…",
+        "empty": "暂无回滚副本——首次云同步运行后会自动生成。",
+        "restoreReplace": "恢复（替换）",
+        "restoreMerge": "恢复（合并）",
+        "restoreOk": "已恢复 {{providers}} 个供应商、{{assistants}} 个助手、{{settings}} 项设置。",
+        "unknownTime": "时间未知"
+      },
       "progress": {
         "collect": "正在收集配置…",
         "encrypt": "正在加密…",

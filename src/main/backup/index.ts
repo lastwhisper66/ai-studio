@@ -1,11 +1,14 @@
 import { dialog, BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
+import { existsSync, readdirSync, statSync } from 'fs'
+import { join } from 'path'
 import type {
   BackupFileMeta,
   BackupImportMode,
   BackupProgress,
   BackupSummary,
   RemoteConfig,
+  RollbackBackupItem,
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
@@ -17,6 +20,7 @@ import { getSetting, setSetting } from '../db/settings'
 import { WebDAVRemote } from './remote/webdav'
 import { S3Remote } from './remote/s3'
 import type { BackupRemote } from './remote/types'
+import { getDataDir } from '../utils/paths'
 
 function broadcast(progress: BackupProgress): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -212,4 +216,60 @@ export async function testRemote(cfg: RemoteConfig): Promise<{ ok: boolean; late
     /* best-effort */
   })
   return { ok: true, latency: Date.now() - start }
+}
+
+// ---------------------------------------------------------------------------
+// Local rollback copies
+// ---------------------------------------------------------------------------
+
+const ROLLBACK_FILENAME_RE = /^pre-apply-(.+)\.aibackup$/
+const SAFE_ISO_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/
+
+/**
+ * Reverse the `safeKeyTimestamp` transform applied when writing rollback
+ * files: `2026-05-03T15-30-12-345Z` → `2026-05-03T15:30:12.345Z`. Returns
+ * undefined if the input doesn't match the expected pattern (so the caller
+ * can fall back to file mtime).
+ */
+function parseRollbackTimestamp(safe: string): string | undefined {
+  const m = SAFE_ISO_RE.exec(safe)
+  if (!m) return undefined
+  const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.${m[7]}Z`
+  const t = Date.parse(iso)
+  return Number.isFinite(t) ? new Date(t).toISOString() : undefined
+}
+
+/**
+ * List local pre-apply rollback snapshots. Returns newest-first. Empty array
+ * if the directory doesn't exist yet (no sync has ever run).
+ *
+ * Each item carries the absolute `filePath` so callers can hand it to
+ * `importFromFile()` directly — no separate "restore from rollback" handler
+ * is needed.
+ */
+export function listRollbacks(): RollbackBackupItem[] {
+  const dir = join(getDataDir(), 'backups', 'auto-rollback')
+  if (!existsSync(dir)) return []
+
+  const out: RollbackBackupItem[] = []
+  for (const name of readdirSync(dir)) {
+    if (!name.endsWith('.aibackup')) continue
+    const full = join(dir, name)
+
+    let size = 0
+    let createdAt = ''
+    try {
+      const stat = statSync(full)
+      size = stat.size
+      const m = ROLLBACK_FILENAME_RE.exec(name)
+      createdAt = (m && parseRollbackTimestamp(m[1])) ?? stat.mtime.toISOString()
+    } catch {
+      /* tolerate; entry will still be returned with size 0 */
+    }
+    out.push({ filePath: full, fileName: name, createdAt, size })
+  }
+  // Sort descending by createdAt — newest first matches the "latest first"
+  // expectation users have for "undo my last sync".
+  out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+  return out
 }

@@ -570,6 +570,17 @@
         "restoreMerge": "Restore (merge)",
         "restoreOk": "Snapshot restored."
       },
+      "rollback": {
+        "button": "Restore from rollback…",
+        "title": "Local rollback copies",
+        "desc": "Every cloud-applied state is saved locally before being applied. Pick one to undo a sync that turned out wrong.",
+        "loading": "Loading…",
+        "empty": "No rollback copies yet — none will exist until the first cloud sync runs.",
+        "restoreReplace": "Restore (replace)",
+        "restoreMerge": "Restore (merge)",
+        "restoreOk": "Restored {{providers}} providers, {{assistants}} assistants, {{settings}} settings.",
+        "unknownTime": "Unknown time"
+      },
       "progress": {
         "collect": "Collecting configuration…",
         "encrypt": "Encrypting…",

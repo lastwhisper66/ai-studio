@@ -7,6 +7,7 @@ import type {
   IpcResult,
   RemoteBackupItem,
   RemoteConfig,
+  RollbackBackupItem,
   SyncResult,
   SyncStatus,
 } from '@shared/types'
@@ -16,6 +17,7 @@ import {
   clearRemoteConfig,
   exportToFile,
   importFromFile,
+  listRollbacks,
   loadRemoteConfig,
   peekFile,
   saveRemoteConfig,
@@ -201,4 +203,12 @@ export function registerBackupHandlers(): void {
       }
     },
   )
+
+  ipcMain.handle(IpcChannels.BACKUP_LIST_ROLLBACKS, (): IpcResult<RollbackBackupItem[]> => {
+    try {
+      return { success: true, data: listRollbacks() }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
 }
