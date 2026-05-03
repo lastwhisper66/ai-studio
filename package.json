@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
+    "@aws-sdk/client-s3": "^3.1041.0",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.48.0",
     "better-sqlite3": "^12.6.2",
