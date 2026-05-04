@@ -143,7 +143,9 @@ export { peekBackupFile } from './codec'
 // ---------------------------------------------------------------------------
 
 function loadWebDavConfig(): WebDavRemoteConfig | null {
-  if (getSetting('backup.remote.webdav.enabled') !== '1') return null
+  // "Configured" is determined by whether credentials are saved — independent
+  // of the user's per-remote `enabled` switch (which `loadEnabledRemotes`
+  // applies on top).
   const cfgRaw = getSetting('backup.remote.webdav.config')
   if (!cfgRaw) return null
   let parsed: Record<string, unknown>
@@ -162,7 +164,6 @@ function loadWebDavConfig(): WebDavRemoteConfig | null {
 }
 
 function loadS3Config(): S3RemoteConfig | null {
-  if (getSetting('backup.remote.s3.enabled') !== '1') return null
   const cfgRaw = getSetting('backup.remote.s3.config')
   if (!cfgRaw) return null
   let parsed: Record<string, unknown>
@@ -183,31 +184,52 @@ function loadS3Config(): S3RemoteConfig | null {
   }
 }
 
-/** Load both remote configs. Either field can be null when not configured. */
+/** Load both remote configs (independent of enabled-state). Either field can be null when not configured. */
 export function loadRemoteConfigs(): RemoteConfigs {
   return { webdav: loadWebDavConfig(), s3: loadS3Config() }
 }
 
-/** Returns just the configured remotes, in canonical order. */
+/** Single-type lookup. Returns the configured remote regardless of enabled state. */
+export function loadRemoteConfig(type: RemoteType): RemoteConfig | null {
+  if (type === 'webdav') return loadWebDavConfig()
+  return loadS3Config()
+}
+
+/**
+ * Returns just the configured AND enabled remotes, in canonical order.
+ *
+ * "Enabled" is the per-remote user switch persisted at
+ * `backup.remote.{type}.enabled`. We treat anything other than the literal
+ * `'false'` as enabled — including the legacy `'1'` value still found on
+ * upgrade paths and the post-migration `'true'`. Missing key also defaults
+ * to enabled, which preserves prior behavior where any saved config was
+ * actively syncing.
+ */
 export function loadEnabledRemotes(): RemoteConfig[] {
   const out: RemoteConfig[] = []
-  const cfgs = loadRemoteConfigs()
-  if (cfgs.webdav) out.push(cfgs.webdav)
-  if (cfgs.s3) out.push(cfgs.s3)
+  const wd = loadWebDavConfig()
+  if (wd && getSetting('backup.remote.webdav.enabled') !== 'false') out.push(wd)
+  const s3 = loadS3Config()
+  if (s3 && getSetting('backup.remote.s3.enabled') !== 'false') out.push(s3)
   return out
+}
+
+/** Single-type variant of `loadEnabledRemotes`. */
+export function loadEnabledRemote(type: RemoteType): RemoteConfig | null {
+  return loadEnabledRemotes().find((c) => c.type === type) ?? null
 }
 
 /** Persist a single remote (and mark it enabled). The other remote is untouched. */
 export function saveRemoteConfig(cfg: RemoteConfig): void {
   if (cfg.type === 'webdav') {
-    setSetting('backup.remote.webdav.enabled', '1')
+    setSetting('backup.remote.webdav.enabled', 'true')
     setSetting(
       'backup.remote.webdav.config',
       JSON.stringify({ url: cfg.url, username: cfg.username, subPath: cfg.subPath }),
     )
     setSetting('backup.remote.webdav.password', cfg.password)
   } else {
-    setSetting('backup.remote.s3.enabled', '1')
+    setSetting('backup.remote.s3.enabled', 'true')
     setSetting(
       'backup.remote.s3.config',
       JSON.stringify({
