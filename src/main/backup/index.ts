@@ -8,7 +8,11 @@ import type {
   BackupProgress,
   BackupSummary,
   RemoteConfig,
+  RemoteConfigs,
+  RemoteType,
   RollbackBackupItem,
+  S3RemoteConfig,
+  WebDavRemoteConfig,
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
@@ -108,25 +112,25 @@ export { collectSnapshot, applySnapshot } from './snapshot'
 export { peekBackupFile } from './codec'
 
 // ---------------------------------------------------------------------------
-// Remote-config persistence + factory
+// Remote-config persistence + factory (multi-remote: webdav + s3 simultaneously)
+// ---------------------------------------------------------------------------
+//
+// Storage layout:
+//   backup.remote.webdav.enabled       '1' | '0'
+//   backup.remote.webdav.config        JSON {url, username, subPath}
+//   backup.remote.webdav.password      encrypted (safeStorage)
+//   backup.remote.s3.enabled           '1' | '0'
+//   backup.remote.s3.config            JSON {endpoint, region, bucket, accessKeyId, forcePathStyle, prefix}
+//   backup.remote.s3.secretAccessKey   encrypted (safeStorage)
+//
+// Either or both may be set. The sync-service uploads to every enabled
+// remote and reads manifests from each, picking the freshest as the source
+// of truth for download.
 // ---------------------------------------------------------------------------
 
-/**
- * Load the cloud-backup remote config from settings.
- *
- * Layout:
- * - `backup.remote.type` ∈ `'webdav' | 's3'` selects the variant.
- * - `backup.remote.config` is a JSON blob with the non-sensitive fields.
- * - Sensitive fields (`password` / `secretAccessKey`) live in dedicated keys
- *   so `SENSITIVE_KEYS` encrypts them via `safeStorage`.
- *
- * Returns `null` when no remote is configured (so callers can branch on
- * "first sync" vs. configured).
- */
-export function loadRemoteConfig(): RemoteConfig | null {
-  const type = getSetting('backup.remote.type')
-  if (type !== 'webdav' && type !== 's3') return null
-  const cfgRaw = getSetting('backup.remote.config')
+function loadWebDavConfig(): WebDavRemoteConfig | null {
+  if (getSetting('backup.remote.webdav.enabled') !== '1') return null
+  const cfgRaw = getSetting('backup.remote.webdav.config')
   if (!cfgRaw) return null
   let parsed: Record<string, unknown>
   try {
@@ -134,14 +138,24 @@ export function loadRemoteConfig(): RemoteConfig | null {
   } catch {
     return null
   }
-  if (type === 'webdav') {
-    return {
-      type: 'webdav',
-      url: String(parsed.url ?? ''),
-      username: String(parsed.username ?? ''),
-      password: getSetting('backup.remote.password') ?? '',
-      subPath: String(parsed.subPath ?? ''),
-    }
+  return {
+    type: 'webdav',
+    url: String(parsed.url ?? ''),
+    username: String(parsed.username ?? ''),
+    password: getSetting('backup.remote.webdav.password') ?? '',
+    subPath: String(parsed.subPath ?? ''),
+  }
+}
+
+function loadS3Config(): S3RemoteConfig | null {
+  if (getSetting('backup.remote.s3.enabled') !== '1') return null
+  const cfgRaw = getSetting('backup.remote.s3.config')
+  if (!cfgRaw) return null
+  let parsed: Record<string, unknown>
+  try {
+    parsed = JSON.parse(cfgRaw)
+  } catch {
+    return null
   }
   return {
     type: 's3',
@@ -149,24 +163,39 @@ export function loadRemoteConfig(): RemoteConfig | null {
     region: String(parsed.region ?? 'auto'),
     bucket: String(parsed.bucket ?? ''),
     accessKeyId: String(parsed.accessKeyId ?? ''),
-    secretAccessKey: getSetting('backup.remote.secretAccessKey') ?? '',
+    secretAccessKey: getSetting('backup.remote.s3.secretAccessKey') ?? '',
     forcePathStyle: parsed.forcePathStyle === true,
     prefix: String(parsed.prefix ?? ''),
   }
 }
 
+/** Load both remote configs. Either field can be null when not configured. */
+export function loadRemoteConfigs(): RemoteConfigs {
+  return { webdav: loadWebDavConfig(), s3: loadS3Config() }
+}
+
+/** Returns just the configured remotes, in canonical order. */
+export function loadEnabledRemotes(): RemoteConfig[] {
+  const out: RemoteConfig[] = []
+  const cfgs = loadRemoteConfigs()
+  if (cfgs.webdav) out.push(cfgs.webdav)
+  if (cfgs.s3) out.push(cfgs.s3)
+  return out
+}
+
+/** Persist a single remote (and mark it enabled). The other remote is untouched. */
 export function saveRemoteConfig(cfg: RemoteConfig): void {
   if (cfg.type === 'webdav') {
-    setSetting('backup.remote.type', 'webdav')
+    setSetting('backup.remote.webdav.enabled', '1')
     setSetting(
-      'backup.remote.config',
+      'backup.remote.webdav.config',
       JSON.stringify({ url: cfg.url, username: cfg.username, subPath: cfg.subPath }),
     )
-    setSetting('backup.remote.password', cfg.password)
+    setSetting('backup.remote.webdav.password', cfg.password)
   } else {
-    setSetting('backup.remote.type', 's3')
+    setSetting('backup.remote.s3.enabled', '1')
     setSetting(
-      'backup.remote.config',
+      'backup.remote.s3.config',
       JSON.stringify({
         endpoint: cfg.endpoint,
         region: cfg.region,
@@ -176,13 +205,15 @@ export function saveRemoteConfig(cfg: RemoteConfig): void {
         prefix: cfg.prefix,
       }),
     )
-    setSetting('backup.remote.secretAccessKey', cfg.secretAccessKey)
+    setSetting('backup.remote.s3.secretAccessKey', cfg.secretAccessKey)
   }
 }
 
-export function clearRemoteConfig(): void {
+/** Remove all rows for a single remote. The other remote is untouched. */
+export function clearRemoteConfig(type: RemoteType): void {
   const db = getDb()
-  db.prepare(`DELETE FROM settings WHERE key LIKE 'backup.remote.%'`).run()
+  const prefix = `backup.remote.${type}.`
+  db.prepare(`DELETE FROM settings WHERE key LIKE ?`).run(`${prefix}%`)
 }
 
 export function buildRemote(cfg: RemoteConfig): BackupRemote {

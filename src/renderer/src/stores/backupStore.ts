@@ -6,6 +6,8 @@ import type {
   BackupSummary,
   RemoteBackupItem,
   RemoteConfig,
+  RemoteConfigs,
+  RemoteType,
   RollbackBackupItem,
   SyncResult,
   SyncStatus,
@@ -17,12 +19,13 @@ const fallbackError = (e: LocalizedError | undefined): LocalizedError =>
 
 interface BackupState {
   status: SyncStatus | null
-  remoteConfig: RemoteConfig | null
+  /** Both remote configs: each may be null when that remote isn't configured. */
+  remoteConfigs: RemoteConfigs
   progress: BackupProgress | null
   isLoadingStatus: boolean
 
   loadStatus: () => Promise<void>
-  loadRemoteConfig: () => Promise<void>
+  loadRemoteConfigs: () => Promise<void>
 
   exportToFile: (password: string) => Promise<{ filePath: string } | { error: LocalizedError }>
   peekFile: (filePath: string) => Promise<BackupFileMeta | { error: LocalizedError }>
@@ -36,16 +39,17 @@ interface BackupState {
     cfg: RemoteConfig,
     passphrase?: string,
   ) => Promise<void | { error: LocalizedError }>
-  clearRemoteConfig: () => Promise<void>
+  clearRemoteConfig: (type: RemoteType) => Promise<void>
   testRemote: (
     cfg: RemoteConfig,
   ) => Promise<{ ok: boolean; latency?: number; error?: LocalizedError }>
 
   syncNow: () => Promise<SyncResult | { error: LocalizedError }>
   cancelSync: () => Promise<void>
-  listRemote: () => Promise<RemoteBackupItem[] | { error: LocalizedError }>
+  listRemote: (type: RemoteType) => Promise<RemoteBackupItem[] | { error: LocalizedError }>
   listRollbacks: () => Promise<RollbackBackupItem[] | { error: LocalizedError }>
   restoreFromRemote: (
+    type: RemoteType,
     key: string,
     password: string,
     mode: BackupImportMode,
@@ -55,9 +59,11 @@ interface BackupState {
   _detach: (() => void) | null
 }
 
+const emptyConfigs: RemoteConfigs = { webdav: null, s3: null }
+
 export const useBackupStore = create<BackupState>((set, get) => ({
   status: null,
-  remoteConfig: null,
+  remoteConfigs: emptyConfigs,
   progress: null,
   isLoadingStatus: false,
   _detach: null,
@@ -68,9 +74,9 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     set({ isLoadingStatus: false, status: r.success ? (r.data ?? null) : null })
   },
 
-  loadRemoteConfig: async () => {
+  loadRemoteConfigs: async () => {
     const r = await window.api.backup.getRemoteConfig()
-    set({ remoteConfig: r.success ? (r.data ?? null) : null })
+    set({ remoteConfigs: r.success && r.data ? r.data : emptyConfigs })
   },
 
   exportToFile: async (password) => {
@@ -100,16 +106,16 @@ export const useBackupStore = create<BackupState>((set, get) => ({
   setRemoteConfig: async (cfg, passphrase) => {
     const r = await window.api.backup.setRemoteConfig(cfg, passphrase)
     if (r.success) {
-      get().loadRemoteConfig()
+      get().loadRemoteConfigs()
       get().loadStatus()
       return
     }
     return { error: fallbackError(r.error) }
   },
 
-  clearRemoteConfig: async () => {
-    await window.api.backup.clearRemoteConfig()
-    set({ remoteConfig: null })
+  clearRemoteConfig: async (type) => {
+    await window.api.backup.clearRemoteConfig(type)
+    get().loadRemoteConfigs()
     get().loadStatus()
   },
 
@@ -133,8 +139,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     await window.api.backup.syncCancel()
   },
 
-  listRemote: async () => {
-    const r = await window.api.backup.listRemote()
+  listRemote: async (type) => {
+    const r = await window.api.backup.listRemote(type)
     if (r.success && r.data) return r.data
     return { error: fallbackError(r.error) }
   },
@@ -145,8 +151,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  restoreFromRemote: async (key, password, mode) => {
-    const r = await window.api.backup.restoreFromRemote({ key, password, mode })
+  restoreFromRemote: async (type, key, password, mode) => {
+    const r = await window.api.backup.restoreFromRemote({ type, key, password, mode })
     set({ progress: null })
     if (r.success) {
       get().loadStatus()
@@ -159,7 +165,7 @@ export const useBackupStore = create<BackupState>((set, get) => ({
 export function initBackupStore(): void {
   const store = useBackupStore.getState()
   store.loadStatus()
-  store.loadRemoteConfig()
+  store.loadRemoteConfigs()
 
   const detachStatus = window.api.backup.onStatusChanged((s) => {
     useBackupStore.setState({ status: s })

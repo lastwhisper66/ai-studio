@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
-import { Input } from '@renderer/components/ui/input'
+import { PasswordInput } from '@renderer/components/ui/password-input'
 import { Label } from '@renderer/components/ui/label'
 import {
   Dialog,
@@ -24,6 +24,21 @@ export interface BackupPasswordDialogProps {
   errorText?: string | null
 }
 
+/**
+ * Shared password dialog for export / import / restore flows.
+ *
+ * The form's local state (password fields, busy flag) lives inside an inner
+ * `<PasswordForm>` that re-mounts via `key` each time `open` flips. That way
+ * we reset the form by remounting rather than calling setState inside an
+ * effect — same pattern as `BackupHistoryDialog` / `BackupRollbackDialog`,
+ * which keeps us clear of the `react-hooks/set-state-in-effect` rule and any
+ * cascading-render footguns it warns about.
+ *
+ * `busyRef` is mirrored from the inner form's `busy` state so the outer
+ * Dialog's `onOpenChange` can keep the original behavior — refuse to close
+ * the dialog while a submission is in flight (preserves the user's password
+ * input on transient network errors during restore).
+ */
 export function BackupPasswordDialog({
   open,
   mode,
@@ -32,20 +47,46 @@ export function BackupPasswordDialog({
   onSubmit,
   errorText,
 }: BackupPasswordDialogProps): React.JSX.Element {
+  const busyRef = useRef(false)
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && !busyRef.current && onCancel()}>
+      <DialogContent>
+        <PasswordForm
+          key={open ? 'open' : 'closed'}
+          mode={mode}
+          preview={preview}
+          onCancel={onCancel}
+          onSubmit={onSubmit}
+          errorText={errorText}
+          busyRef={busyRef}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function PasswordForm({
+  mode,
+  preview,
+  onCancel,
+  onSubmit,
+  errorText,
+  busyRef,
+}: Omit<BackupPasswordDialogProps, 'open'> & {
+  busyRef: React.MutableRefObject<boolean>
+}): React.JSX.Element {
   const { t } = useTranslation()
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [busy, setBusy] = useState(false)
   const [localErr, setLocalErr] = useState<string | null>(null)
 
+  // Mirror busy → ref so the outer Dialog's onOpenChange can read it
+  // synchronously without state-lift gymnastics. Effect-based sync (rather
+  // than assigning during render) keeps `react-hooks/refs` happy.
   useEffect(() => {
-    if (open) {
-      setPw('')
-      setPw2('')
-      setLocalErr(null)
-      setBusy(false)
-    }
-  }, [open])
+    busyRef.current = busy
+  }, [busy, busyRef])
 
   const titleKey =
     mode === 'export'
@@ -80,53 +121,49 @@ export function BackupPasswordDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && !busy && onCancel()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t(titleKey)}</DialogTitle>
-          <DialogDescription>{t(descKey)}</DialogDescription>
-        </DialogHeader>
+    <>
+      <DialogHeader>
+        <DialogTitle>{t(titleKey)}</DialogTitle>
+        <DialogDescription>{t(descKey)}</DialogDescription>
+      </DialogHeader>
 
-        {preview && <div className="text-sm rounded-md bg-muted p-3">{preview}</div>}
+      {preview && <div className="bg-muted rounded-md p-3 text-sm">{preview}</div>}
 
-        <div className="grid gap-3">
+      <div className="grid gap-3">
+        <div className="grid gap-1.5">
+          <Label htmlFor="bp-pw">{t('settings.backup.password.label')}</Label>
+          <PasswordInput
+            id="bp-pw"
+            autoFocus
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+          />
+        </div>
+        {mode === 'export' && (
           <div className="grid gap-1.5">
-            <Label htmlFor="bp-pw">{t('settings.backup.password.label')}</Label>
-            <Input
-              id="bp-pw"
-              type="password"
-              autoFocus
-              value={pw}
-              onChange={(e) => setPw(e.target.value)}
+            <Label htmlFor="bp-pw2">{t('settings.backup.password.confirmLabel')}</Label>
+            <PasswordInput
+              id="bp-pw2"
+              value={pw2}
+              onChange={(e) => setPw2(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submit()}
             />
           </div>
-          {mode === 'export' && (
-            <div className="grid gap-1.5">
-              <Label htmlFor="bp-pw2">{t('settings.backup.password.confirmLabel')}</Label>
-              <Input
-                id="bp-pw2"
-                type="password"
-                value={pw2}
-                onChange={(e) => setPw2(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && submit()}
-              />
-            </div>
-          )}
-          {(localErr || errorText) && (
-            <p className="text-xs text-destructive">{localErr ?? errorText}</p>
-          )}
-        </div>
+        )}
+        {(localErr || errorText) && (
+          <p className="text-destructive text-xs">{localErr ?? errorText}</p>
+        )}
+      </div>
 
-        <DialogFooter>
-          <Button variant="outline" disabled={busy} onClick={onCancel}>
-            {t('common.cancel')}
-          </Button>
-          <Button disabled={busy} onClick={submit}>
-            {busy ? t('common.saving') : t(submitKey)}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        <Button variant="outline" disabled={busy} onClick={onCancel}>
+          {t('common.cancel')}
+        </Button>
+        <Button disabled={busy} onClick={submit}>
+          {busy ? t('common.saving') : t(submitKey)}
+        </Button>
+      </DialogFooter>
+    </>
   )
 }

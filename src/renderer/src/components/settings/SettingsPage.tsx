@@ -10,8 +10,7 @@ import { ModelGroupSection } from './ModelGroupSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { NetworkSection } from './NetworkSection'
-import { DataSection } from './DataSection'
-import { BackupSection } from './BackupSection'
+import { DataSection } from './data/DataSection'
 import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 import { QuickAssistantSection } from './QuickAssistantSection'
@@ -37,7 +36,10 @@ export function SettingsPage(): React.JSX.Element {
         <h1 className="text-base font-semibold">{t('settings.title')}</h1>
       </div>
 
-      {/* Two-column layout */}
+      {/* Two-column layout. The Provider, Model Library, Model Group AND
+          Data sections render their own internal "list-on-left + detail" so
+          we hand them the full pane; everything else gets a scrollable
+          panel of plain forms. */}
       <div className="flex min-h-0 flex-1">
         <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
 
@@ -47,14 +49,14 @@ export function SettingsPage(): React.JSX.Element {
           <ModelLibrarySection />
         ) : activeSection === 'model-group' ? (
           <ModelGroupSection />
+        ) : activeSection === 'data' ? (
+          <DataSection />
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6">
               {activeSection === 'general' && <GeneralSection />}
               {activeSection === 'network' && <NetworkSection />}
               {activeSection === 'display' && <DisplaySection />}
-              {activeSection === 'data' && <DataSection />}
-              {activeSection === 'backup' && <BackupSection />}
               {activeSection === 'phrases' && <PhrasesSection />}
               {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
               {activeSection === 'quick-assistant' && <QuickAssistantSection />}

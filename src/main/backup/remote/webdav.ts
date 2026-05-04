@@ -121,7 +121,7 @@ export class WebDAVRemote implements BackupRemote {
     if (res.status === 404) return []
     if (!res.ok) classifyRemoteError(res.status, new Error(`PROPFIND ${prefix} → ${res.status}`))
     const xml = await res.text()
-    return parsePropfind(xml, this.base(), prefix)
+    return parsePropfind(xml, this.base())
   }
 
   /**
@@ -184,7 +184,7 @@ export class WebDAVRemote implements BackupRemote {
  *
  * Collections (directories) are filtered out — callers want files only.
  */
-function parsePropfind(xml: string, baseUrl: string, _prefix: string): RemoteObject[] {
+function parsePropfind(xml: string, baseUrl: string): RemoteObject[] {
   // `response` and `propstat` may appear multiple times; force them as arrays
   // so we don't have to special-case "exactly one" in the loop below. Other
   // tags can stay as scalars.

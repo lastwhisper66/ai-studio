@@ -5,6 +5,7 @@ import type {
   BackupProgress,
   RemoteBackupItem,
   RemoteConfig,
+  RemoteType,
   SyncResult,
   SyncStatus,
 } from '@shared/types'
@@ -17,7 +18,7 @@ import {
   applyEncryptedBytes,
   buildRemote,
   encodeSnapshotBytes,
-  loadRemoteConfig,
+  loadEnabledRemotes,
   peekBackupFile,
 } from '.'
 import type { BackupRemote, RemoteObject } from './remote/types'
@@ -38,17 +39,43 @@ interface Manifest {
   schemaVersion: 1
 }
 
+interface RemoteWithManifest {
+  cfg: RemoteConfig
+  remote: BackupRemote
+  manifest: Manifest | null
+  /** Network/auth error fetching the manifest; service treats as "no manifest"
+   *  for direction purposes but records a warning so the user knows. */
+  fetchError: string | null
+}
+
 /**
  * Cloud-sync engine. Single source of truth for sync direction, retention,
  * and the progress/status push surface.
  *
- * Direction policy (last-writer-wins with a manifest pointer):
- *   - No remote manifest         → upload (first sync from this device).
- *   - No local change recorded   → download (this device is fresh).
- *   - Manifest exists but its createdAt is missing → upload.
- *   - |localChange − remoteCreatedAt| ≤ CLOCK_TOLERANCE_MS → noop.
- *   - localChange > remoteCreatedAt → upload.
- *   - else → download.
+ * **Multi-remote semantics (mirror writes):**
+ *   - Upload writes the *same* encrypted snapshot to every enabled remote;
+ *     each remote's manifest is updated with the same `latestCreatedAt`.
+ *   - Download reads each remote's manifest, picks the one with the freshest
+ *     `latestCreatedAt`, applies it locally, then mirror-uploads the bytes
+ *     to any lagging remote so they converge.
+ *
+ * Direction policy:
+ *   - No remote configured                                  → throw NOT_CONFIGURED.
+ *   - No manifest exists on any remote                      → upload to all.
+ *   - No local change recorded                              → download from freshest, mirror to laggers.
+ *   - localChange ≥ freshestRemoteCreated − tolerance       → upload to all (always re-upload when local
+ *                                                             matches or exceeds remote — gives the user a
+ *                                                             "force push" feel and ensures the cloud always
+ *                                                             reflects the most recent local state).
+ *   - else                                                  → download from freshest, mirror to laggers.
+ *
+ * After a successful upload OR download, `backup.lastLocalChangeAt` is
+ * advanced to match the authoritative `createdAt` IF the snapshot is newer
+ * than the currently-recorded local change time. The conditional advance is
+ * deliberate: writes that arrived during the sync window (between
+ * `collectSnapshot()` and the final `setSetting`) MUST keep their later
+ * timestamp so the next sync still treats them as dirty. Without this guard,
+ * mid-sync edits would be silently dropped from future syncs.
  *
  * The manifest is written LAST during upload so a crash mid-upload leaves
  * the previous manifest pointing at the previous-known-good snapshot.
@@ -69,7 +96,7 @@ class BackupSyncService {
       // `lastError` is transient — propagated via broadcastStatus, never persisted.
       lastError: null,
       lastWarning: this.lastWarning,
-      hasRemoteConfigured: !!getSetting('backup.remote.type'),
+      hasRemoteConfigured: loadEnabledRemotes().length > 0,
       autoSyncIntervalMinutes: parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10),
     }
   }
@@ -103,42 +130,78 @@ class BackupSyncService {
   /** Single sync round-trip. Throws on error (caller decides how to surface). */
   async syncNow(): Promise<SyncResult> {
     if (this.syncing) throw new AppError(ERROR_CODES.BACKUP_BUSY)
-    const cfg = loadRemoteConfig()
-    if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
+    const enabled = loadEnabledRemotes()
+    if (enabled.length === 0) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
 
     this.syncing = true
     this.currentAbort = new AbortController()
     this.broadcastStatus(null)
 
     try {
-      const remote = buildRemote(cfg)
-      const localChange = parseIso(getSetting('backup.lastLocalChangeAt'))
       const password = getSetting('backup.syncPassphrase')
       if (!password) {
         throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Sync passphrase missing')
       }
 
-      const manifest = await this.fetchManifest(remote)
-      const remoteCreated = manifest ? parseIso(manifest.latestCreatedAt) : null
+      // Fetch each remote's manifest in parallel; tolerate per-remote failures
+      // (treat as "no manifest") so a single dead remote can't block sync.
+      const targets: RemoteWithManifest[] = await Promise.all(
+        enabled.map(async (cfg) => {
+          const remote = buildRemote(cfg)
+          try {
+            const manifest = await this.fetchManifest(remote)
+            return { cfg, remote, manifest, fetchError: null }
+          } catch (e) {
+            return {
+              cfg,
+              remote,
+              manifest: null,
+              fetchError: e instanceof Error ? e.message : String(e),
+            }
+          }
+        }),
+      )
+      this.recordFetchWarnings(targets)
+
+      const localChange = parseIso(getSetting('backup.lastLocalChangeAt'))
+      const freshest = pickFreshest(targets)
 
       let result: SyncResult
-      if (manifest === null) {
-        result = await this.uploadFlow(remote, password, cfg)
+      if (!freshest || !freshest.manifest) {
+        // Nothing on any remote (or all manifest fetches failed) → upload everywhere.
+        result = await this.uploadFlow(targets, password)
       } else if (localChange === null) {
-        result = await this.downloadFlow(remote, password, manifest)
-      } else if (remoteCreated === null) {
-        result = await this.uploadFlow(remote, password, cfg)
-      } else if (Math.abs(localChange - remoteCreated) <= CLOCK_TOLERANCE_MS) {
-        result = { direction: 'noop' }
-      } else if (localChange > remoteCreated) {
-        result = await this.uploadFlow(remote, password, cfg)
+        result = await this.downloadFlow(targets, freshest, password)
       } else {
-        result = await this.downloadFlow(remote, password, manifest)
+        const remoteCreated = parseIso(freshest.manifest.latestCreatedAt)
+        if (remoteCreated === null) {
+          result = await this.uploadFlow(targets, password)
+        } else if (localChange >= remoteCreated - CLOCK_TOLERANCE_MS) {
+          // Local is at least as fresh as the freshest remote — always upload.
+          // We don't optimize away "noop" cases anymore: the user explicitly
+          // wants the cloud to always reflect the latest local state, even
+          // if the bytes happen to be identical. Retention prunes old copies
+          // so this doesn't unbound the version count.
+          result = await this.uploadFlow(targets, password)
+        } else {
+          result = await this.downloadFlow(targets, freshest, password)
+        }
       }
 
+      // Advance lastLocalChangeAt to the authoritative createdAt of the just-
+      // synced state — but only if it's newer than what's already there.
+      // Writes made DURING the sync (after collectSnapshot ran) bumped the
+      // dirty timestamp past `createdAt`; we must not regress it, otherwise
+      // those edits silently never sync.
+      if (result.createdAt && (result.direction === 'upload' || result.direction === 'download')) {
+        const current = parseIso(getSetting('backup.lastLocalChangeAt'))
+        const next = parseIso(result.createdAt)
+        if (next !== null && (current === null || next > current)) {
+          setSetting('backup.lastLocalChangeAt', result.createdAt)
+        }
+      }
       setSetting('backup.lastSyncedAt', new Date().toISOString())
       if (result.createdAt) setSetting('backup.lastRemoteSeenAt', result.createdAt)
-      this.lastWarning = null
       this.broadcastStatus(null)
       return result
     } catch (e) {
@@ -158,12 +221,13 @@ class BackupSyncService {
   }
 
   /**
-   * List `.aibackup` objects on the remote, augmented with header metadata
-   * (createdAt, appVersion) where available. Capped peek to 50 entries to
-   * keep the dialog responsive on remotes with hundreds of historical snapshots.
+   * List `.aibackup` objects on a specific remote, augmented with header
+   * metadata (createdAt, appVersion) where available. Capped peek to 50
+   * entries to keep the dialog responsive on remotes with many snapshots.
    */
-  async listRemote(): Promise<RemoteBackupItem[]> {
-    const cfg = loadRemoteConfig()
+  async listRemote(type: RemoteType): Promise<RemoteBackupItem[]> {
+    const enabled = loadEnabledRemotes()
+    const cfg = enabled.find((c) => c.type === type)
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
     const objects = await remote.list(BACKUPS_PREFIX)
@@ -187,15 +251,22 @@ class BackupSyncService {
         lastModified: obj.lastModified,
         createdAt,
         appVersion,
+        remoteType: type,
       })
     }
     out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     return out
   }
 
-  /** Restore a specific historical snapshot from the remote. */
-  async restoreFromKey(key: string, password: string, mode: 'replace' | 'merge'): Promise<void> {
-    const cfg = loadRemoteConfig()
+  /** Restore a specific historical snapshot from a specific remote. */
+  async restoreFromKey(
+    type: RemoteType,
+    key: string,
+    password: string,
+    mode: 'replace' | 'merge',
+  ): Promise<void> {
+    const enabled = loadEnabledRemotes()
+    const cfg = enabled.find((c) => c.type === type)
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
     this.progress({ phase: 'download' })
@@ -223,47 +294,99 @@ class BackupSyncService {
     }
   }
 
-  private async uploadFlow(
-    remote: BackupRemote,
-    password: string,
-    _cfg: RemoteConfig,
-  ): Promise<SyncResult> {
+  /** Encode locally + write the same bytes/manifest to every target. */
+  private async uploadFlow(targets: RemoteWithManifest[], password: string): Promise<SyncResult> {
     this.progress({ phase: 'collect' })
     const { bytes, createdAt } = encodeSnapshotBytes(password)
     if (this.currentAbort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
     const key = `${BACKUPS_PREFIX}${safeKeyTimestamp(createdAt)}.aibackup`
-    this.progress({ phase: 'upload' })
-    await remote.put(key, bytes)
-
-    // Manifest is written LAST so a mid-upload crash leaves the previous
-    // (still-valid) manifest in place rather than a dangling pointer.
     const manifest: Manifest = {
       latestBackupKey: key,
       latestCreatedAt: createdAt,
       schemaVersion: 1,
     }
-    await remote.put(MANIFEST_KEY, new TextEncoder().encode(JSON.stringify(manifest, null, 2)))
+    const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2))
 
+    this.progress({ phase: 'upload' })
+    const failures = await this.writeToTargets(targets, key, bytes, manifestBytes)
+    // Best-effort retention pruning per remote — failures here are warnings, not errors.
     this.progress({ phase: 'cleanup' })
-    await this.pruneRemote(remote)
+    for (const t of targets) {
+      if (failures.has(t.cfg.type)) continue
+      await this.pruneRemote(t.remote)
+    }
+    if (failures.size === targets.length) {
+      // Every remote failed — surface as a hard error.
+      const msg = [...failures.values()].join('; ')
+      throw new AppError(ERROR_CODES.BACKUP_REMOTE_NETWORK, undefined, msg)
+    }
     return { direction: 'upload', createdAt }
   }
 
   private async downloadFlow(
-    remote: BackupRemote,
+    targets: RemoteWithManifest[],
+    source: RemoteWithManifest,
     password: string,
-    manifest: Manifest,
   ): Promise<SyncResult> {
+    if (!source.manifest) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_FOUND)
     this.progress({ phase: 'download' })
-    const bytes = await remote.get(manifest.latestBackupKey)
+    const bytes = await source.remote.get(source.manifest.latestBackupKey)
     if (this.currentAbort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
     this.writeRollback(bytes)
     this.progress({ phase: 'decrypt' })
     this.progress({ phase: 'apply' })
     applyEncryptedBytes(bytes, password, 'replace')
-    return { direction: 'download', createdAt: manifest.latestCreatedAt }
+
+    // Mirror to laggers so they converge with the source's snapshot.
+    const lagging = targets.filter((t) => t !== source && isLagging(t, source))
+    if (lagging.length > 0) {
+      const key = source.manifest.latestBackupKey
+      const manifestBytes = new TextEncoder().encode(JSON.stringify(source.manifest, null, 2))
+      this.progress({ phase: 'upload' })
+      await this.writeToTargets(lagging, key, bytes, manifestBytes)
+    }
+    return { direction: 'download', createdAt: source.manifest.latestCreatedAt }
+  }
+
+  /**
+   * Write the snapshot bytes followed by the manifest to each target. Returns
+   * a map of `RemoteType → error message` for any that failed; the manifest
+   * for failed targets is NOT written, so the next sync will re-attempt
+   * cleanly.
+   */
+  private async writeToTargets(
+    targets: RemoteWithManifest[],
+    key: string,
+    bytes: Uint8Array,
+    manifestBytes: Uint8Array,
+  ): Promise<Map<RemoteType, string>> {
+    const failures = new Map<RemoteType, string>()
+    await Promise.all(
+      targets.map(async (t) => {
+        try {
+          await t.remote.put(key, bytes)
+          // Manifest is written LAST so a mid-upload crash leaves the previous
+          // (still-valid) manifest in place rather than a dangling pointer.
+          await t.remote.put(MANIFEST_KEY, manifestBytes)
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          failures.set(t.cfg.type, `${t.cfg.type}: ${msg}`)
+        }
+      }),
+    )
+    if (failures.size > 0) {
+      this.lastWarning = [...failures.values()].join('; ')
+    } else {
+      this.lastWarning = null
+    }
+    return failures
+  }
+
+  private recordFetchWarnings(targets: RemoteWithManifest[]): void {
+    const errs = targets.filter((t) => t.fetchError).map((t) => `${t.cfg.type}: ${t.fetchError}`)
+    if (errs.length > 0) this.lastWarning = errs.join('; ')
   }
 
   /**
@@ -333,6 +456,31 @@ class BackupSyncService {
       win.webContents.send(IpcChannels.BACKUP_STATUS_CHANGED, status)
     }
   }
+}
+
+/** Pick the target whose manifest has the freshest `latestCreatedAt`. */
+function pickFreshest(targets: RemoteWithManifest[]): RemoteWithManifest | null {
+  let best: RemoteWithManifest | null = null
+  let bestT = -Infinity
+  for (const t of targets) {
+    if (!t.manifest) continue
+    const ts = parseIso(t.manifest.latestCreatedAt)
+    if (ts !== null && ts > bestT) {
+      best = t
+      bestT = ts
+    }
+  }
+  return best
+}
+
+/** A target is "lagging" if it has no manifest or its createdAt is older than the source's. */
+function isLagging(target: RemoteWithManifest, source: RemoteWithManifest): boolean {
+  if (!source.manifest) return false
+  if (!target.manifest) return true
+  const sT = parseIso(source.manifest.latestCreatedAt)
+  const tT = parseIso(target.manifest.latestCreatedAt)
+  if (sT === null || tT === null) return false
+  return tT < sT - CLOCK_TOLERANCE_MS
 }
 
 function parseIso(s: string | null | undefined): number | null {

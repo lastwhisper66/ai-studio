@@ -200,7 +200,6 @@
       "network": "Network",
       "display": "Display",
       "data": "Data",
-      "backup": "Backup",
       "keyboardShortcuts": "Shortcuts",
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
@@ -347,7 +346,28 @@
       "clearDataDescription": "Delete all conversations, settings, and attachments. The app will restart automatically.",
       "clearDataConfirmTitle": "Confirm Clear Data",
       "clearDataConfirmDescription": "This action cannot be undone. All conversations, settings, provider configurations, and attachment files will be deleted. The app will restart automatically.",
-      "clearDataConfirmButton": "Confirm Clear"
+      "clearDataConfirmButton": "Confirm Clear",
+      "nav": {
+        "localGroup": "Local Data",
+        "localData": "Data Settings",
+        "localBackupGroup": "Local Backup",
+        "localBackup": "Local Backup",
+        "cloudGroup": "Cloud Backup",
+        "webdav": "WebDAV",
+        "s3": "S3-Compatible"
+      },
+      "cloud": {
+        "overviewHint": "Cloud-sync settings apply across every configured destination — each sync mirrors writes to all enabled remotes.",
+        "webdavTitle": "WebDAV",
+        "webdavHint": "Generic WebDAV protocol — works with Jianguoyun, Nextcloud, ownCloud, etc.",
+        "s3Title": "S3-Compatible Storage",
+        "s3Hint": "Object storage that speaks the AWS S3 API — AWS S3, Cloudflare R2, Aliyun OSS, Tencent COS, and similar.",
+        "configuredBadge": "Configured",
+        "saveOk": "Saved.",
+        "clearButton": "Clear this remote",
+        "clearedWebdav": "WebDAV configuration cleared.",
+        "clearedS3": "S3 configuration cleared."
+      }
     },
     "network": {
       "title": "Network",
@@ -531,8 +551,10 @@
       "exportButton": "Export to file…",
       "importButton": "Import from file…",
       "importMode": "Import mode",
-      "modeReplace": "Replace (clear existing, then load)",
-      "modeMerge": "Merge (backup wins on collision)",
+      "modeReplace": "Replace",
+      "modeMerge": "Merge",
+      "modeReplaceHint": "Clear local data first, then load.",
+      "modeMergeHint": "Keep local data — backup wins on collision.",
       "passwordHint": "Backup files are always encrypted with your password.",
       "cloudTitle": "Cloud sync",
       "cloudComingSoon": "Configurable in a later release.",
@@ -558,8 +580,19 @@
       "syncResult": {
         "upload": "Uploaded local changes to cloud.",
         "download": "Downloaded latest cloud backup.",
-        "noop": "Already in sync.",
         "cancelled": "Sync was cancelled."
+      },
+      "exportCard": {
+        "title": "Export",
+        "description": "Encrypt the current data as a local backup file."
+      },
+      "importCard": {
+        "title": "Import",
+        "description": "Restore from a backup file — replace or merge."
+      },
+      "rollbackCard": {
+        "title": "Local rollback",
+        "description": "Browse auto-rollback copies to undo a sync that turned out wrong."
       },
       "history": {
         "title": "Cloud backup history",

@@ -9,6 +9,7 @@ out
 .env
 .env.*
 data
+!src/renderer/src/components/settings/data
 plans
 docs/superpowers
 .playwright-mcp

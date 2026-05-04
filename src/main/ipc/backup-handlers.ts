@@ -7,6 +7,8 @@ import type {
   IpcResult,
   RemoteBackupItem,
   RemoteConfig,
+  RemoteConfigs,
+  RemoteType,
   RollbackBackupItem,
   SyncResult,
   SyncStatus,
@@ -18,7 +20,7 @@ import {
   exportToFile,
   importFromFile,
   listRollbacks,
-  loadRemoteConfig,
+  loadRemoteConfigs,
   peekFile,
   saveRemoteConfig,
   testRemote,
@@ -97,25 +99,23 @@ export function registerBackupHandlers(): void {
     },
   )
 
-  // Stubs — replaced with real implementations in Phase 4 (remote-config) /
-  // Phase 5 (sync-service). Registered now so the renderer's initBackupStore()
-  // doesn't blow up at boot.
-  ipcMain.handle(IpcChannels.BACKUP_GET_REMOTE_CONFIG, (): IpcResult<RemoteConfig | null> => {
+  // Returns BOTH remote configs (either field may be null when not configured).
+  ipcMain.handle(IpcChannels.BACKUP_GET_REMOTE_CONFIG, (): IpcResult<RemoteConfigs> => {
     try {
-      return { success: true, data: loadRemoteConfig() }
+      return { success: true, data: loadRemoteConfigs() }
     } catch (e) {
       return { success: false, error: toLocalizedError(e) }
     }
   })
 
+  // Persists a single remote (the other one is left untouched). The optional
+  // sync passphrase is shared across all remotes — passing a non-empty value
+  // overwrites the previously-stored passphrase; blank means "keep current".
   ipcMain.handle(
     IpcChannels.BACKUP_SET_REMOTE_CONFIG,
     (_, payload: { config: RemoteConfig; passphrase?: string }): IpcResult<void> => {
       try {
         saveRemoteConfig(payload.config)
-        // Sync passphrase (used by Phase 5's encrypt-on-upload flow) is optional;
-        // persist it only when the renderer actually supplied one. Stored under a
-        // SENSITIVE_KEYS-encrypted key so safeStorage protects it at rest.
         if (typeof payload.passphrase === 'string' && payload.passphrase.length > 0) {
           setSetting('backup.syncPassphrase', payload.passphrase)
         }
@@ -126,14 +126,18 @@ export function registerBackupHandlers(): void {
     },
   )
 
-  ipcMain.handle(IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG, (): IpcResult<void> => {
-    try {
-      clearRemoteConfig()
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: toLocalizedError(e) }
-    }
-  })
+  // Removes ONE remote (webdav or s3) — the other remote is left untouched.
+  ipcMain.handle(
+    IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG,
+    (_, payload: { type: RemoteType }): IpcResult<void> => {
+      try {
+        clearRemoteConfig(payload.type)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 
   ipcMain.handle(
     IpcChannels.BACKUP_TEST_REMOTE,
@@ -147,10 +151,6 @@ export function registerBackupHandlers(): void {
     },
   )
 
-  // Phase 5 sync engine — delegates to BackupSyncService. The status push
-  // channel (BACKUP_STATUS_CHANGED) is fired from inside the service whenever
-  // sync state transitions, so the renderer's snapshot from this handler is
-  // only used at boot.
   ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<SyncStatus> => {
     try {
       return { success: true, data: backupSyncService.getStatus() }
@@ -179,9 +179,9 @@ export function registerBackupHandlers(): void {
 
   ipcMain.handle(
     IpcChannels.BACKUP_LIST_REMOTE,
-    async (): Promise<IpcResult<RemoteBackupItem[]>> => {
+    async (_, payload: { type: RemoteType }): Promise<IpcResult<RemoteBackupItem[]>> => {
       try {
-        const data = await backupSyncService.listRemote()
+        const data = await backupSyncService.listRemote(payload.type)
         return { success: true, data }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
@@ -193,10 +193,15 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_RESTORE_FROM_REMOTE,
     async (
       _,
-      payload: { key: string; password: string; mode: BackupImportMode },
+      payload: { type: RemoteType; key: string; password: string; mode: BackupImportMode },
     ): Promise<IpcResult<void>> => {
       try {
-        await backupSyncService.restoreFromKey(payload.key, payload.password, payload.mode)
+        await backupSyncService.restoreFromKey(
+          payload.type,
+          payload.key,
+          payload.password,
+          payload.mode,
+        )
         return { success: true }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }

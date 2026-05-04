@@ -54,6 +54,8 @@ import type {
   BackupSummary,
   RemoteBackupItem,
   RemoteConfig,
+  RemoteConfigs,
+  RemoteType,
   RollbackBackupItem,
   SyncResult,
   SyncStatus,
@@ -695,14 +697,14 @@ const api = {
     }): Promise<IpcResult<{ applied: BackupSummary }>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_IMPORT_FROM_FILE, payload),
 
-    getRemoteConfig: (): Promise<IpcResult<RemoteConfig | null>> =>
+    getRemoteConfig: (): Promise<IpcResult<RemoteConfigs>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_GET_REMOTE_CONFIG),
 
     setRemoteConfig: (cfg: RemoteConfig, passphrase?: string): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_SET_REMOTE_CONFIG, { config: cfg, passphrase }),
 
-    clearRemoteConfig: (): Promise<IpcResult<void>> =>
-      ipcRenderer.invoke(IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG),
+    clearRemoteConfig: (type: RemoteType): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG, { type }),
 
     testRemote: (cfg: RemoteConfig): Promise<IpcResult<{ ok: boolean; latency?: number }>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_TEST_REMOTE, cfg),
@@ -711,10 +713,11 @@ const api = {
 
     syncCancel: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_CANCEL),
 
-    listRemote: (): Promise<IpcResult<RemoteBackupItem[]>> =>
-      ipcRenderer.invoke(IpcChannels.BACKUP_LIST_REMOTE),
+    listRemote: (type: RemoteType): Promise<IpcResult<RemoteBackupItem[]>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_LIST_REMOTE, { type }),
 
     restoreFromRemote: (payload: {
+      type: RemoteType
       key: string
       password: string
       mode: BackupImportMode

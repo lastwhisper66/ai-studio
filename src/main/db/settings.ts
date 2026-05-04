@@ -3,8 +3,8 @@ import { getDb } from './database'
 
 const SENSITIVE_KEYS = new Set([
   'api.apiKey',
-  'backup.remote.password',
-  'backup.remote.secretAccessKey',
+  'backup.remote.webdav.password',
+  'backup.remote.s3.secretAccessKey',
   'backup.syncPassphrase',
 ])
 

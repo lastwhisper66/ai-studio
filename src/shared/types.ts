@@ -524,24 +524,41 @@ export interface BackupFileMeta {
 
 export type BackupImportMode = 'replace' | 'merge'
 
-export type RemoteConfig =
-  | {
-      type: 'webdav'
-      url: string
-      username: string
-      password: string
-      subPath: string
-    }
-  | {
-      type: 's3'
-      endpoint: string
-      region: string
-      bucket: string
-      accessKeyId: string
-      secretAccessKey: string
-      forcePathStyle: boolean
-      prefix: string
-    }
+export interface WebDavRemoteConfig {
+  type: 'webdav'
+  url: string
+  username: string
+  password: string
+  subPath: string
+}
+
+export interface S3RemoteConfig {
+  type: 's3'
+  endpoint: string
+  region: string
+  bucket: string
+  accessKeyId: string
+  secretAccessKey: string
+  forcePathStyle: boolean
+  prefix: string
+}
+
+/**
+ * Discriminated union for a single remote config — used by `testRemote` and
+ * the per-type save/clear IPC payloads. Persisted shape is `RemoteConfigs`
+ * (plural), which allows WebDAV and S3 to be configured simultaneously and
+ * have the sync-engine mirror writes to both.
+ */
+export type RemoteConfig = WebDavRemoteConfig | S3RemoteConfig
+
+/** Both remotes can be configured at once; either may be null when not set. */
+export interface RemoteConfigs {
+  webdav: WebDavRemoteConfig | null
+  s3: S3RemoteConfig | null
+}
+
+/** Discriminator used by per-type IPC payloads (set / clear / list / restore). */
+export type RemoteType = 'webdav' | 's3'
 
 export interface SyncStatus {
   isSyncing: boolean
@@ -555,7 +572,7 @@ export interface SyncStatus {
 }
 
 export interface SyncResult {
-  direction: 'upload' | 'download' | 'noop' | 'cancelled'
+  direction: 'upload' | 'download' | 'cancelled'
   /** ISO timestamp of the backup that became authoritative this round (when applicable). */
   createdAt?: string
 }
@@ -569,6 +586,8 @@ export interface RemoteBackupItem {
   /** `createdAt` parsed from the .aibackup plaintext header (or, if unavailable, derived from the key). */
   createdAt: string
   appVersion: string
+  /** Which remote this entry came from. */
+  remoteType: RemoteType
 }
 
 /**
