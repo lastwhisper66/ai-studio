@@ -68,6 +68,20 @@ export const ERROR_CODES = {
   MESSAGE_NOT_FOUND: 'errors.message.notFound',
   DB_NOT_INITIALIZED: 'errors.db.notInitialized',
 
+  // backup
+  BACKUP_FILE_INVALID: 'errors.backup.fileInvalid',
+  BACKUP_PASSWORD_WRONG: 'errors.backup.passwordWrong',
+  BACKUP_PASSWORD_REQUIRED: 'errors.backup.passwordRequired',
+  BACKUP_SCHEMA_TOO_NEW: 'errors.backup.schemaTooNew',
+  BACKUP_REMOTE_AUTH: 'errors.backup.remoteAuth',
+  BACKUP_REMOTE_NOT_FOUND: 'errors.backup.remoteNotFound',
+  BACKUP_REMOTE_NETWORK: 'errors.backup.remoteNetwork',
+  BACKUP_REMOTE_FORBIDDEN: 'errors.backup.remoteForbidden',
+  BACKUP_REMOTE_NOT_CONFIGURED: 'errors.backup.remoteNotConfigured',
+  BACKUP_BUSY: 'errors.backup.busy',
+  BACKUP_CANCELLED: 'errors.backup.cancelled',
+  BACKUP_APPLY_FAILED: 'errors.backup.applyFailed',
+
   // fallback
   INTERNAL: 'errors.internal',
 } as const

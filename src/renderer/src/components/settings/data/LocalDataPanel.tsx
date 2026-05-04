@@ -15,7 +15,12 @@ import {
   AlertDialogTrigger,
 } from '@renderer/components/ui/alert-dialog'
 
-export function DataSection(): React.JSX.Element {
+/**
+ * "Local Data Settings" panel — currently just hosts the destructive
+ * "clear all data" control. Lives under the Data Settings page now (no
+ * longer a top-level sidebar entry).
+ */
+export function LocalDataPanel(): React.JSX.Element {
   const { t } = useTranslation()
   const [clearError, setClearError] = useState<string | null>(null)
 
@@ -35,12 +40,12 @@ export function DataSection(): React.JSX.Element {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border bg-card/50 p-5">
+      <div className="bg-card/50 rounded-xl border p-5">
         <h2 className="text-base font-semibold">{t('settings.data.title')}</h2>
         <p className="text-muted-foreground mt-1 text-sm">{t('settings.data.description')}</p>
       </div>
 
-      <div className="rounded-xl border bg-card/50 p-5">
+      <div className="bg-card/50 rounded-xl border p-5">
         <h3 className="text-sm font-semibold">{t('settings.data.dataManagement')}</h3>
 
         <div className="mt-4 flex items-center justify-between gap-4">
@@ -75,7 +80,7 @@ export function DataSection(): React.JSX.Element {
             </AlertDialogContent>
           </AlertDialog>
         </div>
-        {clearError && <p className="mt-2 text-xs text-destructive">{clearError}</p>}
+        {clearError && <p className="text-destructive mt-2 text-xs">{clearError}</p>}
       </div>
     </div>
   )
