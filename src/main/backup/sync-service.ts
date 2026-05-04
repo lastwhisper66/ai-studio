@@ -2,11 +2,11 @@ import { BrowserWindow } from 'electron'
 import { randomUUID } from 'crypto'
 import type {
   BackupProgress,
+  BackupStatus,
   RemoteBackupItem,
-  RemoteConfig,
+  RemoteSyncStatus,
   RemoteType,
   SyncResult,
-  SyncStatus,
 } from '@shared/types'
 import { ERROR_CODES, type LocalizedError } from '@shared/errors'
 import { AppError, toLocalizedError } from '../errors'
@@ -16,21 +16,16 @@ import {
   applyEncryptedBytes,
   buildRemote,
   encodeSnapshotBytes,
-  loadEnabledRemotes,
+  loadEnabledRemote,
+  loadRemoteConfig,
   peekBackupFile,
   writePreApplyRollback,
 } from '.'
 import type { BackupRemote, RemoteObject } from './remote/types'
 
-/** Object key (relative to the remote root) where the manifest pointer lives. */
 const MANIFEST_KEY = 'manifest.json'
-/** Prefix under which `.aibackup` snapshots are stored. */
 const BACKUPS_PREFIX = 'backups/'
-/** Tolerance for the local-vs-remote timestamp comparison; protects against
- *  small clock skew between the device that uploaded and this device. */
 const CLOCK_TOLERANCE_MS = 1_000
-/** Manifest schema this client knows how to read. Newer values must abort
- *  the sync rather than be silently overwritten — see fetchManifest. */
 const MANIFEST_SCHEMA_VERSION = 1
 
 interface Manifest {
@@ -39,218 +34,197 @@ interface Manifest {
   schemaVersion: 1
 }
 
-interface RemoteWithManifest {
-  cfg: RemoteConfig
-  remote: BackupRemote
-  manifest: Manifest | null
-  /** Network/auth error fetching the manifest; service treats as "no manifest"
-   *  for direction purposes but records a warning so the user knows. */
-  fetchError: string | null
+interface RemoteState {
+  timer: NodeJS.Timeout | null
+  abort: AbortController | null
+  isSyncing: boolean
+  lastError: LocalizedError | null
+  lastWarning: string | null
 }
 
+const REMOTE_TYPES: RemoteType[] = ['webdav', 's3']
+
 /**
- * Cloud-sync engine. Single source of truth for sync direction, retention,
- * and the progress/status push surface.
+ * Per-remote cloud-sync engine.
  *
- * **Multi-remote semantics (mirror writes):**
- *   - Upload writes the *same* encrypted snapshot to every enabled remote;
- *     each remote's manifest is updated with the same `latestCreatedAt`.
- *   - Download reads each remote's manifest, picks the one with the freshest
- *     `latestCreatedAt`, applies it locally, then mirror-uploads the bytes
- *     to any lagging remote so they converge.
+ * Each remote (WebDAV / S3) owns an independent state slot — its own timer,
+ * AbortController, in-flight flag, and last-error/warning. The two destinations
+ * never read or write each other's manifest or settings; running one does
+ * not block running the other.
  *
- * Direction policy:
- *   - No remote configured                                  → throw NOT_CONFIGURED.
- *   - No manifest exists on any remote                      → upload to all.
- *   - No local change recorded                              → download from freshest, mirror to laggers.
- *   - localChange ≥ freshestRemoteCreated − tolerance       → upload to all (always re-upload when local
- *                                                             matches or exceeds remote — gives the user a
- *                                                             "force push" feel and ensures the cloud always
- *                                                             reflects the most recent local state).
- *   - else                                                  → download from freshest, mirror to laggers.
+ * Direction policy (per remote):
+ *   - No manifest on this remote                                   → upload here.
+ *   - No local change recorded                                     → download from this remote.
+ *   - localChange ≥ remoteCreated − tolerance                      → upload here.
+ *   - else                                                         → download from this remote.
  *
- * After a successful upload OR download, `backup.lastLocalChangeAt` is
- * advanced to match the authoritative `createdAt` IF the snapshot is newer
- * than the currently-recorded local change time. The conditional advance is
- * deliberate: writes that arrived during the sync window (between
- * `collectSnapshot()` and the final `setSetting`) MUST keep their later
- * timestamp so the next sync still treats them as dirty. Without this guard,
- * mid-sync edits would be silently dropped from future syncs.
- *
- * The manifest is written LAST during upload so a crash mid-upload leaves
- * the previous manifest pointing at the previous-known-good snapshot.
+ * After a successful upload OR download, `backup.lastLocalChangeAt` (the only
+ * field that must stay global because local data is one) is advanced to the
+ * authoritative createdAt — but only if it's newer than what's already there.
+ * Writes that arrived during the sync window MUST keep their later timestamp.
  */
 class BackupSyncService {
-  private syncing = false
-  private currentAbort: AbortController | null = null
-  private timer: NodeJS.Timeout | null = null
-  private lastWarning: string | null = null
+  private remoteStates = new Map<RemoteType, RemoteState>()
 
-  /** Read current settings + activity into a SyncStatus snapshot. */
-  getStatus(): SyncStatus {
-    return {
-      isSyncing: this.syncing,
-      lastLocalChangeAt: getSetting('backup.lastLocalChangeAt') ?? null,
-      lastSyncedAt: getSetting('backup.lastSyncedAt') ?? null,
-      lastRemoteSeenAt: getSetting('backup.lastRemoteSeenAt') ?? null,
-      // `lastError` is transient — propagated via broadcastStatus, never persisted.
-      lastError: null,
-      lastWarning: this.lastWarning,
-      hasRemoteConfigured: loadEnabledRemotes().length > 0,
-      autoSyncIntervalMinutes: parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10),
+  constructor() {
+    for (const type of REMOTE_TYPES) {
+      this.remoteStates.set(type, this.makeEmptyState())
     }
   }
 
-  cancel(): void {
-    this.currentAbort?.abort()
+  /** Boot entry — schedules every configured + enabled remote and runs catch-up. */
+  start(): void {
+    for (const type of REMOTE_TYPES) {
+      this.scheduleAuto(type)
+      this.maybeCatchUp(type)
+    }
   }
 
-  /** Convenience accessor — every remote call inside a sync should pass this. */
-  private get signal(): AbortSignal | undefined {
-    return this.currentAbort?.signal
+  getStatus(): BackupStatus {
+    return {
+      lastLocalChangeAt: getSetting('backup.lastLocalChangeAt') ?? null,
+      remotes: {
+        webdav: this.getRemoteStatus('webdav'),
+        s3: this.getRemoteStatus('s3'),
+      },
+    }
+  }
+
+  private getRemoteStatus(type: RemoteType): RemoteSyncStatus {
+    const state = this.remoteStates.get(type)!
+    const cfg = loadRemoteConfig(type)
+    return {
+      type,
+      configured: cfg !== null,
+      enabled: getSetting(`backup.remote.${type}.enabled`) !== 'false',
+      isSyncing: state.isSyncing,
+      lastSyncedAt: getSetting(`backup.remote.${type}.lastSyncedAt`) ?? null,
+      lastRemoteSeenAt: getSetting(`backup.remote.${type}.lastRemoteSeenAt`) ?? null,
+      lastError: state.lastError,
+      lastWarning: state.lastWarning,
+      autoSyncIntervalMinutes: parseInt(
+        getSetting(`backup.remote.${type}.autoSyncIntervalMinutes`) ?? '0',
+        10,
+      ),
+      maxRetainedBackups: parseInt(
+        getSetting(`backup.remote.${type}.maxRetainedBackups`) ?? '5',
+        10,
+      ),
+      hasPassphrase: !!getSetting(`backup.remote.${type}.passphrase`),
+    }
+  }
+
+  syncCancel(type: RemoteType): void {
+    this.remoteStates.get(type)?.abort?.abort()
+  }
+
+  setEnabled(type: RemoteType, enabled: boolean): void {
+    setSetting(`backup.remote.${type}.enabled`, enabled ? 'true' : 'false')
+    if (enabled) {
+      this.scheduleAuto(type)
+      this.maybeCatchUp(type)
+    } else {
+      const state = this.remoteStates.get(type)!
+      if (state.timer) {
+        clearInterval(state.timer)
+        state.timer = null
+      }
+      // Don't abort an in-flight sync — let it finish naturally to avoid a
+      // partial write. The user can hit Cancel manually if they need to stop now.
+    }
+    this.broadcastStatus()
   }
 
   /**
-   * (Re)configure the auto-sync timer based on current settings. Called at
-   * boot and again whenever `backup.autoSyncIntervalMinutes` changes via the
-   * settings IPC. Values < 1 disable auto-sync (the UI's smallest option is
-   * 1 minute, used mainly for debugging — production users typically pick
-   * 15 min or longer).
-   *
-   * If more than `intervalMinutes` have elapsed since the last successful
-   * sync, fire a catch-up sync immediately rather than waiting another full
-   * interval. This is the user's expected behavior at app startup: when the
-   * app was closed across the scheduled window, the next launch should
-   * reconcile right away instead of letting the local copy drift further.
+   * (Re)configure auto-sync timer for the given remote. Idempotent. Called at
+   * boot, when `enabled` flips, and when the per-remote `autoSyncIntervalMinutes`
+   * setting changes.
    */
-  scheduleAuto(): void {
-    if (this.timer) {
-      clearInterval(this.timer)
-      this.timer = null
+  scheduleAuto(type: RemoteType): void {
+    const state = this.remoteStates.get(type)!
+    if (state.timer) {
+      clearInterval(state.timer)
+      state.timer = null
     }
-    const minutes = parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10)
+    const cfg = loadEnabledRemote(type)
+    if (!cfg) return
+    const minutes = parseInt(getSetting(`backup.remote.${type}.autoSyncIntervalMinutes`) ?? '0', 10)
     if (minutes < 1) return
     const ms = minutes * 60 * 1000
-    this.maybeCatchUp(ms)
-    this.timer = setInterval(() => {
-      this.syncNow().catch((e) => {
+    state.timer = setInterval(() => {
+      this.syncNow(type).catch((e) => {
         // Auto-sync failures: don't toast, just remember for the badge.
-        this.lastWarning = e instanceof Error ? e.message : String(e)
-        this.broadcastStatus(toLocalizedError(e))
+        state.lastWarning = e instanceof Error ? e.message : String(e)
+        state.lastError = toLocalizedError(e)
+        this.broadcastStatus()
       })
     }, ms)
   }
 
   /**
-   * Fire a catch-up sync if we've drifted past the configured window.
-   *
-   * Conditions (all required):
-   *   - a remote is configured (otherwise syncNow would just throw)
-   *   - we're not already mid-sync
-   *   - a previous sync exists (`lastSyncedAt` set) — first-ever sync stays
-   *     manual so the user can confirm the destination/passphrase work
-   *   - `now - lastSyncedAt >= intervalMs`
-   *
-   * Failures route through the same warning/status surface as the periodic
-   * timer; we never throw out of here because the caller is fire-and-forget.
+   * Catch up on a sync if we've drifted past the configured window. Called
+   * at boot and after `setEnabled(true)`. Fire-and-forget — failures route
+   * through the per-remote warning surface.
    */
-  private maybeCatchUp(intervalMs: number): void {
-    if (this.syncing) return
-    if (loadEnabledRemotes().length === 0) return
-    const last = parseIso(getSetting('backup.lastSyncedAt'))
+  private maybeCatchUp(type: RemoteType): void {
+    const state = this.remoteStates.get(type)!
+    if (state.isSyncing) return
+    if (!loadEnabledRemote(type)) return
+    const last = parseIso(getSetting(`backup.remote.${type}.lastSyncedAt`))
     if (last === null) return
+    const minutes = parseInt(getSetting(`backup.remote.${type}.autoSyncIntervalMinutes`) ?? '0', 10)
+    if (minutes < 1) return
+    const intervalMs = minutes * 60 * 1000
     if (Date.now() - last < intervalMs) return
-    this.syncNow().catch((e) => {
-      this.lastWarning = e instanceof Error ? e.message : String(e)
-      this.broadcastStatus(toLocalizedError(e))
+    this.syncNow(type).catch((e) => {
+      state.lastWarning = e instanceof Error ? e.message : String(e)
+      state.lastError = toLocalizedError(e)
+      this.broadcastStatus()
     })
   }
 
-  /** Single sync round-trip. Throws on error (caller decides how to surface). */
-  async syncNow(): Promise<SyncResult> {
-    if (this.syncing) throw new AppError(ERROR_CODES.BACKUP_BUSY)
-    const enabled = loadEnabledRemotes()
-    if (enabled.length === 0) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
+  /** Single-remote sync round-trip. Throws on error (caller decides how to surface). */
+  async syncNow(type: RemoteType): Promise<SyncResult> {
+    const state = this.remoteStates.get(type)!
+    if (state.isSyncing) throw new AppError(ERROR_CODES.BACKUP_BUSY)
+    const cfg = loadEnabledRemote(type)
+    if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
 
-    this.syncing = true
-    this.currentAbort = new AbortController()
-    this.broadcastStatus(null)
+    state.isSyncing = true
+    state.abort = new AbortController()
+    state.lastError = null
+    this.broadcastStatus()
 
-    // Status is broadcast EXACTLY ONCE more at the end (in finally) — any
-    // earlier broadcast inside try/catch would still observe `this.syncing`
-    // as true (the finally hasn't run yet) and the renderer would stay
-    // stuck on "syncing…" forever. Stash any error here so finally can
-    // surface it after flipping the flag.
     let finalError: LocalizedError | null = null
     try {
-      const password = getSetting('backup.syncPassphrase')
+      // NOTE: Phase 3 Task 3.2.A relaxes this — empty passphrase will mean
+      // "plaintext mode". For now we keep the legacy required check.
+      const password = getSetting(`backup.remote.${type}.passphrase`)
       if (!password) {
         throw new AppError(ERROR_CODES.BACKUP_PASSWORD_REQUIRED)
       }
 
-      // Fetch each remote's manifest in parallel. Per-target failures are
-      // tolerated (treat as "no manifest") so a single dead remote can't
-      // block sync — but a future-version manifest from any remote MUST
-      // abort the entire sync so we don't silently demote it.
-      const targets: RemoteWithManifest[] = await Promise.all(
-        enabled.map(async (cfg) => {
-          const remote = buildRemote(cfg)
-          try {
-            const manifest = await this.fetchManifest(remote)
-            return { cfg, remote, manifest, fetchError: null }
-          } catch (e) {
-            // Schema-too-new must propagate — overwriting a newer manifest
-            // with our older schema would lose the other device's state.
-            // Same for user cancellation, so the sync ends cleanly rather
-            // than rolling on as if the manifest fetch had simply 404'd.
-            if (
-              e instanceof AppError &&
-              (e.code === ERROR_CODES.BACKUP_SCHEMA_TOO_NEW ||
-                e.code === ERROR_CODES.BACKUP_CANCELLED)
-            ) {
-              throw e
-            }
-            return {
-              cfg,
-              remote,
-              manifest: null,
-              fetchError: e instanceof Error ? e.message : String(e),
-            }
-          }
-        }),
-      )
-      this.recordFetchWarnings(targets)
+      const remote = buildRemote(cfg)
+      const manifest = await this.fetchManifest(remote, state)
 
       const localChange = parseIso(getSetting('backup.lastLocalChangeAt'))
-      const freshest = pickFreshest(targets)
-
       let result: SyncResult
-      if (!freshest || !freshest.manifest) {
-        // Nothing on any remote (or all manifest fetches failed) → upload everywhere.
-        result = await this.uploadFlow(targets, password)
+      if (!manifest) {
+        result = await this.uploadFlow(type, remote, password)
       } else if (localChange === null) {
-        result = await this.downloadFlow(targets, freshest, password)
+        result = await this.downloadFlow(type, remote, manifest, password)
       } else {
-        const remoteCreated = parseIso(freshest.manifest.latestCreatedAt)
+        const remoteCreated = parseIso(manifest.latestCreatedAt)
         if (remoteCreated === null) {
-          result = await this.uploadFlow(targets, password)
+          result = await this.uploadFlow(type, remote, password)
         } else if (localChange >= remoteCreated - CLOCK_TOLERANCE_MS) {
-          // Local is at least as fresh as the freshest remote — always upload.
-          // We don't optimize away "noop" cases anymore: the user explicitly
-          // wants the cloud to always reflect the latest local state, even
-          // if the bytes happen to be identical. Retention prunes old copies
-          // so this doesn't unbound the version count.
-          result = await this.uploadFlow(targets, password)
+          result = await this.uploadFlow(type, remote, password)
         } else {
-          result = await this.downloadFlow(targets, freshest, password)
+          result = await this.downloadFlow(type, remote, manifest, password)
         }
       }
 
-      // Advance lastLocalChangeAt to the authoritative createdAt of the just-
-      // synced state — but only if it's newer than what's already there.
-      // Writes made DURING the sync (after collectSnapshot ran) bumped the
-      // dirty timestamp past `createdAt`; we must not regress it, otherwise
-      // those edits silently never sync.
+      // Advance lastLocalChangeAt only if newer — preserve any mid-sync edits.
       if (result.createdAt && (result.direction === 'upload' || result.direction === 'download')) {
         const current = parseIso(getSetting('backup.lastLocalChangeAt'))
         const next = parseIso(result.createdAt)
@@ -258,43 +232,36 @@ class BackupSyncService {
           setSetting('backup.lastLocalChangeAt', result.createdAt)
         }
       }
-      setSetting('backup.lastSyncedAt', new Date().toISOString())
-      if (result.createdAt) setSetting('backup.lastRemoteSeenAt', result.createdAt)
+      setSetting(`backup.remote.${type}.lastSyncedAt`, new Date().toISOString())
+      if (result.createdAt) {
+        setSetting(`backup.remote.${type}.lastRemoteSeenAt`, result.createdAt)
+      }
       return result
     } catch (e) {
-      // Cancellation: report as a normal SyncResult (not an error to the
-      // caller) so the UI can distinguish user-cancelled from genuine failure.
-      if (this.currentAbort?.signal.aborted) {
-        const cancelled: SyncResult = { direction: 'cancelled' }
-        return cancelled
+      // Cancellation: report as a normal SyncResult (not an error) so UI can
+      // distinguish user-cancelled from genuine failure.
+      if (state.abort?.signal.aborted) {
+        return { direction: 'cancelled' }
       }
       finalError = toLocalizedError(e)
       throw e
     } finally {
-      this.syncing = false
-      this.currentAbort = null
-      // The sole post-sync broadcast — the renderer relies on this transition
-      // (isSyncing true → false) to clear any lingering progress phase from
-      // the UI (see backupStore.ts onStatusChanged).
-      this.broadcastStatus(finalError)
+      state.isSyncing = false
+      state.abort = null
+      state.lastError = finalError
+      this.broadcastStatus()
     }
   }
 
   /**
    * List `.aibackup` objects on a specific remote, augmented with header
-   * metadata (createdAt, appVersion) where available. We sort by key
-   * descending FIRST (keys begin with an ISO timestamp, so this puts the
-   * newest items first), then peek the top 50 entries — that way the
-   * "Latest first" view in the history dialog gets accurate header data
-   * for the entries the user is most likely to inspect, even when there
-   * are hundreds of historical snapshots.
+   * metadata where available.
    */
   async listRemote(type: RemoteType): Promise<RemoteBackupItem[]> {
-    const enabled = loadEnabledRemotes()
-    const cfg = enabled.find((c) => c.type === type)
+    const cfg = loadEnabledRemote(type)
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
-    const objects = await remote.list(BACKUPS_PREFIX, this.signal)
+    const objects = await remote.list(BACKUPS_PREFIX, this.signalFor(type))
     const sorted = [...objects]
       .filter((o) => o.key.endsWith('.aibackup'))
       .sort((a, b) => (a.key < b.key ? 1 : -1))
@@ -305,12 +272,12 @@ class BackupSyncService {
       let appVersion = ''
       if (i < 50) {
         try {
-          const bytes = await remote.get(obj.key, this.signal)
+          const bytes = await remote.get(obj.key, this.signalFor(type))
           const meta = peekBackupFile(new TextDecoder().decode(bytes))
           createdAt = meta.createdAt
           appVersion = meta.appVersion
         } catch {
-          /* tolerate — leave the lastModified-derived createdAt in place */
+          /* tolerate */
         }
       }
       out.push({
@@ -333,39 +300,48 @@ class BackupSyncService {
     password: string,
     mode: 'replace' | 'merge',
   ): Promise<void> {
-    const enabled = loadEnabledRemotes()
-    const cfg = enabled.find((c) => c.type === type)
+    const cfg = loadEnabledRemote(type)
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
-    this.progress({ phase: 'download' })
-    const bytes = await remote.get(key, this.signal)
-    this.progress({ phase: 'decrypt' })
-    // Save the CURRENT local state before applying. The user supplied the
-    // password to decrypt the remote snapshot; reuse it for the rollback so
-    // the resulting file is decryptable with the same credential.
+    this.progress(type, { phase: 'download' })
+    const bytes = await remote.get(key, this.signalFor(type))
+    this.progress(type, { phase: 'decrypt' })
     if (mode === 'replace') {
       try {
         writePreApplyRollback(password)
       } catch {
-        /* best-effort — proceed even if the safety net failed */
+        /* best-effort */
       }
     }
-    this.progress({ phase: 'apply' })
+    this.progress(type, { phase: 'apply' })
     applyEncryptedBytes(bytes, password, mode)
-    setSetting('backup.lastSyncedAt', new Date().toISOString())
-    this.broadcastStatus(null)
+    setSetting(`backup.remote.${type}.lastSyncedAt`, new Date().toISOString())
+    this.broadcastStatus()
   }
 
   // ---------- private helpers ----------
 
-  private async fetchManifest(remote: BackupRemote): Promise<Manifest | null> {
+  private makeEmptyState(): RemoteState {
+    return {
+      timer: null,
+      abort: null,
+      isSyncing: false,
+      lastError: null,
+      lastWarning: null,
+    }
+  }
+
+  private signalFor(type: RemoteType): AbortSignal | undefined {
+    return this.remoteStates.get(type)?.abort?.signal
+  }
+
+  private async fetchManifest(remote: BackupRemote, state: RemoteState): Promise<Manifest | null> {
     try {
-      const bytes = await remote.get(MANIFEST_KEY, this.signal)
+      const bytes = await remote.get(MANIFEST_KEY, state.abort?.signal)
       const text = new TextDecoder().decode(bytes)
       const m = JSON.parse(text) as Manifest
       // A manifest from a newer client must NOT be silently treated as "no
-      // manifest" — if we did, the next syncNow would happily overwrite it
-      // with our schema-1 manifest and lose the other device's pointer.
+      // manifest" — overwriting it would lose the other device's pointer.
       if (m.schemaVersion > MANIFEST_SCHEMA_VERSION) {
         throw new AppError(ERROR_CODES.BACKUP_SCHEMA_TOO_NEW)
       }
@@ -377,15 +353,16 @@ class BackupSyncService {
     }
   }
 
-  /** Encode locally + write the same bytes/manifest to every target. */
-  private async uploadFlow(targets: RemoteWithManifest[], password: string): Promise<SyncResult> {
-    this.progress({ phase: 'collect' })
+  private async uploadFlow(
+    type: RemoteType,
+    remote: BackupRemote,
+    password: string,
+  ): Promise<SyncResult> {
+    const state = this.remoteStates.get(type)!
+    this.progress(type, { phase: 'collect' })
     const { bytes, createdAt } = encodeSnapshotBytes(password)
-    if (this.currentAbort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
+    if (state.abort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
-    // UUID suffix prevents key collisions when two devices upload within the
-    // same millisecond — without it, the later writer overwrites the
-    // earlier writer's snapshot bytes and that snapshot is lost forever.
     const key = `${BACKUPS_PREFIX}${safeKeyTimestamp(createdAt)}-${randomUUID()}.aibackup`
     const manifest: Manifest = {
       latestBackupKey: key,
@@ -394,104 +371,61 @@ class BackupSyncService {
     }
     const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2))
 
-    this.progress({ phase: 'upload' })
-    const failures = await this.writeToTargets(targets, key, bytes, manifestBytes)
-    // Best-effort retention pruning per remote — failures here are warnings, not errors.
-    this.progress({ phase: 'cleanup' })
-    for (const t of targets) {
-      if (failures.has(t.cfg.type)) continue
-      await this.pruneRemote(t.remote)
+    this.progress(type, { phase: 'upload' })
+    try {
+      // Manifest is written LAST so a mid-upload crash leaves the previous
+      // (still-valid) manifest in place rather than a dangling pointer.
+      await remote.put(key, bytes, state.abort?.signal)
+      await remote.put(MANIFEST_KEY, manifestBytes, state.abort?.signal)
+      state.lastWarning = null
+    } catch (e) {
+      throw new AppError(
+        ERROR_CODES.BACKUP_REMOTE_NETWORK,
+        undefined,
+        e instanceof Error ? e.message : String(e),
+      )
     }
-    if (failures.size === targets.length) {
-      // Every remote failed — surface as a hard error.
-      const msg = [...failures.values()].join('; ')
-      throw new AppError(ERROR_CODES.BACKUP_REMOTE_NETWORK, undefined, msg)
-    }
+
+    this.progress(type, { phase: 'cleanup' })
+    await this.pruneRemote(type, remote, state)
     return { direction: 'upload', createdAt }
   }
 
   private async downloadFlow(
-    targets: RemoteWithManifest[],
-    source: RemoteWithManifest,
+    type: RemoteType,
+    remote: BackupRemote,
+    manifest: Manifest,
     password: string,
   ): Promise<SyncResult> {
-    if (!source.manifest) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_FOUND)
-    this.progress({ phase: 'download' })
-    const bytes = await source.remote.get(source.manifest.latestBackupKey, this.signal)
-    if (this.currentAbort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
+    const state = this.remoteStates.get(type)!
+    this.progress(type, { phase: 'download' })
+    const bytes = await remote.get(manifest.latestBackupKey, state.abort?.signal)
+    if (state.abort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
-    // Save the CURRENT local state (not the to-be-applied bytes) so the user
-    // can actually undo this download by importing the rollback file. Encrypt
-    // with the same password that just decrypted the remote so they remain
-    // recoverable with one credential.
     try {
       writePreApplyRollback(password)
     } catch {
-      /* best-effort — proceed with download even if the safety net failed */
+      /* best-effort */
     }
-    this.progress({ phase: 'decrypt' })
-    this.progress({ phase: 'apply' })
+    this.progress(type, { phase: 'decrypt' })
+    this.progress(type, { phase: 'apply' })
     applyEncryptedBytes(bytes, password, 'replace')
 
-    // Mirror to laggers so they converge with the source's snapshot.
-    const lagging = targets.filter((t) => t !== source && isLagging(t, source))
-    if (lagging.length > 0) {
-      const key = source.manifest.latestBackupKey
-      const manifestBytes = new TextEncoder().encode(JSON.stringify(source.manifest, null, 2))
-      this.progress({ phase: 'upload' })
-      await this.writeToTargets(lagging, key, bytes, manifestBytes)
-    }
-    return { direction: 'download', createdAt: source.manifest.latestCreatedAt }
+    return { direction: 'download', createdAt: manifest.latestCreatedAt }
   }
 
-  /**
-   * Write the snapshot bytes followed by the manifest to each target. Returns
-   * a map of `RemoteType → error message` for any that failed; the manifest
-   * for failed targets is NOT written, so the next sync will re-attempt
-   * cleanly.
-   */
-  private async writeToTargets(
-    targets: RemoteWithManifest[],
-    key: string,
-    bytes: Uint8Array,
-    manifestBytes: Uint8Array,
-  ): Promise<Map<RemoteType, string>> {
-    const failures = new Map<RemoteType, string>()
-    await Promise.all(
-      targets.map(async (t) => {
-        try {
-          await t.remote.put(key, bytes, this.signal)
-          // Manifest is written LAST so a mid-upload crash leaves the previous
-          // (still-valid) manifest in place rather than a dangling pointer.
-          await t.remote.put(MANIFEST_KEY, manifestBytes, this.signal)
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e)
-          failures.set(t.cfg.type, `${t.cfg.type}: ${msg}`)
-        }
-      }),
-    )
-    if (failures.size > 0) {
-      this.lastWarning = [...failures.values()].join('; ')
-    } else {
-      this.lastWarning = null
-    }
-    return failures
-  }
-
-  private recordFetchWarnings(targets: RemoteWithManifest[]): void {
-    const errs = targets.filter((t) => t.fetchError).map((t) => `${t.cfg.type}: ${t.fetchError}`)
-    if (errs.length > 0) this.lastWarning = errs.join('; ')
-  }
-
-  private async pruneRemote(remote: BackupRemote): Promise<void> {
-    const max = parseInt(getSetting('backup.maxRetainedBackups') ?? '5', 10)
+  private async pruneRemote(
+    type: RemoteType,
+    remote: BackupRemote,
+    state: RemoteState,
+  ): Promise<void> {
+    const max = parseInt(getSetting(`backup.remote.${type}.maxRetainedBackups`) ?? '5', 10)
     if (max <= 0) return
     let objects: RemoteObject[] = []
     try {
-      objects = await remote.list(BACKUPS_PREFIX, this.signal)
+      objects = await remote.list(BACKUPS_PREFIX, state.abort?.signal)
     } catch (e) {
-      // Pruning is best-effort; record but don't fail the sync.
-      this.lastWarning = `prune list failed: ${e instanceof Error ? e.message : String(e)}`
+      state.lastWarning = `prune list failed: ${e instanceof Error ? e.message : String(e)}`
       return
     }
     const sorted = [...objects]
@@ -499,50 +433,26 @@ class BackupSyncService {
       .sort((a, b) => (a.key < b.key ? 1 : -1))
     for (const o of sorted.slice(max)) {
       try {
-        await remote.delete(o.key, this.signal)
+        await remote.delete(o.key, state.abort?.signal)
       } catch {
         /* tolerate — leave for next prune attempt */
       }
     }
   }
 
-  private progress(p: BackupProgress): void {
+  private progress(type: RemoteType, p: Omit<BackupProgress, 'type'>): void {
+    const payload: BackupProgress = { type, ...p }
     for (const win of BrowserWindow.getAllWindows()) {
-      win.webContents.send(IpcChannels.BACKUP_PROGRESS, p)
+      win.webContents.send(IpcChannels.BACKUP_PROGRESS, payload)
     }
   }
 
-  private broadcastStatus(err: LocalizedError | null): void {
-    const status: SyncStatus = { ...this.getStatus(), lastError: err }
+  private broadcastStatus(): void {
+    const status = this.getStatus()
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send(IpcChannels.BACKUP_STATUS_CHANGED, status)
     }
   }
-}
-
-/** Pick the target whose manifest has the freshest `latestCreatedAt`. */
-function pickFreshest(targets: RemoteWithManifest[]): RemoteWithManifest | null {
-  let best: RemoteWithManifest | null = null
-  let bestT = -Infinity
-  for (const t of targets) {
-    if (!t.manifest) continue
-    const ts = parseIso(t.manifest.latestCreatedAt)
-    if (ts !== null && ts > bestT) {
-      best = t
-      bestT = ts
-    }
-  }
-  return best
-}
-
-/** A target is "lagging" if it has no manifest or its createdAt is older than the source's. */
-function isLagging(target: RemoteWithManifest, source: RemoteWithManifest): boolean {
-  if (!source.manifest) return false
-  if (!target.manifest) return true
-  const sT = parseIso(source.manifest.latestCreatedAt)
-  const tT = parseIso(target.manifest.latestCreatedAt)
-  if (sT === null || tT === null) return false
-  return tT < sT - CLOCK_TOLERANCE_MS
 }
 
 function parseIso(s: string | null | undefined): number | null {
