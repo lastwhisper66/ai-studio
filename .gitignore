@@ -8,9 +8,9 @@ out
 *.tsbuildinfo
 .env
 .env.*
-data
-!src/renderer/src/components/settings/data
+/data/
 plans
 docs/superpowers
 .playwright-mcp
 .worktrees
+.superpowers
