@@ -6,6 +6,8 @@ const SENSITIVE_KEYS = new Set([
   'backup.remote.webdav.password',
   'backup.remote.s3.secretAccessKey',
   'backup.syncPassphrase',
+  'backup.remote.webdav.passphrase',
+  'backup.remote.s3.passphrase',
 ])
 
 export function encrypt(value: string): string {
@@ -54,6 +56,10 @@ export function setSettingsBatch(entries: Record<string, string>): void {
       stmt.run(key, stored)
     }
   })()
+}
+
+export function deleteSetting(key: string): void {
+  getDb().prepare('DELETE FROM settings WHERE key = ?').run(key)
 }
 
 export function getAllSettings(): Record<string, string> {
