@@ -364,6 +364,7 @@
         "s3Hint": "Object storage that speaks the AWS S3 API — AWS S3, Cloudflare R2, Aliyun OSS, Tencent COS, and similar.",
         "configuredBadge": "Configured",
         "saveOk": "Saved.",
+        "passphraseSaved": "Encryption password saved.",
         "clearButton": "Clear this remote",
         "clearedWebdav": "WebDAV configuration cleared.",
         "clearedS3": "S3 configuration cleared."
@@ -582,6 +583,11 @@
       "interval180": "3 hours",
       "interval720": "12 hours",
       "maxRetainedLabel": "Max retained backups (1-50)",
+      "passphrase": "Sync encryption password",
+      "passphraseHint": "Encrypts every snapshot uploaded to the cloud. Different from the server credentials; treat it like a password manager master key. Use the SAME password on every device that should decrypt these backups — there is no recovery if it's lost.",
+      "passphrasePlaceholderNew": "Choose a strong password",
+      "passphrasePlaceholderUpdate": "Enter a new password to replace it",
+      "passphraseUpdate": "Update",
       "syncResult": {
         "upload": "Uploaded local changes to cloud.",
         "download": "Downloaded latest cloud backup.",
@@ -653,6 +659,7 @@
         "testButton": "Test connection",
         "testing": "Testing…",
         "testOk": "Connection OK ({{latency}} ms)",
+        "optional": "(optional)",
         "passphrase": "Sync encryption password",
         "passphraseHint": "Encrypts every snapshot uploaded to the cloud. Different from the credentials above; treat it like a password manager master key. Use the SAME password on every device that should decrypt these backups — there is no recovery if it's lost.",
         "passphrasePlaceholderNew": "Choose a strong password",
@@ -662,7 +669,9 @@
           "url": "Server URL",
           "username": "Username",
           "password": "Password",
-          "subPath": "Sub-path"
+          "subPath": "Sub-path",
+          "subPathPlaceholder": "Leave blank to use the WebDAV root",
+          "subPathHint": "Optional. Backups go into this subfolder under the WebDAV root; leave empty to write directly to the root."
         },
         "s3": {
           "endpoint": "Endpoint",
@@ -671,6 +680,8 @@
           "accessKeyId": "Access Key ID",
           "secretAccessKey": "Secret Access Key",
           "prefix": "Object key prefix",
+          "prefixPlaceholder": "Leave blank to use the bucket root",
+          "prefixHint": "Optional. All object keys are prefixed with this; leave empty to write directly to the bucket root.",
           "forcePathStyle": "Force path-style addressing"
         }
       }

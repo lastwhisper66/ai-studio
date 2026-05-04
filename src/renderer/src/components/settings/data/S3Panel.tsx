@@ -12,9 +12,10 @@ import type { S3RemoteConfig } from '@shared/types'
 
 /**
  * S3-compatible storage configuration panel — inline form (replaces the old
- * dialog). Same Test→Save gating as the WebDAV panel; same shared sync
- * passphrase. Configuring this AND WebDAV simultaneously is supported — the
- * sync-engine will mirror writes to both remotes.
+ * dialog). Same Test→Save gating as the WebDAV panel; the shared sync
+ * passphrase lives in the cloud overview header above this panel and is
+ * persisted across sessions. Configuring this AND WebDAV simultaneously is
+ * supported — the sync-engine will mirror writes to both remotes.
  *
  * Wrapper re-mounts the inner form via `key` whenever the persisted config
  * changes (save/clear). See WebDavPanel.tsx for the same pattern's rationale.
@@ -40,8 +41,10 @@ function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
   const [accessKeyId, setAccessKeyId] = useState(initial?.accessKeyId ?? '')
   const [secretAccessKey, setSecretAccessKey] = useState(initial?.secretAccessKey ?? '')
   const [forcePathStyle, setForcePathStyle] = useState(initial?.forcePathStyle ?? true)
-  const [prefix, setPrefix] = useState(initial?.prefix || 'aistudio-backup')
-  const [passphrase, setPassphrase] = useState('')
+  // Object key prefix is optional — defaults to empty so new configs upload to
+  // the bucket root unless the user explicitly chooses a folder. Existing
+  // configs keep whatever the user previously saved.
+  const [prefix, setPrefix] = useState(initial?.prefix ?? '')
 
   const [testing, setTesting] = useState(false)
   const [testOk, setTestOk] = useState(false)
@@ -83,12 +86,8 @@ function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
 
   const doSave = async (): Promise<void> => {
     if (!testOk || saving) return
-    if (!initial && !passphrase) {
-      setMsg({ kind: 'err', text: t('settings.backup.remote.passphraseRequired') })
-      return
-    }
     setSaving(true)
-    const r = await setRemoteConfig(buildCfg(), passphrase || undefined)
+    const r = await setRemoteConfig(buildCfg())
     setSaving(false)
     if (r && 'error' in r) {
       setMsg({ kind: 'err', text: localizedError(r.error) })
@@ -163,7 +162,9 @@ function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
         />
         <Field
           label={t('settings.backup.remote.s3.prefix')}
-          placeholder="aistudio-backup"
+          optional
+          hint={t('settings.backup.remote.s3.prefixHint')}
+          placeholder={t('settings.backup.remote.s3.prefixPlaceholder')}
           value={prefix}
           onChange={(v) => {
             setPrefix(v)
@@ -183,22 +184,6 @@ function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
             }}
           />
         </div>
-      </div>
-
-      <div className="grid gap-1.5 border-t pt-4">
-        <Label className="text-xs">{t('settings.backup.remote.passphrase')}</Label>
-        <PasswordInput
-          placeholder={
-            initial
-              ? t('settings.backup.remote.passphrasePlaceholderKeep')
-              : t('settings.backup.remote.passphrasePlaceholderNew')
-          }
-          value={passphrase}
-          onChange={(e) => setPassphrase(e.target.value)}
-        />
-        <p className="text-muted-foreground text-xs">
-          {t('settings.backup.remote.passphraseHint')}
-        </p>
       </div>
 
       {msg && (
@@ -238,16 +223,27 @@ function Field(props: {
   onChange: (v: string) => void
   placeholder?: string
   type?: string
+  optional?: boolean
+  hint?: string
 }): React.JSX.Element {
+  const { t } = useTranslation()
   return (
     <div className="grid gap-1.5">
-      <Label className="text-xs">{props.label}</Label>
+      <Label className="text-xs">
+        {props.label}
+        {props.optional && (
+          <span className="text-muted-foreground ml-1 font-normal">
+            {t('settings.backup.remote.optional')}
+          </span>
+        )}
+      </Label>
       <Input
         type={props.type ?? 'text'}
         placeholder={props.placeholder}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
       />
+      {props.hint && <p className="text-muted-foreground text-xs">{props.hint}</p>}
     </div>
   )
 }

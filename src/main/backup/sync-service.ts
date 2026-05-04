@@ -97,6 +97,7 @@ class BackupSyncService {
       lastError: null,
       lastWarning: this.lastWarning,
       hasRemoteConfigured: loadEnabledRemotes().length > 0,
+      hasPassphrase: !!getSetting('backup.syncPassphrase'),
       autoSyncIntervalMinutes: parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10),
     }
   }
@@ -114,6 +115,12 @@ class BackupSyncService {
    * (Re)configure the auto-sync timer based on current settings. Called at
    * boot and again whenever `backup.autoSyncIntervalMinutes` changes via the
    * settings IPC. Values < 5 disable auto-sync (the UI's smallest option).
+   *
+   * If more than `intervalMinutes` have elapsed since the last successful
+   * sync, fire a catch-up sync immediately rather than waiting another full
+   * interval. This is the user's expected behavior at app startup: when the
+   * app was closed across the scheduled window, the next launch should
+   * reconcile right away instead of letting the local copy drift further.
    */
   scheduleAuto(): void {
     if (this.timer) {
@@ -123,6 +130,7 @@ class BackupSyncService {
     const minutes = parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10)
     if (minutes < 5) return
     const ms = minutes * 60 * 1000
+    this.maybeCatchUp(ms)
     this.timer = setInterval(() => {
       this.syncNow().catch((e) => {
         // Auto-sync failures: don't toast, just remember for the badge.
@@ -130,6 +138,31 @@ class BackupSyncService {
         this.broadcastStatus(toLocalizedError(e))
       })
     }, ms)
+  }
+
+  /**
+   * Fire a catch-up sync if we've drifted past the configured window.
+   *
+   * Conditions (all required):
+   *   - a remote is configured (otherwise syncNow would just throw)
+   *   - we're not already mid-sync
+   *   - a previous sync exists (`lastSyncedAt` set) — first-ever sync stays
+   *     manual so the user can confirm the destination/passphrase work
+   *   - `now - lastSyncedAt >= intervalMs`
+   *
+   * Failures route through the same warning/status surface as the periodic
+   * timer; we never throw out of here because the caller is fire-and-forget.
+   */
+  private maybeCatchUp(intervalMs: number): void {
+    if (this.syncing) return
+    if (loadEnabledRemotes().length === 0) return
+    const last = parseIso(getSetting('backup.lastSyncedAt'))
+    if (last === null) return
+    if (Date.now() - last < intervalMs) return
+    this.syncNow().catch((e) => {
+      this.lastWarning = e instanceof Error ? e.message : String(e)
+      this.broadcastStatus(toLocalizedError(e))
+    })
   }
 
   /** Single sync round-trip. Throws on error (caller decides how to surface). */

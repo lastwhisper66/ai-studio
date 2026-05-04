@@ -35,10 +35,7 @@ interface BackupState {
     mode: BackupImportMode,
   ) => Promise<BackupSummary | { error: LocalizedError }>
 
-  setRemoteConfig: (
-    cfg: RemoteConfig,
-    passphrase?: string,
-  ) => Promise<void | { error: LocalizedError }>
+  setRemoteConfig: (cfg: RemoteConfig) => Promise<void | { error: LocalizedError }>
   clearRemoteConfig: (type: RemoteType) => Promise<void>
   testRemote: (
     cfg: RemoteConfig,
@@ -103,8 +100,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  setRemoteConfig: async (cfg, passphrase) => {
-    const r = await window.api.backup.setRemoteConfig(cfg, passphrase)
+  setRemoteConfig: async (cfg) => {
+    const r = await window.api.backup.setRemoteConfig(cfg)
     if (r.success) {
       get().loadRemoteConfigs()
       get().loadStatus()

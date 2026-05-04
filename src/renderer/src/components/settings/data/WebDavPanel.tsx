@@ -15,10 +15,9 @@ import type { WebDavRemoteConfig } from '@shared/types'
  * remote config can never be persisted with credentials that don't actually
  * work.
  *
- * The sync passphrase encrypts every snapshot uploaded to the cloud and is
- * SHARED across both WebDAV and S3 (so a snapshot uploaded to one can be
- * decrypted from the other). Leaving the passphrase blank when saving means
- * "keep the previously-saved one".
+ * The shared sync passphrase lives in the cloud overview header above this
+ * panel — saved once and persisted, so the per-remote forms only deal with
+ * their own credentials.
  *
  * The wrapper picks up the persisted config from the store and re-mounts
  * the inner form whenever that config changes — that's how the form fields
@@ -47,8 +46,10 @@ function WebDavForm({ initial }: { initial: WebDavRemoteConfig | null }): React.
   const [url, setUrl] = useState(initial?.url ?? '')
   const [username, setUsername] = useState(initial?.username ?? '')
   const [password, setPassword] = useState(initial?.password ?? '')
-  const [subPath, setSubPath] = useState(initial?.subPath || 'aistudio-backup')
-  const [passphrase, setPassphrase] = useState('')
+  // Sub-path defaults to empty for new configs — the field is optional and
+  // uploading directly to the WebDAV root is a valid choice. Existing configs
+  // keep whatever the user previously saved.
+  const [subPath, setSubPath] = useState(initial?.subPath ?? '')
 
   const [testing, setTesting] = useState(false)
   const [testOk, setTestOk] = useState(false)
@@ -87,12 +88,8 @@ function WebDavForm({ initial }: { initial: WebDavRemoteConfig | null }): React.
 
   const doSave = async (): Promise<void> => {
     if (!testOk || saving) return
-    if (!initial && !passphrase) {
-      setMsg({ kind: 'err', text: t('settings.backup.remote.passphraseRequired') })
-      return
-    }
     setSaving(true)
-    const r = await setRemoteConfig(buildCfg(), passphrase || undefined)
+    const r = await setRemoteConfig(buildCfg())
     setSaving(false)
     if (r && 'error' in r) {
       setMsg({ kind: 'err', text: localizedError(r.error) })
@@ -152,29 +149,15 @@ function WebDavForm({ initial }: { initial: WebDavRemoteConfig | null }): React.
         />
         <Field
           label={t('settings.backup.remote.webdav.subPath')}
-          placeholder="aistudio-backup"
+          optional
+          hint={t('settings.backup.remote.webdav.subPathHint')}
+          placeholder={t('settings.backup.remote.webdav.subPathPlaceholder')}
           value={subPath}
           onChange={(v) => {
             setSubPath(v)
             invalidateTest()
           }}
         />
-      </div>
-
-      <div className="grid gap-1.5 border-t pt-4">
-        <Label className="text-xs">{t('settings.backup.remote.passphrase')}</Label>
-        <PasswordInput
-          placeholder={
-            initial
-              ? t('settings.backup.remote.passphrasePlaceholderKeep')
-              : t('settings.backup.remote.passphrasePlaceholderNew')
-          }
-          value={passphrase}
-          onChange={(e) => setPassphrase(e.target.value)}
-        />
-        <p className="text-muted-foreground text-xs">
-          {t('settings.backup.remote.passphraseHint')}
-        </p>
       </div>
 
       {msg && (
@@ -214,16 +197,27 @@ function Field(props: {
   onChange: (v: string) => void
   placeholder?: string
   type?: string
+  optional?: boolean
+  hint?: string
 }): React.JSX.Element {
+  const { t } = useTranslation()
   return (
     <div className="grid gap-1.5">
-      <Label className="text-xs">{props.label}</Label>
+      <Label className="text-xs">
+        {props.label}
+        {props.optional && (
+          <span className="text-muted-foreground ml-1 font-normal">
+            {t('settings.backup.remote.optional')}
+          </span>
+        )}
+      </Label>
       <Input
         type={props.type ?? 'text'}
         placeholder={props.placeholder}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
       />
+      {props.hint && <p className="text-muted-foreground text-xs">{props.hint}</p>}
     </div>
   )
 }

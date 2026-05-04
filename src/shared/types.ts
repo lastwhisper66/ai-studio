@@ -568,6 +568,9 @@ export interface SyncStatus {
   lastError: LocalizedError | null
   lastWarning: string | null
   hasRemoteConfigured: boolean
+  /** Whether `backup.syncPassphrase` is set. The cleartext value never leaves
+   *  the main process — the renderer only learns whether one exists. */
+  hasPassphrase: boolean
   autoSyncIntervalMinutes: number
 }
 

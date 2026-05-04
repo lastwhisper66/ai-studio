@@ -700,8 +700,8 @@ const api = {
     getRemoteConfig: (): Promise<IpcResult<RemoteConfigs>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_GET_REMOTE_CONFIG),
 
-    setRemoteConfig: (cfg: RemoteConfig, passphrase?: string): Promise<IpcResult<void>> =>
-      ipcRenderer.invoke(IpcChannels.BACKUP_SET_REMOTE_CONFIG, { config: cfg, passphrase }),
+    setRemoteConfig: (cfg: RemoteConfig): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_SET_REMOTE_CONFIG, { config: cfg }),
 
     clearRemoteConfig: (type: RemoteType): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG, { type }),

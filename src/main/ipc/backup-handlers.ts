@@ -27,7 +27,6 @@ import {
   testRemote,
 } from '../backup'
 import { backupSyncService } from '../backup/sync-service'
-import { setSetting } from '../db/settings'
 
 export function registerBackupHandlers(): void {
   ipcMain.handle(
@@ -109,17 +108,14 @@ export function registerBackupHandlers(): void {
     }
   })
 
-  // Persists a single remote (the other one is left untouched). The optional
-  // sync passphrase is shared across all remotes — passing a non-empty value
-  // overwrites the previously-stored passphrase; blank means "keep current".
+  // Persists a single remote (the other one is left untouched). The shared
+  // sync passphrase is set independently from the cloud overview header,
+  // not bundled with this call.
   ipcMain.handle(
     IpcChannels.BACKUP_SET_REMOTE_CONFIG,
-    (_, payload: { config: RemoteConfig; passphrase?: string }): IpcResult<void> => {
+    (_, payload: { config: RemoteConfig }): IpcResult<void> => {
       try {
         saveRemoteConfig(payload.config)
-        if (typeof payload.passphrase === 'string' && payload.passphrase.length > 0) {
-          setSetting('backup.syncPassphrase', payload.passphrase)
-        }
         return { success: true }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
