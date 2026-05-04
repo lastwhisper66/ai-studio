@@ -177,6 +177,7 @@ export const IpcChannels = {
   BACKUP_STATUS_CHANGED: 'backup:status-changed',
   BACKUP_PROGRESS: 'backup:progress',
   BACKUP_LIST_ROLLBACKS: 'backup:list-rollbacks',
+  BACKUP_SET_REMOTE_ENABLED: 'backup:set-remote-enabled',
   // Auto Updater
   UPDATER_CHECK: 'updater:check',
   UPDATER_DOWNLOAD: 'updater:download',
