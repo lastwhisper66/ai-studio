@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import { PasswordInput } from '@renderer/components/ui/password-input'
 import { Label } from '@renderer/components/ui/label'
 import {
@@ -19,7 +20,8 @@ export interface BackupPasswordDialogProps {
   /** Optional preview info shown above the input (e.g. peeked file metadata). */
   preview?: React.ReactNode
   onCancel: () => void
-  onSubmit: (password: string) => Promise<void> | void
+  /** Receives the password the user typed; `null` means "no encryption" was checked. */
+  onSubmit: (password: string | null) => Promise<void> | void
   /** External error to show under the input (e.g. wrong password). */
   errorText?: string | null
 }
@@ -38,6 +40,12 @@ export interface BackupPasswordDialogProps {
  * Dialog's `onOpenChange` can keep the original behavior — refuse to close
  * the dialog while a submission is in flight (preserves the user's password
  * input on transient network errors during restore).
+ *
+ * In `export` mode the form additionally exposes a "do not encrypt" checkbox
+ * which submits `null` to `onSubmit` so the codec emits `encryption.algo:
+ * 'none'`. Hidden in import/restore — the file format itself dictates whether
+ * decryption is needed, and the parent should skip this dialog entirely when
+ * `peekFile` reports `encrypted: false`.
  */
 export function BackupPasswordDialog({
   open,
@@ -78,6 +86,7 @@ function PasswordForm({
   const { t } = useTranslation()
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
+  const [noEncryption, setNoEncryption] = useState(false)
   const [busy, setBusy] = useState(false)
   const [localErr, setLocalErr] = useState<string | null>(null)
 
@@ -103,6 +112,16 @@ function PasswordForm({
   const submitKey = mode === 'export' ? 'common.confirm' : 'settings.backup.password.unlock'
 
   const submit = async (): Promise<void> => {
+    if (noEncryption && mode === 'export') {
+      setBusy(true)
+      setLocalErr(null)
+      try {
+        await onSubmit(null)
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
     if (!pw) {
       setLocalErr(t('settings.backup.password.required'))
       return
@@ -136,6 +155,7 @@ function PasswordForm({
             id="bp-pw"
             autoFocus
             value={pw}
+            disabled={noEncryption}
             onChange={(e) => setPw(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
           />
@@ -146,9 +166,37 @@ function PasswordForm({
             <PasswordInput
               id="bp-pw2"
               value={pw2}
+              disabled={noEncryption}
               onChange={(e) => setPw2(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submit()}
             />
+          </div>
+        )}
+        {mode === 'export' && (
+          <div className="grid gap-1.5">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="bp-no-encrypt"
+                checked={noEncryption}
+                onCheckedChange={(v) => {
+                  const next = v === true
+                  setNoEncryption(next)
+                  if (next) {
+                    setPw('')
+                    setPw2('')
+                    setLocalErr(null)
+                  }
+                }}
+              />
+              <Label htmlFor="bp-no-encrypt" className="text-xs font-normal">
+                {t('settings.backup.passphrase.noEncrypt')}
+              </Label>
+            </div>
+            {noEncryption && (
+              <p className="text-xs text-amber-600">
+                {t('settings.backup.passphrase.noEncryptWarning')}
+              </p>
+            )}
           </div>
         )}
         {(localErr || errorText) && (
