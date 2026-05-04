@@ -149,12 +149,16 @@ function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
             <div key={item.filePath} className="flex items-center justify-between gap-4 p-3">
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{item.fileName}</div>
-                <div className="text-muted-foreground text-xs">
-                  {item.createdAt
-                    ? new Date(item.createdAt).toLocaleString()
-                    : t('settings.backup.rollback.unknownTime')}
-                  {' · '}
-                  {(item.size / 1024).toFixed(1)} KB
+                <div className="text-muted-foreground flex flex-wrap gap-x-2 text-xs">
+                  <span>
+                    {item.createdAt
+                      ? new Date(item.createdAt).toLocaleString()
+                      : t('settings.backup.rollback.unknownTime')}
+                  </span>
+                  <span>· {(item.size / 1024).toFixed(1)} KB</span>
+                  <span className="text-muted-foreground/80">
+                    · {t(`settings.backup.rollback.triggeredBy.${item.triggeredBy}`)}
+                  </span>
                 </div>
               </div>
               <div className="flex gap-2">

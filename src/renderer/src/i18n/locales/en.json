@@ -652,7 +652,12 @@
         "restoreReplace": "Restore (replace)",
         "restoreMerge": "Restore (merge)",
         "restoreOk": "Restored {{providers}} providers, {{assistants}} assistants, {{settings}} settings.",
-        "unknownTime": "Unknown time"
+        "unknownTime": "Unknown time",
+        "triggeredBy": {
+          "webdav": "Triggered by WebDAV",
+          "s3": "Triggered by S3",
+          "manual": "Manual"
+        }
       },
       "progress": {
         "collect": "Collecting configuration…",

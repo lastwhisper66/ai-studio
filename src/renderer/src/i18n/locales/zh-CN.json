@@ -652,7 +652,12 @@
         "restoreReplace": "恢复（替换）",
         "restoreMerge": "恢复（合并）",
         "restoreOk": "已恢复 {{providers}} 个供应商、{{assistants}} 个助手、{{settings}} 项设置。",
-        "unknownTime": "时间未知"
+        "unknownTime": "时间未知",
+        "triggeredBy": {
+          "webdav": "由 WebDAV 触发",
+          "s3": "由 S3 触发",
+          "manual": "手动"
+        }
       },
       "progress": {
         "collect": "正在收集配置…",
