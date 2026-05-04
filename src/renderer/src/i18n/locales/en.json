@@ -547,6 +547,11 @@
     "backup": {
       "title": "Backup",
       "description": "Export and restore your AI Studio configuration. Chat history is not backed up.",
+      "dialog": {
+        "exportTitle": "Export AI Studio backup",
+        "importTitle": "Import AI Studio backup",
+        "fileFilter": "AI Studio Backup"
+      },
       "localTitle": "Local backup",
       "exportButton": "Export to file…",
       "importButton": "Import from file…",
@@ -942,6 +947,7 @@
     "backup": {
       "fileInvalid": "The selected file is not a valid backup file.",
       "passwordWrong": "Incorrect password, or the backup file has been tampered with.",
+      "passwordRequired": "A password is required for this operation.",
       "schemaTooNew": "This backup was created by a newer version of the app. Please upgrade and try again.",
       "remoteAuth": "Authentication with the remote storage failed. Please verify credentials.",
       "remoteNotFound": "Remote backup location not found.",

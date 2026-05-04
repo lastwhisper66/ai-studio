@@ -30,8 +30,8 @@ export class WebDAVRemote implements BackupRemote {
     return 'Basic ' + Buffer.from(`${this.opts.username}:${this.opts.password}`).toString('base64')
   }
 
-  async put(path: string, bytes: Uint8Array): Promise<void> {
-    await this.ensureDirsFor(path)
+  async put(path: string, bytes: Uint8Array, signal?: AbortSignal): Promise<void> {
+    await this.ensureDirsFor(path, signal)
     let res: Response
     try {
       res = await fetch(this.url(path), {
@@ -41,6 +41,7 @@ export class WebDAVRemote implements BackupRemote {
           'Content-Type': 'application/octet-stream',
         },
         body: bytes as BodyInit,
+        signal,
       })
     } catch (e) {
       classifyRemoteError(null, e)
@@ -48,12 +49,13 @@ export class WebDAVRemote implements BackupRemote {
     if (!res.ok) classifyRemoteError(res.status, new Error(`PUT ${path} → ${res.status}`))
   }
 
-  async get(path: string): Promise<Uint8Array> {
+  async get(path: string, signal?: AbortSignal): Promise<Uint8Array> {
     let res: Response
     try {
       res = await fetch(this.url(path), {
         method: 'GET',
         headers: { Authorization: this.auth() },
+        signal,
       })
     } catch (e) {
       classifyRemoteError(null, e)
@@ -64,12 +66,13 @@ export class WebDAVRemote implements BackupRemote {
     return new Uint8Array(buf)
   }
 
-  async delete(path: string): Promise<void> {
+  async delete(path: string, signal?: AbortSignal): Promise<void> {
     let res: Response
     try {
       res = await fetch(this.url(path), {
         method: 'DELETE',
         headers: { Authorization: this.auth() },
+        signal,
       })
     } catch (e) {
       classifyRemoteError(null, e)
@@ -78,11 +81,12 @@ export class WebDAVRemote implements BackupRemote {
     if (!res.ok) classifyRemoteError(res.status, new Error(`DELETE ${path} → ${res.status}`))
   }
 
-  async headLastModified(path: string): Promise<string | null> {
+  async headLastModified(path: string, signal?: AbortSignal): Promise<string | null> {
     try {
       const res = await fetch(this.url(path), {
         method: 'HEAD',
         headers: { Authorization: this.auth() },
+        signal,
       })
       if (res.status === 404) return null
       if (!res.ok) classifyRemoteError(res.status, new Error(`HEAD ${path} → ${res.status}`))
@@ -94,7 +98,7 @@ export class WebDAVRemote implements BackupRemote {
     }
   }
 
-  async list(prefix: string): Promise<RemoteObject[]> {
+  async list(prefix: string, signal?: AbortSignal): Promise<RemoteObject[]> {
     const url = this.url(prefix.endsWith('/') ? prefix : prefix + '/')
     const body = `<?xml version="1.0"?>
 <d:propfind xmlns:d="DAV:">
@@ -114,6 +118,7 @@ export class WebDAVRemote implements BackupRemote {
           'Content-Type': 'application/xml; charset=utf-8',
         },
         body,
+        signal,
       })
     } catch (e) {
       classifyRemoteError(null, e)
@@ -140,7 +145,7 @@ export class WebDAVRemote implements BackupRemote {
    *               exists and disallows MKCOL on it; the subsequent PUT will
    *               surface a real error if the path is genuinely inaccessible
    */
-  private async ensureDirsFor(path: string): Promise<void> {
+  private async ensureDirsFor(path: string, signal?: AbortSignal): Promise<void> {
     const root = this.opts.url.replace(/\/+$/, '')
     const subPathParts = (this.opts.subPath || '')
       .replace(/^\/+|\/+$/g, '')
@@ -160,6 +165,7 @@ export class WebDAVRemote implements BackupRemote {
         res = await fetch(cumulative + '/', {
           method: 'MKCOL',
           headers: { Authorization: this.auth() },
+          signal,
         })
       } catch (e) {
         classifyRemoteError(null, e)
@@ -170,6 +176,15 @@ export class WebDAVRemote implements BackupRemote {
         }
       }
     }
+  }
+}
+
+/** Safe wrapper — returns the input unchanged if it can't be decoded. */
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s)
+  } catch {
+    return s
   }
 }
 
@@ -206,8 +221,22 @@ function parsePropfind(xml: string, baseUrl: string): RemoteObject[] {
   const responses = pickResponses(doc)
   if (responses.length === 0) return []
 
+  // Use the URL parser to get a normalized pathname for the configured base.
+  // String prefix matching (`startsWith`) breaks when the server canonicalizes
+  // the URL — e.g. drops the default port, switches HTTPS variants, or returns
+  // paths relative to the host rather than absolute URLs. URL pathnames are
+  // a stable comparison surface.
+  let basePathname = ''
+  let baseOrigin = ''
+  try {
+    const u = new URL(baseUrl)
+    baseOrigin = u.origin
+    basePathname = u.pathname.replace(/\/+$/, '')
+  } catch {
+    /* keep empty values; fall back to literal href below */
+  }
+
   const out: RemoteObject[] = []
-  const baseUrlNoTrail = baseUrl.replace(/\/+$/, '')
   for (const r of responses) {
     if (!r || typeof r !== 'object') continue
     const rec = r as Record<string, unknown>
@@ -239,15 +268,23 @@ function parsePropfind(xml: string, baseUrl: string): RemoteObject[] {
     const lengthStr = String(prop.getcontentlength ?? '0')
     const lastModStr = String(prop.getlastmodified ?? '')
 
-    let absoluteHref: string
+    // Resolve the response href against the base URL, then strip the base
+    // pathname so what callers see is a clean key relative to the configured
+    // backup root (e.g. `backups/xxx.aibackup`). Falls back to a literal
+    // strip when the href can't be parsed.
+    let key: string | null = null
     try {
-      absoluteHref = new URL(href, baseUrlNoTrail + '/').toString()
+      const resolved = new URL(href, baseOrigin || undefined)
+      let p = resolved.pathname
+      if (basePathname && p.startsWith(basePathname)) {
+        p = p.slice(basePathname.length)
+      }
+      key = safeDecode(p.replace(/^\/+/, ''))
     } catch {
-      continue
+      key = safeDecode(href.replace(/^\/+/, ''))
     }
-    const key = absoluteHref.startsWith(baseUrlNoTrail)
-      ? decodeURIComponent(absoluteHref.slice(baseUrlNoTrail.length).replace(/^\/+/, ''))
-      : decodeURIComponent(href.replace(/^\/+/, ''))
+    if (!key) continue
+
     out.push({
       key,
       size: parseInt(lengthStr, 10) || 0,

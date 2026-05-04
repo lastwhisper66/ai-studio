@@ -44,7 +44,7 @@ export class S3Remote implements BackupRemote {
     return p ? `${p}/${k}` : k
   }
 
-  async put(path: string, bytes: Uint8Array): Promise<void> {
+  async put(path: string, bytes: Uint8Array, signal?: AbortSignal): Promise<void> {
     try {
       await this.client.send(
         new PutObjectCommand({
@@ -53,16 +53,18 @@ export class S3Remote implements BackupRemote {
           Body: bytes,
           ContentType: 'application/octet-stream',
         }),
+        { abortSignal: signal },
       )
     } catch (e) {
       mapAndThrow(e)
     }
   }
 
-  async get(path: string): Promise<Uint8Array> {
+  async get(path: string, signal?: AbortSignal): Promise<Uint8Array> {
     try {
       const res = await this.client.send(
         new GetObjectCommand({ Bucket: this.opts.bucket, Key: this.key(path) }),
+        { abortSignal: signal },
       )
       if (!res.Body) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_FOUND)
       const arr = await res.Body.transformToByteArray()
@@ -74,10 +76,11 @@ export class S3Remote implements BackupRemote {
     }
   }
 
-  async delete(path: string): Promise<void> {
+  async delete(path: string, signal?: AbortSignal): Promise<void> {
     try {
       await this.client.send(
         new DeleteObjectCommand({ Bucket: this.opts.bucket, Key: this.key(path) }),
+        { abortSignal: signal },
       )
     } catch (e) {
       // Treat 404 as success.
@@ -86,10 +89,11 @@ export class S3Remote implements BackupRemote {
     }
   }
 
-  async headLastModified(path: string): Promise<string | null> {
+  async headLastModified(path: string, signal?: AbortSignal): Promise<string | null> {
     try {
       const res = await this.client.send(
         new HeadObjectCommand({ Bucket: this.opts.bucket, Key: this.key(path) }),
+        { abortSignal: signal },
       )
       return res.LastModified ? res.LastModified.toISOString() : null
     } catch (e) {
@@ -98,7 +102,7 @@ export class S3Remote implements BackupRemote {
     }
   }
 
-  async list(prefix: string): Promise<RemoteObject[]> {
+  async list(prefix: string, signal?: AbortSignal): Promise<RemoteObject[]> {
     const fullPrefix = this.key(prefix)
     const out: RemoteObject[] = []
     try {
@@ -110,6 +114,7 @@ export class S3Remote implements BackupRemote {
             Prefix: fullPrefix,
             ContinuationToken: continuationToken,
           }),
+          { abortSignal: signal },
         )
         for (const obj of res.Contents ?? []) {
           if (!obj.Key) continue

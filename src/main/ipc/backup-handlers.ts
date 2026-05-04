@@ -15,6 +15,7 @@ import type {
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
+import { t } from '../i18n'
 import {
   clearRemoteConfig,
   exportToFile,
@@ -58,8 +59,8 @@ export function registerBackupHandlers(): void {
     async (): Promise<IpcResult<{ filePath: string } | null>> => {
       try {
         const result = await dialog.showOpenDialog({
-          title: 'Import AI Studio backup',
-          filters: [{ name: 'AI Studio Backup', extensions: ['aibackup'] }],
+          title: t('settings.backup.dialog.importTitle'),
+          filters: [{ name: t('settings.backup.dialog.fileFilter'), extensions: ['aibackup'] }],
           properties: ['openFile'],
         })
         if (result.canceled || result.filePaths.length === 0) {
@@ -82,8 +83,8 @@ export function registerBackupHandlers(): void {
         let filePath = payload.filePath
         if (!filePath) {
           const result = await dialog.showOpenDialog({
-            title: 'Import AI Studio backup',
-            filters: [{ name: 'AI Studio Backup', extensions: ['aibackup'] }],
+            title: t('settings.backup.dialog.importTitle'),
+            filters: [{ name: t('settings.backup.dialog.fileFilter'), extensions: ['aibackup'] }],
             properties: ['openFile'],
           })
           if (result.canceled || result.filePaths.length === 0) {

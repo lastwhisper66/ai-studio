@@ -1,6 +1,6 @@
 import { dialog, BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
-import { existsSync, readdirSync, statSync } from 'fs'
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import type {
   BackupFileMeta,
@@ -17,6 +17,7 @@ import type {
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { IpcChannels } from '@shared/ipc-channels'
+import { t } from '../i18n'
 import { decodeBackupFile, encodeBackupFile, peekBackupFile } from './codec'
 import { applySnapshot, collectSnapshot } from './snapshot'
 import { getDb } from '../db/database'
@@ -38,8 +39,8 @@ export interface ExportResult {
 
 /** Show a save dialog, then write the encrypted backup file. */
 export async function exportToFile(password: string): Promise<ExportResult> {
-  if (!password || password.length < 1) {
-    throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Empty password')
+  if (!password) {
+    throw new AppError(ERROR_CODES.BACKUP_PASSWORD_REQUIRED)
   }
   broadcast({ phase: 'collect' })
   const snapshot = collectSnapshot()
@@ -48,9 +49,9 @@ export async function exportToFile(password: string): Promise<ExportResult> {
 
   const defaultName = `aistudio-backup-${snapshot.exportedAt.replace(/[:.]/g, '-')}.aibackup`
   const result = await dialog.showSaveDialog({
-    title: 'Export AI Studio backup',
+    title: t('settings.backup.dialog.exportTitle'),
     defaultPath: defaultName,
-    filters: [{ name: 'AI Studio Backup', extensions: ['aibackup'] }],
+    filters: [{ name: t('settings.backup.dialog.fileFilter'), extensions: ['aibackup'] }],
   })
   if (result.canceled || !result.filePath) {
     throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
@@ -76,6 +77,19 @@ export async function importFromFile(
   broadcast({ phase: 'decrypt' })
   const raw = await readFile(filePath, 'utf8')
   const snapshot = decodeBackupFile(raw, password)
+  // Stash the current local state BEFORE applying, encrypted with the same
+  // password the user just supplied — that way "Undo last import" in the
+  // Rollback dialog is decryptable. Best-effort: a failure here must not
+  // block the import (e.g. disk full would still be recoverable by the user
+  // re-importing the original file). Skipped in `merge` mode because the
+  // operation is non-destructive — local-only rows are preserved.
+  if (mode === 'replace') {
+    try {
+      writePreApplyRollback(password)
+    } catch {
+      /* best-effort — proceed with import even if the safety net failed */
+    }
+  }
   broadcast({ phase: 'apply' })
   try {
     return applySnapshot(snapshot, mode)
@@ -236,10 +250,15 @@ export function buildRemote(cfg: RemoteConfig): BackupRemote {
   })
 }
 
-/** Probe the remote with a tiny PUT/GET/DELETE round-trip. */
+/**
+ * Probe the remote with a tiny PUT/GET/DELETE round-trip. The probe object
+ * lives under a `_probe/` prefix so retention pruning (which scans
+ * `backups/`) can never sweep it, and so a stray probe never confuses a
+ * snapshot listing.
+ */
 export async function testRemote(cfg: RemoteConfig): Promise<{ ok: boolean; latency: number }> {
   const remote = buildRemote(cfg)
-  const probeKey = `aistudio-probe-${Date.now()}.txt`
+  const probeKey = `_probe/aistudio-probe-${Date.now()}.txt`
   const start = Date.now()
   await remote.put(probeKey, new TextEncoder().encode('aistudio-probe'))
   await remote.get(probeKey)
@@ -253,8 +272,59 @@ export async function testRemote(cfg: RemoteConfig): Promise<{ ok: boolean; late
 // Local rollback copies
 // ---------------------------------------------------------------------------
 
+const ROLLBACK_DIR_NAME = 'auto-rollback'
 const ROLLBACK_FILENAME_RE = /^pre-apply-(.+)\.aibackup$/
 const SAFE_ISO_RE = /^(\d{4})-(\d{2})-(\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/
+
+function rollbackDir(): string {
+  return join(getDataDir(), 'backups', ROLLBACK_DIR_NAME)
+}
+
+/**
+ * Encrypt the CURRENT local state with `password` and write it as a
+ * pre-apply rollback copy. Used by both local file import and cloud restore
+ * so the user can undo a destructive apply by importing the rollback file.
+ *
+ * Returns the absolute path to the file just written. Pruning runs after
+ * writing and is taught to skip the file we just produced.
+ */
+export function writePreApplyRollback(password: string): string {
+  const dir = rollbackDir()
+  mkdirSync(dir, { recursive: true })
+  const { bytes } = encodeSnapshotBytes(password)
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const path = join(dir, `pre-apply-${stamp}.aibackup`)
+  writeFileSync(path, Buffer.from(bytes))
+  pruneRollbackCopies(path)
+  return path
+}
+
+/**
+ * Keep at most `backup.maxRetainedBackups` rollback files (default 5),
+ * deleting oldest first. Filenames embed an ISO timestamp so lex-descending
+ * sort = newest-first. The just-written `keepPath` is never pruned even if
+ * clock skew or filename collision would otherwise place it outside the
+ * retention window.
+ */
+function pruneRollbackCopies(keepPath?: string): void {
+  const dir = rollbackDir()
+  const max = parseInt(getSetting('backup.maxRetainedBackups') ?? '5', 10)
+  if (max <= 0) return
+  if (!existsSync(dir)) return
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.aibackup'))
+    .map((name) => ({ name, full: join(dir, name) }))
+    .sort((a, b) => (a.name < b.name ? 1 : -1))
+  for (const f of files.slice(max)) {
+    if (keepPath && f.full === keepPath) continue
+    try {
+      rmSync(f.full, { force: true })
+    } catch {
+      /* best-effort — a leftover file just delays the next prune by one
+         cycle and is otherwise harmless. */
+    }
+  }
+}
 
 /**
  * Reverse the `safeKeyTimestamp` transform applied when writing rollback
@@ -279,7 +349,7 @@ function parseRollbackTimestamp(safe: string): string | undefined {
  * is needed.
  */
 export function listRollbacks(): RollbackBackupItem[] {
-  const dir = join(getDataDir(), 'backups', 'auto-rollback')
+  const dir = rollbackDir()
   if (!existsSync(dir)) return []
 
   const out: RollbackBackupItem[] = []

@@ -2,7 +2,14 @@ import { app } from 'electron'
 import type { BackupFileMeta, BackupSnapshot } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
-import { decryptString, encryptString, type EncryptedBundle } from './crypto'
+import {
+  decryptString,
+  encryptString,
+  KDF_ALGO,
+  KDF_ITERATIONS,
+  KDF_NAME,
+  type EncryptedBundle,
+} from './crypto'
 
 const MAGIC = 'AISTUDIO-BACKUP'
 const SUPPORTED_SCHEMA = 1
@@ -23,9 +30,28 @@ interface BackupFile {
   tag: string
 }
 
+/**
+ * Build the AAD (additional authenticated data) bound into the GCM tag.
+ * Any modification to magic / schemaVersion / algo / kdf / iterations on
+ * disk will invalidate the tag and cause decryption to fail. We deliberately
+ * exclude `appVersion` and `createdAt` from the AAD so re-stamping metadata
+ * (e.g. for diagnostics) wouldn't break decryption — those fields aren't
+ * security-relevant.
+ */
+function buildAad(
+  magic: string,
+  schemaVersion: number,
+  algo: string,
+  kdf: string,
+  iterations: number,
+): Buffer {
+  return Buffer.from(`${magic}|${schemaVersion}|${algo}|${kdf}|${iterations}`, 'utf8')
+}
+
 /** Serialize a snapshot into the on-disk JSON form, encrypted with the user's password. */
 export function encodeBackupFile(snapshot: BackupSnapshot, password: string): string {
-  const bundle: EncryptedBundle = encryptString(JSON.stringify(snapshot), password)
+  const aad = buildAad(MAGIC, SUPPORTED_SCHEMA, KDF_ALGO, KDF_NAME, KDF_ITERATIONS)
+  const bundle: EncryptedBundle = encryptString(JSON.stringify(snapshot), password, aad)
   const file: BackupFile = {
     magic: MAGIC,
     schemaVersion: snapshot.schemaVersion,
@@ -57,6 +83,13 @@ export function peekBackupFile(rawJson: string): BackupFileMeta {
 /** Decode + decrypt to a usable snapshot. */
 export function decodeBackupFile(rawJson: string, password: string): BackupSnapshot {
   const file = parseAndValidate(rawJson)
+  const aad = buildAad(
+    file.magic,
+    file.schemaVersion,
+    file.encryption.algo,
+    file.encryption.kdf,
+    file.encryption.iterations,
+  )
   const bundle: EncryptedBundle = {
     payload: file.payload,
     tag: file.tag,
@@ -66,7 +99,7 @@ export function decodeBackupFile(rawJson: string, password: string): BackupSnaps
     kdf: file.encryption.kdf,
     iterations: file.encryption.iterations,
   }
-  const json = decryptString(bundle, password)
+  const json = decryptString(bundle, password, aad)
   let snapshot: BackupSnapshot
   try {
     snapshot = JSON.parse(json) as BackupSnapshot

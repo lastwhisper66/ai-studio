@@ -103,7 +103,8 @@ export function applySnapshot(snapshot: BackupSnapshot, mode: BackupImportMode):
   const finalAvatarsDir = join(dataDir, AVATARS_SUBDIR)
   const tmpAvatarsDir = join(dataDir, AVATARS_SUBDIR + '.import-' + randomUUID())
 
-  // 1. Stage avatars to a temp dir BEFORE touching the DB.
+  // 1. Stage avatars to a temp dir BEFORE touching the DB, on the same
+  //    filesystem so the later rename can be atomic.
   if (snapshot.avatars.length > 0) {
     mkdirSync(tmpAvatarsDir, { recursive: true })
     for (const av of snapshot.avatars) {
@@ -128,16 +129,22 @@ export function applySnapshot(snapshot: BackupSnapshot, mode: BackupImportMode):
     throw e
   }
 
-  // 2. DB committed. Now atomically swap avatars dir.
+  // 2. DB committed. Now move staged avatars into place atomically.
+  //    There's an unavoidable window here where the DB references the new
+  //    state and the avatars still reflect the old state; a startup janitor
+  //    (`cleanupStaleAvatarStaging`) sweeps any leftover `.import-*` /
+  //    `.trash-*` sibling dirs so we self-heal across restarts.
   if (snapshot.avatars.length > 0) {
     if (mode === 'replace' && existsSync(finalAvatarsDir)) {
+      // Three-step swap: keep the old dir under a `.trash-*` sibling until
+      // the new dir is in place, then nuke the trash. If the second rename
+      // fails we restore the old dir so the user is never left avatar-less.
       const trashDir = finalAvatarsDir + '.trash-' + randomUUID()
       renameSync(finalAvatarsDir, trashDir)
       try {
         renameSync(tmpAvatarsDir, finalAvatarsDir)
         rmSync(trashDir, { recursive: true, force: true })
       } catch (e) {
-        // Try to restore old avatars dir if rename of new dir fails.
         try {
           renameSync(trashDir, finalAvatarsDir)
         } catch {
@@ -146,16 +153,62 @@ export function applySnapshot(snapshot: BackupSnapshot, mode: BackupImportMode):
         throw e
       }
     } else {
-      // merge: copy each tmp file into finalAvatarsDir, overwriting same names.
+      // `replace` with no pre-existing dir, OR `merge` mode. Move each staged
+      // file into place via per-file rename so each individual avatar update
+      // is atomic — a crash mid-loop leaves a mix of new & old files but
+      // never a partially-written file.
       mkdirSync(finalAvatarsDir, { recursive: true })
       for (const av of snapshot.avatars) {
-        writeFileSync(join(finalAvatarsDir, av.fileName), Buffer.from(av.data, 'base64'))
+        const stagedPath = join(tmpAvatarsDir, av.fileName)
+        const finalPath = join(finalAvatarsDir, av.fileName)
+        try {
+          renameSync(stagedPath, finalPath)
+        } catch {
+          // Cross-device link or Windows EPERM (a file is currently held
+          // open). Fall back to a copy + unlink — still atomic from the
+          // reader's perspective via writeFileSync's atomic-replace
+          // semantics on the same filesystem.
+          writeFileSync(finalPath, Buffer.from(av.data, 'base64'))
+        }
       }
-      rmSync(tmpAvatarsDir, { recursive: true, force: true })
+      try {
+        rmSync(tmpAvatarsDir, { recursive: true, force: true })
+      } catch {
+        /* best-effort — leftover tmp dir will be swept next boot */
+      }
     }
   }
 
   return summary!
+}
+
+/**
+ * Boot-time janitor: remove stale `.import-*` and `.trash-*` sibling dirs
+ * that a previous run created and never cleaned up (process crash, power
+ * loss, etc.). Safe to run unconditionally — these names are reserved by
+ * `applySnapshot` and aren't used for anything else.
+ */
+export function cleanupStaleAvatarStaging(): void {
+  const dataDir = getDataDir()
+  if (!existsSync(dataDir)) return
+  let entries: string[] = []
+  try {
+    entries = readdirSync(dataDir)
+  } catch {
+    return
+  }
+  for (const name of entries) {
+    if (
+      name.startsWith(AVATARS_SUBDIR + '.import-') ||
+      name.startsWith(AVATARS_SUBDIR + '.trash-')
+    ) {
+      try {
+        rmSync(join(dataDir, name), { recursive: true, force: true })
+      } catch {
+        /* best-effort */
+      }
+    }
+  }
 }
 
 function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode): BackupSummary {

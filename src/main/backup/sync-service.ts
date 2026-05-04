@@ -1,6 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'fs'
-import { join } from 'path'
+import { randomUUID } from 'crypto'
 import type {
   BackupProgress,
   RemoteBackupItem,
@@ -12,7 +11,6 @@ import type {
 import { ERROR_CODES, type LocalizedError } from '@shared/errors'
 import { AppError, toLocalizedError } from '../errors'
 import { IpcChannels } from '@shared/ipc-channels'
-import { getDataDir } from '../utils/paths'
 import { getSetting, setSetting } from '../db/settings'
 import {
   applyEncryptedBytes,
@@ -20,6 +18,7 @@ import {
   encodeSnapshotBytes,
   loadEnabledRemotes,
   peekBackupFile,
+  writePreApplyRollback,
 } from '.'
 import type { BackupRemote, RemoteObject } from './remote/types'
 
@@ -27,11 +26,12 @@ import type { BackupRemote, RemoteObject } from './remote/types'
 const MANIFEST_KEY = 'manifest.json'
 /** Prefix under which `.aibackup` snapshots are stored. */
 const BACKUPS_PREFIX = 'backups/'
-/** Local subdir (under `data/backups/`) for pre-apply rollback copies. */
-const ROLLBACK_DIR = 'auto-rollback'
 /** Tolerance for the local-vs-remote timestamp comparison; protects against
  *  small clock skew between the device that uploaded and this device. */
 const CLOCK_TOLERANCE_MS = 1_000
+/** Manifest schema this client knows how to read. Newer values must abort
+ *  the sync rather than be silently overwritten — see fetchManifest. */
+const MANIFEST_SCHEMA_VERSION = 1
 
 interface Manifest {
   latestBackupKey: string
@@ -105,6 +105,11 @@ class BackupSyncService {
     this.currentAbort?.abort()
   }
 
+  /** Convenience accessor — every remote call inside a sync should pass this. */
+  private get signal(): AbortSignal | undefined {
+    return this.currentAbort?.signal
+  }
+
   /**
    * (Re)configure the auto-sync timer based on current settings. Called at
    * boot and again whenever `backup.autoSyncIntervalMinutes` changes via the
@@ -140,11 +145,13 @@ class BackupSyncService {
     try {
       const password = getSetting('backup.syncPassphrase')
       if (!password) {
-        throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Sync passphrase missing')
+        throw new AppError(ERROR_CODES.BACKUP_PASSWORD_REQUIRED)
       }
 
-      // Fetch each remote's manifest in parallel; tolerate per-remote failures
-      // (treat as "no manifest") so a single dead remote can't block sync.
+      // Fetch each remote's manifest in parallel. Per-target failures are
+      // tolerated (treat as "no manifest") so a single dead remote can't
+      // block sync — but a future-version manifest from any remote MUST
+      // abort the entire sync so we don't silently demote it.
       const targets: RemoteWithManifest[] = await Promise.all(
         enabled.map(async (cfg) => {
           const remote = buildRemote(cfg)
@@ -152,6 +159,17 @@ class BackupSyncService {
             const manifest = await this.fetchManifest(remote)
             return { cfg, remote, manifest, fetchError: null }
           } catch (e) {
+            // Schema-too-new must propagate — overwriting a newer manifest
+            // with our older schema would lose the other device's state.
+            // Same for user cancellation, so the sync ends cleanly rather
+            // than rolling on as if the manifest fetch had simply 404'd.
+            if (
+              e instanceof AppError &&
+              (e.code === ERROR_CODES.BACKUP_SCHEMA_TOO_NEW ||
+                e.code === ERROR_CODES.BACKUP_CANCELLED)
+            ) {
+              throw e
+            }
             return {
               cfg,
               remote,
@@ -222,22 +240,30 @@ class BackupSyncService {
 
   /**
    * List `.aibackup` objects on a specific remote, augmented with header
-   * metadata (createdAt, appVersion) where available. Capped peek to 50
-   * entries to keep the dialog responsive on remotes with many snapshots.
+   * metadata (createdAt, appVersion) where available. We sort by key
+   * descending FIRST (keys begin with an ISO timestamp, so this puts the
+   * newest items first), then peek the top 50 entries — that way the
+   * "Latest first" view in the history dialog gets accurate header data
+   * for the entries the user is most likely to inspect, even when there
+   * are hundreds of historical snapshots.
    */
   async listRemote(type: RemoteType): Promise<RemoteBackupItem[]> {
     const enabled = loadEnabledRemotes()
     const cfg = enabled.find((c) => c.type === type)
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
-    const objects = await remote.list(BACKUPS_PREFIX)
+    const objects = await remote.list(BACKUPS_PREFIX, this.signal)
+    const sorted = [...objects]
+      .filter((o) => o.key.endsWith('.aibackup'))
+      .sort((a, b) => (a.key < b.key ? 1 : -1))
     const out: RemoteBackupItem[] = []
-    for (const obj of objects) {
+    for (let i = 0; i < sorted.length; i++) {
+      const obj = sorted[i]
       let createdAt = obj.lastModified
       let appVersion = ''
-      if (out.length < 50) {
+      if (i < 50) {
         try {
-          const bytes = await remote.get(obj.key)
+          const bytes = await remote.get(obj.key, this.signal)
           const meta = peekBackupFile(new TextDecoder().decode(bytes))
           createdAt = meta.createdAt
           appVersion = meta.appVersion
@@ -270,9 +296,18 @@ class BackupSyncService {
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
     this.progress({ phase: 'download' })
-    const bytes = await remote.get(key)
+    const bytes = await remote.get(key, this.signal)
     this.progress({ phase: 'decrypt' })
-    this.writeRollback(bytes)
+    // Save the CURRENT local state before applying. The user supplied the
+    // password to decrypt the remote snapshot; reuse it for the rollback so
+    // the resulting file is decryptable with the same credential.
+    if (mode === 'replace') {
+      try {
+        writePreApplyRollback(password)
+      } catch {
+        /* best-effort — proceed even if the safety net failed */
+      }
+    }
     this.progress({ phase: 'apply' })
     applyEncryptedBytes(bytes, password, mode)
     setSetting('backup.lastSyncedAt', new Date().toISOString())
@@ -283,10 +318,16 @@ class BackupSyncService {
 
   private async fetchManifest(remote: BackupRemote): Promise<Manifest | null> {
     try {
-      const bytes = await remote.get(MANIFEST_KEY)
+      const bytes = await remote.get(MANIFEST_KEY, this.signal)
       const text = new TextDecoder().decode(bytes)
       const m = JSON.parse(text) as Manifest
-      if (m.schemaVersion !== 1) return null
+      // A manifest from a newer client must NOT be silently treated as "no
+      // manifest" — if we did, the next syncNow would happily overwrite it
+      // with our schema-1 manifest and lose the other device's pointer.
+      if (m.schemaVersion > MANIFEST_SCHEMA_VERSION) {
+        throw new AppError(ERROR_CODES.BACKUP_SCHEMA_TOO_NEW)
+      }
+      if (m.schemaVersion !== MANIFEST_SCHEMA_VERSION) return null
       return m
     } catch (e) {
       if (e instanceof AppError && e.code === ERROR_CODES.BACKUP_REMOTE_NOT_FOUND) return null
@@ -300,11 +341,14 @@ class BackupSyncService {
     const { bytes, createdAt } = encodeSnapshotBytes(password)
     if (this.currentAbort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
-    const key = `${BACKUPS_PREFIX}${safeKeyTimestamp(createdAt)}.aibackup`
+    // UUID suffix prevents key collisions when two devices upload within the
+    // same millisecond — without it, the later writer overwrites the
+    // earlier writer's snapshot bytes and that snapshot is lost forever.
+    const key = `${BACKUPS_PREFIX}${safeKeyTimestamp(createdAt)}-${randomUUID()}.aibackup`
     const manifest: Manifest = {
       latestBackupKey: key,
       latestCreatedAt: createdAt,
-      schemaVersion: 1,
+      schemaVersion: MANIFEST_SCHEMA_VERSION,
     }
     const manifestBytes = new TextEncoder().encode(JSON.stringify(manifest, null, 2))
 
@@ -331,10 +375,18 @@ class BackupSyncService {
   ): Promise<SyncResult> {
     if (!source.manifest) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_FOUND)
     this.progress({ phase: 'download' })
-    const bytes = await source.remote.get(source.manifest.latestBackupKey)
+    const bytes = await source.remote.get(source.manifest.latestBackupKey, this.signal)
     if (this.currentAbort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
-    this.writeRollback(bytes)
+    // Save the CURRENT local state (not the to-be-applied bytes) so the user
+    // can actually undo this download by importing the rollback file. Encrypt
+    // with the same password that just decrypted the remote so they remain
+    // recoverable with one credential.
+    try {
+      writePreApplyRollback(password)
+    } catch {
+      /* best-effort — proceed with download even if the safety net failed */
+    }
     this.progress({ phase: 'decrypt' })
     this.progress({ phase: 'apply' })
     applyEncryptedBytes(bytes, password, 'replace')
@@ -366,10 +418,10 @@ class BackupSyncService {
     await Promise.all(
       targets.map(async (t) => {
         try {
-          await t.remote.put(key, bytes)
+          await t.remote.put(key, bytes, this.signal)
           // Manifest is written LAST so a mid-upload crash leaves the previous
           // (still-valid) manifest in place rather than a dangling pointer.
-          await t.remote.put(MANIFEST_KEY, manifestBytes)
+          await t.remote.put(MANIFEST_KEY, manifestBytes, this.signal)
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e)
           failures.set(t.cfg.type, `${t.cfg.type}: ${msg}`)
@@ -389,44 +441,12 @@ class BackupSyncService {
     if (errs.length > 0) this.lastWarning = errs.join('; ')
   }
 
-  /**
-   * Stash the encrypted bytes that were ABOUT to be applied, into
-   * `data/backups/auto-rollback/`. If apply succeeds we keep them as a safety
-   * net (rolling window of `backup.maxRetainedBackups`); if apply throws,
-   * the user can recover by importing the rollback copy manually.
-   */
-  private writeRollback(latestBytes: Uint8Array): void {
-    const dir = join(getDataDir(), 'backups', ROLLBACK_DIR)
-    mkdirSync(dir, { recursive: true })
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-    writeFileSync(join(dir, `pre-apply-${stamp}.aibackup`), Buffer.from(latestBytes))
-    this.pruneLocalRollbacks(dir)
-  }
-
-  private pruneLocalRollbacks(dir: string): void {
-    const max = parseInt(getSetting('backup.maxRetainedBackups') ?? '5', 10)
-    if (max <= 0) return
-    if (!existsSync(dir)) return
-    // Filenames embed an ISO timestamp; lexicographic descending == newest first.
-    const files = readdirSync(dir)
-      .filter((f) => f.endsWith('.aibackup'))
-      .map((name) => ({ name, full: join(dir, name) }))
-      .sort((a, b) => (a.name < b.name ? 1 : -1))
-    for (const f of files.slice(max)) {
-      try {
-        rmSync(f.full, { force: true })
-      } catch {
-        /* tolerate — best-effort cleanup */
-      }
-    }
-  }
-
   private async pruneRemote(remote: BackupRemote): Promise<void> {
     const max = parseInt(getSetting('backup.maxRetainedBackups') ?? '5', 10)
     if (max <= 0) return
     let objects: RemoteObject[] = []
     try {
-      objects = await remote.list(BACKUPS_PREFIX)
+      objects = await remote.list(BACKUPS_PREFIX, this.signal)
     } catch (e) {
       // Pruning is best-effort; record but don't fail the sync.
       this.lastWarning = `prune list failed: ${e instanceof Error ? e.message : String(e)}`
@@ -437,7 +457,7 @@ class BackupSyncService {
       .sort((a, b) => (a.key < b.key ? 1 : -1))
     for (const o of sorted.slice(max)) {
       try {
-        await remote.delete(o.key)
+        await remote.delete(o.key, this.signal)
       } catch {
         /* tolerate — leave for next prune attempt */
       }
