@@ -13,7 +13,7 @@ import { AppError, toLocalizedError } from '../errors'
 import { IpcChannels } from '@shared/ipc-channels'
 import { getSetting, setSetting } from '../db/settings'
 import {
-  applyEncryptedBytes,
+  applyBackupBytes,
   buildRemote,
   encodeSnapshotBytes,
   loadEnabledRemote,
@@ -197,12 +197,10 @@ class BackupSyncService {
 
     let finalError: LocalizedError | null = null
     try {
-      // NOTE: Phase 3 Task 3.2.A relaxes this — empty passphrase will mean
-      // "plaintext mode". For now we keep the legacy required check.
-      const password = getSetting(`backup.remote.${type}.passphrase`)
-      if (!password) {
-        throw new AppError(ERROR_CODES.BACKUP_PASSWORD_REQUIRED)
-      }
+      // Plaintext mode: empty/missing passphrase means upload/download as
+      // unencrypted bytes. The codec emits `encryption.algo: 'none'`.
+      const passwordRaw = getSetting(`backup.remote.${type}.passphrase`)
+      const password: string | null = passwordRaw && passwordRaw.length > 0 ? passwordRaw : null
 
       const remote = buildRemote(cfg)
       const manifest = await this.fetchManifest(remote, state)
@@ -297,7 +295,7 @@ class BackupSyncService {
   async restoreFromKey(
     type: RemoteType,
     key: string,
-    password: string,
+    password: string | null,
     mode: 'replace' | 'merge',
   ): Promise<void> {
     const cfg = loadEnabledRemote(type)
@@ -308,13 +306,13 @@ class BackupSyncService {
     this.progress(type, { phase: 'decrypt' })
     if (mode === 'replace') {
       try {
-        writePreApplyRollback(password)
+        writePreApplyRollback(password, type)
       } catch {
         /* best-effort */
       }
     }
     this.progress(type, { phase: 'apply' })
-    applyEncryptedBytes(bytes, password, mode)
+    applyBackupBytes(bytes, password, mode)
     setSetting(`backup.remote.${type}.lastSyncedAt`, new Date().toISOString())
     this.broadcastStatus()
   }
@@ -356,7 +354,7 @@ class BackupSyncService {
   private async uploadFlow(
     type: RemoteType,
     remote: BackupRemote,
-    password: string,
+    password: string | null,
   ): Promise<SyncResult> {
     const state = this.remoteStates.get(type)!
     this.progress(type, { phase: 'collect' })
@@ -395,7 +393,7 @@ class BackupSyncService {
     type: RemoteType,
     remote: BackupRemote,
     manifest: Manifest,
-    password: string,
+    password: string | null,
   ): Promise<SyncResult> {
     const state = this.remoteStates.get(type)!
     this.progress(type, { phase: 'download' })
@@ -403,13 +401,13 @@ class BackupSyncService {
     if (state.abort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
     try {
-      writePreApplyRollback(password)
+      writePreApplyRollback(password, type)
     } catch {
       /* best-effort */
     }
     this.progress(type, { phase: 'decrypt' })
     this.progress(type, { phase: 'apply' })
-    applyEncryptedBytes(bytes, password, 'replace')
+    applyBackupBytes(bytes, password, 'replace')
 
     return { direction: 'download', createdAt: manifest.latestCreatedAt }
   }
