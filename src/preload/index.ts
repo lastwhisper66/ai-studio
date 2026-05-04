@@ -51,6 +51,7 @@ import type {
   BackupFileMeta,
   BackupImportMode,
   BackupProgress,
+  BackupStatus,
   BackupSummary,
   RemoteBackupItem,
   RemoteConfig,
@@ -58,7 +59,6 @@ import type {
   RemoteType,
   RollbackBackupItem,
   SyncResult,
-  SyncStatus,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -709,9 +709,14 @@ const api = {
     testRemote: (cfg: RemoteConfig): Promise<IpcResult<{ ok: boolean; latency?: number }>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_TEST_REMOTE, cfg),
 
-    syncNow: (): Promise<IpcResult<SyncResult>> => ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_NOW),
+    syncNow: (type: RemoteType): Promise<IpcResult<SyncResult>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_NOW, { type }),
 
-    syncCancel: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_CANCEL),
+    syncCancel: (type: RemoteType): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_CANCEL, { type }),
+
+    setRemoteEnabled: (type: RemoteType, enabled: boolean): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_SET_REMOTE_ENABLED, { type, enabled }),
 
     listRemote: (type: RemoteType): Promise<IpcResult<RemoteBackupItem[]>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_LIST_REMOTE, { type }),
@@ -724,14 +729,14 @@ const api = {
     }): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_RESTORE_FROM_REMOTE, payload),
 
-    getStatus: (): Promise<IpcResult<SyncStatus>> =>
+    getStatus: (): Promise<IpcResult<BackupStatus>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_GET_STATUS),
 
     listRollbacks: (): Promise<IpcResult<RollbackBackupItem[]>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_LIST_ROLLBACKS),
 
-    onStatusChanged: (cb: (status: SyncStatus) => void): (() => void) => {
-      const fn = (_e: Electron.IpcRendererEvent, status: SyncStatus): void => cb(status)
+    onStatusChanged: (cb: (status: BackupStatus) => void): (() => void) => {
+      const fn = (_e: Electron.IpcRendererEvent, status: BackupStatus): void => cb(status)
       ipcRenderer.on(IpcChannels.BACKUP_STATUS_CHANGED, fn)
       return () => ipcRenderer.removeListener(IpcChannels.BACKUP_STATUS_CHANGED, fn)
     },

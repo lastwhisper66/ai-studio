@@ -3,6 +3,7 @@ import { IpcChannels } from '@shared/ipc-channels'
 import type {
   BackupFileMeta,
   BackupImportMode,
+  BackupStatus,
   BackupSummary,
   IpcResult,
   RemoteBackupItem,
@@ -11,7 +12,6 @@ import type {
   RemoteType,
   RollbackBackupItem,
   SyncResult,
-  SyncStatus,
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
@@ -148,7 +148,7 @@ export function registerBackupHandlers(): void {
     },
   )
 
-  ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<SyncStatus> => {
+  ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<BackupStatus> => {
     try {
       return { success: true, data: backupSyncService.getStatus() }
     } catch (e) {
@@ -156,23 +156,41 @@ export function registerBackupHandlers(): void {
     }
   })
 
-  ipcMain.handle(IpcChannels.BACKUP_SYNC_NOW, async (): Promise<IpcResult<SyncResult>> => {
-    try {
-      const data = await backupSyncService.syncNow()
-      return { success: true, data }
-    } catch (e) {
-      return { success: false, error: toLocalizedError(e) }
-    }
-  })
+  ipcMain.handle(
+    IpcChannels.BACKUP_SYNC_NOW,
+    async (_, payload: { type: RemoteType }): Promise<IpcResult<SyncResult>> => {
+      try {
+        const data = await backupSyncService.syncNow(payload.type)
+        return { success: true, data }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 
-  ipcMain.handle(IpcChannels.BACKUP_SYNC_CANCEL, (): IpcResult<void> => {
-    try {
-      backupSyncService.cancel()
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: toLocalizedError(e) }
-    }
-  })
+  ipcMain.handle(
+    IpcChannels.BACKUP_SYNC_CANCEL,
+    (_, payload: { type: RemoteType }): IpcResult<void> => {
+      try {
+        backupSyncService.syncCancel(payload.type)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    IpcChannels.BACKUP_SET_REMOTE_ENABLED,
+    (_, payload: { type: RemoteType; enabled: boolean }): IpcResult<void> => {
+      try {
+        backupSyncService.setEnabled(payload.type, payload.enabled)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 
   ipcMain.handle(
     IpcChannels.BACKUP_LIST_REMOTE,
