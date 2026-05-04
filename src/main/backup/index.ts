@@ -37,14 +37,13 @@ export interface ExportResult {
   filePath: string
 }
 
-/** Show a save dialog, then write the encrypted backup file. */
-export async function exportToFile(password: string): Promise<ExportResult> {
-  if (!password) {
-    throw new AppError(ERROR_CODES.BACKUP_PASSWORD_REQUIRED)
-  }
-  broadcast({ phase: 'collect' })
+/** Show a save dialog, then write the backup file (encrypted or plaintext). */
+export async function exportToFile(password: string | null): Promise<ExportResult> {
+  // Plaintext mode (password === null/empty) is supported — codec emits
+  // `encryption.algo: 'none'`. No required check here.
+  broadcast({ type: 'local', phase: 'collect' })
   const snapshot = collectSnapshot()
-  broadcast({ phase: 'encrypt' })
+  broadcast({ type: 'local', phase: 'encrypt' })
   const json = encodeBackupFile(snapshot, password)
 
   const defaultName = `aistudio-backup-${snapshot.exportedAt.replace(/[:.]/g, '-')}.aibackup`
@@ -68,21 +67,22 @@ export async function peekFile(filePath: string): Promise<BackupFileMeta> {
   return peekBackupFile(raw)
 }
 
-/** Decrypt + apply a backup file to the local DB. */
+/** Decrypt + apply a backup file to the local DB. Pass `null` for plaintext files. */
 export async function importFromFile(
   filePath: string,
-  password: string,
+  password: string | null,
   mode: BackupImportMode,
 ): Promise<BackupSummary> {
-  broadcast({ phase: 'decrypt' })
+  broadcast({ type: 'local', phase: 'decrypt' })
   const raw = await readFile(filePath, 'utf8')
   const snapshot = decodeBackupFile(raw, password)
   // Stash the current local state BEFORE applying, encrypted with the same
-  // password the user just supplied — that way "Undo last import" in the
-  // Rollback dialog is decryptable. Best-effort: a failure here must not
-  // block the import (e.g. disk full would still be recoverable by the user
-  // re-importing the original file). Skipped in `merge` mode because the
-  // operation is non-destructive — local-only rows are preserved.
+  // password the user just supplied (or unencrypted if password is null) — that
+  // way "Undo last import" in the Rollback dialog is decryptable. Best-effort:
+  // a failure here must not block the import (e.g. disk full would still be
+  // recoverable by the user re-importing the original file). Skipped in
+  // `merge` mode because the operation is non-destructive — local-only rows
+  // are preserved.
   if (mode === 'replace') {
     try {
       writePreApplyRollback(password)
@@ -90,7 +90,7 @@ export async function importFromFile(
       /* best-effort — proceed with import even if the safety net failed */
     }
   }
-  broadcast({ phase: 'apply' })
+  broadcast({ type: 'local', phase: 'apply' })
   try {
     return applySnapshot(snapshot, mode)
   } catch (e) {
@@ -103,23 +103,36 @@ export async function importFromFile(
   }
 }
 
-/** Helper for the cloud sync flow — produce the encrypted bytes without touching disk. */
-export function encodeSnapshotBytes(password: string): { bytes: Uint8Array; createdAt: string } {
+/** Helper for the cloud sync flow — produce backup bytes (encrypted or plaintext) without touching disk. */
+export function encodeSnapshotBytes(password: string | null): {
+  bytes: Uint8Array
+  createdAt: string
+} {
   const snapshot = collectSnapshot()
   const json = encodeBackupFile(snapshot, password)
   return { bytes: new TextEncoder().encode(json), createdAt: snapshot.exportedAt }
 }
 
-/** Helper for the cloud sync flow — apply a snapshot from in-memory bytes. */
-export function applyEncryptedBytes(
+/**
+ * Helper for the cloud sync flow — apply a snapshot from in-memory bytes.
+ * `password` may be `null` for plaintext files (which `peekBackupFile` can
+ * detect ahead of time via `BackupFileMeta.encrypted`).
+ */
+export function applyBackupBytes(
   bytes: Uint8Array,
-  password: string,
+  password: string | null,
   mode: BackupImportMode,
 ): BackupSummary {
   const json = new TextDecoder().decode(bytes)
   const snapshot = decodeBackupFile(json, password)
   return applySnapshot(snapshot, mode)
 }
+
+/**
+ * @deprecated Use `applyBackupBytes` instead. Kept as an alias for the legacy
+ * import path during the per-remote refactor — remove once all callers migrate.
+ */
+export const applyEncryptedBytes = applyBackupBytes
 
 // Re-exports so tests / future code can reach internals through one entry.
 export { collectSnapshot, applySnapshot } from './snapshot'
@@ -303,20 +316,32 @@ function rollbackDir(): string {
 }
 
 /**
- * Encrypt the CURRENT local state with `password` and write it as a
- * pre-apply rollback copy. Used by both local file import and cloud restore
- * so the user can undo a destructive apply by importing the rollback file.
+ * Encrypt the CURRENT local state with `password` (or write plaintext when
+ * `password` is null) and emit it as a pre-apply rollback copy. Used by both
+ * local file import and cloud restore so the user can undo a destructive
+ * apply by importing the rollback file.
+ *
+ * `triggeredBy` records which event produced the rollback so the UI can show
+ * "Triggered by WebDAV" / "Triggered by S3" / "Manual" in the rollback list.
+ * The persistence layer (sidecar JSON) is added in Phase 5; for now the
+ * parameter is threaded through unchanged.
  *
  * Returns the absolute path to the file just written. Pruning runs after
  * writing and is taught to skip the file we just produced.
  */
-export function writePreApplyRollback(password: string): string {
+export function writePreApplyRollback(
+  password: string | null,
+  triggeredBy: RemoteType | 'manual' = 'manual',
+): string {
   const dir = rollbackDir()
   mkdirSync(dir, { recursive: true })
   const { bytes } = encodeSnapshotBytes(password)
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const path = join(dir, `pre-apply-${stamp}.aibackup`)
   writeFileSync(path, Buffer.from(bytes))
+  // Sidecar `${path}.meta.json` is written here in Phase 5; until then the
+  // listRollbacks reader returns 'manual' for every entry.
+  void triggeredBy
   pruneRollbackCopies(path)
   return path
 }
@@ -330,7 +355,13 @@ export function writePreApplyRollback(password: string): string {
  */
 function pruneRollbackCopies(keepPath?: string): void {
   const dir = rollbackDir()
-  const max = parseInt(getSetting('backup.maxRetainedBackups') ?? '5', 10)
+  // The rollback retention budget covers BOTH remotes' triggers + manual
+  // applies (rollbacks aren't tagged per-remote on disk for retention purposes).
+  // Use the larger of the two per-remote retention values so a user who set
+  // one remote to "keep 20" doesn't lose rollbacks from the other remote.
+  const wd = parseInt(getSetting('backup.remote.webdav.maxRetainedBackups') ?? '5', 10)
+  const s3 = parseInt(getSetting('backup.remote.s3.maxRetainedBackups') ?? '5', 10)
+  const max = Math.max(wd, s3, 1)
   if (max <= 0) return
   if (!existsSync(dir)) return
   const files = readdirSync(dir)
@@ -389,7 +420,16 @@ export function listRollbacks(): RollbackBackupItem[] {
     } catch {
       /* tolerate; entry will still be returned with size 0 */
     }
-    out.push({ filePath: full, fileName: name, createdAt, size })
+    out.push({
+      filePath: full,
+      fileName: name,
+      createdAt,
+      size,
+      // Phase 5 reads the actual source from a sidecar `.meta.json`. Until
+      // then every rollback surfaces as 'manual' — backwards-compatible
+      // because the UI label is purely informational.
+      triggeredBy: 'manual',
+    })
   }
   // Sort descending by createdAt — newest first matches the "latest first"
   // expectation users have for "undo my last sync".

@@ -127,21 +127,26 @@ export function decodeBackupFile(rawJson: string, password: string | null): Back
       // Encrypted file but no password supplied — surface as wrong password.
       throw new AppError(ERROR_CODES.BACKUP_PASSWORD_WRONG)
     }
+    // TS narrows `file.encryption.algo` to 'AES-256-GCM' here but doesn't
+    // propagate that to `file` itself, so `file.tag` would error on the
+    // PlaintextBackupFile branch of the union. parseAndValidate already
+    // verified the tag exists on encrypted files.
+    const enc = file as EncryptedBackupFile
     const aad = buildAad(
-      file.magic,
-      file.schemaVersion,
-      file.encryption.algo,
-      file.encryption.kdf,
-      file.encryption.iterations,
+      enc.magic,
+      enc.schemaVersion,
+      enc.encryption.algo,
+      enc.encryption.kdf,
+      enc.encryption.iterations,
     )
     const bundle: EncryptedBundle = {
-      payload: file.payload,
-      tag: file.tag,
-      salt: file.encryption.salt,
-      iv: file.encryption.iv,
-      algo: file.encryption.algo,
-      kdf: file.encryption.kdf,
-      iterations: file.encryption.iterations,
+      payload: enc.payload,
+      tag: enc.tag,
+      salt: enc.encryption.salt,
+      iv: enc.encryption.iv,
+      algo: enc.encryption.algo,
+      kdf: enc.encryption.kdf,
+      iterations: enc.encryption.iterations,
     }
     json = decryptString(bundle, password, aad)
   }
