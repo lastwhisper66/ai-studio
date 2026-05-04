@@ -577,6 +577,7 @@
       "lastChanged": "Last local change: {{at}}",
       "intervalLabel": "Auto-sync every",
       "intervalOff": "Off",
+      "interval1": "1 min (debug)",
       "interval15": "15 min",
       "interval30": "30 min",
       "interval60": "1 hour",
@@ -586,7 +587,6 @@
       "passphrase": "Sync encryption password",
       "passphraseHint": "Encrypts every snapshot uploaded to the cloud. Different from the server credentials; treat it like a password manager master key. Use the SAME password on every device that should decrypt these backups — there is no recovery if it's lost.",
       "passphrasePlaceholderNew": "Choose a strong password",
-      "passphrasePlaceholderUpdate": "Enter a new password to replace it",
       "passphraseUpdate": "Update",
       "syncResult": {
         "upload": "Uploaded local changes to cloud.",

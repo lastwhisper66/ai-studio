@@ -97,7 +97,6 @@ class BackupSyncService {
       lastError: null,
       lastWarning: this.lastWarning,
       hasRemoteConfigured: loadEnabledRemotes().length > 0,
-      hasPassphrase: !!getSetting('backup.syncPassphrase'),
       autoSyncIntervalMinutes: parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10),
     }
   }
@@ -114,7 +113,9 @@ class BackupSyncService {
   /**
    * (Re)configure the auto-sync timer based on current settings. Called at
    * boot and again whenever `backup.autoSyncIntervalMinutes` changes via the
-   * settings IPC. Values < 5 disable auto-sync (the UI's smallest option).
+   * settings IPC. Values < 1 disable auto-sync (the UI's smallest option is
+   * 1 minute, used mainly for debugging — production users typically pick
+   * 15 min or longer).
    *
    * If more than `intervalMinutes` have elapsed since the last successful
    * sync, fire a catch-up sync immediately rather than waiting another full
@@ -128,7 +129,7 @@ class BackupSyncService {
       this.timer = null
     }
     const minutes = parseInt(getSetting('backup.autoSyncIntervalMinutes') ?? '0', 10)
-    if (minutes < 5) return
+    if (minutes < 1) return
     const ms = minutes * 60 * 1000
     this.maybeCatchUp(ms)
     this.timer = setInterval(() => {
@@ -175,6 +176,12 @@ class BackupSyncService {
     this.currentAbort = new AbortController()
     this.broadcastStatus(null)
 
+    // Status is broadcast EXACTLY ONCE more at the end (in finally) — any
+    // earlier broadcast inside try/catch would still observe `this.syncing`
+    // as true (the finally hasn't run yet) and the renderer would stay
+    // stuck on "syncing…" forever. Stash any error here so finally can
+    // surface it after flipping the flag.
+    let finalError: LocalizedError | null = null
     try {
       const password = getSetting('backup.syncPassphrase')
       if (!password) {
@@ -253,21 +260,23 @@ class BackupSyncService {
       }
       setSetting('backup.lastSyncedAt', new Date().toISOString())
       if (result.createdAt) setSetting('backup.lastRemoteSeenAt', result.createdAt)
-      this.broadcastStatus(null)
       return result
     } catch (e) {
       // Cancellation: report as a normal SyncResult (not an error to the
       // caller) so the UI can distinguish user-cancelled from genuine failure.
       if (this.currentAbort?.signal.aborted) {
         const cancelled: SyncResult = { direction: 'cancelled' }
-        this.broadcastStatus(null)
         return cancelled
       }
-      this.broadcastStatus(toLocalizedError(e))
+      finalError = toLocalizedError(e)
       throw e
     } finally {
       this.syncing = false
       this.currentAbort = null
+      // The sole post-sync broadcast — the renderer relies on this transition
+      // (isSyncing true → false) to clear any lingering progress phase from
+      // the UI (see backupStore.ts onStatusChanged).
+      this.broadcastStatus(finalError)
     }
   }
 

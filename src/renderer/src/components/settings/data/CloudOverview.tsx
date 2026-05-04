@@ -17,6 +17,8 @@ import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import { BackupHistoryDialog } from '../BackupHistoryDialog'
 
+type CloudMessage = { kind: 'ok' | 'err'; text: string } | null
+
 /**
  * Cloud-sync overview header — rendered above whichever cloud panel
  * (WebDAV / S3) is currently selected. Holds the GLOBAL controls that
@@ -40,6 +42,12 @@ export function CloudOverview(): React.JSX.Element {
   const loadStatus = useBackupStore((s) => s.loadStatus)
   const progress = useBackupStore((s) => s.progress)
   const maxRetainedSetting = useSettingsStore((s) => s.settings['backup.maxRetainedBackups'])
+  // The settings store already holds the decrypted passphrase (getAllSettings
+  // decrypts SENSITIVE_KEYS server-side), so the form can bind directly to
+  // it. Keeping the value visible (masked) in the input — instead of clearing
+  // it after save — gives the user persistent confirmation that a passphrase
+  // is set.
+  const storedPassphrase = useSettingsStore((s) => s.settings['backup.syncPassphrase']) ?? ''
   // Use saveSettings (optimistic-update) instead of window.api.setSetting for
   // any field bound to the settings store. The raw IPC's broadcast EXCLUDES
   // the originating window, so the store would never see the new value and
@@ -47,15 +55,12 @@ export function CloudOverview(): React.JSX.Element {
   // to the old value on every click — making them appear unresponsive.
   const saveSettings = useSettingsStore((s) => s.saveSettings)
 
-  const [cloudMsg, setCloudMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [cloudMsg, setCloudMsg] = useState<CloudMessage>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
-  const [passphraseInput, setPassphraseInput] = useState('')
-  const [savingPassphrase, setSavingPassphrase] = useState(false)
 
   const anyConfigured = !!(remoteConfigs.webdav || remoteConfigs.s3)
   const interval = status?.autoSyncIntervalMinutes ?? 0
   const maxRetained = parseInt(maxRetainedSetting ?? '5', 10)
-  const hasPassphrase = status?.hasPassphrase ?? false
 
   const handleSyncNow = async (): Promise<void> => {
     setCloudMsg(null)
@@ -84,28 +89,6 @@ export function CloudOverview(): React.JSX.Element {
     if (!ok) {
       const err = useSettingsStore.getState().error
       if (err) setCloudMsg({ kind: 'err', text: localizedError(err) })
-    }
-  }
-
-  const handleSavePassphrase = async (): Promise<void> => {
-    if (!passphraseInput || savingPassphrase) return
-    setCloudMsg(null)
-    setSavingPassphrase(true)
-    try {
-      const r = await window.api.setSetting('backup.syncPassphrase', passphraseInput)
-      if (!r.success) {
-        setCloudMsg({ kind: 'err', text: localizedError(r.error) })
-        return
-      }
-      // Refresh status so the "configured" badge picks up the new value —
-      // setSetting's settings:changed broadcast doesn't echo back to the
-      // sender, and SyncStatus.hasPassphrase derives from that setting in
-      // the main process.
-      await loadStatus()
-      setPassphraseInput('')
-      setCloudMsg({ kind: 'ok', text: t('settings.data.cloud.passphraseSaved') })
-    } finally {
-      setSavingPassphrase(false)
     }
   }
 
@@ -147,42 +130,15 @@ export function CloudOverview(): React.JSX.Element {
           )}
         </div>
 
-        <div className="mt-4 grid gap-1.5 border-t pt-4">
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs">{t('settings.backup.passphrase')}</Label>
-            {hasPassphrase && (
-              <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-600">
-                {t('settings.data.cloud.configuredBadge')}
-              </span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <PasswordInput
-                placeholder={
-                  hasPassphrase
-                    ? t('settings.backup.passphrasePlaceholderUpdate')
-                    : t('settings.backup.passphrasePlaceholderNew')
-                }
-                value={passphraseInput}
-                onChange={(e) => setPassphraseInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleSavePassphrase()
-                  }
-                }}
-              />
-            </div>
-            <Button
-              variant="secondary"
-              onClick={handleSavePassphrase}
-              disabled={!passphraseInput || savingPassphrase}>
-              {hasPassphrase ? t('settings.backup.passphraseUpdate') : t('common.save')}
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-xs">{t('settings.backup.passphraseHint')}</p>
-        </div>
+        {/* The form's `key` flips between "set" and "unset" so a fresh
+            settings-store load (or clearing the passphrase) re-mounts the
+            inner form with the freshly-arrived initial value. Same key-based
+            re-mount pattern as WebDavPanel / S3Panel. */}
+        <PassphraseForm
+          key={`pp-${storedPassphrase ? 'set' : 'unset'}`}
+          initial={storedPassphrase}
+          onMessage={setCloudMsg}
+        />
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Button onClick={handleSyncNow} disabled={!anyConfigured || status?.isSyncing}>
@@ -216,6 +172,7 @@ export function CloudOverview(): React.JSX.Element {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="0">{t('settings.backup.intervalOff')}</SelectItem>
+                <SelectItem value="1">{t('settings.backup.interval1')}</SelectItem>
                 <SelectItem value="15">{t('settings.backup.interval15')}</SelectItem>
                 <SelectItem value="30">{t('settings.backup.interval30')}</SelectItem>
                 <SelectItem value="60">{t('settings.backup.interval60')}</SelectItem>
@@ -252,5 +209,84 @@ export function CloudOverview(): React.JSX.Element {
 
       <BackupHistoryDialog open={historyOpen} onClose={() => setHistoryOpen(false)} />
     </>
+  )
+}
+
+/**
+ * Passphrase row — shows the saved passphrase (masked) so the user has
+ * persistent visual confirmation that a value is stored. The button only
+ * enables when the input diverges from `initial`; clicking it commits via
+ * the optimistic-update `saveSettings` path so the store refreshes
+ * immediately.
+ *
+ * `initial` is the saved cleartext, captured at mount time via the parent's
+ * key-based remount. After a save the parent's `storedPassphrase` updates,
+ * the `initial` prop here updates on the next render, and `isDirty` flips
+ * to false — disabling the button as the in-place "saved" affordance.
+ */
+function PassphraseForm({
+  initial,
+  onMessage,
+}: {
+  initial: string
+  onMessage: (m: CloudMessage) => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const localizedError = useLocalizedError()
+  const saveSettings = useSettingsStore((s) => s.saveSettings)
+
+  const [input, setInput] = useState(initial)
+  const [saving, setSaving] = useState(false)
+
+  const hasStored = !!initial
+  const isDirty = input !== initial
+
+  const handleSave = async (): Promise<void> => {
+    if (!isDirty || !input || saving) return
+    onMessage(null)
+    setSaving(true)
+    try {
+      const ok = await saveSettings({ 'backup.syncPassphrase': input })
+      if (!ok) {
+        const err = useSettingsStore.getState().error
+        if (err) onMessage({ kind: 'err', text: localizedError(err) })
+        return
+      }
+      onMessage({ kind: 'ok', text: t('settings.data.cloud.passphraseSaved') })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="mt-4 grid gap-1.5 border-t pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs">{t('settings.backup.passphrase')}</Label>
+        {hasStored && (
+          <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-600">
+            {t('settings.data.cloud.configuredBadge')}
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <PasswordInput
+            placeholder={t('settings.backup.passphrasePlaceholderNew')}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSave()
+              }
+            }}
+          />
+        </div>
+        <Button variant="secondary" onClick={handleSave} disabled={!isDirty || !input || saving}>
+          {hasStored ? t('settings.backup.passphraseUpdate') : t('common.save')}
+        </Button>
+      </div>
+      <p className="text-muted-foreground text-xs">{t('settings.backup.passphraseHint')}</p>
+    </div>
   )
 }

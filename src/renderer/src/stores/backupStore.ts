@@ -165,7 +165,16 @@ export function initBackupStore(): void {
   store.loadRemoteConfigs()
 
   const detachStatus = window.api.backup.onStatusChanged((s) => {
-    useBackupStore.setState({ status: s })
+    // Clear lingering progress when sync ends. The main process emits one
+    // final status broadcast in syncNow's finally block (with isSyncing =
+    // false); we use that transition as the signal to drop any progress
+    // phase the renderer was last shown — otherwise auto-sync runs would
+    // leave the UI stuck on "cleaning up old backups…" forever, since the
+    // main process doesn't send a separate "progress idle" event.
+    useBackupStore.setState((state) => ({
+      status: s,
+      progress: s.isSyncing ? state.progress : null,
+    }))
   })
   const detachProgress = window.api.backup.onProgress((p) => {
     useBackupStore.setState({ progress: p })

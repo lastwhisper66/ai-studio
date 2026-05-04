@@ -577,6 +577,7 @@
       "lastChanged": "最后本地修改：{{at}}",
       "intervalLabel": "自动同步间隔",
       "intervalOff": "关闭",
+      "interval1": "1 分钟（调试用）",
       "interval15": "15 分钟",
       "interval30": "30 分钟",
       "interval60": "1 小时",
@@ -586,7 +587,6 @@
       "passphrase": "同步加密口令",
       "passphraseHint": "用于加密上传到云端的每一份快照；与服务器凭据相互独立，请妥善保管。在所有需要解密这些备份的设备上请使用同一个口令——丢失后无法恢复。",
       "passphrasePlaceholderNew": "设置一个强口令",
-      "passphrasePlaceholderUpdate": "输入新口令以替换",
       "passphraseUpdate": "更新",
       "syncResult": {
         "upload": "已将本地变更上传到云端。",
