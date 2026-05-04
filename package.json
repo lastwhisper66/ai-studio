@@ -24,11 +24,13 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
+    "@aws-sdk/client-s3": "^3.1041.0",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.48.0",
     "better-sqlite3": "^12.6.2",
     "electron-updater": "^6.8.3",
     "emoji-mart": "^5.6.0",
+    "fast-xml-parser": "^5.7.2",
     "font-list": "^2.0.2",
     "node-screenshots": "^0.2.8",
     "openai": "^6.27.0",

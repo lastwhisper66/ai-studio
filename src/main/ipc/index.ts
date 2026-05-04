@@ -19,8 +19,12 @@ import { registerSelectionActionHandlers } from './selection-action-handlers'
 import { registerSelectionHandlers } from './selection-handlers'
 import { registerUserHandlers } from './user-handlers'
 import { registerUpdaterHandlers } from './updater-handlers'
+import { registerBackupHandlers } from './backup-handlers'
+import { installDirtyTracker } from '../backup/dirty-tracker'
 
 export function registerAllIpcHandlers(): void {
+  // Must run BEFORE any registerXxxHandlers() so the wrapper sees them all.
+  installDirtyTracker()
   registerConversationHandlers()
   registerMessageHandlers()
   registerSettingsHandlers()
@@ -42,4 +46,5 @@ export function registerAllIpcHandlers(): void {
   registerSelectionHandlers()
   registerUserHandlers()
   registerUpdaterHandlers()
+  registerBackupHandlers()
 }

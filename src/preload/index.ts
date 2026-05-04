@@ -48,6 +48,17 @@ import type {
   SelectionErrorData,
   AppReleaseInfo,
   UpdaterState,
+  BackupFileMeta,
+  BackupImportMode,
+  BackupProgress,
+  BackupSummary,
+  RemoteBackupItem,
+  RemoteConfig,
+  RemoteConfigs,
+  RemoteType,
+  RollbackBackupItem,
+  SyncResult,
+  SyncStatus,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -666,6 +677,70 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, state: UpdaterState): void => callback(state)
     ipcRenderer.on(IpcChannels.UPDATER_STATE_CHANGED, handler)
     return () => ipcRenderer.removeListener(IpcChannels.UPDATER_STATE_CHANGED, handler)
+  },
+
+  // Backup
+  backup: {
+    exportToFile: (password: string): Promise<IpcResult<{ filePath: string }>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_EXPORT_TO_FILE, { password }),
+
+    peekFile: (filePath: string): Promise<IpcResult<BackupFileMeta>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_PEEK_FILE, { filePath }),
+
+    pickFile: (): Promise<IpcResult<{ filePath: string } | null>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_PICK_FILE),
+
+    importFromFile: (payload: {
+      filePath?: string
+      password: string
+      mode: BackupImportMode
+    }): Promise<IpcResult<{ applied: BackupSummary }>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_IMPORT_FROM_FILE, payload),
+
+    getRemoteConfig: (): Promise<IpcResult<RemoteConfigs>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_GET_REMOTE_CONFIG),
+
+    setRemoteConfig: (cfg: RemoteConfig): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_SET_REMOTE_CONFIG, { config: cfg }),
+
+    clearRemoteConfig: (type: RemoteType): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_CLEAR_REMOTE_CONFIG, { type }),
+
+    testRemote: (cfg: RemoteConfig): Promise<IpcResult<{ ok: boolean; latency?: number }>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_TEST_REMOTE, cfg),
+
+    syncNow: (): Promise<IpcResult<SyncResult>> => ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_NOW),
+
+    syncCancel: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.BACKUP_SYNC_CANCEL),
+
+    listRemote: (type: RemoteType): Promise<IpcResult<RemoteBackupItem[]>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_LIST_REMOTE, { type }),
+
+    restoreFromRemote: (payload: {
+      type: RemoteType
+      key: string
+      password: string
+      mode: BackupImportMode
+    }): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_RESTORE_FROM_REMOTE, payload),
+
+    getStatus: (): Promise<IpcResult<SyncStatus>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_GET_STATUS),
+
+    listRollbacks: (): Promise<IpcResult<RollbackBackupItem[]>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_LIST_ROLLBACKS),
+
+    onStatusChanged: (cb: (status: SyncStatus) => void): (() => void) => {
+      const fn = (_e: Electron.IpcRendererEvent, status: SyncStatus): void => cb(status)
+      ipcRenderer.on(IpcChannels.BACKUP_STATUS_CHANGED, fn)
+      return () => ipcRenderer.removeListener(IpcChannels.BACKUP_STATUS_CHANGED, fn)
+    },
+
+    onProgress: (cb: (p: BackupProgress) => void): (() => void) => {
+      const fn = (_e: Electron.IpcRendererEvent, p: BackupProgress): void => cb(p)
+      ipcRenderer.on(IpcChannels.BACKUP_PROGRESS, fn)
+      return () => ipcRenderer.removeListener(IpcChannels.BACKUP_PROGRESS, fn)
+    },
   },
 }
 

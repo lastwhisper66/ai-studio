@@ -2,7 +2,7 @@ name: Release Please
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -96,7 +96,7 @@ jobs:
 
   upload-assets:
     name: Upload Release Assets
-    needs: [ release-please, build ]
+    needs: [release-please, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
