@@ -520,6 +520,8 @@ export interface BackupFileMeta {
   schemaVersion: 1
   appVersion: string
   createdAt: string
+  /** True for AES-256-GCM payloads, false for `encryption.algo === 'none'`. */
+  encrypted: boolean
 }
 
 export type BackupImportMode = 'replace' | 'merge'
@@ -560,15 +562,31 @@ export interface RemoteConfigs {
 /** Discriminator used by per-type IPC payloads (set / clear / list / restore). */
 export type RemoteType = 'webdav' | 's3'
 
-export interface SyncStatus {
+export interface RemoteSyncStatus {
+  type: RemoteType
+  /** Whether credentials are saved (not whether sync is enabled). */
+  configured: boolean
+  /** User-controlled enable switch. */
+  enabled: boolean
   isSyncing: boolean
-  lastLocalChangeAt: string | null
   lastSyncedAt: string | null
   lastRemoteSeenAt: string | null
   lastError: LocalizedError | null
   lastWarning: string | null
-  hasRemoteConfigured: boolean
   autoSyncIntervalMinutes: number
+  maxRetainedBackups: number
+  /** Surface only — UI shows a "passphrase set" badge based on this without
+   *  needing to read the passphrase itself. */
+  hasPassphrase: boolean
+}
+
+export interface BackupStatus {
+  /** Local DB change timestamp; the only field still global since local data is one. */
+  lastLocalChangeAt: string | null
+  remotes: {
+    webdav: RemoteSyncStatus
+    s3: RemoteSyncStatus
+  }
 }
 
 export interface SyncResult {
@@ -604,6 +622,9 @@ export interface RollbackBackupItem {
   /** ISO timestamp parsed from the file name; falls back to mtime. */
   createdAt: string
   size: number
+  /** Which event produced this rollback copy. `'manual'` covers cases where
+   *  `writePreApplyRollback` was called outside an automatic cloud apply. */
+  triggeredBy: RemoteType | 'manual'
 }
 
 export type BackupPhase =
@@ -616,6 +637,10 @@ export type BackupPhase =
   | 'cleanup'
 
 export interface BackupProgress {
+  /** Which remote is producing this progress event. Absent for legacy paths
+   *  (e.g. file export/import) that aren't tied to a single remote — those
+   *  callers may pass `'local'`. */
+  type: RemoteType | 'local'
   phase: BackupPhase
   /** 0–100; absent for indeterminate phases. */
   percent?: number
