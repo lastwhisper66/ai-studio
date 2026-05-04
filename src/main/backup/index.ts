@@ -1,6 +1,14 @@
 import { dialog, BrowserWindow } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
-import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'fs'
 import { join } from 'path'
 import type {
   BackupFileMeta,
@@ -339,9 +347,14 @@ export function writePreApplyRollback(
   const stamp = new Date().toISOString().replace(/[:.]/g, '-')
   const path = join(dir, `pre-apply-${stamp}.aibackup`)
   writeFileSync(path, Buffer.from(bytes))
-  // Sidecar `${path}.meta.json` is written here in Phase 5; until then the
-  // listRollbacks reader returns 'manual' for every entry.
-  void triggeredBy
+  // Sidecar JSON records `triggeredBy` so the rollback dialog can show
+  // "Triggered by WebDAV / S3 / Manual". Best-effort: a write failure here
+  // (e.g. disk full) just leaves the entry tagged 'manual' on read.
+  try {
+    writeFileSync(`${path}.meta.json`, JSON.stringify({ triggeredBy }), 'utf8')
+  } catch {
+    /* tolerate */
+  }
   pruneRollbackCopies(path)
   return path
 }
@@ -372,6 +385,10 @@ function pruneRollbackCopies(keepPath?: string): void {
     if (keepPath && f.full === keepPath) continue
     try {
       rmSync(f.full, { force: true })
+      // Best-effort cleanup of the sidecar metadata file alongside the
+      // rollback. If only the sidecar is missing the rollback is still
+      // restorable; if only the rollback is gone the sidecar is harmless.
+      rmSync(`${f.full}.meta.json`, { force: true })
     } catch {
       /* best-effort — a leftover file just delays the next prune by one
          cycle and is otherwise harmless. */
@@ -391,6 +408,30 @@ function parseRollbackTimestamp(safe: string): string | undefined {
   const iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.${m[7]}Z`
   const t = Date.parse(iso)
   return Number.isFinite(t) ? new Date(t).toISOString() : undefined
+}
+
+/**
+ * Read the rollback's sidecar JSON to recover its `triggeredBy` tag. Older
+ * rollbacks (predating the sidecar) and any case where the sidecar can't be
+ * read or parsed fall back to `'manual'` — purely informational, never blocks
+ * a restore.
+ */
+function readTriggeredBySidecar(rollbackPath: string): RemoteType | 'manual' {
+  const sidecar = `${rollbackPath}.meta.json`
+  if (!existsSync(sidecar)) return 'manual'
+  try {
+    const meta = JSON.parse(readFileSync(sidecar, 'utf8')) as { triggeredBy?: unknown }
+    if (
+      meta.triggeredBy === 'webdav' ||
+      meta.triggeredBy === 's3' ||
+      meta.triggeredBy === 'manual'
+    ) {
+      return meta.triggeredBy
+    }
+  } catch {
+    /* fall through */
+  }
+  return 'manual'
 }
 
 /**
@@ -425,10 +466,7 @@ export function listRollbacks(): RollbackBackupItem[] {
       fileName: name,
       createdAt,
       size,
-      // Phase 5 reads the actual source from a sidecar `.meta.json`. Until
-      // then every rollback surfaces as 'manual' — backwards-compatible
-      // because the UI label is purely informational.
-      triggeredBy: 'manual',
+      triggeredBy: readTriggeredBySidecar(full),
     })
   }
   // Sort descending by createdAt — newest first matches the "latest first"
