@@ -27,11 +27,13 @@ interface BackupState {
   loadStatus: () => Promise<void>
   loadRemoteConfigs: () => Promise<void>
 
-  exportToFile: (password: string) => Promise<{ filePath: string } | { error: LocalizedError }>
+  exportToFile: (
+    password: string | null,
+  ) => Promise<{ filePath: string } | { error: LocalizedError }>
   peekFile: (filePath: string) => Promise<BackupFileMeta | { error: LocalizedError }>
   importFromFile: (
     filePath: string | undefined,
-    password: string,
+    password: string | null,
     mode: BackupImportMode,
   ) => Promise<BackupSummary | { error: LocalizedError }>
 
@@ -52,7 +54,7 @@ interface BackupState {
   restoreFromRemote: (
     type: RemoteType,
     key: string,
-    password: string,
+    password: string | null,
     mode: BackupImportMode,
   ) => Promise<void | { error: LocalizedError }>
 

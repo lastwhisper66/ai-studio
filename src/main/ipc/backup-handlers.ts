@@ -31,7 +31,7 @@ import { backupSyncService } from '../backup/sync-service'
 export function registerBackupHandlers(): void {
   ipcMain.handle(
     IpcChannels.BACKUP_EXPORT_TO_FILE,
-    async (_, payload: { password: string }): Promise<IpcResult<{ filePath: string }>> => {
+    async (_, payload: { password: string | null }): Promise<IpcResult<{ filePath: string }>> => {
       try {
         const data = await exportToFile(payload.password)
         return { success: true, data }
@@ -76,7 +76,7 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_IMPORT_FROM_FILE,
     async (
       _,
-      payload: { filePath?: string; password: string; mode: BackupImportMode },
+      payload: { filePath?: string; password: string | null; mode: BackupImportMode },
     ): Promise<IpcResult<{ applied: BackupSummary }>> => {
       try {
         let filePath = payload.filePath
@@ -208,7 +208,7 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_RESTORE_FROM_REMOTE,
     async (
       _,
-      payload: { type: RemoteType; key: string; password: string; mode: BackupImportMode },
+      payload: { type: RemoteType; key: string; password: string | null; mode: BackupImportMode },
     ): Promise<IpcResult<void>> => {
       try {
         await backupSyncService.restoreFromKey(
