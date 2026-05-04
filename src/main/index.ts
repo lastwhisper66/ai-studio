@@ -21,6 +21,7 @@ import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
 import { initMainI18n, onLanguageChange, t } from './i18n'
 import { backupSyncService } from './backup/sync-service'
+import { runMigrations } from './migrate'
 import { cleanupStaleAvatarStaging } from './backup/snapshot'
 import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
@@ -471,6 +472,7 @@ if (!gotTheLock) {
     electronApp.setAppUserModelId('com.ai-studio.app')
 
     initDatabase()
+    runMigrations()
     // Sweep any leftover `.import-*` / `.trash-*` avatar staging dirs from a
     // previous run that crashed mid-restore. Safe to run unconditionally.
     cleanupStaleAvatarStaging()
