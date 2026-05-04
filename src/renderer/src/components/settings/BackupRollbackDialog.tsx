@@ -109,7 +109,7 @@ function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
     setPwOpen(true)
   }
 
-  const onPwSubmit = async (password: string): Promise<void> => {
+  const onPwSubmit = async (password: string | null): Promise<void> => {
     if (!pendingPath) return
     const r = await importFromFile(pendingPath, password, mode)
     if ('error' in r) {

@@ -1,9 +1,9 @@
-import { Database, HardDriveDownload, Cloud, Server } from 'lucide-react'
+import { LayoutGrid, HardDriveDownload, Cloud, Server } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 import { Separator } from '@renderer/components/ui/separator'
 
-export type DataPanelId = 'local-data' | 'local-backup' | 'webdav' | 's3'
+export type DataPanelId = 'data-management' | 'cloud-overview' | 'webdav' | 's3'
 
 interface DataNavProps {
   active: DataPanelId
@@ -24,17 +24,18 @@ interface NavGroup {
 const groups: NavGroup[] = [
   {
     labelKey: 'settings.data.nav.localGroup',
-    items: [{ id: 'local-data', labelKey: 'settings.data.nav.localData', icon: Database }],
-  },
-  {
-    labelKey: 'settings.data.nav.localBackupGroup',
     items: [
-      { id: 'local-backup', labelKey: 'settings.data.nav.localBackup', icon: HardDriveDownload },
+      {
+        id: 'data-management',
+        labelKey: 'settings.data.nav.dataManagement',
+        icon: HardDriveDownload,
+      },
     ],
   },
   {
     labelKey: 'settings.data.nav.cloudGroup',
     items: [
+      { id: 'cloud-overview', labelKey: 'settings.data.nav.cloudOverview', icon: LayoutGrid },
       { id: 'webdav', labelKey: 'settings.data.nav.webdav', icon: Cloud },
       { id: 's3', labelKey: 'settings.data.nav.s3', icon: Server },
     ],

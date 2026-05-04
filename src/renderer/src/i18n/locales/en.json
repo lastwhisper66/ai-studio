@@ -341,7 +341,13 @@
     "data": {
       "title": "Data",
       "description": "Manage application data and storage.",
-      "dataManagement": "Data Management",
+      "dataManagement": {
+        "title": "Data Management",
+        "description": "Import/export local backup files, restore from local rollback copies, and clear all data."
+      },
+      "dangerZone": {
+        "title": "Danger Zone"
+      },
       "clearData": "Clear All Data",
       "clearDataDescription": "Delete all conversations, settings, and attachments. The app will restart automatically.",
       "clearDataConfirmTitle": "Confirm Clear Data",
@@ -349,15 +355,27 @@
       "clearDataConfirmButton": "Confirm Clear",
       "nav": {
         "localGroup": "Local Data",
-        "localData": "Data Settings",
-        "localBackupGroup": "Local Backup",
-        "localBackup": "Local Backup",
+        "dataManagement": "Data Management",
         "cloudGroup": "Cloud Backup",
+        "cloudOverview": "Overview",
         "webdav": "WebDAV",
         "s3": "S3-Compatible"
       },
+      "cloudOverview": {
+        "title": "Cloud Backup",
+        "description": "The two destinations are fully independent: each has its own credentials, encryption passphrase, sync interval, and retention.",
+        "notConfiguredHint": "Remote credentials not configured.",
+        "intervalLabel": "Auto-sync: every {{minutes}} minutes",
+        "maxRetainedLabel": "Retained backups: {{count}}",
+        "viewDetail": "View detail",
+        "configure": "Configure",
+        "badge": {
+          "notConfigured": "Not configured",
+          "enabled": "Enabled",
+          "disabled": "Disabled"
+        }
+      },
       "cloud": {
-        "overviewHint": "Cloud-sync settings apply across every configured destination — each sync mirrors writes to all enabled remotes.",
         "webdavTitle": "WebDAV",
         "webdavHint": "Generic WebDAV protocol — works with Jianguoyun, Nextcloud, ownCloud, etc.",
         "s3Title": "S3-Compatible Storage",
@@ -367,7 +385,12 @@
         "passphraseSaved": "Encryption password saved.",
         "clearButton": "Clear this remote",
         "clearedWebdav": "WebDAV configuration cleared.",
-        "clearedS3": "S3 configuration cleared."
+        "clearedS3": "S3 configuration cleared.",
+        "enableLabel": "Enable sync",
+        "statusSection": "Sync status",
+        "credentialsSection": "Credentials",
+        "syncOptionsSection": "Sync options",
+        "syncOptionsScope": "These settings apply only to {{remote}} — they do not propagate to other remotes."
       }
     },
     "network": {
@@ -584,10 +607,16 @@
       "interval180": "3 hours",
       "interval720": "12 hours",
       "maxRetainedLabel": "Max retained backups (1-50)",
-      "passphrase": "Sync encryption password",
+      "passphraseLabel": "Sync encryption password",
       "passphraseHint": "Encrypts every snapshot uploaded to the cloud. Different from the server credentials; treat it like a password manager master key. Use the SAME password on every device that should decrypt these backups — there is no recovery if it's lost.",
       "passphrasePlaceholderNew": "Choose a strong password",
+      "passphrasePlaceholderOptional": "Optional — leave blank to upload without encryption",
+      "passphraseHintOptional": "Optional. When set, encrypts every snapshot uploaded to this remote. Leave blank to upload as plaintext to this remote. Each remote keeps its own passphrase.",
       "passphraseUpdate": "Update",
+      "passphrase": {
+        "noEncrypt": "Export without encryption (not recommended)",
+        "noEncryptWarning": "An unencrypted backup file can be read by anyone with file access — only use this when the storage location is trusted."
+      },
       "syncResult": {
         "upload": "Uploaded local changes to cloud.",
         "download": "Downloaded latest cloud backup.",

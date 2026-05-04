@@ -341,23 +341,41 @@
     "data": {
       "title": "数据设置",
       "description": "管理应用程序数据和存储。",
-      "dataManagement": "数据管理",
+      "dataManagement": {
+        "title": "数据管理",
+        "description": "导入/导出本地备份文件，从本地回滚副本恢复，以及清除全部数据。"
+      },
+      "dangerZone": {
+        "title": "危险区"
+      },
       "clearData": "清除所有数据",
       "clearDataDescription": "删除所有对话记录、设置和附件，应用将自动重启。",
       "clearDataConfirmTitle": "确认清除数据",
       "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
       "clearDataConfirmButton": "确认清除",
       "nav": {
-        "localGroup": "本地数据设置",
-        "localData": "数据设置",
-        "localBackupGroup": "本地备份",
-        "localBackup": "本地备份",
+        "localGroup": "本地数据",
+        "dataManagement": "数据管理",
         "cloudGroup": "云备份",
+        "cloudOverview": "总览",
         "webdav": "WebDAV",
         "s3": "S3 兼容存储"
       },
+      "cloudOverview": {
+        "title": "云备份",
+        "description": "两个目的地完全独立：分别配置凭据、加密口令、同步频率、保留数。",
+        "notConfiguredHint": "尚未配置远端凭据。",
+        "intervalLabel": "自动同步：每 {{minutes}} 分钟",
+        "maxRetainedLabel": "保留备份：{{count}} 份",
+        "viewDetail": "查看详情",
+        "configure": "前往配置",
+        "badge": {
+          "notConfigured": "未配置",
+          "enabled": "已启用",
+          "disabled": "已禁用"
+        }
+      },
       "cloud": {
-        "overviewHint": "云同步设置对所有已配置的云端目的地通用：每次同步会镜像写入到所有已启用的远端。",
         "webdavTitle": "WebDAV",
         "webdavHint": "通用 WebDAV 协议，兼容坚果云、Nextcloud、ownCloud 等。",
         "s3Title": "S3 兼容存储",
@@ -367,7 +385,12 @@
         "passphraseSaved": "加密口令已保存。",
         "clearButton": "清除此远端配置",
         "clearedWebdav": "已清除 WebDAV 配置。",
-        "clearedS3": "已清除 S3 配置。"
+        "clearedS3": "已清除 S3 配置。",
+        "enableLabel": "启用同步",
+        "statusSection": "同步状态",
+        "credentialsSection": "凭据",
+        "syncOptionsSection": "同步选项",
+        "syncOptionsScope": "这些设置只影响 {{remote}}，不会同步到其他远端。"
       }
     },
     "network": {
@@ -584,10 +607,16 @@
       "interval180": "3 小时",
       "interval720": "12 小时",
       "maxRetainedLabel": "最大保留备份数（1-50）",
-      "passphrase": "同步加密口令",
+      "passphraseLabel": "同步加密口令",
       "passphraseHint": "用于加密上传到云端的每一份快照；与服务器凭据相互独立，请妥善保管。在所有需要解密这些备份的设备上请使用同一个口令——丢失后无法恢复。",
       "passphrasePlaceholderNew": "设置一个强口令",
+      "passphrasePlaceholderOptional": "可选；留空则备份不加密",
+      "passphraseHintOptional": "可选。设置后用于加密上传到该远端的每一份快照；留空则备份以明文形式上传到该远端。两个 remote 各自独立。",
       "passphraseUpdate": "更新",
+      "passphrase": {
+        "noEncrypt": "不加密导出（不推荐）",
+        "noEncryptWarning": "未加密的备份文件可被任何人读取——请仅在文件存储位置可信时使用。"
+      },
       "syncResult": {
         "upload": "已将本地变更上传到云端。",
         "download": "已下载并应用云端最新备份。",

@@ -1,55 +1,78 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Server } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { PasswordInput } from '@renderer/components/ui/password-input'
 import { Label } from '@renderer/components/ui/label'
 import { Switch } from '@renderer/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@renderer/components/ui/select'
 import { useBackupStore } from '@renderer/stores/backupStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import type { S3RemoteConfig } from '@shared/types'
+import { BackupHistoryDialog } from '../BackupHistoryDialog'
+
+type Msg = { kind: 'ok' | 'err' | 'info'; text: string } | null
 
 /**
- * S3-compatible storage configuration panel — inline form (replaces the old
- * dialog). Same Test→Save gating as the WebDAV panel; the shared sync
- * passphrase lives in the cloud overview header above this panel and is
- * persisted across sessions. Configuring this AND WebDAV simultaneously is
- * supported — the sync-engine will mirror writes to both remotes.
- *
- * Wrapper re-mounts the inner form via `key` whenever the persisted config
- * changes (save/clear). See WebDavPanel.tsx for the same pattern's rationale.
+ * S3 detail page — credentials form, sync status panel, sync options
+ * (passphrase / interval / retention) all in one place. Independent of WebDAV.
  */
 export function S3Panel(): React.JSX.Element {
   const initial = useBackupStore((s) => s.remoteConfigs.s3)
   const formKey = initial
     ? `cfg-${initial.endpoint}-${initial.bucket}-${initial.region}-${initial.accessKeyId}`
     : 'cfg-empty'
-  return <S3Form key={formKey} initial={initial} />
+  return <S3Page key={formKey} initial={initial} />
 }
 
-function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Element {
+function S3Page({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Element {
   const { t } = useTranslation()
   const localizedError = useLocalizedError()
+
+  const status = useBackupStore((s) => s.status?.remotes.s3 ?? null)
   const setRemoteConfig = useBackupStore((s) => s.setRemoteConfig)
   const clearRemoteConfig = useBackupStore((s) => s.clearRemoteConfig)
   const testRemote = useBackupStore((s) => s.testRemote)
+  const syncNow = useBackupStore((s) => s.syncNow)
+  const cancelSync = useBackupStore((s) => s.cancelSync)
+  const setRemoteEnabled = useBackupStore((s) => s.setRemoteEnabled)
+  const saveSettings = useSettingsStore((s) => s.saveSettings)
 
+  const passphrase = useSettingsStore((s) => s.settings['backup.remote.s3.passphrase']) ?? ''
+  const intervalSetting =
+    useSettingsStore((s) => s.settings['backup.remote.s3.autoSyncIntervalMinutes']) ?? '0'
+  const maxRetainedSetting =
+    useSettingsStore((s) => s.settings['backup.remote.s3.maxRetainedBackups']) ?? '5'
+
+  // Credential form state
   const [endpoint, setEndpoint] = useState(initial?.endpoint ?? '')
   const [region, setRegion] = useState(initial?.region || 'auto')
   const [bucket, setBucket] = useState(initial?.bucket ?? '')
   const [accessKeyId, setAccessKeyId] = useState(initial?.accessKeyId ?? '')
   const [secretAccessKey, setSecretAccessKey] = useState(initial?.secretAccessKey ?? '')
   const [forcePathStyle, setForcePathStyle] = useState(initial?.forcePathStyle ?? true)
-  // Object key prefix is optional — defaults to empty so new configs upload to
-  // the bucket root unless the user explicitly chooses a folder. Existing
-  // configs keep whatever the user previously saved.
   const [prefix, setPrefix] = useState(initial?.prefix ?? '')
 
   const [testing, setTesting] = useState(false)
   const [testOk, setTestOk] = useState(false)
-  const [msg, setMsg] = useState<{ kind: 'ok' | 'err' | 'info'; text: string } | null>(null)
+  const [credMsg, setCredMsg] = useState<Msg>(null)
   const [saving, setSaving] = useState(false)
+
+  // Sync option local state (passphrase input)
+  const [pp, setPp] = useState(passphrase)
+  const [syncMsg, setSyncMsg] = useState<Msg>(null)
+
+  // History dialog
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const buildCfg = (): S3RemoteConfig => ({
     type: 's3',
@@ -64,23 +87,23 @@ function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
 
   const invalidateTest = (): void => {
     if (testOk) setTestOk(false)
-    if (msg?.kind === 'ok') setMsg(null)
+    if (credMsg?.kind === 'ok') setCredMsg(null)
   }
 
   const doTest = async (): Promise<void> => {
     setTesting(true)
-    setMsg(null)
+    setCredMsg(null)
     setTestOk(false)
     const r = await testRemote(buildCfg())
     setTesting(false)
     if (r.ok) {
       setTestOk(true)
-      setMsg({
+      setCredMsg({
         kind: 'ok',
         text: t('settings.backup.remote.testOk', { latency: r.latency ?? 0 }),
       })
     } else if (r.error) {
-      setMsg({ kind: 'err', text: localizedError(r.error) })
+      setCredMsg({ kind: 'err', text: localizedError(r.error) })
     }
   }
 
@@ -90,130 +113,329 @@ function S3Form({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
     const r = await setRemoteConfig(buildCfg())
     setSaving(false)
     if (r && 'error' in r) {
-      setMsg({ kind: 'err', text: localizedError(r.error) })
+      setCredMsg({ kind: 'err', text: localizedError(r.error) })
       return
     }
-    setMsg({ kind: 'ok', text: t('settings.data.cloud.saveOk') })
+    setCredMsg({ kind: 'ok', text: t('settings.data.cloud.saveOk') })
   }
 
   const doClear = async (): Promise<void> => {
-    setMsg(null)
+    setCredMsg(null)
     await clearRemoteConfig('s3')
-    // Re-mount happens automatically (parent key flips).
   }
 
+  const handleSyncNow = async (): Promise<void> => {
+    setSyncMsg(null)
+    const r = await syncNow('s3')
+    if ('error' in r) {
+      setSyncMsg({ kind: 'err', text: localizedError(r.error) })
+      return
+    }
+    setSyncMsg({ kind: 'ok', text: t(`settings.backup.syncResult.${r.direction}`) })
+  }
+
+  const handleSavePassphrase = async (): Promise<void> => {
+    setSyncMsg(null)
+    const ok = await saveSettings({ 'backup.remote.s3.passphrase': pp })
+    if (!ok) {
+      const err = useSettingsStore.getState().error
+      if (err) setSyncMsg({ kind: 'err', text: localizedError(err) })
+      return
+    }
+    setSyncMsg({ kind: 'ok', text: t('settings.data.cloud.passphraseSaved') })
+  }
+
+  const handleIntervalChange = async (minutes: number): Promise<void> => {
+    setSyncMsg(null)
+    const ok = await saveSettings({
+      'backup.remote.s3.autoSyncIntervalMinutes': String(minutes),
+    })
+    if (!ok) {
+      const err = useSettingsStore.getState().error
+      if (err) setSyncMsg({ kind: 'err', text: localizedError(err) })
+    }
+  }
+
+  const handleMaxRetainedChange = async (n: number): Promise<void> => {
+    setSyncMsg(null)
+    const clamped = Math.max(1, Math.min(50, n || 5))
+    const ok = await saveSettings({ 'backup.remote.s3.maxRetainedBackups': String(clamped) })
+    if (!ok) {
+      const err = useSettingsStore.getState().error
+      if (err) setSyncMsg({ kind: 'err', text: localizedError(err) })
+    }
+  }
+
+  const handleEnableToggle = async (enabled: boolean): Promise<void> => {
+    setSyncMsg(null)
+    const r = await setRemoteEnabled('s3', enabled)
+    if (r && 'error' in r) {
+      setSyncMsg({ kind: 'err', text: localizedError(r.error) })
+    }
+  }
+
+  const interval = parseInt(intervalSetting, 10)
+  const maxRetained = parseInt(maxRetainedSetting, 10)
+
   return (
-    <div className="bg-card/50 space-y-4 rounded-xl border p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold">{t('settings.data.cloud.s3Title')}</h3>
-          <p className="text-muted-foreground mt-1 text-xs">
-            {t('settings.data.cloud.s3Hint')}
-            {initial && (
-              <span className="ml-2 inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-600">
-                {t('settings.data.cloud.configuredBadge')}
-              </span>
-            )}
-          </p>
+    <>
+      {/* Header */}
+      <div className="bg-card/50 rounded-xl border p-5">
+        <div className="flex items-center gap-3">
+          <div className="bg-primary/10 text-primary flex h-10 w-10 items-center justify-center rounded-lg">
+            <Server className="h-5 w-5" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-base font-semibold">{t('settings.data.cloud.s3Title')}</h2>
+            <p className="text-muted-foreground text-xs">
+              {t('settings.data.cloud.s3Hint')}
+              {initial && (
+                <span className="ml-2 inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-600">
+                  {t('settings.data.cloud.configuredBadge')}
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="s3-enabled" className="text-xs">
+              {t('settings.data.cloud.enableLabel')}
+            </Label>
+            <Switch
+              id="s3-enabled"
+              checked={!!status?.enabled}
+              onCheckedChange={handleEnableToggle}
+              disabled={!status?.configured}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="grid gap-3">
-        <Field
-          label={t('settings.backup.remote.s3.endpoint')}
-          placeholder="https://<account>.r2.cloudflarestorage.com"
-          value={endpoint}
-          onChange={(v) => {
-            setEndpoint(v)
-            invalidateTest()
-          }}
-        />
-        <Field
-          label={t('settings.backup.remote.s3.region')}
-          value={region}
-          onChange={(v) => {
-            setRegion(v)
-            invalidateTest()
-          }}
-        />
-        <Field
-          label={t('settings.backup.remote.s3.bucket')}
-          value={bucket}
-          onChange={(v) => {
-            setBucket(v)
-            invalidateTest()
-          }}
-        />
-        <Field
-          label={t('settings.backup.remote.s3.accessKeyId')}
-          value={accessKeyId}
-          onChange={(v) => {
-            setAccessKeyId(v)
-            invalidateTest()
-          }}
-        />
-        <PasswordField
-          label={t('settings.backup.remote.s3.secretAccessKey')}
-          value={secretAccessKey}
-          onChange={(v) => {
-            setSecretAccessKey(v)
-            invalidateTest()
-          }}
-        />
-        <Field
-          label={t('settings.backup.remote.s3.prefix')}
-          optional
-          hint={t('settings.backup.remote.s3.prefixHint')}
-          placeholder={t('settings.backup.remote.s3.prefixPlaceholder')}
-          value={prefix}
-          onChange={(v) => {
-            setPrefix(v)
-            invalidateTest()
-          }}
-        />
-        <div className="flex items-center justify-between">
-          <Label htmlFor="s-path" className="text-sm font-normal">
-            {t('settings.backup.remote.s3.forcePathStyle')}
-          </Label>
-          <Switch
-            id="s-path"
-            checked={forcePathStyle}
-            onCheckedChange={(v) => {
-              setForcePathStyle(v)
+      {/* Sync status */}
+      {status?.configured && (
+        <div className="bg-card/50 rounded-xl border p-5">
+          <h3 className="text-sm font-semibold">{t('settings.data.cloud.statusSection')}</h3>
+          <div className="text-muted-foreground mt-3 flex flex-col gap-1 text-xs">
+            {status.lastSyncedAt && (
+              <span>
+                {t('settings.backup.lastSynced', {
+                  at: new Date(status.lastSyncedAt).toLocaleString(),
+                })}
+              </span>
+            )}
+            {status.lastError && (
+              <span className="text-destructive">{localizedError(status.lastError)}</span>
+            )}
+            {status.lastWarning && !status.lastError && (
+              <span className="text-amber-600">{status.lastWarning}</span>
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button onClick={handleSyncNow} disabled={!status.enabled || status.isSyncing}>
+              {status.isSyncing ? t('settings.backup.syncing') : t('settings.backup.syncNowButton')}
+            </Button>
+            {status.isSyncing && (
+              <Button variant="outline" onClick={() => cancelSync('s3')}>
+                {t('common.cancel')}
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+              {t('settings.backup.historyButton')}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials */}
+      <div className="bg-card/50 rounded-xl border p-5">
+        <h3 className="text-sm font-semibold">{t('settings.data.cloud.credentialsSection')}</h3>
+        <div className="mt-3 grid gap-3">
+          <Field
+            label={t('settings.backup.remote.s3.endpoint')}
+            placeholder="https://<account>.r2.cloudflarestorage.com"
+            value={endpoint}
+            onChange={(v) => {
+              setEndpoint(v)
               invalidateTest()
             }}
           />
+          <Field
+            label={t('settings.backup.remote.s3.region')}
+            value={region}
+            onChange={(v) => {
+              setRegion(v)
+              invalidateTest()
+            }}
+          />
+          <Field
+            label={t('settings.backup.remote.s3.bucket')}
+            value={bucket}
+            onChange={(v) => {
+              setBucket(v)
+              invalidateTest()
+            }}
+          />
+          <Field
+            label={t('settings.backup.remote.s3.accessKeyId')}
+            value={accessKeyId}
+            onChange={(v) => {
+              setAccessKeyId(v)
+              invalidateTest()
+            }}
+          />
+          <PasswordField
+            label={t('settings.backup.remote.s3.secretAccessKey')}
+            value={secretAccessKey}
+            onChange={(v) => {
+              setSecretAccessKey(v)
+              invalidateTest()
+            }}
+          />
+          <Field
+            label={t('settings.backup.remote.s3.prefix')}
+            optional
+            hint={t('settings.backup.remote.s3.prefixHint')}
+            placeholder={t('settings.backup.remote.s3.prefixPlaceholder')}
+            value={prefix}
+            onChange={(v) => {
+              setPrefix(v)
+              invalidateTest()
+            }}
+          />
+          <div className="flex items-center justify-between">
+            <Label htmlFor="s-path" className="text-sm font-normal">
+              {t('settings.backup.remote.s3.forcePathStyle')}
+            </Label>
+            <Switch
+              id="s-path"
+              checked={forcePathStyle}
+              onCheckedChange={(v) => {
+                setForcePathStyle(v)
+                invalidateTest()
+              }}
+            />
+          </div>
+        </div>
+
+        {credMsg && (
+          <p
+            className={cn(
+              'mt-3 text-xs',
+              credMsg.kind === 'ok'
+                ? 'text-emerald-600'
+                : credMsg.kind === 'info'
+                  ? 'text-muted-foreground'
+                  : 'text-destructive',
+            )}>
+            {credMsg.text}
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={doTest} disabled={testing}>
+            {testing ? t('settings.backup.remote.testing') : t('settings.backup.remote.testButton')}
+          </Button>
+          <Button onClick={doSave} disabled={!testOk || saving}>
+            {t('common.save')}
+          </Button>
+          {initial && (
+            <Button variant="ghost" onClick={doClear}>
+              {t('settings.data.cloud.clearButton')}
+            </Button>
+          )}
         </div>
       </div>
 
-      {msg && (
-        <p
-          className={cn(
-            'text-xs',
-            msg.kind === 'ok'
-              ? 'text-emerald-600'
-              : msg.kind === 'info'
-                ? 'text-muted-foreground'
-                : 'text-destructive',
-          )}>
-          {msg.text}
+      {/* Sync options (per-remote) */}
+      <div className="bg-card/50 rounded-xl border p-5">
+        <h3 className="text-sm font-semibold">{t('settings.data.cloud.syncOptionsSection')}</h3>
+        <p className="text-muted-foreground mt-1 text-xs">
+          {t('settings.data.cloud.syncOptionsScope', { remote: 'S3' })}
         </p>
-      )}
 
-      <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={doTest} disabled={testing}>
-          {testing ? t('settings.backup.remote.testing') : t('settings.backup.remote.testButton')}
-        </Button>
-        <Button onClick={doSave} disabled={!testOk || saving}>
-          {t('common.save')}
-        </Button>
-        {initial && (
-          <Button variant="ghost" onClick={doClear}>
-            {t('settings.data.cloud.clearButton')}
-          </Button>
+        <div className="mt-4 grid gap-3">
+          <div className="grid gap-1.5">
+            <Label className="text-xs">{t('settings.backup.passphraseLabel')}</Label>
+            <div className="flex gap-2">
+              <PasswordInput
+                placeholder={t('settings.backup.passphrasePlaceholderOptional')}
+                value={pp}
+                onChange={(e) => setPp(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleSavePassphrase()
+                  }
+                }}
+              />
+              <Button
+                variant="secondary"
+                onClick={handleSavePassphrase}
+                disabled={pp === passphrase}>
+                {passphrase ? t('settings.backup.passphraseUpdate') : t('common.save')}
+              </Button>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {t('settings.backup.passphraseHintOptional')}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label className="text-xs">{t('settings.backup.intervalLabel')}</Label>
+              <Select
+                value={String(interval)}
+                onValueChange={(v) => handleIntervalChange(parseInt(v, 10))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">{t('settings.backup.intervalOff')}</SelectItem>
+                  <SelectItem value="1">{t('settings.backup.interval1')}</SelectItem>
+                  <SelectItem value="15">{t('settings.backup.interval15')}</SelectItem>
+                  <SelectItem value="30">{t('settings.backup.interval30')}</SelectItem>
+                  <SelectItem value="60">{t('settings.backup.interval60')}</SelectItem>
+                  <SelectItem value="180">{t('settings.backup.interval180')}</SelectItem>
+                  <SelectItem value="720">{t('settings.backup.interval720')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs">{t('settings.backup.maxRetainedLabel')}</Label>
+              <Input
+                type="number"
+                min={1}
+                max={50}
+                value={maxRetained}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10)
+                  if (Number.isFinite(n)) handleMaxRetainedChange(n)
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {syncMsg && (
+          <p
+            className={cn(
+              'mt-3 text-xs',
+              syncMsg.kind === 'ok'
+                ? 'text-emerald-600'
+                : syncMsg.kind === 'info'
+                  ? 'text-muted-foreground'
+                  : 'text-destructive',
+            )}>
+            {syncMsg.text}
+          </p>
         )}
       </div>
-    </div>
+
+      <BackupHistoryDialog
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        remoteType="s3"
+      />
+    </>
   )
 }
 
@@ -222,7 +444,6 @@ function Field(props: {
   value: string
   onChange: (v: string) => void
   placeholder?: string
-  type?: string
   optional?: boolean
   hint?: string
 }): React.JSX.Element {
@@ -238,7 +459,6 @@ function Field(props: {
         )}
       </Label>
       <Input
-        type={props.type ?? 'text'}
         placeholder={props.placeholder}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
