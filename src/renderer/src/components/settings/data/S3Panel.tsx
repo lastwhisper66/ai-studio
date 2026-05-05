@@ -47,7 +47,6 @@ function S3Page({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
   const setRemoteEnabled = useBackupStore((s) => s.setRemoteEnabled)
   const saveSettings = useSettingsStore((s) => s.saveSettings)
 
-  const passphrase = useSettingsStore((s) => s.settings['backup.remote.s3.passphrase']) ?? ''
   const intervalSetting =
     useSettingsStore((s) => s.settings['backup.remote.s3.autoSyncIntervalMinutes']) ?? '0'
   const maxRetainedSetting =
@@ -67,8 +66,6 @@ function S3Page({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
   const [credMsg, setCredMsg] = useState<Msg>(null)
   const [saving, setSaving] = useState(false)
 
-  // Sync option local state (passphrase input)
-  const [pp, setPp] = useState(passphrase)
   const [syncMsg, setSyncMsg] = useState<Msg>(null)
 
   // History dialog
@@ -132,17 +129,6 @@ function S3Page({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
       return
     }
     setSyncMsg({ kind: 'ok', text: t(`settings.backup.syncResult.${r.direction}`) })
-  }
-
-  const handleSavePassphrase = async (): Promise<void> => {
-    setSyncMsg(null)
-    const ok = await saveSettings({ 'backup.remote.s3.passphrase': pp })
-    if (!ok) {
-      const err = useSettingsStore.getState().error
-      if (err) setSyncMsg({ kind: 'err', text: localizedError(err) })
-      return
-    }
-    setSyncMsg({ kind: 'ok', text: t('settings.data.cloud.passphraseSaved') })
   }
 
   const handleIntervalChange = async (minutes: number): Promise<void> => {
@@ -353,32 +339,6 @@ function S3Page({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
         </p>
 
         <div className="mt-4 grid gap-3">
-          <div className="grid gap-1.5">
-            <Label className="text-xs">{t('settings.backup.passphraseLabel')}</Label>
-            <div className="flex gap-2">
-              <PasswordInput
-                placeholder={t('settings.backup.passphrasePlaceholderOptional')}
-                value={pp}
-                onChange={(e) => setPp(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleSavePassphrase()
-                  }
-                }}
-              />
-              <Button
-                variant="secondary"
-                onClick={handleSavePassphrase}
-                disabled={pp === passphrase}>
-                {passphrase ? t('settings.backup.passphraseUpdate') : t('common.save')}
-              </Button>
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {t('settings.backup.passphraseHintOptional')}
-            </p>
-          </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label className="text-xs">{t('settings.backup.intervalLabel')}</Label>
