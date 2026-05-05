@@ -31,9 +31,9 @@ import { backupSyncService } from '../backup/sync-service'
 export function registerBackupHandlers(): void {
   ipcMain.handle(
     IpcChannels.BACKUP_EXPORT_TO_FILE,
-    async (_, payload: { password: string | null }): Promise<IpcResult<{ filePath: string }>> => {
+    async (): Promise<IpcResult<{ filePath: string }>> => {
       try {
-        const data = await exportToFile(payload.password)
+        const data = await exportToFile()
         return { success: true, data }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
@@ -76,7 +76,7 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_IMPORT_FROM_FILE,
     async (
       _,
-      payload: { filePath?: string; password: string | null; mode: BackupImportMode },
+      payload: { filePath?: string; mode: BackupImportMode },
     ): Promise<IpcResult<{ applied: BackupSummary }>> => {
       try {
         let filePath = payload.filePath
@@ -91,7 +91,7 @@ export function registerBackupHandlers(): void {
           }
           filePath = result.filePaths[0]
         }
-        const applied = await importFromFile(filePath, payload.password, payload.mode)
+        const applied = await importFromFile(filePath, payload.mode)
         return { success: true, data: { applied } }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
@@ -208,15 +208,10 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_RESTORE_FROM_REMOTE,
     async (
       _,
-      payload: { type: RemoteType; key: string; password: string | null; mode: BackupImportMode },
+      payload: { type: RemoteType; key: string; mode: BackupImportMode },
     ): Promise<IpcResult<void>> => {
       try {
-        await backupSyncService.restoreFromKey(
-          payload.type,
-          payload.key,
-          payload.password,
-          payload.mode,
-        )
+        await backupSyncService.restoreFromKey(payload.type, payload.key, payload.mode)
         return { success: true }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }

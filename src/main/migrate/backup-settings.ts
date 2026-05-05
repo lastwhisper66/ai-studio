@@ -18,16 +18,12 @@ const REMOTE_TYPES: RemoteType[] = ['webdav', 's3']
  * has already changed per-remote values a no-op (won't clobber).
  */
 export function migrateBackupSettings(): void {
-  const oldPassphrase = getSetting('backup.syncPassphrase')
   const oldInterval = getSetting('backup.autoSyncIntervalMinutes')
   const oldMaxRetained = getSetting('backup.maxRetainedBackups')
   const oldLastSynced = getSetting('backup.lastSyncedAt')
   const oldLastRemoteSeen = getSetting('backup.lastRemoteSeenAt')
 
   for (const type of REMOTE_TYPES) {
-    if (oldPassphrase && !getSetting(`backup.remote.${type}.passphrase`)) {
-      setSetting(`backup.remote.${type}.passphrase`, oldPassphrase)
-    }
     if (oldInterval && !getSetting(`backup.remote.${type}.autoSyncIntervalMinutes`)) {
       setSetting(`backup.remote.${type}.autoSyncIntervalMinutes`, oldInterval)
     }
@@ -46,7 +42,6 @@ export function migrateBackupSettings(): void {
     }
   }
 
-  if (oldPassphrase !== undefined) deleteSetting('backup.syncPassphrase')
   if (oldInterval !== undefined) deleteSetting('backup.autoSyncIntervalMinutes')
   if (oldMaxRetained !== undefined) deleteSetting('backup.maxRetainedBackups')
   if (oldLastSynced !== undefined) deleteSetting('backup.lastSyncedAt')

@@ -110,7 +110,6 @@ class BackupSyncService {
         getSetting(`backup.remote.${type}.maxRetainedBackups`) ?? '5',
         10,
       ),
-      hasPassphrase: !!getSetting(`backup.remote.${type}.passphrase`),
     }
   }
 
@@ -197,28 +196,23 @@ class BackupSyncService {
 
     let finalError: LocalizedError | null = null
     try {
-      // Plaintext mode: empty/missing passphrase means upload/download as
-      // unencrypted bytes. The codec emits `encryption.algo: 'none'`.
-      const passwordRaw = getSetting(`backup.remote.${type}.passphrase`)
-      const password: string | null = passwordRaw && passwordRaw.length > 0 ? passwordRaw : null
-
       const remote = buildRemote(cfg)
       const manifest = await this.fetchManifest(remote, state)
 
       const localChange = parseIso(getSetting('backup.lastLocalChangeAt'))
       let result: SyncResult
       if (!manifest) {
-        result = await this.uploadFlow(type, remote, password)
+        result = await this.uploadFlow(type, remote)
       } else if (localChange === null) {
-        result = await this.downloadFlow(type, remote, manifest, password)
+        result = await this.downloadFlow(type, remote, manifest)
       } else {
         const remoteCreated = parseIso(manifest.latestCreatedAt)
         if (remoteCreated === null) {
-          result = await this.uploadFlow(type, remote, password)
+          result = await this.uploadFlow(type, remote)
         } else if (localChange >= remoteCreated - CLOCK_TOLERANCE_MS) {
-          result = await this.uploadFlow(type, remote, password)
+          result = await this.uploadFlow(type, remote)
         } else {
-          result = await this.downloadFlow(type, remote, manifest, password)
+          result = await this.downloadFlow(type, remote, manifest)
         }
       }
 
@@ -292,12 +286,7 @@ class BackupSyncService {
   }
 
   /** Restore a specific historical snapshot from a specific remote. */
-  async restoreFromKey(
-    type: RemoteType,
-    key: string,
-    password: string | null,
-    mode: 'replace' | 'merge',
-  ): Promise<void> {
+  async restoreFromKey(type: RemoteType, key: string, mode: 'replace' | 'merge'): Promise<void> {
     const cfg = loadEnabledRemote(type)
     if (!cfg) throw new AppError(ERROR_CODES.BACKUP_REMOTE_NOT_CONFIGURED)
     const remote = buildRemote(cfg)
@@ -306,13 +295,13 @@ class BackupSyncService {
     this.progress(type, { phase: 'decrypt' })
     if (mode === 'replace') {
       try {
-        writePreApplyRollback(password, type)
+        writePreApplyRollback(type)
       } catch {
         /* best-effort */
       }
     }
     this.progress(type, { phase: 'apply' })
-    applyBackupBytes(bytes, password, mode)
+    applyBackupBytes(bytes, mode)
     setSetting(`backup.remote.${type}.lastSyncedAt`, new Date().toISOString())
     this.broadcastStatus()
   }
@@ -351,14 +340,10 @@ class BackupSyncService {
     }
   }
 
-  private async uploadFlow(
-    type: RemoteType,
-    remote: BackupRemote,
-    password: string | null,
-  ): Promise<SyncResult> {
+  private async uploadFlow(type: RemoteType, remote: BackupRemote): Promise<SyncResult> {
     const state = this.remoteStates.get(type)!
     this.progress(type, { phase: 'collect' })
-    const { bytes, createdAt } = encodeSnapshotBytes(password)
+    const { bytes, createdAt } = encodeSnapshotBytes()
     if (state.abort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
     const key = `${BACKUPS_PREFIX}${safeKeyTimestamp(createdAt)}-${randomUUID()}.aibackup`
@@ -393,7 +378,6 @@ class BackupSyncService {
     type: RemoteType,
     remote: BackupRemote,
     manifest: Manifest,
-    password: string | null,
   ): Promise<SyncResult> {
     const state = this.remoteStates.get(type)!
     this.progress(type, { phase: 'download' })
@@ -401,13 +385,13 @@ class BackupSyncService {
     if (state.abort?.signal.aborted) throw new AppError(ERROR_CODES.BACKUP_CANCELLED)
 
     try {
-      writePreApplyRollback(password, type)
+      writePreApplyRollback(type)
     } catch {
       /* best-effort */
     }
     this.progress(type, { phase: 'decrypt' })
     this.progress(type, { phase: 'apply' })
-    applyBackupBytes(bytes, password, 'replace')
+    applyBackupBytes(bytes, 'replace')
 
     return { direction: 'download', createdAt: manifest.latestCreatedAt }
   }
