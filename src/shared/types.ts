@@ -520,8 +520,6 @@ export interface BackupFileMeta {
   schemaVersion: 1
   appVersion: string
   createdAt: string
-  /** True for AES-256-GCM payloads, false for `encryption.algo === 'none'`. */
-  encrypted: boolean
 }
 
 export type BackupImportMode = 'replace' | 'merge'
@@ -575,9 +573,6 @@ export interface RemoteSyncStatus {
   lastWarning: string | null
   autoSyncIntervalMinutes: number
   maxRetainedBackups: number
-  /** Surface only — UI shows a "passphrase set" badge based on this without
-   *  needing to read the passphrase itself. */
-  hasPassphrase: boolean
 }
 
 export interface BackupStatus {

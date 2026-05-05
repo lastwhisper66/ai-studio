@@ -70,8 +70,6 @@ export const ERROR_CODES = {
 
   // backup
   BACKUP_FILE_INVALID: 'errors.backup.fileInvalid',
-  BACKUP_PASSWORD_WRONG: 'errors.backup.passwordWrong',
-  BACKUP_PASSWORD_REQUIRED: 'errors.backup.passwordRequired',
   BACKUP_SCHEMA_TOO_NEW: 'errors.backup.schemaTooNew',
   BACKUP_REMOTE_AUTH: 'errors.backup.remoteAuth',
   BACKUP_REMOTE_NOT_FOUND: 'errors.backup.remoteNotFound',
