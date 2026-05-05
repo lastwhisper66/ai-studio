@@ -3,6 +3,7 @@ import type {
   BackupFileMeta,
   BackupImportMode,
   BackupProgress,
+  BackupStatus,
   BackupSummary,
   RemoteBackupItem,
   RemoteConfig,
@@ -10,7 +11,6 @@ import type {
   RemoteType,
   RollbackBackupItem,
   SyncResult,
-  SyncStatus,
 } from '@shared/types'
 import type { LocalizedError } from '@shared/errors'
 
@@ -18,7 +18,7 @@ const fallbackError = (e: LocalizedError | undefined): LocalizedError =>
   e ?? { code: 'errors.internal' }
 
 interface BackupState {
-  status: SyncStatus | null
+  status: BackupStatus | null
   /** Both remote configs: each may be null when that remote isn't configured. */
   remoteConfigs: RemoteConfigs
   progress: BackupProgress | null
@@ -27,11 +27,10 @@ interface BackupState {
   loadStatus: () => Promise<void>
   loadRemoteConfigs: () => Promise<void>
 
-  exportToFile: (password: string) => Promise<{ filePath: string } | { error: LocalizedError }>
+  exportToFile: () => Promise<{ filePath: string } | { error: LocalizedError }>
   peekFile: (filePath: string) => Promise<BackupFileMeta | { error: LocalizedError }>
   importFromFile: (
     filePath: string | undefined,
-    password: string,
     mode: BackupImportMode,
   ) => Promise<BackupSummary | { error: LocalizedError }>
 
@@ -41,14 +40,17 @@ interface BackupState {
     cfg: RemoteConfig,
   ) => Promise<{ ok: boolean; latency?: number; error?: LocalizedError }>
 
-  syncNow: () => Promise<SyncResult | { error: LocalizedError }>
-  cancelSync: () => Promise<void>
+  syncNow: (type: RemoteType) => Promise<SyncResult | { error: LocalizedError }>
+  cancelSync: (type: RemoteType) => Promise<void>
+  setRemoteEnabled: (
+    type: RemoteType,
+    enabled: boolean,
+  ) => Promise<void | { error: LocalizedError }>
   listRemote: (type: RemoteType) => Promise<RemoteBackupItem[] | { error: LocalizedError }>
   listRollbacks: () => Promise<RollbackBackupItem[] | { error: LocalizedError }>
   restoreFromRemote: (
     type: RemoteType,
     key: string,
-    password: string,
     mode: BackupImportMode,
   ) => Promise<void | { error: LocalizedError }>
 
@@ -76,8 +78,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     set({ remoteConfigs: r.success && r.data ? r.data : emptyConfigs })
   },
 
-  exportToFile: async (password) => {
-    const r = await window.api.backup.exportToFile(password)
+  exportToFile: async () => {
+    const r = await window.api.backup.exportToFile()
     set({ progress: null })
     if (r.success && r.data) return r.data
     return { error: fallbackError(r.error) }
@@ -89,8 +91,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  importFromFile: async (filePath, password, mode) => {
-    const r = await window.api.backup.importFromFile({ filePath, password, mode })
+  importFromFile: async (filePath, mode) => {
+    const r = await window.api.backup.importFromFile({ filePath, mode })
     set({ progress: null })
     if (r.success && r.data) {
       // After import, refresh status (lastLocalChangeAt etc may have shifted).
@@ -122,8 +124,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { ok: false, error: fallbackError(r.error) }
   },
 
-  syncNow: async () => {
-    const r = await window.api.backup.syncNow()
+  syncNow: async (type) => {
+    const r = await window.api.backup.syncNow(type)
     set({ progress: null })
     if (r.success && r.data) {
       get().loadStatus()
@@ -132,8 +134,15 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  cancelSync: async () => {
-    await window.api.backup.syncCancel()
+  cancelSync: async (type) => {
+    await window.api.backup.syncCancel(type)
+  },
+
+  setRemoteEnabled: async (type, enabled) => {
+    const r = await window.api.backup.setRemoteEnabled(type, enabled)
+    if (!r.success) return { error: fallbackError(r.error) }
+    get().loadStatus()
+    return
   },
 
   listRemote: async (type) => {
@@ -148,8 +157,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  restoreFromRemote: async (type, key, password, mode) => {
-    const r = await window.api.backup.restoreFromRemote({ type, key, password, mode })
+  restoreFromRemote: async (type, key, mode) => {
+    const r = await window.api.backup.restoreFromRemote({ type, key, mode })
     set({ progress: null })
     if (r.success) {
       get().loadStatus()
@@ -165,16 +174,17 @@ export function initBackupStore(): void {
   store.loadRemoteConfigs()
 
   const detachStatus = window.api.backup.onStatusChanged((s) => {
-    // Clear lingering progress when sync ends. The main process emits one
-    // final status broadcast in syncNow's finally block (with isSyncing =
-    // false); we use that transition as the signal to drop any progress
-    // phase the renderer was last shown — otherwise auto-sync runs would
-    // leave the UI stuck on "cleaning up old backups…" forever, since the
-    // main process doesn't send a separate "progress idle" event.
-    useBackupStore.setState((state) => ({
-      status: s,
-      progress: s.isSyncing ? state.progress : null,
-    }))
+    // Clear lingering progress when ALL remotes are idle. The main process
+    // emits a final status broadcast in syncNow's finally block (with
+    // isSyncing = false) per remote; we use the "no remote busy" transition
+    // to drop any progress phase the renderer was last shown — otherwise
+    // auto-sync runs would leave the UI stuck on "cleaning up old backups…"
+    // forever, since the main process doesn't send a separate "progress
+    // idle" event.
+    useBackupStore.setState((state) => {
+      const anyBusy = s.remotes.webdav.isSyncing || s.remotes.s3.isSyncing
+      return { status: s, progress: anyBusy ? state.progress : null }
+    })
   })
   const detachProgress = window.api.backup.onProgress((p) => {
     useBackupStore.setState({ progress: p })

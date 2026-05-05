@@ -1,62 +1,64 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload, Download, RotateCcw } from 'lucide-react'
+import { Upload, Download, RotateCcw, Trash2 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
 import { Label } from '@renderer/components/ui/label'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@renderer/components/ui/alert-dialog'
 import { useBackupStore } from '@renderer/stores/backupStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import { ERROR_CODES } from '@shared/errors'
-import type { BackupFileMeta, BackupImportMode } from '@shared/types'
-import { BackupPasswordDialog } from '../BackupPasswordDialog'
+import type { BackupImportMode } from '@shared/types'
 import { BackupRollbackDialog } from '../BackupRollbackDialog'
 
 /**
- * Local-only export / import / rollback. No cloud sync here — those live in
- * the WebDAV / S3 panels with the shared cloud overview header.
+ * Unified data-management page — local export/import, rollback access, and the
+ * destructive "clear all data" control.
  *
- * Layout: a header card describing the section, then THREE STACKED ROWS
- * (one per action). Each row shows an icon, title, description, and the
- * primary action on the right. The import row also surfaces the
- * replace/merge toggle inline before its button. Status messages and the
- * password hint render at the bottom in a single trailing card.
+ * Backup files are always plaintext; export and import are direct one-click
+ * actions with no password dialog. Encrypted legacy files (if any) are
+ * rejected by the codec as `BACKUP_FILE_INVALID`.
  */
-export function LocalBackupPanel(): React.JSX.Element {
+export function DataManagementPanel(): React.JSX.Element {
   const { t } = useTranslation()
   const localizedError = useLocalizedError()
   const exportToFile = useBackupStore((s) => s.exportToFile)
   const importFromFile = useBackupStore((s) => s.importFromFile)
-  const peekFile = useBackupStore((s) => s.peekFile)
 
   const [importMode, setImportMode] = useState<BackupImportMode>('replace')
-  const [exportOpen, setExportOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
-  const [pendingFilePath, setPendingFilePath] = useState<string | undefined>(undefined)
-  const [peekMeta, setPeekMeta] = useState<BackupFileMeta | null>(null)
-  const [pwError, setPwError] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [rollbackOpen, setRollbackOpen] = useState(false)
+  const [clearError, setClearError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const openExport = (): void => {
-    setPwError(null)
+  const handleExport = async (): Promise<void> => {
     setStatusMsg(null)
-    setExportOpen(true)
-  }
-
-  const handleExportSubmit = async (password: string): Promise<void> => {
-    const r = await exportToFile(password)
-    if ('error' in r) {
-      if (r.error.code !== ERROR_CODES.BACKUP_CANCELLED) {
-        setStatusMsg({ kind: 'err', text: localizedError(r.error) })
+    setBusy(true)
+    try {
+      const r = await exportToFile()
+      if ('error' in r) {
+        if (r.error.code !== ERROR_CODES.BACKUP_CANCELLED) {
+          setStatusMsg({ kind: 'err', text: localizedError(r.error) })
+        }
+        return
       }
-      setExportOpen(false)
-      return
+      setStatusMsg({ kind: 'ok', text: t('settings.backup.exportSuccess', { path: r.filePath }) })
+    } finally {
+      setBusy(false)
     }
-    setStatusMsg({ kind: 'ok', text: t('settings.backup.exportSuccess', { path: r.filePath }) })
-    setExportOpen(false)
   }
 
-  const openImport = async (): Promise<void> => {
+  const handleImport = async (): Promise<void> => {
     setStatusMsg(null)
     const pickResult = await window.api.backup.pickFile()
     if (!pickResult.success) {
@@ -64,53 +66,47 @@ export function LocalBackupPanel(): React.JSX.Element {
       return
     }
     if (!pickResult.data) return
-    const filePath = pickResult.data.filePath
-    const meta = await peekFile(filePath)
-    if ('error' in meta) {
-      setStatusMsg({ kind: 'err', text: localizedError(meta.error) })
-      return
-    }
-    setPeekMeta(meta)
-    setPendingFilePath(filePath)
-    setPwError(null)
-    setImportOpen(true)
-  }
-
-  const closeImport = (): void => {
-    setImportOpen(false)
-    setPendingFilePath(undefined)
-    setPeekMeta(null)
-    setPwError(null)
-  }
-
-  const handleImportSubmit = async (password: string): Promise<void> => {
-    if (!pendingFilePath) return
-    const r = await importFromFile(pendingFilePath, password, importMode)
-    if ('error' in r) {
-      if (r.error.code === ERROR_CODES.BACKUP_PASSWORD_WRONG) {
-        setPwError(t('errors.backup.passwordWrong'))
+    setBusy(true)
+    try {
+      const r = await importFromFile(pickResult.data.filePath, importMode)
+      if ('error' in r) {
+        setStatusMsg({ kind: 'err', text: localizedError(r.error) })
         return
       }
-      setStatusMsg({ kind: 'err', text: localizedError(r.error) })
-      closeImport()
-      return
+      setStatusMsg({
+        kind: 'ok',
+        text: t('settings.backup.importSuccess', {
+          providers: r.providers,
+          assistants: r.assistants,
+          settings: r.settings,
+        }),
+      })
+    } finally {
+      setBusy(false)
     }
-    setStatusMsg({
-      kind: 'ok',
-      text: t('settings.backup.importSuccess', {
-        providers: r.providers,
-        assistants: r.assistants,
-        settings: r.settings,
-      }),
-    })
-    closeImport()
+  }
+
+  const handleClearData = async (): Promise<void> => {
+    try {
+      setClearError(null)
+      const result = await window.api.clearAppData()
+      if (!result.success) {
+        setClearError(
+          result.error ? t(result.error.code, result.error.params ?? {}) : 'Failed to clear data',
+        )
+      }
+    } catch (e) {
+      setClearError((e as Error).message)
+    }
   }
 
   return (
     <>
       <div className="bg-card/50 rounded-xl border p-5">
-        <h2 className="text-base font-semibold">{t('settings.backup.localTitle')}</h2>
-        <p className="text-muted-foreground mt-1 text-sm">{t('settings.backup.description')}</p>
+        <h2 className="text-base font-semibold">{t('settings.data.dataManagement.title')}</h2>
+        <p className="text-muted-foreground mt-1 text-sm">
+          {t('settings.data.dataManagement.description')}
+        </p>
       </div>
 
       <div className="bg-card/50 divide-y rounded-xl border">
@@ -118,7 +114,11 @@ export function LocalBackupPanel(): React.JSX.Element {
           icon={<Upload className="h-5 w-5" />}
           title={t('settings.backup.exportCard.title')}
           description={t('settings.backup.exportCard.description')}
-          action={<Button onClick={openExport}>{t('settings.backup.exportButton')}</Button>}
+          action={
+            <Button onClick={handleExport} disabled={busy}>
+              {t('settings.backup.exportButton')}
+            </Button>
+          }
         />
 
         <ActionRow
@@ -150,7 +150,7 @@ export function LocalBackupPanel(): React.JSX.Element {
             </div>
           }
           action={
-            <Button variant="outline" onClick={openImport}>
+            <Button variant="outline" onClick={handleImport} disabled={busy}>
               {t('settings.backup.importButton')}
             </Button>
           }
@@ -173,63 +173,63 @@ export function LocalBackupPanel(): React.JSX.Element {
         />
       </div>
 
-      <div className="bg-card/50 rounded-xl border p-4">
-        <p className="text-muted-foreground text-xs">{t('settings.backup.passwordHint')}</p>
-        {statusMsg && (
+      {statusMsg && (
+        <div className="bg-card/50 rounded-xl border p-4">
           <p
             className={cn(
-              'mt-2 text-xs',
+              'text-xs',
               statusMsg.kind === 'ok' ? 'text-emerald-600' : 'text-destructive',
             )}>
             {statusMsg.text}
           </p>
-        )}
+        </div>
+      )}
+
+      {/* Danger zone */}
+      <div className="border-destructive/40 bg-destructive/5 rounded-xl border p-5">
+        <h3 className="text-destructive text-sm font-semibold">
+          {t('settings.data.dangerZone.title')}
+        </h3>
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <Trash2 className="text-destructive mt-0.5 size-4 shrink-0" />
+            <div>
+              <Label className="text-sm font-medium">{t('settings.data.clearData')}</Label>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {t('settings.data.clearDataDescription')}
+              </p>
+            </div>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm">
+                {t('settings.data.clearData')}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t('settings.data.clearDataConfirmTitle')}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t('settings.data.clearDataConfirmDescription')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearData} variant="destructive">
+                  {t('settings.data.clearDataConfirmButton')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+        {clearError && <p className="text-destructive mt-2 text-xs">{clearError}</p>}
       </div>
 
       <BackupRollbackDialog open={rollbackOpen} onClose={() => setRollbackOpen(false)} />
-
-      <BackupPasswordDialog
-        open={exportOpen}
-        mode="export"
-        onCancel={() => setExportOpen(false)}
-        onSubmit={handleExportSubmit}
-      />
-      <BackupPasswordDialog
-        open={importOpen}
-        mode="import"
-        onCancel={closeImport}
-        onSubmit={handleImportSubmit}
-        errorText={pwError}
-        preview={
-          peekMeta ? (
-            <div className="grid gap-1">
-              <div>
-                <span className="text-muted-foreground">{t('settings.backup.peek.created')}: </span>
-                {new Date(peekMeta.createdAt).toLocaleString()}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t('settings.backup.peek.appVersion')}:{' '}
-                </span>
-                {peekMeta.appVersion}
-              </div>
-            </div>
-          ) : undefined
-        }
-      />
     </>
   )
 }
 
-/**
- * One full-width row inside the actions card.
- *
- * Layout (left → right): square icon badge, title + description column,
- * primary action button. The optional `belowDescription` slot lets a row
- * surface secondary controls (e.g. import-mode picker) on a second line
- * within the description column — keeps every row visually aligned at the
- * top while letting the import row breathe vertically.
- */
 function ActionRow({
   icon,
   title,

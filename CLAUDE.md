@@ -75,6 +75,7 @@ src/
 │   │   ├── quick-actions.ts        #   Built-in + user actions for Quick Assistant
 │   │   ├── selection-actions.ts    #   Built-in + user actions for Selection Assistant
 │   │   └── seeds/                  #   `providers.ts`, `actions.ts`, `assistants.ts`, `catalogs.ts`, `index.ts`
+│   ├── migrate/                    # Boot-time, idempotent data migrations. `index.ts` exports `runMigrations()` (called once after `initDatabase()` in `main/index.ts`); each migration lives in its own file (e.g. `backup-settings.ts`). Add new migrations here.
 │   ├── ipc/                        # 21 handler files; one per domain — see "IPC Channels" below
 │   └── utils/
 │       ├── paths.ts                #   `getDataDir()` (resolves to `data/` in dev, userData in prod)
@@ -285,6 +286,7 @@ npm run build:linux       # Linux build (untested in CI)
 
 - **AI calls**: only in `src/main/ai/`. Never import an AI SDK from preload or renderer.
 - **DB access**: only in `src/main/db/`. Renderer talks via IPC.
+- **Boot-time migrations**: any one-shot, idempotent data migration (settings reshape, schema fixups, file moves) lives in `src/main/migrate/`. Add a new file per migration and register it in `src/main/migrate/index.ts` `runMigrations()`. Migrations MUST be idempotent — they run on every boot.
 - **IPC plumbing**: every new channel must be declared in `src/shared/ipc-channels.ts` `IpcChannels` constant first, then wrapped in `src/preload/index.ts`, then handled in a `src/main/ipc/<domain>-handlers.ts`. Keep one file per domain.
 - **Errors**: throw `AppError` (main) with an `ERROR_CODES` key; handlers wrap it into `IpcResult<T>` with a `LocalizedError` payload. The renderer renders it through `useLocalizedError` so the user sees i18n'd text.
 - **Streaming**: always event-push, never `await` a chunked response over `invoke`. Use a per-domain `AbortController` (one in `chat-handlers`, `translate-handlers`, `quick-assistant-handlers`, `selection-handlers`).
