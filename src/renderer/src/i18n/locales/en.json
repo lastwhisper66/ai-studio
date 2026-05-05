@@ -646,7 +646,7 @@
       "rollback": {
         "button": "Restore from rollback…",
         "title": "Local rollback copies",
-        "desc": "Every cloud-applied state is saved locally before being applied. Pick one to undo a sync that turned out wrong.",
+        "desc": "Every replace-mode apply — cloud download, local file import, or cloud history restore — writes a snapshot of the current state first. Pick one to undo an operation that turned out wrong.",
         "loading": "Loading…",
         "empty": "No rollback copies yet — none will exist until the first cloud sync runs.",
         "restoreReplace": "Restore (replace)",

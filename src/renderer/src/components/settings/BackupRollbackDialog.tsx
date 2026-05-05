@@ -19,10 +19,14 @@ import { cn } from '@renderer/lib/utils'
 /**
  * Browse local pre-apply rollback snapshots and restore one.
  *
- * Rollback files are written by `BackupSyncService.writeRollback()` every
- * time it's about to apply a cloud snapshot. They live under
- * `<dataDir>/backups/auto-rollback/` and let the user undo a sync that
- * turned out to be wrong (e.g. accidental sync from a stale device).
+ * Rollback files are written by `writePreApplyRollback()` in
+ * `src/main/backup/index.ts` every time the app is about to overwrite local
+ * data in "replace" mode — that covers cloud-sync downloads, cloud history
+ * restores, and local `.aibackup` file imports. They live under
+ * `<dataDir>/backups/auto-rollback/` along with a `.meta.json` sidecar that
+ * records which event produced them (`triggeredBy`). Each rollback row in
+ * this dialog surfaces that label so the user can tell apart "the WebDAV
+ * sync clobbered me" from "I just imported the wrong file".
  *
  * Restore reuses the existing `importFromFile` flow — the rollback file is
  * just an `.aibackup` on disk, so passing its absolute path through the
