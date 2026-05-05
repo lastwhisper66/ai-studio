@@ -21,6 +21,7 @@ import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
 import { initMainI18n, onLanguageChange, t } from './i18n'
 import { backupSyncService } from './backup/sync-service'
+import { runMigrations } from './migrate'
 import { cleanupStaleAvatarStaging } from './backup/snapshot'
 import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
@@ -471,6 +472,7 @@ if (!gotTheLock) {
     electronApp.setAppUserModelId('com.ai-studio.app')
 
     initDatabase()
+    runMigrations()
     // Sweep any leftover `.import-*` / `.trash-*` avatar staging dirs from a
     // previous run that crashed mid-restore. Safe to run unconditionally.
     cleanupStaleAvatarStaging()
@@ -489,10 +491,10 @@ if (!gotTheLock) {
     initSelectionToolbarIpc()
     initSelectionBubbleIpc()
 
-    // Boot the auto-sync timer per current settings. Re-runs whenever the
-    // user changes `backup.autoSyncIntervalMinutes` (wired in
-    // settings-handlers.ts via the side-effect map).
-    backupSyncService.scheduleAuto()
+    // Boot every per-remote auto-sync timer + run catch-up. Re-arms whenever
+    // the user changes a per-remote `backup.remote.*.autoSyncIntervalMinutes`
+    // (wired in settings-handlers.ts via the side-effect map).
+    backupSyncService.start()
 
     // IPC: re-register quick assistant shortcut when user changes it
     ipcMain.handle(IpcChannels.QUICK_ASSISTANT_UPDATE_SHORTCUT, () => {

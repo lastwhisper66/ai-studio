@@ -341,33 +341,55 @@
     "data": {
       "title": "数据设置",
       "description": "管理应用程序数据和存储。",
-      "dataManagement": "数据管理",
+      "dataManagement": {
+        "title": "数据管理",
+        "description": "导入/导出本地备份文件，从本地回滚副本恢复，以及清除全部数据。"
+      },
+      "dangerZone": {
+        "title": "危险区"
+      },
       "clearData": "清除所有数据",
       "clearDataDescription": "删除所有对话记录、设置和附件，应用将自动重启。",
       "clearDataConfirmTitle": "确认清除数据",
       "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
       "clearDataConfirmButton": "确认清除",
       "nav": {
-        "localGroup": "本地数据设置",
-        "localData": "数据设置",
-        "localBackupGroup": "本地备份",
-        "localBackup": "本地备份",
+        "localGroup": "本地数据",
+        "dataManagement": "数据管理",
         "cloudGroup": "云备份",
+        "cloudOverview": "总览",
         "webdav": "WebDAV",
         "s3": "S3 兼容存储"
       },
+      "cloudOverview": {
+        "title": "云备份",
+        "description": "两个目的地完全独立：分别配置凭据、同步频率、保留数。",
+        "notConfiguredHint": "尚未配置远端凭据。",
+        "intervalLabel": "自动同步：每 {{minutes}} 分钟",
+        "maxRetainedLabel": "保留备份：{{count}} 份",
+        "viewDetail": "查看详情",
+        "configure": "前往配置",
+        "badge": {
+          "notConfigured": "未配置",
+          "enabled": "已启用",
+          "disabled": "已禁用"
+        }
+      },
       "cloud": {
-        "overviewHint": "云同步设置对所有已配置的云端目的地通用：每次同步会镜像写入到所有已启用的远端。",
         "webdavTitle": "WebDAV",
         "webdavHint": "通用 WebDAV 协议，兼容坚果云、Nextcloud、ownCloud 等。",
         "s3Title": "S3 兼容存储",
         "s3Hint": "兼容 AWS S3 API 的对象存储，例如 AWS S3、Cloudflare R2、阿里云 OSS、腾讯云 COS 等。",
         "configuredBadge": "已配置",
         "saveOk": "已保存。",
-        "passphraseSaved": "加密口令已保存。",
         "clearButton": "清除此远端配置",
         "clearedWebdav": "已清除 WebDAV 配置。",
-        "clearedS3": "已清除 S3 配置。"
+        "clearedS3": "已清除 S3 配置。",
+        "enableLabel": "启用同步",
+        "statusSection": "同步状态",
+        "credentialsSection": "凭据",
+        "syncOptionsSection": "同步选项",
+        "syncOptionsScope": "这些设置只影响 {{remote}}，不会同步到其他远端。"
       }
     },
     "network": {
@@ -561,7 +583,6 @@
       "modeMerge": "合并",
       "modeReplaceHint": "先清空本地数据再导入。",
       "modeMergeHint": "保留本地数据，同 ID 以备份为准。",
-      "passwordHint": "备份文件始终使用你设置的口令进行加密。",
       "cloudTitle": "云端同步",
       "cloudComingSoon": "稍后版本中开放。",
       "cloudConfigured": "已配置（{{type}}）",
@@ -584,10 +605,6 @@
       "interval180": "3 小时",
       "interval720": "12 小时",
       "maxRetainedLabel": "最大保留备份数（1-50）",
-      "passphrase": "同步加密口令",
-      "passphraseHint": "用于加密上传到云端的每一份快照；与服务器凭据相互独立，请妥善保管。在所有需要解密这些备份的设备上请使用同一个口令——丢失后无法恢复。",
-      "passphrasePlaceholderNew": "设置一个强口令",
-      "passphraseUpdate": "更新",
       "syncResult": {
         "upload": "已将本地变更上传到云端。",
         "download": "已下载并应用云端最新备份。",
@@ -595,7 +612,7 @@
       },
       "exportCard": {
         "title": "导出",
-        "description": "把当前数据加密保存为本地备份文件。"
+        "description": "把当前数据保存为本地备份文件。"
       },
       "importCard": {
         "title": "导入",
@@ -617,13 +634,18 @@
       "rollback": {
         "button": "从回滚副本恢复…",
         "title": "本地回滚副本",
-        "desc": "每次应用云端备份前，本地都会保留当时的状态副本。如果某次同步效果不对，可以从这里撤回。",
+        "desc": "每次以「替换」模式应用备份前——包括云端同步下载、导入本地备份文件、从云端历史恢复——都会保留当时的状态副本。如果某次操作效果不对，可以从这里撤回。",
         "loading": "正在加载…",
         "empty": "暂无回滚副本——首次云同步运行后会自动生成。",
         "restoreReplace": "恢复（替换）",
         "restoreMerge": "恢复（合并）",
         "restoreOk": "已恢复 {{providers}} 个供应商、{{assistants}} 个助手、{{settings}} 项设置。",
-        "unknownTime": "时间未知"
+        "unknownTime": "时间未知",
+        "triggeredBy": {
+          "webdav": "由 WebDAV 触发",
+          "s3": "由 S3 触发",
+          "manual": "手动"
+        }
       },
       "progress": {
         "collect": "正在收集配置…",
@@ -640,19 +662,6 @@
         "created": "创建时间",
         "appVersion": "应用版本"
       },
-      "password": {
-        "exportTitle": "设置备份口令",
-        "exportDesc": "此口令将用于加密备份文件，请妥善保管，丢失将无法恢复。",
-        "importTitle": "解锁备份",
-        "importDesc": "请输入创建此备份时使用的口令。",
-        "restoreTitle": "从云端备份恢复",
-        "restoreDesc": "请输入配置远端时设置的同步加密口令。",
-        "label": "口令",
-        "confirmLabel": "确认口令",
-        "required": "请填写口令。",
-        "mismatch": "两次口令不一致。",
-        "unlock": "解锁"
-      },
       "remote": {
         "dialogTitle": "云端备份目的地",
         "dialogDesc": "保存前请先测试连接。凭据将由系统密钥链加密保存。",
@@ -660,18 +669,13 @@
         "testing": "正在测试…",
         "testOk": "连接成功（耗时 {{latency}} ms）",
         "optional": "（可选）",
-        "passphrase": "同步加密口令",
-        "passphraseHint": "用于加密上传到云端的每一份快照；与上面的服务器凭据相互独立，请妥善保管。在所有需要解密这些备份的设备上请使用同一个口令——丢失后无法恢复。",
-        "passphrasePlaceholderNew": "设置一个强口令",
-        "passphrasePlaceholderKeep": "留空保持当前口令",
-        "passphraseRequired": "请为云端备份设置加密口令。",
         "webdav": {
           "url": "服务器 URL",
           "username": "用户名",
           "password": "密码",
           "subPath": "子路径",
           "subPathPlaceholder": "留空表示使用 WebDAV 根目录",
-          "subPathHint": "可选。备份会写入 WebDAV 根下的此子路径；留空则直接写入根目录。"
+          "subPathHint": "可选。备份会写入 WebDAV 根下的此子路径；新配置默认填入「ai-studio」，留空则直接写入根目录。"
         },
         "s3": {
           "endpoint": "Endpoint",
@@ -681,7 +685,7 @@
           "secretAccessKey": "Secret Access Key",
           "prefix": "对象键前缀",
           "prefixPlaceholder": "留空表示使用 Bucket 根",
-          "prefixHint": "可选。所有对象键将以此为前缀；留空则直接写入 Bucket 根。",
+          "prefixHint": "可选。所有对象键将以此为前缀；新配置默认填入「ai-studio」，留空则直接写入 Bucket 根。",
           "forcePathStyle": "强制 path-style 寻址"
         }
       }
@@ -957,8 +961,6 @@
     },
     "backup": {
       "fileInvalid": "选择的文件不是合法的备份文件。",
-      "passwordWrong": "口令错误，或备份文件已被篡改。",
-      "passwordRequired": "本次操作需要口令。",
       "schemaTooNew": "该备份由更高版本的应用创建，请先升级再尝试。",
       "remoteAuth": "远端存储认证失败，请检查凭据。",
       "remoteNotFound": "未找到远端备份位置。",

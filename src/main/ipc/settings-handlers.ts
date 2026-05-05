@@ -49,14 +49,21 @@ const settingSideEffects: Record<string, (value: string) => void> = {
   'app.autoUpdateEnabled': applyAutoUpdateEnabledSetting,
   'display.zoomFactor': applyZoomSetting,
   'quickAssistant.enabled': applyQuickAssistantEnabled,
-  // Re-arm the auto-sync timer with the new interval. scheduleAuto() reads
-  // the value back from settings, so we don't pass it explicitly.
-  'backup.autoSyncIntervalMinutes': () => backupSyncService.scheduleAuto(),
+  // Re-arm each per-remote auto-sync timer when its interval changes.
+  // scheduleAuto(type) reads the value back from settings.
+  'backup.remote.webdav.autoSyncIntervalMinutes': () => backupSyncService.scheduleAuto('webdav'),
+  'backup.remote.s3.autoSyncIntervalMinutes': () => backupSyncService.scheduleAuto('s3'),
   [LANGUAGE_SETTING_KEY]: applyLanguageSetting,
 }
 
 function applySideEffects(key: string, value: string): void {
   settingSideEffects[key]?.(value)
+  // Any per-remote backup setting affects BackupStatus (interval / retention /
+  // enabled flag). Re-broadcast so the renderer's
+  // cached status reflects the new value without waiting for the next sync.
+  if (key.startsWith('backup.remote.') || key === 'backup.lastLocalChangeAt') {
+    backupSyncService.broadcastStatus()
+  }
 }
 
 function broadcastSettingsChanged(entries: Record<string, string>, senderId?: number): void {

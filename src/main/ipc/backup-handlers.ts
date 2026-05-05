@@ -3,6 +3,7 @@ import { IpcChannels } from '@shared/ipc-channels'
 import type {
   BackupFileMeta,
   BackupImportMode,
+  BackupStatus,
   BackupSummary,
   IpcResult,
   RemoteBackupItem,
@@ -11,7 +12,6 @@ import type {
   RemoteType,
   RollbackBackupItem,
   SyncResult,
-  SyncStatus,
 } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
@@ -31,9 +31,9 @@ import { backupSyncService } from '../backup/sync-service'
 export function registerBackupHandlers(): void {
   ipcMain.handle(
     IpcChannels.BACKUP_EXPORT_TO_FILE,
-    async (_, payload: { password: string }): Promise<IpcResult<{ filePath: string }>> => {
+    async (): Promise<IpcResult<{ filePath: string }>> => {
       try {
-        const data = await exportToFile(payload.password)
+        const data = await exportToFile()
         return { success: true, data }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
@@ -76,7 +76,7 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_IMPORT_FROM_FILE,
     async (
       _,
-      payload: { filePath?: string; password: string; mode: BackupImportMode },
+      payload: { filePath?: string; mode: BackupImportMode },
     ): Promise<IpcResult<{ applied: BackupSummary }>> => {
       try {
         let filePath = payload.filePath
@@ -91,7 +91,7 @@ export function registerBackupHandlers(): void {
           }
           filePath = result.filePaths[0]
         }
-        const applied = await importFromFile(filePath, payload.password, payload.mode)
+        const applied = await importFromFile(filePath, payload.mode)
         return { success: true, data: { applied } }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
@@ -108,9 +108,7 @@ export function registerBackupHandlers(): void {
     }
   })
 
-  // Persists a single remote (the other one is left untouched). The shared
-  // sync passphrase is set independently from the cloud overview header,
-  // not bundled with this call.
+  // Persists a single remote (the other one is left untouched).
   ipcMain.handle(
     IpcChannels.BACKUP_SET_REMOTE_CONFIG,
     (_, payload: { config: RemoteConfig }): IpcResult<void> => {
@@ -148,7 +146,7 @@ export function registerBackupHandlers(): void {
     },
   )
 
-  ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<SyncStatus> => {
+  ipcMain.handle(IpcChannels.BACKUP_GET_STATUS, (): IpcResult<BackupStatus> => {
     try {
       return { success: true, data: backupSyncService.getStatus() }
     } catch (e) {
@@ -156,23 +154,41 @@ export function registerBackupHandlers(): void {
     }
   })
 
-  ipcMain.handle(IpcChannels.BACKUP_SYNC_NOW, async (): Promise<IpcResult<SyncResult>> => {
-    try {
-      const data = await backupSyncService.syncNow()
-      return { success: true, data }
-    } catch (e) {
-      return { success: false, error: toLocalizedError(e) }
-    }
-  })
+  ipcMain.handle(
+    IpcChannels.BACKUP_SYNC_NOW,
+    async (_, payload: { type: RemoteType }): Promise<IpcResult<SyncResult>> => {
+      try {
+        const data = await backupSyncService.syncNow(payload.type)
+        return { success: true, data }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 
-  ipcMain.handle(IpcChannels.BACKUP_SYNC_CANCEL, (): IpcResult<void> => {
-    try {
-      backupSyncService.cancel()
-      return { success: true }
-    } catch (e) {
-      return { success: false, error: toLocalizedError(e) }
-    }
-  })
+  ipcMain.handle(
+    IpcChannels.BACKUP_SYNC_CANCEL,
+    (_, payload: { type: RemoteType }): IpcResult<void> => {
+      try {
+        backupSyncService.syncCancel(payload.type)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
+
+  ipcMain.handle(
+    IpcChannels.BACKUP_SET_REMOTE_ENABLED,
+    (_, payload: { type: RemoteType; enabled: boolean }): IpcResult<void> => {
+      try {
+        backupSyncService.setEnabled(payload.type, payload.enabled)
+        return { success: true }
+      } catch (e) {
+        return { success: false, error: toLocalizedError(e) }
+      }
+    },
+  )
 
   ipcMain.handle(
     IpcChannels.BACKUP_LIST_REMOTE,
@@ -190,15 +206,10 @@ export function registerBackupHandlers(): void {
     IpcChannels.BACKUP_RESTORE_FROM_REMOTE,
     async (
       _,
-      payload: { type: RemoteType; key: string; password: string; mode: BackupImportMode },
+      payload: { type: RemoteType; key: string; mode: BackupImportMode },
     ): Promise<IpcResult<void>> => {
       try {
-        await backupSyncService.restoreFromKey(
-          payload.type,
-          payload.key,
-          payload.password,
-          payload.mode,
-        )
+        await backupSyncService.restoreFromKey(payload.type, payload.key, payload.mode)
         return { success: true }
       } catch (e) {
         return { success: false, error: toLocalizedError(e) }
