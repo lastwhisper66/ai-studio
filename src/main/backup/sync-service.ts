@@ -445,7 +445,13 @@ class BackupSyncService {
     }
   }
 
-  private broadcastStatus(): void {
+  /**
+   * Push a fresh BackupStatus to every renderer. Public so settings
+   * side-effects can fire it after persisting a `backup.remote.*.*` change —
+   * otherwise the renderer's cached `status` would lag behind the SQLite
+   * value until the next sync runs.
+   */
+  broadcastStatus(): void {
     const status = this.getStatus()
     for (const win of BrowserWindow.getAllWindows()) {
       win.webContents.send(IpcChannels.BACKUP_STATUS_CHANGED, status)
