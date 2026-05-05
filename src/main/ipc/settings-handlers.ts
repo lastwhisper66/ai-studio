@@ -59,7 +59,7 @@ const settingSideEffects: Record<string, (value: string) => void> = {
 function applySideEffects(key: string, value: string): void {
   settingSideEffects[key]?.(value)
   // Any per-remote backup setting affects BackupStatus (interval / retention /
-  // passphrase visibility / enabled flag). Re-broadcast so the renderer's
+  // enabled flag). Re-broadcast so the renderer's
   // cached status reflects the new value without waiting for the next sync.
   if (key.startsWith('backup.remote.') || key === 'backup.lastLocalChangeAt') {
     backupSyncService.broadcastStatus()

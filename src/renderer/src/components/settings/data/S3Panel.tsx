@@ -24,7 +24,7 @@ type Msg = { kind: 'ok' | 'err' | 'info'; text: string } | null
 
 /**
  * S3 detail page — credentials form, sync status panel, sync options
- * (passphrase / interval / retention) all in one place. Independent of WebDAV.
+ * (interval / retention) all in one place. Independent of WebDAV.
  */
 export function S3Panel(): React.JSX.Element {
   const initial = useBackupStore((s) => s.remoteConfigs.s3)

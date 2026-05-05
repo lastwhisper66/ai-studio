@@ -363,7 +363,7 @@
       },
       "cloudOverview": {
         "title": "Cloud Backup",
-        "description": "The two destinations are fully independent: each has its own credentials, encryption passphrase, sync interval, and retention.",
+        "description": "The two destinations are fully independent: each has its own credentials, sync interval, and retention.",
         "notConfiguredHint": "Remote credentials not configured.",
         "intervalLabel": "Auto-sync: every {{minutes}} minutes",
         "maxRetainedLabel": "Retained backups: {{count}}",
@@ -382,7 +382,6 @@
         "s3Hint": "Object storage that speaks the AWS S3 API — AWS S3, Cloudflare R2, Aliyun OSS, Tencent COS, and similar.",
         "configuredBadge": "Configured",
         "saveOk": "Saved.",
-        "passphraseSaved": "Encryption password saved.",
         "clearButton": "Clear this remote",
         "clearedWebdav": "WebDAV configuration cleared.",
         "clearedS3": "S3 configuration cleared.",
@@ -584,7 +583,6 @@
       "modeMerge": "Merge",
       "modeReplaceHint": "Clear local data first, then load.",
       "modeMergeHint": "Keep local data — backup wins on collision.",
-      "passwordHint": "Backup files are always encrypted with your password.",
       "cloudTitle": "Cloud sync",
       "cloudComingSoon": "Configurable in a later release.",
       "cloudConfigured": "Configured ({{type}})",
@@ -607,16 +605,6 @@
       "interval180": "3 hours",
       "interval720": "12 hours",
       "maxRetainedLabel": "Max retained backups (1-50)",
-      "passphraseLabel": "Sync encryption password",
-      "passphraseHint": "Encrypts every snapshot uploaded to the cloud. Different from the server credentials; treat it like a password manager master key. Use the SAME password on every device that should decrypt these backups — there is no recovery if it's lost.",
-      "passphrasePlaceholderNew": "Choose a strong password",
-      "passphrasePlaceholderOptional": "Optional — leave blank to upload without encryption",
-      "passphraseHintOptional": "Optional. When set, encrypts every snapshot uploaded to this remote. Leave blank to upload as plaintext to this remote. Each remote keeps its own passphrase.",
-      "passphraseUpdate": "Update",
-      "passphrase": {
-        "noEncrypt": "Export without encryption (not recommended)",
-        "noEncryptWarning": "An unencrypted backup file can be read by anyone with file access — only use this when the storage location is trusted."
-      },
       "syncResult": {
         "upload": "Uploaded local changes to cloud.",
         "download": "Downloaded latest cloud backup.",
@@ -624,7 +612,7 @@
       },
       "exportCard": {
         "title": "Export",
-        "description": "Encrypt the current data as a local backup file."
+        "description": "Save the current data as a local backup file."
       },
       "importCard": {
         "title": "Import",
@@ -674,19 +662,6 @@
         "created": "Created",
         "appVersion": "App version"
       },
-      "password": {
-        "exportTitle": "Set backup password",
-        "exportDesc": "This password will encrypt the backup file. Don't lose it — there's no recovery.",
-        "importTitle": "Unlock backup",
-        "importDesc": "Enter the password used when this backup was created.",
-        "restoreTitle": "Restore from cloud backup",
-        "restoreDesc": "Enter the sync encryption password you set when configuring this remote.",
-        "label": "Password",
-        "confirmLabel": "Confirm password",
-        "required": "Password is required.",
-        "mismatch": "Passwords do not match.",
-        "unlock": "Unlock"
-      },
       "remote": {
         "dialogTitle": "Cloud backup destination",
         "dialogDesc": "Test the connection before saving. Credentials are stored encrypted by your OS keychain.",
@@ -694,11 +669,6 @@
         "testing": "Testing…",
         "testOk": "Connection OK ({{latency}} ms)",
         "optional": "(optional)",
-        "passphrase": "Sync encryption password",
-        "passphraseHint": "Encrypts every snapshot uploaded to the cloud. Different from the credentials above; treat it like a password manager master key. Use the SAME password on every device that should decrypt these backups — there is no recovery if it's lost.",
-        "passphrasePlaceholderNew": "Choose a strong password",
-        "passphrasePlaceholderKeep": "Leave blank to keep current",
-        "passphraseRequired": "Please set an encryption password for cloud backups.",
         "webdav": {
           "url": "Server URL",
           "username": "Username",
@@ -991,8 +961,6 @@
     },
     "backup": {
       "fileInvalid": "The selected file is not a valid backup file.",
-      "passwordWrong": "Incorrect password, or the backup file has been tampered with.",
-      "passwordRequired": "A password is required for this operation.",
       "schemaTooNew": "This backup was created by a newer version of the app. Please upgrade and try again.",
       "remoteAuth": "Authentication with the remote storage failed. Please verify credentials.",
       "remoteNotFound": "Remote backup location not found.",

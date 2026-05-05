@@ -108,9 +108,7 @@ export function registerBackupHandlers(): void {
     }
   })
 
-  // Persists a single remote (the other one is left untouched). The shared
-  // sync passphrase is set independently from the cloud overview header,
-  // not bundled with this call.
+  // Persists a single remote (the other one is left untouched).
   ipcMain.handle(
     IpcChannels.BACKUP_SET_REMOTE_CONFIG,
     (_, payload: { config: RemoteConfig }): IpcResult<void> => {

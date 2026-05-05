@@ -24,7 +24,7 @@ type Msg = { kind: 'ok' | 'err' | 'info'; text: string } | null
 
 /**
  * WebDAV detail page — credentials form, sync status panel, sync options
- * (passphrase / interval / retention) all in one place. Independent of S3.
+ * (interval / retention) all in one place. Independent of S3.
  */
 export function WebDavPanel(): React.JSX.Element {
   const initial = useBackupStore((s) => s.remoteConfigs.webdav)
