@@ -61,7 +61,7 @@ function WebDavPage({ initial }: { initial: WebDavRemoteConfig | null }): React.
   const [url, setUrl] = useState(initial?.url ?? '')
   const [username, setUsername] = useState(initial?.username ?? '')
   const [password, setPassword] = useState(initial?.password ?? '')
-  const [subPath, setSubPath] = useState(initial?.subPath ?? '')
+  const [subPath, setSubPath] = useState(initial?.subPath ?? 'ai-studio')
   const [testing, setTesting] = useState(false)
   const [testOk, setTestOk] = useState(false)
   const [credMsg, setCredMsg] = useState<Msg>(null)

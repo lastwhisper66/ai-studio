@@ -705,7 +705,7 @@
           "password": "Password",
           "subPath": "Sub-path",
           "subPathPlaceholder": "Leave blank to use the WebDAV root",
-          "subPathHint": "Optional. Backups go into this subfolder under the WebDAV root; leave empty to write directly to the root."
+          "subPathHint": "Optional. Backups go into this subfolder under the WebDAV root; new configs default to \"ai-studio\". Leave empty to write directly to the root."
         },
         "s3": {
           "endpoint": "Endpoint",
@@ -715,7 +715,7 @@
           "secretAccessKey": "Secret Access Key",
           "prefix": "Object key prefix",
           "prefixPlaceholder": "Leave blank to use the bucket root",
-          "prefixHint": "Optional. All object keys are prefixed with this; leave empty to write directly to the bucket root.",
+          "prefixHint": "Optional. All object keys are prefixed with this; new configs default to \"ai-studio\". Leave empty to write directly to the bucket root.",
           "forcePathStyle": "Force path-style addressing"
         }
       }

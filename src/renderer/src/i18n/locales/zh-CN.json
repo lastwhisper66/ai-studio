@@ -705,7 +705,7 @@
           "password": "密码",
           "subPath": "子路径",
           "subPathPlaceholder": "留空表示使用 WebDAV 根目录",
-          "subPathHint": "可选。备份会写入 WebDAV 根下的此子路径；留空则直接写入根目录。"
+          "subPathHint": "可选。备份会写入 WebDAV 根下的此子路径；新配置默认填入「ai-studio」，留空则直接写入根目录。"
         },
         "s3": {
           "endpoint": "Endpoint",
@@ -715,7 +715,7 @@
           "secretAccessKey": "Secret Access Key",
           "prefix": "对象键前缀",
           "prefixPlaceholder": "留空表示使用 Bucket 根",
-          "prefixHint": "可选。所有对象键将以此为前缀；留空则直接写入 Bucket 根。",
+          "prefixHint": "可选。所有对象键将以此为前缀；新配置默认填入「ai-studio」，留空则直接写入 Bucket 根。",
           "forcePathStyle": "强制 path-style 寻址"
         }
       }

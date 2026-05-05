@@ -60,7 +60,7 @@ function S3Page({ initial }: { initial: S3RemoteConfig | null }): React.JSX.Elem
   const [accessKeyId, setAccessKeyId] = useState(initial?.accessKeyId ?? '')
   const [secretAccessKey, setSecretAccessKey] = useState(initial?.secretAccessKey ?? '')
   const [forcePathStyle, setForcePathStyle] = useState(initial?.forcePathStyle ?? true)
-  const [prefix, setPrefix] = useState(initial?.prefix ?? '')
+  const [prefix, setPrefix] = useState(initial?.prefix ?? 'ai-studio')
 
   const [testing, setTesting] = useState(false)
   const [testOk, setTestOk] = useState(false)
