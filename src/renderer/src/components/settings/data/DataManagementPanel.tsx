@@ -18,51 +18,47 @@ import { useBackupStore } from '@renderer/stores/backupStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import { ERROR_CODES } from '@shared/errors'
-import type { BackupFileMeta, BackupImportMode } from '@shared/types'
-import { BackupPasswordDialog } from '../BackupPasswordDialog'
+import type { BackupImportMode } from '@shared/types'
 import { BackupRollbackDialog } from '../BackupRollbackDialog'
 
 /**
  * Unified data-management page — local export/import, rollback access, and the
- * destructive "clear all data" control. Replaces the older split between
- * LocalDataPanel (clear) and LocalBackupPanel (file ops); the cloud sync flows
- * live in their own per-remote panels (WebDavPanel / S3Panel).
+ * destructive "clear all data" control.
  *
- * Plaintext detection: when the user picks an import file we peek the header
- * first; if `encrypted === false`, we skip the password dialog entirely and
- * import directly with `null` so the codec hits its plaintext branch.
+ * Backup files are always plaintext; export and import are direct one-click
+ * actions with no password dialog. Encrypted legacy files (if any) are
+ * rejected by the codec as `BACKUP_FILE_INVALID`.
  */
 export function DataManagementPanel(): React.JSX.Element {
   const { t } = useTranslation()
   const localizedError = useLocalizedError()
   const exportToFile = useBackupStore((s) => s.exportToFile)
   const importFromFile = useBackupStore((s) => s.importFromFile)
-  const peekFile = useBackupStore((s) => s.peekFile)
 
   const [importMode, setImportMode] = useState<BackupImportMode>('replace')
-  const [exportOpen, setExportOpen] = useState(false)
-  const [importOpen, setImportOpen] = useState(false)
-  const [pendingFilePath, setPendingFilePath] = useState<string | undefined>(undefined)
-  const [peekMeta, setPeekMeta] = useState<BackupFileMeta | null>(null)
-  const [pwError, setPwError] = useState<string | null>(null)
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [rollbackOpen, setRollbackOpen] = useState(false)
   const [clearError, setClearError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const handleExportSubmit = async (password: string | null): Promise<void> => {
-    const r = await exportToFile(password)
-    if ('error' in r) {
-      if (r.error.code !== ERROR_CODES.BACKUP_CANCELLED) {
-        setStatusMsg({ kind: 'err', text: localizedError(r.error) })
+  const handleExport = async (): Promise<void> => {
+    setStatusMsg(null)
+    setBusy(true)
+    try {
+      const r = await exportToFile()
+      if ('error' in r) {
+        if (r.error.code !== ERROR_CODES.BACKUP_CANCELLED) {
+          setStatusMsg({ kind: 'err', text: localizedError(r.error) })
+        }
+        return
       }
-      setExportOpen(false)
-      return
+      setStatusMsg({ kind: 'ok', text: t('settings.backup.exportSuccess', { path: r.filePath }) })
+    } finally {
+      setBusy(false)
     }
-    setStatusMsg({ kind: 'ok', text: t('settings.backup.exportSuccess', { path: r.filePath }) })
-    setExportOpen(false)
   }
 
-  const openImport = async (): Promise<void> => {
+  const handleImport = async (): Promise<void> => {
     setStatusMsg(null)
     const pickResult = await window.api.backup.pickFile()
     if (!pickResult.success) {
@@ -70,18 +66,9 @@ export function DataManagementPanel(): React.JSX.Element {
       return
     }
     if (!pickResult.data) return
-    const filePath = pickResult.data.filePath
-    const meta = await peekFile(filePath)
-    if ('error' in meta) {
-      setStatusMsg({ kind: 'err', text: localizedError(meta.error) })
-      return
-    }
-    setPeekMeta(meta)
-    setPendingFilePath(filePath)
-    setPwError(null)
-    if (!meta.encrypted) {
-      // Plaintext file — bypass the password dialog and import directly.
-      const r = await importFromFile(filePath, null, importMode)
+    setBusy(true)
+    try {
+      const r = await importFromFile(pickResult.data.filePath, importMode)
       if ('error' in r) {
         setStatusMsg({ kind: 'err', text: localizedError(r.error) })
         return
@@ -94,39 +81,9 @@ export function DataManagementPanel(): React.JSX.Element {
           settings: r.settings,
         }),
       })
-      return
+    } finally {
+      setBusy(false)
     }
-    setImportOpen(true)
-  }
-
-  const closeImport = (): void => {
-    setImportOpen(false)
-    setPendingFilePath(undefined)
-    setPeekMeta(null)
-    setPwError(null)
-  }
-
-  const handleImportSubmit = async (password: string | null): Promise<void> => {
-    if (!pendingFilePath) return
-    const r = await importFromFile(pendingFilePath, password, importMode)
-    if ('error' in r) {
-      if (r.error.code === ERROR_CODES.BACKUP_PASSWORD_WRONG) {
-        setPwError(t('errors.backup.passwordWrong'))
-        return
-      }
-      setStatusMsg({ kind: 'err', text: localizedError(r.error) })
-      closeImport()
-      return
-    }
-    setStatusMsg({
-      kind: 'ok',
-      text: t('settings.backup.importSuccess', {
-        providers: r.providers,
-        assistants: r.assistants,
-        settings: r.settings,
-      }),
-    })
-    closeImport()
   }
 
   const handleClearData = async (): Promise<void> => {
@@ -158,11 +115,7 @@ export function DataManagementPanel(): React.JSX.Element {
           title={t('settings.backup.exportCard.title')}
           description={t('settings.backup.exportCard.description')}
           action={
-            <Button
-              onClick={() => {
-                setStatusMsg(null)
-                setExportOpen(true)
-              }}>
+            <Button onClick={handleExport} disabled={busy}>
               {t('settings.backup.exportButton')}
             </Button>
           }
@@ -197,7 +150,7 @@ export function DataManagementPanel(): React.JSX.Element {
             </div>
           }
           action={
-            <Button variant="outline" onClick={openImport}>
+            <Button variant="outline" onClick={handleImport} disabled={busy}>
               {t('settings.backup.importButton')}
             </Button>
           }
@@ -220,18 +173,17 @@ export function DataManagementPanel(): React.JSX.Element {
         />
       </div>
 
-      <div className="bg-card/50 rounded-xl border p-4">
-        <p className="text-muted-foreground text-xs">{t('settings.backup.passwordHint')}</p>
-        {statusMsg && (
+      {statusMsg && (
+        <div className="bg-card/50 rounded-xl border p-4">
           <p
             className={cn(
-              'mt-2 text-xs',
+              'text-xs',
               statusMsg.kind === 'ok' ? 'text-emerald-600' : 'text-destructive',
             )}>
             {statusMsg.text}
           </p>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Danger zone */}
       <div className="border-destructive/40 bg-destructive/5 rounded-xl border p-5">
@@ -274,36 +226,6 @@ export function DataManagementPanel(): React.JSX.Element {
       </div>
 
       <BackupRollbackDialog open={rollbackOpen} onClose={() => setRollbackOpen(false)} />
-
-      <BackupPasswordDialog
-        open={exportOpen}
-        mode="export"
-        onCancel={() => setExportOpen(false)}
-        onSubmit={handleExportSubmit}
-      />
-      <BackupPasswordDialog
-        open={importOpen}
-        mode="import"
-        onCancel={closeImport}
-        onSubmit={handleImportSubmit}
-        errorText={pwError}
-        preview={
-          peekMeta ? (
-            <div className="grid gap-1">
-              <div>
-                <span className="text-muted-foreground">{t('settings.backup.peek.created')}: </span>
-                {new Date(peekMeta.createdAt).toLocaleString()}
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t('settings.backup.peek.appVersion')}:{' '}
-                </span>
-                {peekMeta.appVersion}
-              </div>
-            </div>
-          ) : undefined
-        }
-      />
     </>
   )
 }

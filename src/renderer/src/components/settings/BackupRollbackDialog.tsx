@@ -11,9 +11,8 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { useBackupStore } from '@renderer/stores/backupStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
-import { ERROR_CODES, type LocalizedError } from '@shared/errors'
+import { type LocalizedError } from '@shared/errors'
 import type { BackupImportMode, RollbackBackupItem } from '@shared/types'
-import { BackupPasswordDialog } from './BackupPasswordDialog'
 import { cn } from '@renderer/lib/utils'
 
 /**
@@ -24,19 +23,11 @@ import { cn } from '@renderer/lib/utils'
  * data in "replace" mode — that covers cloud-sync downloads, cloud history
  * restores, and local `.aibackup` file imports. They live under
  * `<dataDir>/backups/auto-rollback/` along with a `.meta.json` sidecar that
- * records which event produced them (`triggeredBy`). Each rollback row in
- * this dialog surfaces that label so the user can tell apart "the WebDAV
- * sync clobbered me" from "I just imported the wrong file".
+ * records which event produced them (`triggeredBy`).
  *
  * Restore reuses the existing `importFromFile` flow — the rollback file is
- * just an `.aibackup` on disk, so passing its absolute path through the
- * normal import handler does the right thing.
- *
- * The fetch + state-reset logic lives in an inner `<RollbackListing>`
- * component that re-mounts via `key` whenever the dialog re-opens. Same
- * pattern as `BackupHistoryDialog` — keeps initial state always at "loading"
- * without needing setState-in-effect (which would re-fire if hook deps
- * changed identity, the bug the user reported as "stuck loading").
+ * just a plaintext `.aibackup` on disk, so passing its absolute path through
+ * the normal import handler does the right thing.
  */
 export function BackupRollbackDialog({
   open,
@@ -66,12 +57,6 @@ export function BackupRollbackDialog({
   )
 }
 
-/**
- * Inner component: fetches the local rollback list once on mount and renders
- * restore controls. The parent re-mounts this whenever the dialog open state
- * flips, so `items === null` is the canonical "still loading" state — there
- * is no setState-in-effect that could trigger render loops.
- */
 function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
   const { t } = useTranslation()
   const localizedError = useLocalizedError()
@@ -80,16 +65,10 @@ function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
 
   const [items, setItems] = useState<RollbackBackupItem[] | null>(null)
   const [fetchError, setFetchError] = useState<LocalizedError | null>(null)
-  const [pwOpen, setPwOpen] = useState(false)
-  const [pendingPath, setPendingPath] = useState<string | null>(null)
-  const [mode, setMode] = useState<BackupImportMode>('replace')
-  const [pwError, setPwError] = useState<string | null>(null)
+  const [restoring, setRestoring] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
-    // The parent only mounts us when the dialog is opening. The `active`
-    // gate is a defensive no-op if the parent ever decides to keep us
-    // mounted — the listRollbacks IPC won't fire when the dialog is hidden.
     if (!active) return
     let cancelled = false
     listRollbacks().then((r) => {
@@ -106,36 +85,27 @@ function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
     }
   }, [active, listRollbacks])
 
-  const onPickRestore = (filePath: string, m: BackupImportMode): void => {
-    setPendingPath(filePath)
-    setMode(m)
-    setPwError(null)
-    setPwOpen(true)
-  }
-
-  const onPwSubmit = async (password: string | null): Promise<void> => {
-    if (!pendingPath) return
-    const r = await importFromFile(pendingPath, password, mode)
-    if ('error' in r) {
-      // Wrong password keeps the password dialog open so the user can retry
-      // without re-picking the file.
-      if (r.error.code === ERROR_CODES.BACKUP_PASSWORD_WRONG) {
-        setPwError(t('errors.backup.passwordWrong'))
-        return
+  const onPickRestore = async (filePath: string, m: BackupImportMode): Promise<void> => {
+    if (restoring) return
+    setRestoring(true)
+    setStatusMsg(null)
+    try {
+      const r = await importFromFile(filePath, m)
+      if ('error' in r) {
+        setStatusMsg({ kind: 'err', text: localizedError(r.error) })
+      } else {
+        setStatusMsg({
+          kind: 'ok',
+          text: t('settings.backup.rollback.restoreOk', {
+            providers: r.providers,
+            assistants: r.assistants,
+            settings: r.settings,
+          }),
+        })
       }
-      setStatusMsg({ kind: 'err', text: localizedError(r.error) })
-    } else {
-      setStatusMsg({
-        kind: 'ok',
-        text: t('settings.backup.rollback.restoreOk', {
-          providers: r.providers,
-          assistants: r.assistants,
-          settings: r.settings,
-        }),
-      })
+    } finally {
+      setRestoring(false)
     }
-    setPwOpen(false)
-    setPendingPath(null)
   }
 
   const loading = items === null && !fetchError
@@ -169,12 +139,14 @@ function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
                 <Button
                   size="sm"
                   variant="outline"
+                  disabled={restoring}
                   onClick={() => onPickRestore(item.filePath, 'replace')}>
                   {t('settings.backup.rollback.restoreReplace')}
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
+                  disabled={restoring}
                   onClick={() => onPickRestore(item.filePath, 'merge')}>
                   {t('settings.backup.rollback.restoreMerge')}
                 </Button>
@@ -193,17 +165,6 @@ function RollbackListing({ active }: { active: boolean }): React.JSX.Element {
           {statusMsg.text}
         </p>
       )}
-
-      <BackupPasswordDialog
-        open={pwOpen}
-        mode="restore"
-        errorText={pwError}
-        onCancel={() => {
-          setPwOpen(false)
-          setPendingPath(null)
-        }}
-        onSubmit={onPwSubmit}
-      />
     </>
   )
 }

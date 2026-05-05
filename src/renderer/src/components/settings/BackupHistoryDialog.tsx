@@ -11,20 +11,17 @@ import {
 import { Button } from '@renderer/components/ui/button'
 import { useBackupStore } from '@renderer/stores/backupStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
-import { ERROR_CODES, type LocalizedError } from '@shared/errors'
+import { type LocalizedError } from '@shared/errors'
 import type { BackupImportMode, RemoteBackupItem, RemoteType } from '@shared/types'
-import { BackupPasswordDialog } from './BackupPasswordDialog'
 import { cn } from '@renderer/lib/utils'
 
 /**
  * Cloud-backup history browser scoped to a single remote. Each per-remote
  * detail page (WebDavPanel / S3Panel) opens its own instance with the
- * matching `remoteType` — there's no longer a tabs row, since the user is
- * already on a remote's detail page when they invoke this.
+ * matching `remoteType`.
  *
- * Restore flow: pick replace/merge → password dialog → applySnapshot via
- * the sync-service. Errors stay inline (no toast) per project convention.
- * Plaintext snapshots are restored with `null` password (decoded directly).
+ * Restore: pick replace/merge → applySnapshot via the sync-service. Backups
+ * are plaintext, so no password prompt is needed.
  */
 export function BackupHistoryDialog({
   open,
@@ -50,8 +47,6 @@ export function BackupHistoryDialog({
         {!configured ? (
           <p className="text-muted-foreground text-sm">{t('settings.backup.cloudNotConfigured')}</p>
         ) : (
-          // Re-mount on (open, remoteType) so the listing always starts from
-          // a clean "loading" state — sidesteps the setState-in-effect rule.
           <HistoryListing key={`${open ? 'open' : 'closed'}-${remoteType}`} type={remoteType} />
         )}
 
@@ -65,12 +60,6 @@ export function BackupHistoryDialog({
   )
 }
 
-/**
- * Inner component: fetches a single remote's listing and renders restore
- * controls. Re-mounted by the parent's `key` whenever the active remote (or
- * dialog open state) changes — so initial state is always "loading", which
- * sidesteps the setState-in-effect lint rule.
- */
 function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
   const { t } = useTranslation()
   const localizedError = useLocalizedError()
@@ -79,10 +68,7 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
 
   const [items, setItems] = useState<RemoteBackupItem[] | null>(null)
   const [fetchError, setFetchError] = useState<LocalizedError | null>(null)
-  const [pwOpen, setPwOpen] = useState(false)
-  const [pendingKey, setPendingKey] = useState<string | null>(null)
-  const [mode, setMode] = useState<BackupImportMode>('replace')
-  const [pwError, setPwError] = useState<string | null>(null)
+  const [restoring, setRestoring] = useState(false)
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
@@ -101,27 +87,20 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
     }
   }, [type, listRemote])
 
-  const onPickRestore = (key: string, m: BackupImportMode): void => {
-    setPendingKey(key)
-    setMode(m)
-    setPwError(null)
-    setPwOpen(true)
-  }
-
-  const onPwSubmit = async (password: string | null): Promise<void> => {
-    if (!pendingKey) return
-    const r = await restoreFromRemote(type, pendingKey, password, mode)
-    if (r && 'error' in r) {
-      if (r.error.code === ERROR_CODES.BACKUP_PASSWORD_WRONG) {
-        setPwError(t('errors.backup.passwordWrong'))
-        return
+  const onPickRestore = async (key: string, m: BackupImportMode): Promise<void> => {
+    if (restoring) return
+    setRestoring(true)
+    setStatusMsg(null)
+    try {
+      const r = await restoreFromRemote(type, key, m)
+      if (r && 'error' in r) {
+        setStatusMsg({ kind: 'err', text: localizedError(r.error) })
+      } else {
+        setStatusMsg({ kind: 'ok', text: t('settings.backup.history.restoreOk') })
       }
-      setStatusMsg({ kind: 'err', text: localizedError(r.error) })
-    } else {
-      setStatusMsg({ kind: 'ok', text: t('settings.backup.history.restoreOk') })
+    } finally {
+      setRestoring(false)
     }
-    setPwOpen(false)
-    setPendingKey(null)
   }
 
   const loading = items === null && !fetchError
@@ -150,10 +129,15 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
                 <Button
                   size="sm"
                   variant="outline"
+                  disabled={restoring}
                   onClick={() => onPickRestore(item.key, 'replace')}>
                   {t('settings.backup.history.restoreReplace')}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => onPickRestore(item.key, 'merge')}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={restoring}
+                  onClick={() => onPickRestore(item.key, 'merge')}>
                   {t('settings.backup.history.restoreMerge')}
                 </Button>
               </div>
@@ -171,17 +155,6 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
           {statusMsg.text}
         </p>
       )}
-
-      <BackupPasswordDialog
-        open={pwOpen}
-        mode="restore"
-        errorText={pwError}
-        onCancel={() => {
-          setPwOpen(false)
-          setPendingKey(null)
-        }}
-        onSubmit={onPwSubmit}
-      />
     </>
   )
 }
