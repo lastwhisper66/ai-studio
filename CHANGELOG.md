@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.2.0](https://github.com/lastwhisper66/ai-studio/compare/v1.1.0...v1.2.0) (2026-05-05)
+
+
+### Features
+
+* **backup:** add BACKUP_SET_REMOTE_ENABLED IPC channel ([41f1b7d](https://github.com/lastwhisper66/ai-studio/commit/41f1b7dac54620e38d60b834b13403d8021c5b5a))
+* **backup:** add settings migration to per-remote keys ([f50e425](https://github.com/lastwhisper66/ai-studio/commit/f50e42520f4f3a3dcb6babfc198bbacc3f541de3))
+* **backup:** allow per-remote passphrase encryption + add deleteSetting ([3c5795b](https://github.com/lastwhisper66/ai-studio/commit/3c5795be29afddf819a81972410c5e94450fc6e6))
+* **backup:** codec supports plaintext (encryption.algo='none') mode ([de98db0](https://github.com/lastwhisper66/ai-studio/commit/de98db0fb28a731df7e1f3f7b171f27877e590f9))
+* **backup:** decouple configured/enabled; add loadRemoteConfig + loadEnabledRemote ([317bd93](https://github.com/lastwhisper66/ai-studio/commit/317bd9380bbe16394689ccea3e699787b9974167))
+* **backup:** default WebDAV subPath / S3 prefix to 'ai-studio' for new configs ([eab8a63](https://github.com/lastwhisper66/ai-studio/commit/eab8a634e755eeda490484408b16db872fff82b1))
+* **backup:** introduce per-remote BackupStatus types ([f9660ac](https://github.com/lastwhisper66/ai-studio/commit/f9660ac59f573c95999391adbeb12e5b5c091691))
+* **backup:** IPC + preload + store accept nullable password for plaintext ([484798c](https://github.com/lastwhisper66/ai-studio/commit/484798c7b520e607678ff7f82c228d02bcf025a4))
+* **backup:** no-encryption checkbox in export password dialog ([4a60b0d](https://github.com/lastwhisper66/ai-studio/commit/4a60b0d98f5ca7ade29a00772531c39118074926))
+* **backup:** per-remote independence + remove encryption ([fb1d768](https://github.com/lastwhisper66/ai-studio/commit/fb1d768af1827e405947930ff433b64683f9abd0))
+* **backup:** per-remote independent sync with optional plaintext mode ([78e1b4b](https://github.com/lastwhisper66/ai-studio/commit/78e1b4b7025956f5db8f31934d1e7e305766b677))
+* **backup:** per-remote IPC + setRemoteEnabled API ([141ba5e](https://github.com/lastwhisper66/ai-studio/commit/141ba5ea33d3eeeff7e4a39a390d37cf8ee92616))
+* **backup:** plumbing for plaintext password=null + triggeredBy param ([8ae1e75](https://github.com/lastwhisper66/ai-studio/commit/8ae1e75bd5884f377b900e34d39960500ce3eb3c))
+* **backup:** record + read triggeredBy via rollback sidecar JSON ([0e82736](https://github.com/lastwhisper66/ai-studio/commit/0e8273638910ebd181c961bda046b6fb4066cde1))
+* **backup:** renderer store uses BackupStatus + per-remote actions ([2ff2763](https://github.com/lastwhisper66/ai-studio/commit/2ff276394fa79fff7eb1857320412e0c07e522f3))
+* **backup:** rollback dialog shows triggeredBy ([2e21039](https://github.com/lastwhisper66/ai-studio/commit/2e21039ac1a939be3276f6e902a60c8fff217c74))
+* **backup:** sync engine uses applyBackupBytes + nullable passphrase ([1822095](https://github.com/lastwhisper66/ai-studio/commit/182209547658e75bb47faf2d32fb773bdb18d8ab))
+* **backup:** UI refactor for per-remote independence ([ee3c922](https://github.com/lastwhisper66/ai-studio/commit/ee3c92237b68ac8934e062b3f3f8418e8fd4dfde))
+* **migrate:** central src/main/migrate/ + run on boot ([c167d9c](https://github.com/lastwhisper66/ai-studio/commit/c167d9c57e6a4b98bf4dfc6478a734bbd425a10b))
+
+
+### Bug Fixes
+
+* **backup:** re-broadcast BackupStatus when per-remote settings change ([168e158](https://github.com/lastwhisper66/ai-studio/commit/168e158a9027739249c7f417121f847ed3fc7095))
+* **updater:** skip update checks in dev and unpackaged builds ([1258d0f](https://github.com/lastwhisper66/ai-studio/commit/1258d0f797b294ae611dad0a425ffb062e597c5e))
+
+
+### Code Refactoring
+
+* **backup:** drop BackupPasswordDialog and rewire consumers ([4ac3d75](https://github.com/lastwhisper66/ai-studio/commit/4ac3d7565f699eabe26b2dad922d78fed2a3d34f))
+* **backup:** drop encrypted codec branch and crypto module ([6ea7422](https://github.com/lastwhisper66/ai-studio/commit/6ea7422758bf74d87acb08508ce4838826f382ab))
+* **backup:** drop encryption fields from shared types/errors ([42c398a](https://github.com/lastwhisper66/ai-studio/commit/42c398a98c39f718276a309a3b243aa8e05835fb))
+* **backup:** drop passphrase UI from per-remote panels ([2162f74](https://github.com/lastwhisper66/ai-studio/commit/2162f74fc983f963ec5b84679634ac4fddb2b3d7))
+* **backup:** drop password from preload and renderer store ([4edf049](https://github.com/lastwhisper66/ai-studio/commit/4edf04953cca3ce1ad8d94cf50a4166d17fbaf09))
+* **backup:** drop password params from main-process pipeline ([5aa6f9a](https://github.com/lastwhisper66/ai-studio/commit/5aa6f9af2124b4339bc664c33d5403dd37ea5dd7))
+* **backup:** per-remote sync engine with independent state ([2711e41](https://github.com/lastwhisper66/ai-studio/commit/2711e41e519f7777d01e169e4161cfba66beb350))
+
 ## [1.1.0](https://github.com/lastwhisper66/ai-studio/compare/v1.0.5...v1.1.0) (2026-05-04)
 
 
