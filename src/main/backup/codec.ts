@@ -2,33 +2,9 @@ import { app } from 'electron'
 import type { BackupFileMeta, BackupSnapshot } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
-import {
-  decryptString,
-  encryptString,
-  KDF_ALGO,
-  KDF_ITERATIONS,
-  KDF_NAME,
-  type EncryptedBundle,
-} from './crypto'
 
 const MAGIC = 'AISTUDIO-BACKUP'
 const SUPPORTED_SCHEMA = 1
-
-interface EncryptedBackupFile {
-  magic: string
-  schemaVersion: number
-  appVersion: string
-  createdAt: string
-  encryption: {
-    algo: 'AES-256-GCM'
-    kdf: 'PBKDF2-SHA256'
-    iterations: number
-    salt: string
-    iv: string
-  }
-  payload: string
-  tag: string
-}
 
 interface PlaintextBackupFile {
   magic: string
@@ -39,117 +15,43 @@ interface PlaintextBackupFile {
   payload: string
 }
 
-type BackupFile = EncryptedBackupFile | PlaintextBackupFile
-
 /**
- * Build the AAD (additional authenticated data) bound into the GCM tag.
- * Any modification to magic / schemaVersion / algo / kdf / iterations on
- * disk will invalidate the tag and cause decryption to fail. We deliberately
- * exclude `appVersion` and `createdAt` from the AAD so re-stamping metadata
- * (e.g. for diagnostics) wouldn't break decryption — those fields aren't
- * security-relevant.
+ * Serialize a snapshot as a plaintext backup file. The payload is base64-
+ * encoded JSON — readable to anyone who can read the file. Storage location
+ * is assumed trusted (local filesystem chosen by the user, or cloud remote
+ * the user configured themselves).
  */
-function buildAad(
-  magic: string,
-  schemaVersion: number,
-  algo: string,
-  kdf: string,
-  iterations: number,
-): Buffer {
-  return Buffer.from(`${magic}|${schemaVersion}|${algo}|${kdf}|${iterations}`, 'utf8')
-}
-
-/**
- * Serialize a snapshot. `password === null` (or empty string) → plaintext mode
- * (`encryption.algo: 'none'`); otherwise AES-256-GCM with PBKDF2.
- *
- * Plaintext is base64-encoded JSON — readable to anyone who can read the
- * file. Use only when the storage location is trusted.
- */
-export function encodeBackupFile(snapshot: BackupSnapshot, password: string | null): string {
+export function encodeBackupFile(snapshot: BackupSnapshot): string {
   const json = JSON.stringify(snapshot)
-
-  if (!password) {
-    const file: PlaintextBackupFile = {
-      magic: MAGIC,
-      schemaVersion: snapshot.schemaVersion,
-      appVersion: snapshot.app.version,
-      createdAt: snapshot.exportedAt,
-      encryption: { algo: 'none' },
-      payload: Buffer.from(json, 'utf8').toString('base64'),
-    }
-    return JSON.stringify(file, null, 2)
-  }
-
-  const aad = buildAad(MAGIC, SUPPORTED_SCHEMA, KDF_ALGO, KDF_NAME, KDF_ITERATIONS)
-  const bundle: EncryptedBundle = encryptString(json, password, aad)
-  const file: EncryptedBackupFile = {
+  const file: PlaintextBackupFile = {
     magic: MAGIC,
     schemaVersion: snapshot.schemaVersion,
     appVersion: snapshot.app.version,
     createdAt: snapshot.exportedAt,
-    encryption: {
-      algo: bundle.algo,
-      kdf: bundle.kdf,
-      iterations: bundle.iterations,
-      salt: bundle.salt,
-      iv: bundle.iv,
-    },
-    payload: bundle.payload,
-    tag: bundle.tag,
+    encryption: { algo: 'none' },
+    payload: Buffer.from(json, 'utf8').toString('base64'),
   }
   return JSON.stringify(file, null, 2)
 }
 
-/** Read the plaintext header without decrypting the payload. */
+/** Read the plaintext header. */
 export function peekBackupFile(rawJson: string): BackupFileMeta {
   const file = parseAndValidate(rawJson)
   return {
     schemaVersion: file.schemaVersion as 1,
     appVersion: file.appVersion,
     createdAt: file.createdAt,
-    encrypted: file.encryption.algo !== 'none',
   }
 }
 
 /**
- * Decode a backup file. `password` is required for encrypted files; for
- * plaintext files (`encryption.algo === 'none'`) it's ignored. Pass `null`
- * for plaintext files when known via `peekBackupFile` first.
+ * Decode a plaintext backup file. Any file with `encryption.algo !== 'none'`
+ * is rejected as `BACKUP_FILE_INVALID` — legacy encrypted backups are no
+ * longer supported (program was unreleased; hard cut per design spec).
  */
-export function decodeBackupFile(rawJson: string, password: string | null): BackupSnapshot {
+export function decodeBackupFile(rawJson: string): BackupSnapshot {
   const file = parseAndValidate(rawJson)
-  let json: string
-  if (file.encryption.algo === 'none') {
-    json = Buffer.from(file.payload, 'base64').toString('utf8')
-  } else {
-    if (!password) {
-      // Encrypted file but no password supplied — surface as wrong password.
-      throw new AppError(ERROR_CODES.BACKUP_PASSWORD_WRONG)
-    }
-    // TS narrows `file.encryption.algo` to 'AES-256-GCM' here but doesn't
-    // propagate that to `file` itself, so `file.tag` would error on the
-    // PlaintextBackupFile branch of the union. parseAndValidate already
-    // verified the tag exists on encrypted files.
-    const enc = file as EncryptedBackupFile
-    const aad = buildAad(
-      enc.magic,
-      enc.schemaVersion,
-      enc.encryption.algo,
-      enc.encryption.kdf,
-      enc.encryption.iterations,
-    )
-    const bundle: EncryptedBundle = {
-      payload: enc.payload,
-      tag: enc.tag,
-      salt: enc.encryption.salt,
-      iv: enc.encryption.iv,
-      algo: enc.encryption.algo,
-      kdf: enc.encryption.kdf,
-      iterations: enc.encryption.iterations,
-    }
-    json = decryptString(bundle, password, aad)
-  }
+  const json = Buffer.from(file.payload, 'base64').toString('utf8')
 
   let snapshot: BackupSnapshot
   try {
@@ -175,10 +77,10 @@ export function buildSnapshotEnvelope<
   } as BackupSnapshot
 }
 
-function parseAndValidate(rawJson: string): BackupFile {
-  let file: BackupFile
+function parseAndValidate(rawJson: string): PlaintextBackupFile {
+  let file: PlaintextBackupFile
   try {
-    file = JSON.parse(rawJson) as BackupFile
+    file = JSON.parse(rawJson) as PlaintextBackupFile
   } catch {
     throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Outer JSON parse failed')
   }
@@ -194,15 +96,12 @@ function parseAndValidate(rawJson: string): BackupFile {
   if (!file.encryption || !file.payload) {
     throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Missing fields')
   }
-  // Encrypted files MUST have a tag; plaintext files MUST NOT (sanity check).
-  if (file.encryption.algo === 'AES-256-GCM') {
-    if (!('tag' in file) || !file.tag) {
-      throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Missing GCM tag')
-    }
-  } else if (file.encryption.algo === 'none') {
-    // OK — plaintext mode.
-  } else {
-    throw new AppError(ERROR_CODES.BACKUP_FILE_INVALID, undefined, 'Unsupported encryption algo')
+  if (file.encryption.algo !== 'none') {
+    throw new AppError(
+      ERROR_CODES.BACKUP_FILE_INVALID,
+      undefined,
+      'Encrypted backups are no longer supported',
+    )
   }
   return file
 }
