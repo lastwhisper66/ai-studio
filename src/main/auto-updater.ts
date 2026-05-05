@@ -219,6 +219,16 @@ function bindElectronUpdaterEvents(): void {
 export function initAutoUpdater(): void {
   if (initialized) return
   initialized = true
+
+  // Skip update checks in development / unpackaged builds.
+  // The version in package.json on a feature branch trails main (release-please
+  // bumps it only via the merged Release PR), so the updater would constantly
+  // report a newer remote version that doesn't actually apply locally.
+  if (!app.isPackaged) {
+    setState({ status: 'not-available' })
+    return
+  }
+
   if (!isMacFallback) bindElectronUpdaterEvents()
 
   if (!getAutoUpdateEnabled()) return
@@ -229,6 +239,19 @@ export function initAutoUpdater(): void {
 }
 
 export async function checkForUpdates(manual: boolean): Promise<void> {
+  if (!app.isPackaged) {
+    setState({
+      status: 'not-available',
+      manualCheck: manual,
+      latestVersion: undefined,
+      releaseNotes: undefined,
+      releaseUrl: undefined,
+      downloadProgress: undefined,
+      error: undefined,
+    })
+    return
+  }
+
   if (activeCheckPromise) {
     if (manual && !activeCheckManual) {
       activeCheckManual = true
@@ -261,6 +284,10 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
 
 export async function downloadUpdate(): Promise<void> {
   if (isMacFallback) return
+  if (!app.isPackaged) {
+    setState({ status: 'not-available', manualCheck: true, error: undefined })
+    return
+  }
   invalidateActiveCheck()
   try {
     setState({
