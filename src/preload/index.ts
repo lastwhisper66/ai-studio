@@ -681,8 +681,8 @@ const api = {
 
   // Backup
   backup: {
-    exportToFile: (password: string | null): Promise<IpcResult<{ filePath: string }>> =>
-      ipcRenderer.invoke(IpcChannels.BACKUP_EXPORT_TO_FILE, { password }),
+    exportToFile: (): Promise<IpcResult<{ filePath: string }>> =>
+      ipcRenderer.invoke(IpcChannels.BACKUP_EXPORT_TO_FILE),
 
     peekFile: (filePath: string): Promise<IpcResult<BackupFileMeta>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_PEEK_FILE, { filePath }),
@@ -692,7 +692,6 @@ const api = {
 
     importFromFile: (payload: {
       filePath?: string
-      password: string | null
       mode: BackupImportMode
     }): Promise<IpcResult<{ applied: BackupSummary }>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_IMPORT_FROM_FILE, payload),
@@ -724,7 +723,6 @@ const api = {
     restoreFromRemote: (payload: {
       type: RemoteType
       key: string
-      password: string | null
       mode: BackupImportMode
     }): Promise<IpcResult<void>> =>
       ipcRenderer.invoke(IpcChannels.BACKUP_RESTORE_FROM_REMOTE, payload),

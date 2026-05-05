@@ -27,13 +27,10 @@ interface BackupState {
   loadStatus: () => Promise<void>
   loadRemoteConfigs: () => Promise<void>
 
-  exportToFile: (
-    password: string | null,
-  ) => Promise<{ filePath: string } | { error: LocalizedError }>
+  exportToFile: () => Promise<{ filePath: string } | { error: LocalizedError }>
   peekFile: (filePath: string) => Promise<BackupFileMeta | { error: LocalizedError }>
   importFromFile: (
     filePath: string | undefined,
-    password: string | null,
     mode: BackupImportMode,
   ) => Promise<BackupSummary | { error: LocalizedError }>
 
@@ -54,7 +51,6 @@ interface BackupState {
   restoreFromRemote: (
     type: RemoteType,
     key: string,
-    password: string | null,
     mode: BackupImportMode,
   ) => Promise<void | { error: LocalizedError }>
 
@@ -82,8 +78,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     set({ remoteConfigs: r.success && r.data ? r.data : emptyConfigs })
   },
 
-  exportToFile: async (password) => {
-    const r = await window.api.backup.exportToFile(password)
+  exportToFile: async () => {
+    const r = await window.api.backup.exportToFile()
     set({ progress: null })
     if (r.success && r.data) return r.data
     return { error: fallbackError(r.error) }
@@ -95,8 +91,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  importFromFile: async (filePath, password, mode) => {
-    const r = await window.api.backup.importFromFile({ filePath, password, mode })
+  importFromFile: async (filePath, mode) => {
+    const r = await window.api.backup.importFromFile({ filePath, mode })
     set({ progress: null })
     if (r.success && r.data) {
       // After import, refresh status (lastLocalChangeAt etc may have shifted).
@@ -161,8 +157,8 @@ export const useBackupStore = create<BackupState>((set, get) => ({
     return { error: fallbackError(r.error) }
   },
 
-  restoreFromRemote: async (type, key, password, mode) => {
-    const r = await window.api.backup.restoreFromRemote({ type, key, password, mode })
+  restoreFromRemote: async (type, key, mode) => {
+    const r = await window.api.backup.restoreFromRemote({ type, key, mode })
     set({ progress: null })
     if (r.success) {
       get().loadStatus()
