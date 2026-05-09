@@ -54,6 +54,12 @@ interface ConversationState {
   setEditingMessageId: (id: string | null) => void
   stopGeneration: () => void
   clearError: () => void
+  /**
+   * Drop the active conversation selection and its in-memory message list.
+   * Used after "Clear all chats" to reset the UI without a relaunch.
+   * Does NOT touch streaming state — callers should stop streams first.
+   */
+  resetActive: () => void
 }
 
 export const useConversationStore = create<ConversationState>((set, get) => {
@@ -206,6 +212,8 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
 
     clearError: () => set({ error: null }),
+
+    resetActive: () => set({ activeConversationId: null, messages: [], hasMoreMessages: false }),
 
     loadConversations: async () => {
       const result = await window.api.listConversations()

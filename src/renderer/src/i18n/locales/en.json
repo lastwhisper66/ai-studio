@@ -343,16 +343,38 @@
       "description": "Manage application data and storage.",
       "dataManagement": {
         "title": "Data Management",
-        "description": "Import/export local backup files, restore from local rollback copies, and clear all data."
+        "description": "Import/export local backup files, restore from local rollback copies, and manage cleanup options."
       },
       "dangerZone": {
-        "title": "Danger Zone"
+        "title": "Danger Zone",
+        "description": "These actions are irreversible. Export a backup first if you might need it later."
       },
-      "clearData": "Clear All Data",
-      "clearDataDescription": "Delete all conversations, settings, and attachments. The app will restart automatically.",
-      "clearDataConfirmTitle": "Confirm Clear Data",
-      "clearDataConfirmDescription": "This action cannot be undone. All conversations, settings, provider configurations, and attachment files will be deleted. The app will restart automatically.",
-      "clearDataConfirmButton": "Confirm Clear",
+      "clearChats": {
+        "title": "Clear All Chats",
+        "description": "Delete all conversations, messages, translation history and attachment files. Settings and providers are kept.",
+        "button": "Clear Chats",
+        "confirmTitle": "Clear all chats?",
+        "confirmDescription": "This removes every conversation, message, translation history entry, and attachment file from disk. Your providers, models, assistants, and preferences stay. This cannot be undone.",
+        "confirmButton": "Clear Chats",
+        "success": "All chats cleared."
+      },
+      "clearSettings": {
+        "title": "Clear All Settings",
+        "description": "Reset every preference (theme, language, shortcuts), providers, models, assistants and quick actions back to defaults. Chats are kept. The app will restart.",
+        "button": "Clear Settings",
+        "confirmTitle": "Clear all settings?",
+        "confirmDescription": "Every preference, provider, API key, model, assistant, quick action and selection action will be removed and defaults re-seeded. Your chats stay. The app restarts after confirmation. This cannot be undone.",
+        "confirmButton": "Clear Settings"
+      },
+      "resetApp": {
+        "title": "Reset Application",
+        "description": "Delete the SQLite database and the entire data directory. Use this if a bad migration has left the app in an unusable state.",
+        "button": "Reset App",
+        "confirmTitle": "Reset the application?",
+        "confirmDescription": "This deletes the SQLite database, every attachment, every local backup copy, and all browser-side storage. The app restarts from a clean slate, as if just installed. Everything is gone and CANNOT be recovered.",
+        "confirmPromptLabel": "Type RESET to confirm:",
+        "confirmButton": "Reset Everything"
+      },
       "nav": {
         "localGroup": "Local Data",
         "dataManagement": "Data Management",
@@ -438,6 +460,9 @@
       "empty": "No phrases yet. Click the button above to add one.",
       "deleteTitle": "Delete Phrase",
       "deleteDescription": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+      "clearAll": "Clear All",
+      "clearAllTitle": "Clear all phrases?",
+      "clearAllDescription": "This deletes every quick phrase. This cannot be undone.",
       "titleLabel": "Title",
       "titlePlaceholder": "Phrase title",
       "contentLabel": "Content",

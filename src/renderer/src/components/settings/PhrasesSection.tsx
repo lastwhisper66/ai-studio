@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eraser } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -18,9 +18,11 @@ import type { Phrase } from '@shared/types'
 
 export function PhrasesSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const { phrases, loadPhrases, createPhrase, updatePhrase, deletePhrase } = usePhraseStore()
+  const { phrases, loadPhrases, createPhrase, updatePhrase, deletePhrase, clearPhrases } =
+    usePhraseStore()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const [editingPhrase, setEditingPhrase] = useState<Phrase | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -64,6 +66,11 @@ export function PhrasesSection(): React.JSX.Element {
     setDeleteDialogOpen(false)
   }
 
+  const handleClearAll = async (): Promise<void> => {
+    await clearPhrases()
+    setClearDialogOpen(false)
+  }
+
   return (
     <div className="space-y-5">
       {/* Header card */}
@@ -72,10 +79,20 @@ export function PhrasesSection(): React.JSX.Element {
           <h2 className="text-base font-semibold">{t('settings.phrases.title')}</h2>
           <p className="text-muted-foreground mt-1 text-sm">{t('settings.phrases.description')}</p>
         </div>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="mr-1.5 h-4 w-4" />
-          {t('settings.phrases.addPhrase')}
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={phrases.length === 0}
+            onClick={() => setClearDialogOpen(true)}>
+            <Eraser className="mr-1.5 h-4 w-4" />
+            {t('settings.phrases.clearAll')}
+          </Button>
+          <Button size="sm" onClick={openCreate}>
+            <Plus className="mr-1.5 h-4 w-4" />
+            {t('settings.phrases.addPhrase')}
+          </Button>
+        </div>
       </div>
 
       {/* Phrase list */}
@@ -181,6 +198,24 @@ export function PhrasesSection(): React.JSX.Element {
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clear All Confirmation Dialog */}
+      <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('settings.phrases.clearAllTitle')}</DialogTitle>
+            <DialogDescription>{t('settings.phrases.clearAllDescription')}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearDialogOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleClearAll}>
+              {t('settings.phrases.clearAll')}
             </Button>
           </DialogFooter>
         </DialogContent>

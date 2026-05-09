@@ -131,6 +131,8 @@ const api = {
   deletePhrase: (id: string): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.PHRASE_DELETE, id),
 
+  clearPhrases: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.PHRASE_CLEAR),
+
   // File
   openFileDialog: (): Promise<IpcResult<FileData[]>> =>
     ipcRenderer.invoke(IpcChannels.FILE_OPEN_DIALOG),
@@ -386,7 +388,11 @@ const api = {
     ipcRenderer.invoke(IpcChannels.TRANSLATION_HISTORY_CLEAR),
 
   // App
-  clearAppData: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_DATA),
+  clearChats: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_CHATS),
+
+  clearSettings: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_SETTINGS),
+
+  resetApp: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_RESET),
 
   copyPngToClipboard: (payload: ClipboardImagePayload): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.CLIPBOARD_WRITE_IMAGE, payload),

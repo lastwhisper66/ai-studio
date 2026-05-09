@@ -10,7 +10,7 @@ import {
   nativeImage,
   dialog,
 } from 'electron'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { IpcChannels } from '@shared/ipc-channels'
@@ -37,7 +37,7 @@ import {
   setMainWindow,
   initAutoUpdateEnabled,
 } from './app-state'
-import { getDataDir } from './utils/paths'
+import { getDataDir, getResetMarkerPath } from './utils/paths'
 import {
   toggleQuickAssistantWindow,
   initQuickAssistantIpc,
@@ -69,6 +69,17 @@ interface WindowState {
 
 const defaultState: WindowState = { width: 1200, height: 800, isMaximized: false }
 
+/**
+ * Set by the reset handler to short-circuit window-state writes during teardown.
+ * Without this, `win.on('close')` races against `rmSync(data/)` and recreates
+ * `data/window-state.json` right after it was deleted.
+ */
+let isResetting = false
+
+export function markResetting(): void {
+  isResetting = true
+}
+
 function getWindowStatePath(): string {
   return join(getDataDir(), 'window-state.json')
 }
@@ -83,6 +94,7 @@ function loadWindowState(): WindowState {
 }
 
 function saveWindowState(win: BrowserWindow): void {
+  if (isResetting) return
   const state: WindowState = {
     isMaximized: win.isMaximized(),
     ...win.getNormalBounds(),
@@ -382,7 +394,7 @@ function createWindow(): void {
     } catch {
       // Non-critical — silently ignore
     }
-    if (!isQuitting) {
+    if (!isQuitting && !isResetting) {
       const closeToTray = getCloseToTray()
       if (closeToTray) {
         e.preventDefault()
@@ -470,6 +482,23 @@ if (!gotTheLock) {
 
   app.whenReady().then(async () => {
     electronApp.setAppUserModelId('com.ai-studio.app')
+
+    // Self-heal: if a previous reset couldn't fully delete data/ (e.g. a
+    // transient EBUSY from AV scanning), retry before opening the DB. The
+    // marker lives outside data/ so it survives even if data/ is half-deleted.
+    const resetMarker = getResetMarkerPath()
+    if (existsSync(resetMarker)) {
+      try {
+        rmSync(getDataDir(), { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+      } catch {
+        // leave the marker in place so the next boot tries again
+      }
+      try {
+        unlinkSync(resetMarker)
+      } catch {
+        // ignore
+      }
+    }
 
     initDatabase()
     runMigrations()

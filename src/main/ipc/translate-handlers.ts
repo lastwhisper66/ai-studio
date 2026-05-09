@@ -12,6 +12,18 @@ import { getModel } from '../db/models'
 let activeController: AbortController | null = null
 let activeRequestId: number | null = null
 
+export function abortActiveTranslate(): void {
+  if (activeController) {
+    try {
+      activeController.abort()
+    } catch {
+      // ignore
+    }
+    activeController = null
+    activeRequestId = null
+  }
+}
+
 function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettings {
   if (!providerId) {
     throw new AppError(ERROR_CODES.TRANSLATE_NO_PROVIDER)

@@ -18,6 +18,17 @@ import { showCompletionNotification } from '../utils/notification'
 
 const activeStreams = new Map<string, AbortController>()
 
+export function abortAllChatStreams(): void {
+  for (const controller of activeStreams.values()) {
+    try {
+      controller.abort()
+    } catch {
+      // ignore
+    }
+  }
+  activeStreams.clear()
+}
+
 export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,

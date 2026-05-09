@@ -1,66 +1,160 @@
-import { app, clipboard, ipcMain, nativeImage, shell } from 'electron'
-import { existsSync, rmSync, unlinkSync } from 'fs'
+import { app, clipboard, ipcMain, nativeImage, session, shell } from 'electron'
+import { existsSync, rmSync, unlinkSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import fontList from 'font-list'
 import { IpcChannels } from '@shared/ipc-channels'
 import { toLocalizedError } from '../errors'
 import type { AppReleaseInfo, ClipboardImagePayload, IpcResult } from '@shared/types'
-import { getDb } from '../db/database'
+import { getDb, closeDatabase } from '../db/database'
 import { seedDatabaseDefaults } from '../db/seeds'
-import { getDataDir } from '../utils/paths'
+import { getDataDir, getResetMarkerPath } from '../utils/paths'
 import { fetchLatestReleaseFromGitHub, PROJECT_PAGE_URL, RELEASES_PAGE_URL } from '../auto-updater'
+import { markResetting } from '../index'
+import { backupSyncService } from '../backup/sync-service'
+import { cleanupSelectionService } from '../selection-service'
+import { abortAllChatStreams } from './chat-handlers'
+import { abortActiveTranslate } from './translate-handlers'
+import { abortActiveQuickAssistantStream } from './quick-assistant-handlers'
+import { abortActiveSelectionStream } from './selection-handlers'
+
+// Tables cleared by "Clear all chats" — user-generated content only
+const CHAT_TABLES = ['messages', 'conversations', 'translation_history'] as const
+
+// Tables cleared by "Clear all settings" — configuration + defaults re-seeded afterwards
+const SETTINGS_TABLES = [
+  'settings',
+  'models',
+  'providers',
+  'assistants',
+  'quick_actions',
+  'selection_actions',
+  'model_definitions',
+  'model_groups',
+] as const
+
+function clearTables(tables: readonly string[]): void {
+  const db = getDb()
+  // NOTE: VACUUM cannot run inside a transaction, so it must stay *outside* the
+  // `run()` call below. Do not move it into the transaction.
+  const run = db.transaction(() => {
+    for (const name of tables) {
+      db.exec(`DELETE FROM "${name}"`)
+    }
+  })
+  db.pragma('foreign_keys = OFF')
+  try {
+    run()
+  } finally {
+    db.pragma('foreign_keys = ON')
+  }
+  db.exec('VACUUM')
+}
+
+function removeIfExists(path: string): void {
+  if (existsSync(path)) {
+    rmSync(path, { recursive: true, force: true })
+  }
+}
 
 export function registerAppHandlers(): void {
-  ipcMain.handle(IpcChannels.APP_CLEAR_DATA, (): IpcResult<void> => {
+  // A) Clear all chats — user content only, no relaunch
+  ipcMain.handle(IpcChannels.APP_CLEAR_CHATS, (): IpcResult<void> => {
     try {
-      const db = getDb()
+      abortAllChatStreams()
+      abortActiveTranslate()
+      clearTables(CHAT_TABLES)
+      removeIfExists(join(getDataDir(), 'attachments'))
+      removeIfExists(join(getDataDir(), 'backups', 'auto-rollback'))
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
 
-      // Dynamically collect all user tables to avoid missing any when new tables are added.
-      // Excludes sqlite internal tables (sqlite_*) — SQLite reserves this prefix.
-      const tables = db
-        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
-        .all() as { name: string }[]
-
-      const clearAll = db.transaction(() => {
-        for (const { name } of tables) {
-          // name comes from sqlite_master, not user input — safe to interpolate.
-          // Quote with double quotes to handle any reserved words.
-          db.exec(`DELETE FROM "${name}"`)
-        }
-      })
-
-      // foreign_keys pragma is a no-op inside a transaction, so toggle it outside.
-      // Disabled during bulk delete so row order doesn't matter.
-      db.pragma('foreign_keys = OFF')
-      try {
-        clearAll()
-      } finally {
-        db.pragma('foreign_keys = ON')
-      }
-
-      // Reclaim disk space after bulk deletion
-      db.exec('VACUUM')
-
-      // Remove attachments directory
-      const attachmentsDir = join(getDataDir(), 'attachments')
-      if (existsSync(attachmentsDir)) {
-        rmSync(attachmentsDir, { recursive: true, force: true })
-      }
-
-      // Remove window state file
+  // B) Clear all settings — configuration wipe, re-seed defaults, relaunch
+  ipcMain.handle(IpcChannels.APP_CLEAR_SETTINGS, (): IpcResult<void> => {
+    try {
+      abortAllChatStreams()
+      abortActiveTranslate()
+      abortActiveQuickAssistantStream()
+      abortActiveSelectionStream()
+      // Stop the auto-sync timer before wiping settings — otherwise a tick
+      // between `clearTables` and `app.exit(0)` could read half-seeded state
+      // or try to push empty settings to the remote.
+      backupSyncService.stop()
+      clearTables(SETTINGS_TABLES)
       const windowStatePath = join(getDataDir(), 'window-state.json')
       if (existsSync(windowStatePath)) {
-        unlinkSync(windowStatePath)
+        try {
+          unlinkSync(windowStatePath)
+        } catch {
+          // ignore
+        }
       }
-
-      // Re-seed defaults
       seedDatabaseDefaults()
-
-      // Relaunch the app — app.exit(0) terminates the process,
-      // so the return below is unreachable but required by the type signature
       app.relaunch()
       app.exit(0)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
 
+  // C) Reset app — nuke data/ and all Chromium storage, relaunch
+  ipcMain.handle(IpcChannels.APP_RESET, async (): Promise<IpcResult<void>> => {
+    const resetMarker = getResetMarkerPath()
+    try {
+      markResetting()
+      abortAllChatStreams()
+      abortActiveTranslate()
+      abortActiveQuickAssistantStream()
+      abortActiveSelectionStream()
+      backupSyncService.stop()
+      cleanupSelectionService()
+
+      try {
+        await session.defaultSession.clearStorageData({
+          storages: [
+            'localstorage',
+            'indexdb',
+            'cookies',
+            'serviceworkers',
+            'cachestorage',
+            'shadercache',
+          ],
+        })
+      } catch {
+        // best-effort — continue even if this fails
+      }
+
+      closeDatabase()
+
+      // Marker first — if rmSync throws mid-way, next boot self-heals
+      try {
+        writeFileSync(resetMarker, '1')
+      } catch {
+        // ignore — rmSync may still succeed
+      }
+
+      try {
+        rmSync(getDataDir(), {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 200,
+        })
+        // Success — remove marker so next boot doesn't retry
+        try {
+          unlinkSync(resetMarker)
+        } catch {
+          // ignore
+        }
+      } catch {
+        // Leave marker in place; next boot retries before opening DB
+      }
+
+      app.relaunch()
+      app.exit(0)
       return { success: true }
     } catch (e) {
       return { success: false, error: toLocalizedError(e) }

@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import { IpcChannels } from '@shared/ipc-channels'
 import type { Phrase, IpcResult } from '@shared/types'
 import { toLocalizedError } from '../errors'
-import { listPhrases, createPhrase, updatePhrase, deletePhrase } from '../db'
+import { listPhrases, createPhrase, updatePhrase, deletePhrase, clearAllPhrases } from '../db'
 
 export function registerPhraseHandlers(): void {
   ipcMain.handle(IpcChannels.PHRASE_LIST, (): IpcResult<Phrase[]> => {
@@ -42,6 +42,15 @@ export function registerPhraseHandlers(): void {
   ipcMain.handle(IpcChannels.PHRASE_DELETE, (_, id: string): IpcResult<void> => {
     try {
       deletePhrase(id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
+
+  ipcMain.handle(IpcChannels.PHRASE_CLEAR, (): IpcResult<void> => {
+    try {
+      clearAllPhrases()
       return { success: true }
     } catch (e) {
       return { success: false, error: toLocalizedError(e) }

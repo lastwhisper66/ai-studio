@@ -80,6 +80,25 @@ class BackupSyncService {
     }
   }
 
+  /**
+   * Teardown entry — clears every auto-sync timer and aborts any in-flight
+   * sync. Called during app reset so we don't race with `rmSync(data/)`
+   * reopening the DB via a scheduled sync.
+   */
+  stop(): void {
+    for (const state of this.remoteStates.values()) {
+      if (state.timer) {
+        clearInterval(state.timer)
+        state.timer = null
+      }
+      try {
+        state.abort?.abort()
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   getStatus(): BackupStatus {
     return {
       lastLocalChangeAt: getSetting('backup.lastLocalChangeAt') ?? null,
