@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/lastwhisper66/ai-studio/compare/v1.2.0...v1.3.0) (2026-05-09)
+
+
+### Features
+
+* **data:** split destructive cleanup into chats, settings and full reset ([d28f011](https://github.com/lastwhisper66/ai-studio/commit/d28f0114addc3911b7084101d1f3610bb5477122))
+* **data:** split destructive cleanup into chats, settings and full reset ([d50819b](https://github.com/lastwhisper66/ai-studio/commit/d50819b370d348c08a8e3084a1f173b324f5658b))
+
 ## [1.2.0](https://github.com/lastwhisper66/ai-studio/compare/v1.1.0...v1.2.0) (2026-05-05)
 
 
