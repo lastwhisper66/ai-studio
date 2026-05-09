@@ -12,6 +12,17 @@ import { getSetting } from '../db/settings'
 import { stripTranslateInputTags } from '../utils/strip-translate-tags'
 
 let activeController: AbortController | null = null
+
+export function abortActiveSelectionStream(): void {
+  if (activeController) {
+    try {
+      activeController.abort()
+    } catch {
+      // ignore
+    }
+    activeController = null
+  }
+}
 /**
  * Monotonic request sequence — bumped on every new request and on abort.
  * An in-flight request captures its own seq; stream events (chunk/end/error)

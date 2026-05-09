@@ -8,6 +8,7 @@ interface PhraseState {
   createPhrase: (title: string, content: string) => Promise<Phrase | undefined>
   updatePhrase: (id: string, data: Partial<Pick<Phrase, 'title' | 'content'>>) => Promise<void>
   deletePhrase: (id: string) => Promise<void>
+  clearPhrases: () => Promise<void>
 }
 
 export const usePhraseStore = create<PhraseState>((set) => ({
@@ -48,6 +49,13 @@ export const usePhraseStore = create<PhraseState>((set) => ({
     const result = await window.api.deletePhrase(id)
     if (result.success) {
       set((s) => ({ phrases: s.phrases.filter((p) => p.id !== id) }))
+    }
+  },
+
+  clearPhrases: async () => {
+    const result = await window.api.clearPhrases()
+    if (result.success) {
+      set({ phrases: [] })
     }
   },
 }))

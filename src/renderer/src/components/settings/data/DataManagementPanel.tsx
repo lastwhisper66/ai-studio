@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Upload, Download, RotateCcw, Trash2 } from 'lucide-react'
+import {
+  Upload,
+  Download,
+  RotateCcw,
+  Trash2,
+  Settings as SettingsIcon,
+  RefreshCw,
+} from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import {
   AlertDialog,
@@ -15,6 +23,7 @@ import {
   AlertDialogTrigger,
 } from '@renderer/components/ui/alert-dialog'
 import { useBackupStore } from '@renderer/stores/backupStore'
+import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import { ERROR_CODES } from '@shared/errors'
@@ -22,13 +31,28 @@ import type { BackupImportMode } from '@shared/types'
 import { BackupRollbackDialog } from '../BackupRollbackDialog'
 
 /**
- * Unified data-management page — local export/import, rollback access, and the
- * destructive "clear all data" control.
+ * localStorage keys owned by the renderer. Cleared before "clear all settings"
+ * and "reset app" so the app returns to first-launch UI state.
  *
- * Backup files are always plaintext; export and import are direct one-click
- * actions with no password dialog. Encrypted legacy files (if any) are
- * rejected by the codec as `BACKUP_FILE_INVALID`.
+ * Keep in sync with their definitions:
+ * - theme, colorTheme  →  components/theme/ThemeProvider.tsx
+ * - ai-studio-language →  i18n/index.ts
+ * - ai-studio-sidebar-collapsed / ai-studio-topic-collapsed → components/layout/AppLayout.tsx
  */
+const RENDERER_LOCALSTORAGE_KEYS = [
+  'theme',
+  'colorTheme',
+  'ai-studio-language',
+  'ai-studio-sidebar-collapsed',
+  'ai-studio-topic-collapsed',
+] as const
+
+function clearRendererLocalStorage(): void {
+  for (const key of RENDERER_LOCALSTORAGE_KEYS) {
+    localStorage.removeItem(key)
+  }
+}
+
 export function DataManagementPanel(): React.JSX.Element {
   const { t } = useTranslation()
   const localizedError = useLocalizedError()
@@ -38,8 +62,11 @@ export function DataManagementPanel(): React.JSX.Element {
   const [importMode, setImportMode] = useState<BackupImportMode>('replace')
   const [statusMsg, setStatusMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [rollbackOpen, setRollbackOpen] = useState(false)
-  const [clearError, setClearError] = useState<string | null>(null)
+  const [dangerError, setDangerError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  const [resetOpen, setResetOpen] = useState(false)
+  const [resetConfirmText, setResetConfirmText] = useState('')
 
   const handleExport = async (): Promise<void> => {
     setStatusMsg(null)
@@ -86,19 +113,40 @@ export function DataManagementPanel(): React.JSX.Element {
     }
   }
 
-  const handleClearData = async (): Promise<void> => {
-    try {
-      setClearError(null)
-      const result = await window.api.clearAppData()
-      if (!result.success) {
-        setClearError(
-          result.error ? t(result.error.code, result.error.params ?? {}) : 'Failed to clear data',
-        )
-      }
-    } catch (e) {
-      setClearError((e as Error).message)
+  const handleClearChats = async (): Promise<void> => {
+    setDangerError(null)
+    const result = await window.api.clearChats()
+    if (!result.success) {
+      setDangerError(result.error ? localizedError(result.error) : 'Failed')
+      return
     }
+    // No relaunch — reload conversation list and drop the active selection.
+    useConversationStore.getState().resetActive()
+    await useConversationStore.getState().loadConversations()
+    setStatusMsg({ kind: 'ok', text: t('settings.data.clearChats.success') })
   }
+
+  const handleClearSettings = async (): Promise<void> => {
+    setDangerError(null)
+    clearRendererLocalStorage()
+    const result = await window.api.clearSettings()
+    if (!result.success) {
+      setDangerError(result.error ? localizedError(result.error) : 'Failed')
+    }
+    // On success: main process relaunches, renderer is torn down.
+  }
+
+  const handleReset = async (): Promise<void> => {
+    setDangerError(null)
+    clearRendererLocalStorage()
+    const result = await window.api.resetApp()
+    if (!result.success) {
+      setDangerError(result.error ? localizedError(result.error) : 'Failed')
+    }
+    // On success: main process relaunches, renderer is torn down.
+  }
+
+  const resetConfirmValid = resetConfirmText.trim().toUpperCase() === 'RESET'
 
   return (
     <>
@@ -186,47 +234,159 @@ export function DataManagementPanel(): React.JSX.Element {
       )}
 
       {/* Danger zone */}
-      <div className="border-destructive/40 bg-destructive/5 rounded-xl border p-5">
-        <h3 className="text-destructive text-sm font-semibold">
-          {t('settings.data.dangerZone.title')}
-        </h3>
-        <div className="mt-4 flex items-center justify-between gap-4">
+      <div className="border-destructive/40 bg-destructive/5 divide-y divide-destructive/20 rounded-xl border">
+        <div className="p-5">
+          <h3 className="text-destructive text-sm font-semibold">
+            {t('settings.data.dangerZone.title')}
+          </h3>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {t('settings.data.dangerZone.description')}
+          </p>
+        </div>
+
+        <DangerRow
+          icon={<Trash2 className="text-destructive mt-0.5 size-4 shrink-0" />}
+          title={t('settings.data.clearChats.title')}
+          description={t('settings.data.clearChats.description')}
+          trigger={
+            <Button variant="destructive" size="sm">
+              {t('settings.data.clearChats.button')}
+            </Button>
+          }
+          dialogTitle={t('settings.data.clearChats.confirmTitle')}
+          dialogDescription={t('settings.data.clearChats.confirmDescription')}
+          confirmLabel={t('settings.data.clearChats.confirmButton')}
+          onConfirm={handleClearChats}
+        />
+
+        <DangerRow
+          icon={<SettingsIcon className="text-destructive mt-0.5 size-4 shrink-0" />}
+          title={t('settings.data.clearSettings.title')}
+          description={t('settings.data.clearSettings.description')}
+          trigger={
+            <Button variant="destructive" size="sm">
+              {t('settings.data.clearSettings.button')}
+            </Button>
+          }
+          dialogTitle={t('settings.data.clearSettings.confirmTitle')}
+          dialogDescription={t('settings.data.clearSettings.confirmDescription')}
+          confirmLabel={t('settings.data.clearSettings.confirmButton')}
+          onConfirm={handleClearSettings}
+        />
+
+        <div className="flex flex-wrap items-center gap-4 p-5">
           <div className="flex items-start gap-3">
-            <Trash2 className="text-destructive mt-0.5 size-4 shrink-0" />
+            <RefreshCw className="text-destructive mt-0.5 size-4 shrink-0" />
             <div>
-              <Label className="text-sm font-medium">{t('settings.data.clearData')}</Label>
+              <Label className="text-sm font-medium">{t('settings.data.resetApp.title')}</Label>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                {t('settings.data.clearDataDescription')}
+                {t('settings.data.resetApp.description')}
               </p>
             </div>
           </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm">
-                {t('settings.data.clearData')}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t('settings.data.clearDataConfirmTitle')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t('settings.data.clearDataConfirmDescription')}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearData} variant="destructive">
-                  {t('settings.data.clearDataConfirmButton')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="ml-auto">
+            <AlertDialog
+              open={resetOpen}
+              onOpenChange={(o) => {
+                setResetOpen(o)
+                if (!o) setResetConfirmText('')
+              }}>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  {t('settings.data.resetApp.button')}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>{t('settings.data.resetApp.confirmTitle')}</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t('settings.data.resetApp.confirmDescription')}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2 py-2">
+                  <Label className="text-xs">
+                    {t('settings.data.resetApp.confirmPromptLabel')}
+                  </Label>
+                  <Input
+                    autoFocus
+                    value={resetConfirmText}
+                    onChange={(e) => setResetConfirmText(e.target.value)}
+                    placeholder="RESET"
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={!resetConfirmValid}
+                    onClick={handleReset}
+                    variant="destructive">
+                    {t('settings.data.resetApp.confirmButton')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
-        {clearError && <p className="text-destructive mt-2 text-xs">{clearError}</p>}
+
+        {dangerError && (
+          <div className="p-4">
+            <p className="text-destructive text-xs">{dangerError}</p>
+          </div>
+        )}
       </div>
 
       <BackupRollbackDialog open={rollbackOpen} onClose={() => setRollbackOpen(false)} />
     </>
+  )
+}
+
+function DangerRow({
+  icon,
+  title,
+  description,
+  trigger,
+  dialogTitle,
+  dialogDescription,
+  confirmLabel,
+  onConfirm,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+  trigger: React.ReactNode
+  dialogTitle: string
+  dialogDescription: string
+  confirmLabel: string
+  onConfirm: () => void | Promise<void>
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  return (
+    <div className="flex flex-wrap items-center gap-4 p-5">
+      <div className="flex items-start gap-3">
+        {icon}
+        <div>
+          <Label className="text-sm font-medium">{title}</Label>
+          <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
+        </div>
+      </div>
+      <div className="ml-auto">
+        <AlertDialog>
+          <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
+              <AlertDialogDescription>{dialogDescription}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction onClick={onConfirm} variant="destructive">
+                {confirmLabel}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
   )
 }
 

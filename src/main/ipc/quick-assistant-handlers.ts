@@ -17,6 +17,17 @@ import { stripTranslateInputTags } from '../utils/strip-translate-tags'
 
 let activeController: AbortController | null = null
 
+export function abortActiveQuickAssistantStream(): void {
+  if (activeController) {
+    try {
+      activeController.abort()
+    } catch {
+      // ignore
+    }
+    activeController = null
+  }
+}
+
 function loadQuickAssistantSettings(providerId?: string, modelId?: string): ApiSettings {
   const resolvedProviderId = providerId || getSetting('quickAssistant.providerId')
   if (!resolvedProviderId) {

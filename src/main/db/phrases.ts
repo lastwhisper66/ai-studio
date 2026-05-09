@@ -70,3 +70,8 @@ export function updatePhrase(
 export function deletePhrase(id: string): void {
   getDb().prepare('DELETE FROM phrases WHERE id = ?').run(id)
 }
+
+export function clearAllPhrases(): number {
+  const info = getDb().prepare('DELETE FROM phrases').run()
+  return info.changes
+}

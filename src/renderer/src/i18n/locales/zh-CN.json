@@ -343,16 +343,38 @@
       "description": "管理应用程序数据和存储。",
       "dataManagement": {
         "title": "数据管理",
-        "description": "导入/导出本地备份文件，从本地回滚副本恢复，以及清除全部数据。"
+        "description": "导入/导出本地备份文件，从本地回滚副本恢复，以及管理清理选项。"
       },
       "dangerZone": {
-        "title": "危险区"
+        "title": "危险区",
+        "description": "以下操作均不可撤销，建议先导出一次备份以防万一。"
       },
-      "clearData": "清除所有数据",
-      "clearDataDescription": "删除所有对话记录、设置和附件，应用将自动重启。",
-      "clearDataConfirmTitle": "确认清除数据",
-      "clearDataConfirmDescription": "此操作不可撤销，将删除所有对话记录、设置、服务商配置和附件文件。应用将自动重启。",
-      "clearDataConfirmButton": "确认清除",
+      "clearChats": {
+        "title": "清除所有聊天记录",
+        "description": "删除所有对话、消息、翻译历史和附件文件，保留所有设置和服务商配置。",
+        "button": "清除聊天",
+        "confirmTitle": "清除所有聊天记录？",
+        "confirmDescription": "将删除全部对话、消息、翻译历史以及磁盘上的附件文件。服务商、模型、助手和偏好设置将保留。此操作不可撤销。",
+        "confirmButton": "清除聊天",
+        "success": "所有聊天记录已清除。"
+      },
+      "clearSettings": {
+        "title": "清除所有设置",
+        "description": "将主题、语言、快捷键、服务商、模型、助手、快捷动作等恢复为默认值，聊天记录将保留。应用将自动重启。",
+        "button": "清除设置",
+        "confirmTitle": "清除所有设置？",
+        "confirmDescription": "将清空所有偏好、服务商、API Key、模型、助手、快捷助手与划词助手动作，并重新种入默认配置。聊天记录将保留。确认后应用将自动重启，此操作不可撤销。",
+        "confirmButton": "清除设置"
+      },
+      "resetApp": {
+        "title": "重置应用程序",
+        "description": "删除 SQLite 数据库和整个 data 目录。当数据迁移失败导致应用不可用时使用此功能。",
+        "button": "重置应用",
+        "confirmTitle": "重置应用程序？",
+        "confirmDescription": "将删除 SQLite 数据库、所有附件、本地回滚副本以及浏览器端全部持久化存储。应用将以全新安装状态重启，所有数据彻底丢失且无法恢复。",
+        "confirmPromptLabel": "输入 RESET 以确认：",
+        "confirmButton": "重置所有数据"
+      },
       "nav": {
         "localGroup": "本地数据",
         "dataManagement": "数据管理",
@@ -438,6 +460,9 @@
       "empty": "暂无快捷短语，点击上方按钮添加。",
       "deleteTitle": "删除短语",
       "deleteDescription": "确定要删除「{{name}}」吗？此操作不可撤销。",
+      "clearAll": "清空全部",
+      "clearAllTitle": "清空所有短语？",
+      "clearAllDescription": "将删除所有快捷短语。此操作不可撤销。",
       "titleLabel": "标题",
       "titlePlaceholder": "短语标题",
       "contentLabel": "内容",

@@ -9,8 +9,10 @@ out
 .env
 .env.*
 /data/
+/.reset-pending
 plans
 docs/superpowers
 .playwright-mcp
 .worktrees
 .superpowers
+.claude/PRPs/
