@@ -110,14 +110,14 @@ export function TemplateCard({
       description={st(template.description)}
       metaSlot={
         <>
+          <Badge variant="outline" className="text-[10px]">
+            {sourceLabel}
+          </Badge>
           {template.recommendedModel && (
             <Badge variant="secondary" className="text-[10px]">
               {template.recommendedModel}
             </Badge>
           )}
-          <Badge variant="outline" className="text-[10px]">
-            {sourceLabel}
-          </Badge>
         </>
       }
       primaryAction={primaryAction}
