@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowRight, MoreVertical, Star, AlertTriangle } from 'lucide-react'
+import { ArrowRight, MoreVertical, Star, AlertTriangle, Trash2 } from 'lucide-react'
 import type { Assistant } from '@shared/types'
 import { Button } from '@renderer/components/ui/button'
 import { Badge } from '@renderer/components/ui/badge'
@@ -80,14 +80,19 @@ export function AssistantCard({
             {t('library.card.setAsDefault')}
           </DropdownMenuItem>
         )}
-        {!assistant.isDefault && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => onDelete(assistant)}>
-              {t('library.card.delete')}
-            </DropdownMenuItem>
-          </>
-        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={assistant.isDefault}
+          onClick={() => !assistant.isDefault && onDelete(assistant)}>
+          <Trash2 className="h-3.5 w-3.5" />
+          {t('library.card.delete')}
+          {assistant.isDefault && (
+            <span className="ml-1 text-[10px] opacity-60">
+              ({t('library.card.cannotDeleteDefault')})
+            </span>
+          )}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

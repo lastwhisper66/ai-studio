@@ -1154,6 +1154,7 @@
       "duplicate": "Duplicate",
       "exportJson": "Export JSON",
       "delete": "Delete",
+      "cannotDeleteDefault": "Default assistant cannot be deleted",
       "saveAsTemplate": "Save as Template",
       "setAsDefault": "Set as Default",
       "copySuffix": "(copy)",
