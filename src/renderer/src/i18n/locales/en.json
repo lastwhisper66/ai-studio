@@ -1136,7 +1136,9 @@
     "sidebar": {
       "builtinTemplates": "Built-in",
       "overwrite": "Overwrite",
-      "restore": "Restore"
+      "restore": "Restore",
+      "resultSuccess": "Done",
+      "resultFailed": "Operation failed"
     },
     "categories": {
       "all": "All",

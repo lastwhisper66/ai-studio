@@ -1124,7 +1124,9 @@
     "sidebar": {
       "builtinTemplates": "内置模板",
       "overwrite": "覆盖",
-      "restore": "恢复"
+      "restore": "恢复",
+      "resultSuccess": "操作完成",
+      "resultFailed": "操作失败"
     },
     "categories": {
       "all": "全部",

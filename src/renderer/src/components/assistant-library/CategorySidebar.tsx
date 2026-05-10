@@ -25,31 +25,42 @@ interface CategorySidebarProps {
   totalCount: number
   activeCategory: string | null
   onSelect: (category: string | null) => void
-  onStatusMessage?: (text: string) => void
 }
+
+type ResultDialog = { kind: 'ok' | 'err'; text: string } | null
 
 export function CategorySidebar({
   categories,
   totalCount,
   activeCategory,
   onSelect,
-  onStatusMessage,
 }: CategorySidebarProps): React.JSX.Element {
   const { t } = useTranslation()
   const resetBuiltins = useAssistantTemplateStore((s) => s.resetBuiltins)
   const [overwriteOpen, setOverwriteOpen] = useState(false)
   const [restoreOpen, setRestoreOpen] = useState(false)
+  const [result, setResult] = useState<ResultDialog>(null)
 
   const handleOverwrite = async (): Promise<void> => {
     const ok = await resetBuiltins('overwrite')
     setOverwriteOpen(false)
-    if (ok && onStatusMessage) onStatusMessage(t('settings.data.builtinTemplates.success'))
+    setResult({
+      kind: ok ? 'ok' : 'err',
+      text: ok
+        ? t('settings.data.builtinTemplates.success')
+        : t('settings.data.builtinTemplates.errors.failed'),
+    })
   }
 
   const handleRestore = async (): Promise<void> => {
     const ok = await resetBuiltins('restore-deleted')
     setRestoreOpen(false)
-    if (ok && onStatusMessage) onStatusMessage(t('settings.data.builtinTemplates.success'))
+    setResult({
+      kind: ok ? 'ok' : 'err',
+      text: ok
+        ? t('settings.data.builtinTemplates.success')
+        : t('settings.data.builtinTemplates.errors.failed'),
+    })
   }
 
   const renderEntry = (id: string | null, label: string, count: number): React.JSX.Element => (
@@ -135,6 +146,24 @@ export function CategorySidebar({
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRestore}>
               {t('settings.data.builtinTemplates.restore.button')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={result !== null} onOpenChange={(o) => !o && setResult(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {result?.kind === 'ok'
+                ? t('library.sidebar.resultSuccess')
+                : t('library.sidebar.resultFailed')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{result?.text}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setResult(null)}>
+              {t('common.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
