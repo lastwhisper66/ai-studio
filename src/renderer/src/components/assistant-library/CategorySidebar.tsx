@@ -1,5 +1,19 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { RotateCcw, RefreshCw } from 'lucide-react'
 import { cn } from '@renderer/lib/utils'
+import { Button } from '@renderer/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@renderer/components/ui/alert-dialog'
+import { useAssistantTemplateStore } from '@renderer/stores/assistantTemplateStore'
 
 interface CategoryCount {
   id: string
@@ -11,6 +25,7 @@ interface CategorySidebarProps {
   totalCount: number
   activeCategory: string | null
   onSelect: (category: string | null) => void
+  onStatusMessage?: (text: string) => void
 }
 
 export function CategorySidebar({
@@ -18,8 +33,24 @@ export function CategorySidebar({
   totalCount,
   activeCategory,
   onSelect,
+  onStatusMessage,
 }: CategorySidebarProps): React.JSX.Element {
   const { t } = useTranslation()
+  const resetBuiltins = useAssistantTemplateStore((s) => s.resetBuiltins)
+  const [overwriteOpen, setOverwriteOpen] = useState(false)
+  const [restoreOpen, setRestoreOpen] = useState(false)
+
+  const handleOverwrite = async (): Promise<void> => {
+    const ok = await resetBuiltins('overwrite')
+    setOverwriteOpen(false)
+    if (ok && onStatusMessage) onStatusMessage(t('settings.data.builtinTemplates.success'))
+  }
+
+  const handleRestore = async (): Promise<void> => {
+    const ok = await resetBuiltins('restore-deleted')
+    setRestoreOpen(false)
+    if (ok && onStatusMessage) onStatusMessage(t('settings.data.builtinTemplates.success'))
+  }
 
   const renderEntry = (id: string | null, label: string, count: number): React.JSX.Element => (
     <button
@@ -40,12 +71,74 @@ export function CategorySidebar({
 
   return (
     <aside className="flex h-full w-[130px] shrink-0 flex-col border-r p-2">
-      {renderEntry(null, t('library.categories.all'), totalCount)}
-      <div className="mt-2 space-y-0.5">
-        {categories.map((c) =>
-          renderEntry(c.id, t(`library.categories.${c.id}`, { defaultValue: c.id }), c.count),
-        )}
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {renderEntry(null, t('library.categories.all'), totalCount)}
+        <div className="mt-2 space-y-0.5">
+          {categories.map((c) =>
+            renderEntry(c.id, t(`library.categories.${c.id}`, { defaultValue: c.id }), c.count),
+          )}
+        </div>
       </div>
+
+      <div className="mt-2 shrink-0 space-y-1 border-t pt-2">
+        <p className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70">
+          {t('library.sidebar.builtinTemplates')}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-full justify-start gap-1.5 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => setOverwriteOpen(true)}>
+          <RotateCcw className="h-3 w-3" />
+          {t('library.sidebar.overwrite')}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-full justify-start gap-1.5 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+          onClick={() => setRestoreOpen(true)}>
+          <RefreshCw className="h-3 w-3" />
+          {t('library.sidebar.restore')}
+        </Button>
+      </div>
+
+      <AlertDialog open={overwriteOpen} onOpenChange={setOverwriteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('settings.data.builtinTemplates.overwrite.confirmTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.data.builtinTemplates.overwrite.confirm')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleOverwrite}>
+              {t('settings.data.builtinTemplates.overwrite.button')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={restoreOpen} onOpenChange={setRestoreOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('settings.data.builtinTemplates.restore.confirmTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('settings.data.builtinTemplates.restore.confirm')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestore}>
+              {t('settings.data.builtinTemplates.restore.button')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   )
 }

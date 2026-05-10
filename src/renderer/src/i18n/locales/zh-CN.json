@@ -1121,6 +1121,11 @@
     "search": {
       "placeholder": "搜索名称、描述、提示词…"
     },
+    "sidebar": {
+      "builtinTemplates": "内置模板",
+      "overwrite": "覆盖",
+      "restore": "恢复"
+    },
     "categories": {
       "all": "全部",
       "general": "通用",

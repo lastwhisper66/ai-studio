@@ -1133,6 +1133,11 @@
     "search": {
       "placeholder": "Search name, description, prompt…"
     },
+    "sidebar": {
+      "builtinTemplates": "Built-in",
+      "overwrite": "Overwrite",
+      "restore": "Restore"
+    },
     "categories": {
       "all": "All",
       "general": "General",

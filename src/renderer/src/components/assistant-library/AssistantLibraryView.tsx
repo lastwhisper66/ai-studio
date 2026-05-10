@@ -228,6 +228,7 @@ export function AssistantLibraryView(): React.JSX.Element {
           totalCount={tab === 'discover' ? templates.length : assistants.length}
           activeCategory={activeCategory}
           onSelect={setActiveCategory}
+          onStatusMessage={setStatusToast}
         />
 
         <div className="flex min-w-0 flex-1 flex-col">

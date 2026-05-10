@@ -7,9 +7,7 @@ import {
   Trash2,
   Settings as SettingsIcon,
   RefreshCw,
-  Library as LibraryIcon,
 } from 'lucide-react'
-import { useAssistantTemplateStore } from '@renderer/stores/assistantTemplateStore'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
@@ -69,21 +67,6 @@ export function DataManagementPanel(): React.JSX.Element {
 
   const [resetOpen, setResetOpen] = useState(false)
   const [resetConfirmText, setResetConfirmText] = useState('')
-  const resetBuiltinTemplates = useAssistantTemplateStore((s) => s.resetBuiltins)
-
-  const handleResetBuiltinsOverwrite = async (): Promise<void> => {
-    setDangerError(null)
-    const ok = await resetBuiltinTemplates('overwrite')
-    if (!ok) setDangerError(t('settings.data.builtinTemplates.errors.failed'))
-    else setStatusMsg({ kind: 'ok', text: t('settings.data.builtinTemplates.success') })
-  }
-
-  const handleResetBuiltinsRestore = async (): Promise<void> => {
-    setDangerError(null)
-    const ok = await resetBuiltinTemplates('restore-deleted')
-    if (!ok) setDangerError(t('settings.data.builtinTemplates.errors.failed'))
-    else setStatusMsg({ kind: 'ok', text: t('settings.data.builtinTemplates.success') })
-  }
 
   const handleExport = async (): Promise<void> => {
     setStatusMsg(null)
@@ -249,47 +232,6 @@ export function DataManagementPanel(): React.JSX.Element {
           </p>
         </div>
       )}
-
-      {/* Built-in Templates */}
-      <div className="bg-card/50 rounded-xl border">
-        <div className="border-b p-5">
-          <div className="flex items-center gap-2">
-            <LibraryIcon className="h-4 w-4" />
-            <h3 className="text-sm font-semibold">{t('settings.data.builtinTemplates.title')}</h3>
-          </div>
-          <p className="text-muted-foreground mt-1 text-xs">
-            {t('settings.data.builtinTemplates.description')}
-          </p>
-        </div>
-        <DangerRow
-          icon={<RotateCcw className="text-foreground mt-0.5 size-4 shrink-0" />}
-          title={t('settings.data.builtinTemplates.overwrite.title')}
-          description={t('settings.data.builtinTemplates.overwrite.description')}
-          trigger={
-            <Button variant="outline" size="sm">
-              {t('settings.data.builtinTemplates.overwrite.button')}
-            </Button>
-          }
-          dialogTitle={t('settings.data.builtinTemplates.overwrite.confirmTitle')}
-          dialogDescription={t('settings.data.builtinTemplates.overwrite.confirm')}
-          confirmLabel={t('settings.data.builtinTemplates.overwrite.button')}
-          onConfirm={handleResetBuiltinsOverwrite}
-        />
-        <DangerRow
-          icon={<RefreshCw className="text-foreground mt-0.5 size-4 shrink-0" />}
-          title={t('settings.data.builtinTemplates.restore.title')}
-          description={t('settings.data.builtinTemplates.restore.description')}
-          trigger={
-            <Button variant="outline" size="sm">
-              {t('settings.data.builtinTemplates.restore.button')}
-            </Button>
-          }
-          dialogTitle={t('settings.data.builtinTemplates.restore.confirmTitle')}
-          dialogDescription={t('settings.data.builtinTemplates.restore.confirm')}
-          confirmLabel={t('settings.data.builtinTemplates.restore.button')}
-          onConfirm={handleResetBuiltinsRestore}
-        />
-      </div>
 
       {/* Danger zone */}
       <div className="border-destructive/40 bg-destructive/5 divide-y divide-destructive/20 rounded-xl border">
