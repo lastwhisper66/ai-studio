@@ -12,9 +12,11 @@
  */
 
 import { migrateBackupSettings } from './backup-settings'
+import { migrateAssistantLibraryFields } from './assistant-library-fields'
 
-export { migrateBackupSettings }
+export { migrateBackupSettings, migrateAssistantLibraryFields }
 
 export function runMigrations(): void {
   migrateBackupSettings()
+  migrateAssistantLibraryFields()
 }
