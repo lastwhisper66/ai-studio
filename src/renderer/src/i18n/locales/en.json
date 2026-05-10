@@ -704,6 +704,11 @@
       },
       "exportSuccess": "Backup written to {{path}}",
       "importSuccess": "Imported {{providers}} providers, {{assistants}} assistants, {{settings}} settings.",
+      "restartPrompt": {
+        "title": "Import complete",
+        "description": "Data restored. The app needs to restart to load the new data.",
+        "confirm": "Restart now"
+      },
       "peek": {
         "created": "Created",
         "appVersion": "App version"

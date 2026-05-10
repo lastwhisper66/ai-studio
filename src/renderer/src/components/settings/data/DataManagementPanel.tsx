@@ -29,6 +29,7 @@ import { cn } from '@renderer/lib/utils'
 import { ERROR_CODES } from '@shared/errors'
 import type { BackupImportMode } from '@shared/types'
 import { BackupRollbackDialog } from '../BackupRollbackDialog'
+import { RestartPromptDialog } from './RestartPromptDialog'
 
 /**
  * localStorage keys owned by the renderer. Cleared before "clear all settings"
@@ -67,6 +68,7 @@ export function DataManagementPanel(): React.JSX.Element {
 
   const [resetOpen, setResetOpen] = useState(false)
   const [resetConfirmText, setResetConfirmText] = useState('')
+  const [restartPromptOpen, setRestartPromptOpen] = useState(false)
 
   const handleExport = async (): Promise<void> => {
     setStatusMsg(null)
@@ -108,6 +110,7 @@ export function DataManagementPanel(): React.JSX.Element {
           settings: r.settings,
         }),
       })
+      setRestartPromptOpen(true)
     } finally {
       setBusy(false)
     }
@@ -336,6 +339,7 @@ export function DataManagementPanel(): React.JSX.Element {
       </div>
 
       <BackupRollbackDialog open={rollbackOpen} onClose={() => setRollbackOpen(false)} />
+      <RestartPromptDialog open={restartPromptOpen} onOpenChange={setRestartPromptOpen} />
     </>
   )
 }

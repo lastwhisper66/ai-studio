@@ -439,6 +439,8 @@ const api = {
 
   resetApp: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_RESET),
 
+  relaunchApp: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_RELAUNCH),
+
   copyPngToClipboard: (payload: ClipboardImagePayload): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.CLIPBOARD_WRITE_IMAGE, payload),
 

@@ -114,6 +114,7 @@ export const IpcChannels = {
   APP_CLEAR_CHATS: 'app:clear-chats',
   APP_CLEAR_SETTINGS: 'app:clear-settings',
   APP_RESET: 'app:reset',
+  APP_RELAUNCH: 'app:relaunch',
   APP_OPEN_PROJECT_PAGE: 'app:open-project-page',
   APP_OPEN_RELEASES_PAGE: 'app:open-releases-page',
   APP_GET_LATEST_RELEASE: 'app:get-latest-release',

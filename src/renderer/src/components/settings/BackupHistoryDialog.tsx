@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { RestartPromptDialog } from './data/RestartPromptDialog'
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
   const localizedError = useLocalizedError()
   const listRemote = useBackupStore((s) => s.listRemote)
   const restoreFromRemote = useBackupStore((s) => s.restoreFromRemote)
+  const [restartPromptOpen, setRestartPromptOpen] = useState(false)
 
   const [items, setItems] = useState<RemoteBackupItem[] | null>(null)
   const [fetchError, setFetchError] = useState<LocalizedError | null>(null)
@@ -97,6 +99,7 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
         setStatusMsg({ kind: 'err', text: localizedError(r.error) })
       } else {
         setStatusMsg({ kind: 'ok', text: t('settings.backup.history.restoreOk') })
+        setRestartPromptOpen(true)
       }
     } finally {
       setRestoring(false)
@@ -155,6 +158,7 @@ function HistoryListing({ type }: { type: RemoteType }): React.JSX.Element {
           {statusMsg.text}
         </p>
       )}
+      <RestartPromptDialog open={restartPromptOpen} onOpenChange={setRestartPromptOpen} />
     </>
   )
 }
