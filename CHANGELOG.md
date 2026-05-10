@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/lastwhisper66/ai-studio/compare/v1.3.0...v1.4.0) (2026-05-10)
+
+
+### Features
+
+* **library:** Cherry Studio-style Assistant Library + restart prompt after backup restore ([8debe5a](https://github.com/lastwhisper66/ai-studio/commit/8debe5aae18cedf0ad040a70bbcdcc210ff5100e))
+
 ## [1.3.0](https://github.com/lastwhisper66/ai-studio/compare/v1.2.0...v1.3.0) (2026-05-09)
 
 
