@@ -10,24 +10,65 @@ export interface Conversation {
   pinned: boolean
 }
 
+export type AssistantKind = 'assistant' | 'template'
+export type AssistantSource = 'builtin' | 'user' | 'imported'
+
 export interface Assistant {
   id: string
+  kind: AssistantKind
   name: string
   icon: string
   description: string
   systemPrompt: string
+  promptSuggestions: string[]
+
+  // Instance fields (meaningful when kind='assistant')
   providerId: string | null
   model: string
+  isDefault: boolean
+  group: string
+
+  // Template fields (meaningful when kind='template')
+  category: string
+  recommendedModel: string
+  isBuiltin: boolean
+  source: AssistantSource
+  sourceTemplateId: string | null
+
+  // Shared generation parameters
   temperature: string
   maxCompletionTokens: string
   topP: string
   contextCount: string
-  promptSuggestions: string[]
-  isDefault: boolean
-  group: string
+
   sortOrder: number
   createdAt: string
   updatedAt: string
+}
+
+export interface ImportResolution {
+  templateId: string
+  action: 'skip' | 'overwrite' | 'asCopy'
+}
+
+export interface ConflictItem {
+  /** Parsed template from the import file */
+  template: Assistant
+  /** ID of the existing template that conflicts */
+  existingId: string
+  /** Why it conflicts: `id` (same id) or `name` (different id, same name) */
+  reason: 'id' | 'name'
+}
+
+export interface ImportPlan {
+  ok: Assistant[]
+  conflicts: ConflictItem[]
+}
+
+export interface ImportResult {
+  imported: number
+  skipped: number
+  overwritten: number
 }
 
 export type MessageRole = 'user' | 'assistant' | 'system' | 'divider'

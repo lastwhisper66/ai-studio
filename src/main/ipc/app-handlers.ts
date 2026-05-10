@@ -161,6 +161,13 @@ export function registerAppHandlers(): void {
     }
   })
 
+  // D) Relaunch — used after backup import/restore to refresh in-memory state
+  ipcMain.handle(IpcChannels.APP_RELAUNCH, (): IpcResult<void> => {
+    app.relaunch()
+    app.exit(0)
+    return { success: true }
+  })
+
   ipcMain.handle(IpcChannels.APP_GET_FONTS, async (): Promise<IpcResult<string[]>> => {
     try {
       const fonts = await fontList.getFonts()

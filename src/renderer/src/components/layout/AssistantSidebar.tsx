@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Copy, Pin } from 'lucide-react'
+import { Plus, Pencil, Trash2, Copy, Pin, Library as LibraryIcon, ArrowRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import {
@@ -40,6 +40,7 @@ import {
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { AssistantSettingsDialog } from '@renderer/components/chat/AssistantSettingsDialog'
 import { useConversationStore } from '@renderer/stores/conversationStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 
 interface AssistantSidebarProps {
   collapsed: boolean
@@ -73,6 +74,7 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
     updateAssistant,
   } = useAssistantStore()
   const { conversations, createConversation, setActiveConversation } = useConversationStore()
+  const setActiveView = useSettingsStore((s) => s.setActiveView)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editAssistantId, setEditAssistantId] = useState<string | null>(null)
   const [createMode, setCreateMode] = useState(false)
@@ -243,8 +245,21 @@ export function AssistantSidebar({ collapsed }: AssistantSidebarProps): React.JS
   return (
     <aside
       className={`relative flex h-full w-64 shrink-0 flex-col border-r bg-sidebar-background text-sidebar-foreground transition-all duration-300${collapsed ? ' !w-0 overflow-hidden' : ''}`}>
+      {/* Library shortcut */}
+      <div className="mx-2 mt-2 mb-0.5">
+        <button
+          className="flex h-7 w-full items-center justify-between rounded-md px-2 text-xs text-muted-foreground transition-colors hover:bg-sidebar-accent/40 hover:text-foreground"
+          onClick={() => setActiveView('library')}>
+          <span className="flex items-center gap-1.5">
+            <LibraryIcon className="h-3.5 w-3.5" />
+            {t('library.openShortcut')}
+          </span>
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      </div>
+
       {/* Add Assistant Button */}
-      <div className="mx-2 mt-2 mb-1">
+      <div className="mx-2 mt-1 mb-1">
         <Button
           variant="ghost"
           className="h-10 w-full justify-start gap-2 rounded-lg text-sm hover:bg-sidebar-accent/40"

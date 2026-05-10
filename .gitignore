@@ -16,3 +16,4 @@ docs/superpowers
 .worktrees
 .superpowers
 .claude/PRPs/
+.claude/settings.local.json

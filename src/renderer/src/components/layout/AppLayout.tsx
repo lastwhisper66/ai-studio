@@ -18,6 +18,12 @@ const TranslateView = lazy(() =>
   })),
 )
 
+const AssistantLibraryView = lazy(() =>
+  import('@renderer/components/assistant-library').then((m) => ({
+    default: m.AssistantLibraryView,
+  })),
+)
+
 const SIDEBAR_STORAGE_KEY = 'ai-studio-sidebar-collapsed'
 const TOPIC_STORAGE_KEY = 'ai-studio-topic-collapsed'
 
@@ -92,6 +98,10 @@ export function AppLayout(): React.JSX.Element {
         ) : activeView === 'translate' ? (
           <Suspense fallback={null}>
             <TranslateView />
+          </Suspense>
+        ) : activeView === 'library' ? (
+          <Suspense fallback={null}>
+            <AssistantLibraryView />
           </Suspense>
         ) : (
           <Suspense fallback={null}>

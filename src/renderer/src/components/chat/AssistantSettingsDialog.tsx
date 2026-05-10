@@ -13,6 +13,7 @@ import { Button } from '@renderer/components/ui/button'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
+import { useAssistantTemplateStore } from '@renderer/stores/assistantTemplateStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { EmojiPicker } from '@renderer/components/ui/emoji-picker'
@@ -25,6 +26,8 @@ interface AssistantSettingsDialogProps {
   onOpenChange: (open: boolean) => void
   assistantId: string | null
   mode?: 'create' | 'edit'
+  /** 'assistant' (default) shows provider+model picker; 'template' shows recommendedModel text input. */
+  editorRole?: 'assistant' | 'template'
   initialTab?: TabId
   onCreate?: (data: Partial<Assistant> & { name: string }) => void
 }
@@ -47,6 +50,8 @@ interface FormState {
   contextCountEnabled: boolean
   systemPrompt: string
   group: string
+  category: string
+  recommendedModel: string
 }
 
 function defaultFormState(): FormState {
@@ -66,6 +71,8 @@ function defaultFormState(): FormState {
     contextCountEnabled: true,
     systemPrompt: '',
     group: '',
+    category: '',
+    recommendedModel: '',
   }
 }
 
@@ -86,8 +93,10 @@ function stateFromAssistant(a: Assistant): FormState {
     topPEnabled: a.topP !== '',
     contextCount: a.contextCount || '10',
     contextCountEnabled: a.contextCount !== '',
-    systemPrompt: a.systemPrompt,
+    systemPrompt: translateSeed(a.systemPrompt),
     group: a.group,
+    category: a.category,
+    recommendedModel: a.recommendedModel,
   }
 }
 
@@ -96,15 +105,21 @@ export function AssistantSettingsDialog({
   onOpenChange,
   assistantId,
   mode = 'edit',
+  editorRole = 'assistant',
   initialTab,
   onCreate,
 }: AssistantSettingsDialogProps): React.JSX.Element {
   const { t } = useTranslation()
+  const isTemplate = editorRole === 'template'
   const { assistants, updateAssistant } = useAssistantStore()
+  const templates = useAssistantTemplateStore((s) => s.templates)
+  const updateTemplateInStore = useAssistantTemplateStore((s) => s.updateTemplate)
   const providers = useProviderStore((s) => s.providers)
 
   const isCreateMode = mode === 'create'
-  const assistant = assistants.find((a) => a.id === assistantId)
+  const assistant = isTemplate
+    ? templates.find((tpl) => tpl.id === assistantId)
+    : assistants.find((a) => a.id === assistantId)
   const [activeTab, setActiveTab] = useState<TabId>('assistant')
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
   const [form, setForm] = useState<FormState | null>(() =>
@@ -173,7 +188,10 @@ export function AssistantSettingsDialog({
   // Keep `seed.*` keys intact when the user didn't actually edit a display
   // value. `assistant` holds the original raw strings; we compare the form
   // value against its translated form and, if unchanged, commit the raw key.
-  const sanitizeSeed = (field: 'name' | 'description', display: string): string => {
+  const sanitizeSeed = (
+    field: 'name' | 'description' | 'systemPrompt',
+    display: string,
+  ): string => {
     if (!assistant) return display
     const raw = assistant[field]
     if (
@@ -197,7 +215,7 @@ export function AssistantSettingsDialog({
         commit({ description: sanitizeSeed('description', value as string) })
         break
       case 'systemPrompt':
-        commit({ systemPrompt: value as string })
+        commit({ systemPrompt: sanitizeSeed('systemPrompt', value as string) })
         break
       case 'model':
         commit({ model: value as string })
@@ -253,34 +271,54 @@ export function AssistantSettingsDialog({
   }
 
   const handleSave = (): void => {
-    if (isCreateMode) {
-      onCreate?.({
-        name: form.name.trim() || t('assistant.newAssistant'),
-        icon: form.icon,
-        description: form.description,
-        providerId: form.providerId || null,
-        model: form.model,
-        temperature: form.temperatureEnabled ? form.temperature : '',
-        maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
-        topP: form.topPEnabled ? form.topP : '',
-        contextCount: form.contextCountEnabled ? form.contextCount : '',
-        systemPrompt: form.systemPrompt,
-        group: form.group,
-      })
+    const sharedPayload = {
+      name: form.name.trim() || t('assistant.newAssistant'),
+      icon: form.icon,
+      description: form.description,
+      temperature: form.temperatureEnabled ? form.temperature : '',
+      maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
+      topP: form.topPEnabled ? form.topP : '',
+      contextCount: form.contextCountEnabled ? form.contextCount : '',
+      systemPrompt: form.systemPrompt,
+    }
+
+    if (isTemplate) {
+      const templatePayload = {
+        ...sharedPayload,
+        name: isCreateMode ? sharedPayload.name : sanitizeSeed('name', sharedPayload.name),
+        description: isCreateMode
+          ? sharedPayload.description
+          : sanitizeSeed('description', sharedPayload.description),
+        systemPrompt: isCreateMode
+          ? sharedPayload.systemPrompt
+          : sanitizeSeed('systemPrompt', sharedPayload.systemPrompt),
+        category: form.category,
+        recommendedModel: form.recommendedModel,
+      }
+      if (isCreateMode) {
+        onCreate?.(templatePayload as Partial<Assistant> & { name: string })
+      } else if (assistantId) {
+        updateTemplateInStore(assistantId, templatePayload as Partial<Assistant>)
+      }
     } else {
-      commit({
-        name: sanitizeSeed('name', form.name),
-        icon: form.icon,
-        description: sanitizeSeed('description', form.description),
+      const assistantPayload = {
+        ...sharedPayload,
+        name: isCreateMode ? sharedPayload.name : sanitizeSeed('name', form.name),
+        description: isCreateMode
+          ? sharedPayload.description
+          : sanitizeSeed('description', form.description),
+        systemPrompt: isCreateMode
+          ? sharedPayload.systemPrompt
+          : sanitizeSeed('systemPrompt', form.systemPrompt),
         providerId: form.providerId || null,
         model: form.model,
-        temperature: form.temperatureEnabled ? form.temperature : '',
-        maxCompletionTokens: form.maxCompletionTokensEnabled ? form.maxCompletionTokens : '',
-        topP: form.topPEnabled ? form.topP : '',
-        contextCount: form.contextCountEnabled ? form.contextCount : '',
-        systemPrompt: form.systemPrompt,
         group: form.group,
-      })
+      }
+      if (isCreateMode) {
+        onCreate?.(assistantPayload)
+      } else {
+        commit(assistantPayload)
+      }
     }
     onOpenChange(false)
   }
@@ -329,7 +367,13 @@ export function AssistantSettingsDialog({
       <DialogContent className="sm:max-w-[60vw] h-[70vh] flex flex-col p-0">
         <DialogHeader className="border-b px-6 py-4">
           <DialogTitle>
-            {isCreateMode ? t('assistant.settings.createTitle') : form.name}
+            {isCreateMode
+              ? isTemplate
+                ? t('library.editor.title.createTemplate')
+                : t('assistant.settings.createTitle')
+              : isTemplate
+                ? t('library.editor.title.editTemplate')
+                : form.name}
           </DialogTitle>
         </DialogHeader>
 
@@ -388,63 +432,86 @@ export function AssistantSettingsDialog({
                     />
                   </div>
 
-                  {/* Group */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">{t('assistant.settings.group')}</Label>
-                    <Input
-                      value={form.group}
-                      onChange={(e) => change('group', e.target.value)}
-                      onBlur={() => handleBlur('group')}
-                      placeholder={t('assistant.settings.groupPlaceholder')}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      {t('assistant.settings.groupHint')}
-                    </p>
-                  </div>
+                  {/* Group / Category */}
+                  {isTemplate ? (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">{t('library.editor.category.label')}</Label>
+                      <Input
+                        value={form.category}
+                        onChange={(e) => change('category', e.target.value)}
+                        placeholder="general / writing / coding / ..."
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">{t('assistant.settings.group')}</Label>
+                      <Input
+                        value={form.group}
+                        onChange={(e) => change('group', e.target.value)}
+                        onBlur={() => handleBlur('group')}
+                        placeholder={t('assistant.settings.groupPlaceholder')}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {t('assistant.settings.groupHint')}
+                      </p>
+                    </div>
+                  )}
                 </>
               )}
 
               {activeTab === 'model' && (
                 <>
-                  {/* Model selector (grouped by provider) */}
-                  <div className="space-y-1.5">
-                    <Label className="text-sm">{t('assistant.settings.model')}</Label>
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-accent"
-                      onClick={() => setModelPickerOpen(true)}>
-                      {form.providerId && form.model ? (
-                        <>
-                          <span
-                            className="inline-block h-2 w-2 shrink-0 rounded-full"
-                            style={{ backgroundColor: selectedTemplate?.color ?? '#6b7280' }}
-                          />
-                          <span className="flex-1 truncate text-left">{form.model}</span>
-                        </>
-                      ) : (
-                        <span className="flex-1 text-left text-muted-foreground">
-                          {t('assistant.settings.selectModel')}
-                        </span>
+                  {isTemplate ? (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">
+                        {t('library.editor.recommendedModel.label')}
+                      </Label>
+                      <Input
+                        value={form.recommendedModel}
+                        onChange={(e) => change('recommendedModel', e.target.value)}
+                        placeholder={t('library.editor.recommendedModel.placeholder')}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">{t('assistant.settings.model')}</Label>
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-accent"
+                        onClick={() => setModelPickerOpen(true)}>
+                        {form.providerId && form.model ? (
+                          <>
+                            <span
+                              className="inline-block h-2 w-2 shrink-0 rounded-full"
+                              style={{ backgroundColor: selectedTemplate?.color ?? '#6b7280' }}
+                            />
+                            <span className="flex-1 truncate text-left">{form.model}</span>
+                          </>
+                        ) : (
+                          <span className="flex-1 text-left text-muted-foreground">
+                            {t('assistant.settings.selectModel')}
+                          </span>
+                        )}
+                        <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
+                      </button>
+                      <ModelPickerDialog
+                        open={modelPickerOpen}
+                        onOpenChange={setModelPickerOpen}
+                        selectedProviderId={form.providerId || null}
+                        selectedModelId={form.model}
+                        onSelect={(providerId, modelId) => {
+                          change('providerId', providerId)
+                          change('model', modelId)
+                          commit({ providerId: providerId || null, model: modelId })
+                        }}
+                      />
+                      {!isModelSelected && (
+                        <p className="text-sm text-destructive">
+                          {t('assistant.settings.modelRequired')}
+                        </p>
                       )}
-                      <ChevronDown className="h-3 w-3 shrink-0 opacity-50" />
-                    </button>
-                    <ModelPickerDialog
-                      open={modelPickerOpen}
-                      onOpenChange={setModelPickerOpen}
-                      selectedProviderId={form.providerId || null}
-                      selectedModelId={form.model}
-                      onSelect={(providerId, modelId) => {
-                        change('providerId', providerId)
-                        change('model', modelId)
-                        commit({ providerId: providerId || null, model: modelId })
-                      }}
-                    />
-                    {!isModelSelected && (
-                      <p className="text-sm text-destructive">
-                        {t('assistant.settings.modelRequired')}
-                      </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Temperature */}
                   <div className="space-y-2">
@@ -631,7 +698,10 @@ export function AssistantSettingsDialog({
             <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
             {t('assistant.settings.resetButton')}
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={isCreateMode && !isModelSelected}>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={isCreateMode && !isTemplate && !isModelSelected}>
             <Save className="mr-1.5 h-3.5 w-3.5" />
             {t('assistant.settings.saveButton')}
           </Button>

@@ -21,6 +21,9 @@ import type {
   ModelDefinition,
   ModelGroup,
   Assistant,
+  ImportPlan,
+  ImportResult,
+  ImportResolution,
   Phrase,
   FileData,
   SaveFilePayload,
@@ -288,6 +291,48 @@ const api = {
   reorderAssistants: (ids: string[]): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.ASSISTANT_REORDER, ids),
 
+  // Assistant Templates (library)
+  assistantTemplate: {
+    list: (): Promise<IpcResult<Assistant[]>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_LIST),
+
+    get: (id: string): Promise<IpcResult<Assistant | undefined>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_GET, id),
+
+    create: (data: Partial<Assistant> & { name: string }): Promise<IpcResult<Assistant>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_CREATE, data),
+
+    update: (id: string, data: Partial<Assistant>): Promise<IpcResult<Assistant | undefined>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_UPDATE, id, data),
+
+    delete: (id: string): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_DELETE, id),
+
+    reorder: (ids: string[]): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_REORDER, ids),
+
+    addFromTemplate: (templateId: string): Promise<IpcResult<Assistant>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_ADD_FROM_TEMPLATE, templateId),
+
+    saveAsTemplate: (assistantId: string): Promise<IpcResult<Assistant>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_SAVE_AS_TEMPLATE, assistantId),
+
+    exportPack: (templateIds: string[]): Promise<IpcResult<{ filePath: string } | null>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_EXPORT_PACK, templateIds),
+
+    importPack: (): Promise<IpcResult<ImportPlan | null>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_IMPORT_PACK),
+
+    applyImport: (payload: {
+      ok: Assistant[]
+      resolutions: Array<ImportResolution & { template?: Assistant }>
+    }): Promise<IpcResult<ImportResult>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_APPLY_IMPORT, payload),
+
+    resetBuiltins: (mode: 'overwrite' | 'restore-deleted'): Promise<IpcResult<void>> =>
+      ipcRenderer.invoke(IpcChannels.ASSISTANT_TEMPLATE_RESET_BUILTINS, mode),
+  },
+
   // Chat (streaming)
   sendMessage: (payload: SendMessagePayload): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.CHAT_SEND_MESSAGE, payload),
@@ -393,6 +438,8 @@ const api = {
   clearSettings: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_CLEAR_SETTINGS),
 
   resetApp: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_RESET),
+
+  relaunchApp: (): Promise<IpcResult<void>> => ipcRenderer.invoke(IpcChannels.APP_RELAUNCH),
 
   copyPngToClipboard: (payload: ClipboardImagePayload): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.CLIPBOARD_WRITE_IMAGE, payload),

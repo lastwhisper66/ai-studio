@@ -283,13 +283,16 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
 
   // ---------- assistants ----------
   const upsertAssistant = db.prepare(`
-    INSERT INTO assistants (id, name, icon, description, system_prompt, provider_id, model,
+    INSERT INTO assistants (id, kind, name, icon, description, system_prompt, provider_id, model,
       temperature, max_completion_tokens, top_p, context_count, prompt_suggestions,
-      is_default, group_name, sort_order)
-    VALUES (@id, @name, @icon, @description, @system_prompt, @provider_id, @model,
+      is_default, group_name, category, recommended_model, source, is_builtin,
+      source_template_id, sort_order)
+    VALUES (@id, @kind, @name, @icon, @description, @system_prompt, @provider_id, @model,
       @temperature, @max_completion_tokens, @top_p, @context_count, @prompt_suggestions,
-      @is_default, @group_name, @sort_order)
+      @is_default, @group_name, @category, @recommended_model, @source, @is_builtin,
+      @source_template_id, @sort_order)
     ON CONFLICT(id) DO UPDATE SET
+      kind = excluded.kind,
       name = excluded.name,
       icon = excluded.icon,
       description = excluded.description,
@@ -303,12 +306,18 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
       prompt_suggestions = excluded.prompt_suggestions,
       is_default = excluded.is_default,
       group_name = excluded.group_name,
+      category = excluded.category,
+      recommended_model = excluded.recommended_model,
+      source = excluded.source,
+      is_builtin = excluded.is_builtin,
+      source_template_id = excluded.source_template_id,
       sort_order = excluded.sort_order,
       updated_at = datetime('now')
   `)
   for (const a of snapshot.assistants) {
     upsertAssistant.run({
       id: a.id,
+      kind: a.kind ?? 'assistant',
       name: a.name,
       icon: a.icon ?? '',
       description: a.description ?? '',
@@ -322,6 +331,11 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
       prompt_suggestions: JSON.stringify(a.promptSuggestions ?? []),
       is_default: a.isDefault ? 1 : 0,
       group_name: a.group ?? '',
+      category: a.category ?? '',
+      recommended_model: a.recommendedModel ?? '',
+      source: a.source ?? 'user',
+      is_builtin: a.isBuiltin ? 1 : 0,
+      source_template_id: a.sourceTemplateId ?? null,
       sort_order: a.sortOrder,
     })
   }
