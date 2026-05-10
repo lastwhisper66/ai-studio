@@ -7,6 +7,7 @@ import { registerModelHandlers } from './model-handlers'
 import { registerModelDefinitionHandlers } from './model-definition-handlers'
 import { registerModelGroupHandlers } from './model-group-handlers'
 import { registerAssistantHandlers } from './assistant-handlers'
+import { registerAssistantTemplateHandlers } from './assistant-template-handlers'
 import { registerWindowHandlers } from './window-handlers'
 import { registerTranslateHandlers } from './translate-handlers'
 import { registerPhraseHandlers } from './phrase-handlers'
@@ -34,6 +35,7 @@ export function registerAllIpcHandlers(): void {
   registerModelDefinitionHandlers()
   registerModelGroupHandlers()
   registerAssistantHandlers()
+  registerAssistantTemplateHandlers()
   registerWindowHandlers()
   registerTranslateHandlers()
   registerPhraseHandlers()
