@@ -93,14 +93,10 @@ export function TemplateCard({
         <DropdownMenuItem onClick={() => onExport(template)}>
           {t('library.card.exportJson')}
         </DropdownMenuItem>
-        {!template.isBuiltin && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onClick={() => onDelete(template)}>
-              {t('library.card.delete')}
-            </DropdownMenuItem>
-          </>
-        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive" onClick={() => onDelete(template)}>
+          {t('library.card.delete')}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )
