@@ -93,7 +93,7 @@ function stateFromAssistant(a: Assistant): FormState {
     topPEnabled: a.topP !== '',
     contextCount: a.contextCount || '10',
     contextCountEnabled: a.contextCount !== '',
-    systemPrompt: a.systemPrompt,
+    systemPrompt: translateSeed(a.systemPrompt),
     group: a.group,
     category: a.category,
     recommendedModel: a.recommendedModel,
@@ -188,7 +188,10 @@ export function AssistantSettingsDialog({
   // Keep `seed.*` keys intact when the user didn't actually edit a display
   // value. `assistant` holds the original raw strings; we compare the form
   // value against its translated form and, if unchanged, commit the raw key.
-  const sanitizeSeed = (field: 'name' | 'description', display: string): string => {
+  const sanitizeSeed = (
+    field: 'name' | 'description' | 'systemPrompt',
+    display: string,
+  ): string => {
     if (!assistant) return display
     const raw = assistant[field]
     if (
@@ -212,7 +215,7 @@ export function AssistantSettingsDialog({
         commit({ description: sanitizeSeed('description', value as string) })
         break
       case 'systemPrompt':
-        commit({ systemPrompt: value as string })
+        commit({ systemPrompt: sanitizeSeed('systemPrompt', value as string) })
         break
       case 'model':
         commit({ model: value as string })
@@ -282,6 +285,13 @@ export function AssistantSettingsDialog({
     if (isTemplate) {
       const templatePayload = {
         ...sharedPayload,
+        name: isCreateMode ? sharedPayload.name : sanitizeSeed('name', sharedPayload.name),
+        description: isCreateMode
+          ? sharedPayload.description
+          : sanitizeSeed('description', sharedPayload.description),
+        systemPrompt: isCreateMode
+          ? sharedPayload.systemPrompt
+          : sanitizeSeed('systemPrompt', sharedPayload.systemPrompt),
         category: form.category,
         recommendedModel: form.recommendedModel,
       }
@@ -297,6 +307,9 @@ export function AssistantSettingsDialog({
         description: isCreateMode
           ? sharedPayload.description
           : sanitizeSeed('description', form.description),
+        systemPrompt: isCreateMode
+          ? sharedPayload.systemPrompt
+          : sanitizeSeed('systemPrompt', form.systemPrompt),
         providerId: form.providerId || null,
         model: form.model,
         group: form.group,
