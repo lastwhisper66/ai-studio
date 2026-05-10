@@ -6,6 +6,7 @@ import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
+import { useAssistantTemplateStore } from '@renderer/stores/assistantTemplateStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
@@ -25,6 +26,7 @@ function App(): React.JSX.Element {
   const loadSettings = useSettingsStore((s) => s.loadSettings)
   const loadProviders = useProviderStore((s) => s.loadProviders)
   const loadAssistants = useAssistantStore((s) => s.loadAssistants)
+  const loadTemplates = useAssistantTemplateStore((s) => s.loadTemplates)
   const loadPhrases = usePhraseStore((s) => s.loadPhrases)
   const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
   const loadModelGroups = useModelGroupStore((s) => s.load)
@@ -36,6 +38,7 @@ function App(): React.JSX.Element {
     loadSettings()
     loadProviders()
     loadAssistants()
+    loadTemplates()
     loadPhrases()
     loadModelDefinitions()
     loadModelGroups()
@@ -45,6 +48,7 @@ function App(): React.JSX.Element {
     loadSettings,
     loadProviders,
     loadAssistants,
+    loadTemplates,
     loadPhrases,
     loadModelDefinitions,
     loadModelGroups,
