@@ -174,7 +174,7 @@ export function AssistantLibraryView(): React.JSX.Element {
     if (!plan) return
     if (plan.conflicts.length === 0) {
       const r = await applyImport({ ok: plan.ok, resolutions: [] })
-      if (r) setStatusToast(t('library.import.toast.success', r))
+      if (r) setStatusToast(t('library.import.toast.success', { ...r }))
       return
     }
     setPendingOk(plan.ok)
@@ -189,7 +189,7 @@ export function AssistantLibraryView(): React.JSX.Element {
     setImportPlanOpen(false)
     setPendingOk([])
     setConflicts([])
-    if (r) setStatusToast(t('library.import.toast.success', r))
+    if (r) setStatusToast(t('library.import.toast.success', { ...r }))
   }
 
   // ── Editor save callback ─────────────────────────────────
