@@ -5,8 +5,9 @@ import { AppError } from '../errors'
 import { getDb } from './database'
 import { DEFAULT_ASSISTANT_SEED } from './seeds/assistants'
 
-interface AssistantRow {
+export interface AssistantRow {
   id: string
+  kind: string
   name: string
   icon: string
   description: string
@@ -20,20 +21,28 @@ interface AssistantRow {
   prompt_suggestions: string
   is_default: number
   group_name: string
+  category: string
+  recommended_model: string
+  source: string
+  is_builtin: number
+  source_template_id: string | null
   sort_order: number
   created_at: string
   updated_at: string
 }
 
-function rowToAssistant(row: AssistantRow): Assistant {
+export function rowToAssistant(row: AssistantRow): Assistant {
   let promptSuggestions: string[] = []
   try {
     promptSuggestions = JSON.parse(row.prompt_suggestions)
   } catch {
     promptSuggestions = []
   }
+  const kind = row.kind === 'template' ? 'template' : 'assistant'
+  const source = row.source === 'builtin' || row.source === 'imported' ? row.source : 'user'
   return {
     id: row.id,
+    kind,
     name: row.name,
     icon: row.icon ?? '',
     description: row.description,
@@ -47,6 +56,11 @@ function rowToAssistant(row: AssistantRow): Assistant {
     promptSuggestions,
     isDefault: !!row.is_default,
     group: row.group_name,
+    category: row.category ?? '',
+    recommendedModel: row.recommended_model ?? '',
+    source,
+    isBuiltin: !!row.is_builtin,
+    sourceTemplateId: row.source_template_id,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -55,15 +69,17 @@ function rowToAssistant(row: AssistantRow): Assistant {
 
 export function listAssistants(): Assistant[] {
   const rows = getDb()
-    .prepare('SELECT * FROM assistants ORDER BY sort_order ASC, created_at ASC')
+    .prepare(
+      "SELECT * FROM assistants WHERE kind = 'assistant' ORDER BY sort_order ASC, created_at ASC",
+    )
     .all() as AssistantRow[]
   return rows.map(rowToAssistant)
 }
 
 export function getAssistant(id: string): Assistant | undefined {
-  const row = getDb().prepare('SELECT * FROM assistants WHERE id = ?').get(id) as
-    | AssistantRow
-    | undefined
+  const row = getDb()
+    .prepare("SELECT * FROM assistants WHERE id = ? AND kind = 'assistant'")
+    .get(id) as AssistantRow | undefined
   if (!row) return undefined
   return rowToAssistant(row)
 }
