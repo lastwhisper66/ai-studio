@@ -1134,6 +1134,7 @@
     },
     "card": {
       "add": "添加",
+      "addAgain": "再次添加",
       "added": "已添加 ({{count}})",
       "goToChat": "前往对话",
       "viewDetails": "查看详情",

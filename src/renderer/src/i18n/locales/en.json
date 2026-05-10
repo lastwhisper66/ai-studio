@@ -1146,6 +1146,7 @@
     },
     "card": {
       "add": "Add",
+      "addAgain": "Add again",
       "added": "Added ({{count}})",
       "goToChat": "Go to Chat",
       "viewDetails": "View Details",

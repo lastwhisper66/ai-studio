@@ -8,6 +8,7 @@ import { SystemPromptBanner } from './SystemPromptBanner'
 import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
 import { useAutoScroll } from '@renderer/hooks/useAutoScroll'
 import { useConversationStore } from '@renderer/stores/conversationStore'
+import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import type { Message, Assistant } from '@shared/types'
 
 interface MessageListProps {
@@ -42,6 +43,7 @@ export function MessageList({
   onEditSystemPrompt,
 }: MessageListProps): React.JSX.Element {
   const { t } = useTranslation()
+  const st = useSeedTranslator()
   const deleteMessage = useConversationStore((s) => s.deleteMessage)
   const resendMessage = useConversationStore((s) => s.resendMessage)
   const editMessage = useConversationStore((s) => s.editMessage)
@@ -91,7 +93,7 @@ export function MessageList({
         {/* System prompt banner — only when no messages yet */}
         {activeAssistant && onEditSystemPrompt && messages.length === 0 && !isStreaming && (
           <SystemPromptBanner
-            systemPrompt={activeAssistant.systemPrompt}
+            systemPrompt={st(activeAssistant.systemPrompt)}
             onClick={onEditSystemPrompt}
           />
         )}
@@ -107,15 +109,18 @@ export function MessageList({
           <div className="flex items-center justify-center py-12">
             <div className="max-w-md text-center">
               <div className="flex flex-col gap-2">
-                {activeAssistant.promptSuggestions.map((suggestion, i) => (
-                  <Button
-                    key={i}
-                    variant="outline"
-                    className="h-auto justify-start rounded-xl px-4 py-3 text-left"
-                    onClick={() => onSend(suggestion)}>
-                    <span className="line-clamp-2">{suggestion}</span>
-                  </Button>
-                ))}
+                {activeAssistant.promptSuggestions.map((suggestion, i) => {
+                  const translated = st(suggestion)
+                  return (
+                    <Button
+                      key={i}
+                      variant="outline"
+                      className="h-auto justify-start rounded-xl px-4 py-3 text-left"
+                      onClick={() => onSend(translated)}>
+                      <span className="line-clamp-2">{translated}</span>
+                    </Button>
+                  )
+                })}
               </div>
             </div>
           </div>

@@ -75,6 +75,15 @@ export function TemplateCard({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        {derived.length > 0 && (
+          <>
+            <DropdownMenuItem onClick={() => onAdd(template)}>
+              <Plus className="h-3.5 w-3.5" />
+              {t('library.card.addAgain')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem onClick={() => onEdit(template)}>
           {t('library.card.editTemplate')}
         </DropdownMenuItem>
