@@ -119,6 +119,7 @@ function createTables(): void {
 
     CREATE TABLE IF NOT EXISTS assistants (
       id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL DEFAULT 'assistant',
       name TEXT NOT NULL,
       icon TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL DEFAULT '',
@@ -132,10 +133,18 @@ function createTables(): void {
       prompt_suggestions TEXT NOT NULL DEFAULT '[]',
       is_default INTEGER NOT NULL DEFAULT 0,
       group_name TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT '',
+      recommended_model TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT 'user',
+      is_builtin INTEGER NOT NULL DEFAULT 0,
+      source_template_id TEXT,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE INDEX IF NOT EXISTS idx_assistants_kind     ON assistants(kind);
+    CREATE INDEX IF NOT EXISTS idx_assistants_category ON assistants(category);
   `)
 
   database.exec(`
