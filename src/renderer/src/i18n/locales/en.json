@@ -44,6 +44,7 @@
   "nav": {
     "chat": "Chat",
     "translate": "Translate",
+    "library": "Library",
     "settings": "Settings",
     "theme": "Theme"
   },
@@ -348,6 +349,26 @@
       "dangerZone": {
         "title": "Danger Zone",
         "description": "These actions are irreversible. Export a backup first if you might need it later."
+      },
+      "builtinTemplates": {
+        "title": "Built-in Templates",
+        "description": "Reset or restore the templates that ship with the app.",
+        "success": "Done.",
+        "errors": { "failed": "Operation failed" },
+        "overwrite": {
+          "title": "Overwrite modified built-ins",
+          "description": "Restore all built-in templates to factory content. Local edits to built-ins will be lost.",
+          "button": "Overwrite",
+          "confirmTitle": "Confirm overwrite?",
+          "confirm": "This will overwrite any edits you made to the built-in templates and cannot be undone."
+        },
+        "restore": {
+          "title": "Restore deleted built-ins",
+          "description": "Re-insert built-in templates that were deleted. Existing templates are not modified.",
+          "button": "Restore",
+          "confirmTitle": "Confirm restore?",
+          "confirm": "This only re-adds deleted built-ins; existing templates are untouched."
+        }
       },
       "clearChats": {
         "title": "Clear All Chats",
@@ -1020,5 +1041,165 @@
     "installLater": "Install later",
     "errorTitle": "Update check failed",
     "retry": "Retry"
+  },
+  "library": {
+    "openShortcut": "Library →",
+    "tabs": {
+      "discover": "Discover",
+      "myAssistants": "My Assistants"
+    },
+    "toolbar": {
+      "newTemplate": "New Template",
+      "import": "Import"
+    },
+    "search": {
+      "placeholder": "Search name, description, prompt…"
+    },
+    "categories": {
+      "all": "All",
+      "general": "General",
+      "writing": "Writing",
+      "coding": "Coding",
+      "translation": "Translation",
+      "learning": "Learning",
+      "creative": "Creative",
+      "business": "Business",
+      "life": "Life"
+    },
+    "card": {
+      "add": "Add",
+      "added": "Added ({{count}})",
+      "goToChat": "Go to Chat",
+      "viewDetails": "View Details",
+      "editTemplate": "Edit",
+      "duplicate": "Duplicate",
+      "exportJson": "Export JSON",
+      "delete": "Delete",
+      "saveAsTemplate": "Save as Template",
+      "setAsDefault": "Set as Default",
+      "copySuffix": "(copy)",
+      "source": {
+        "builtin": "Built-in",
+        "user": "Mine",
+        "imported": "Imported"
+      }
+    },
+    "empty": {
+      "noTemplates": "No templates yet",
+      "noAssistants": "No assistants yet",
+      "noResults": "No results"
+    },
+    "editor": {
+      "title": {
+        "createTemplate": "New Template",
+        "editTemplate": "Edit Template"
+      },
+      "recommendedModel": {
+        "label": "Recommended model (optional)",
+        "placeholder": "e.g. claude-3-5-sonnet"
+      },
+      "category": {
+        "label": "Category"
+      }
+    },
+    "import": {
+      "dialogTitle": "Resolve import conflicts",
+      "applyAll": "Apply to all:",
+      "conflicts": {
+        "idExists": "A template with this ID already exists",
+        "nameExists": "A template with the same name already exists"
+      },
+      "actions": {
+        "skip": "Skip",
+        "overwrite": "Overwrite",
+        "asCopy": "As copy"
+      },
+      "toast": {
+        "success": "Imported {{imported}}, skipped {{skipped}}, overwrote {{overwritten}}"
+      }
+    },
+    "warning": {
+      "needsConfiguration": "Needs configuration"
+    }
+  },
+  "seed": {
+    "templates": {
+      "general": {
+        "name": "General Assistant",
+        "description": "A helpful generalist for everyday questions.",
+        "systemPrompt": "You are a helpful generalist assistant. Answer the user's question clearly, accurately, and concisely.",
+        "suggestions": ["Briefly explain X", "What is Y?", "List the key points about Z"]
+      },
+      "coding": {
+        "name": "Coding Assistant",
+        "description": "Code generation, debugging, refactoring, and review.",
+        "systemPrompt": "You are a senior software engineer. Lead with runnable code and explain key design choices; ask clarifying questions when uncertain.",
+        "suggestions": [
+          "Implement … in TypeScript",
+          "Add tests for this function",
+          "Review this code's error handling"
+        ]
+      },
+      "translator": {
+        "name": "Translator",
+        "description": "High-quality translation that preserves meaning and tone.",
+        "systemPrompt": "You are a professional translator. Output ONLY the translated text — no explanations. Preserve formatting, line breaks, and tone. If the input is already in the target language, output it unchanged.",
+        "suggestions": ["Translate this from Chinese to English", "Translate this PR description"]
+      },
+      "writingEditor": {
+        "name": "Writing Editor",
+        "description": "Edit, polish, and restructure prose.",
+        "systemPrompt": "You are a senior editor. Make the text clearer, more fluent, and more polished while preserving its original meaning and tone. Output only the edited version.",
+        "suggestions": ["Polish this paragraph", "Outline this article", "Tighten to 200 words"]
+      },
+      "summarizer": {
+        "name": "Summarizer",
+        "description": "Distill key points.",
+        "systemPrompt": "You are a summarization expert. Provide a clear, concise summary that captures all key points; use bullet points when helpful.",
+        "suggestions": ["Summarize this article", "List 3 key takeaways"]
+      },
+      "studyCoach": {
+        "name": "Study Coach",
+        "description": "Explain concepts, design exercises, answer questions.",
+        "systemPrompt": "You are a patient tutor. First gauge the learner's current understanding, then teach step-by-step using analogies, examples, and short exercises.",
+        "suggestions": [
+          "Explain X with an analogy",
+          "Give me 5 practice problems on Y",
+          "Plan a 1-week review for Z"
+        ]
+      },
+      "pm": {
+        "name": "Product Manager",
+        "description": "Requirements, PRDs, prioritization.",
+        "systemPrompt": "You are an experienced product manager. Focus on user value, target metrics, and feasibility; when uncertain, list clarifying questions first.",
+        "suggestions": [
+          "Draft a PRD for X",
+          "Prioritize these with RICE",
+          "Design success metrics for this feature"
+        ]
+      },
+      "dataAnalyst": {
+        "name": "Data Analyst",
+        "description": "SQL, statistics, and visualization.",
+        "systemPrompt": "You are a data analyst. Lead with runnable SQL or code; state assumptions and data caveats explicitly.",
+        "suggestions": ["Write SQL to answer X", "Plot this metric in Python"]
+      },
+      "promptEngineer": {
+        "name": "Prompt Engineer",
+        "description": "Review, rewrite, and optimize prompts.",
+        "systemPrompt": "You are a prompt engineer. Analyze intent, input edges, and failure modes; produce a structured, reusable rewrite.",
+        "suggestions": ["Review this prompt", "Make this prompt more robust"]
+      },
+      "creativeWriter": {
+        "name": "Creative Writer",
+        "description": "Stories, dialogue, copy, character work.",
+        "systemPrompt": "You are an imaginative writer. Maintain vivid imagery and consistent character motivation in the user's chosen voice; offer alternatives at key plot beats.",
+        "suggestions": [
+          "Write a short story starting with…",
+          "Write a monologue for this character",
+          "Tense up this dialogue"
+        ]
+      }
+    }
   }
 }
