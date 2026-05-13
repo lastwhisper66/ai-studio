@@ -55,7 +55,7 @@ export const roseTheme: ColorTheme = {
     '--muted-foreground': 'oklch(0.62 0.014 350)',
     '--accent': 'oklch(0.24 0.018 350)',
     '--accent-foreground': 'oklch(0.92 0.006 350)',
-    '--destructive': 'oklch(0.396 0.141 25.723)',
+    '--destructive': 'oklch(0.704 0.191 22.216)',
     '--destructive-foreground': 'oklch(0.985 0 0)',
     '--border': 'oklch(0.26 0.016 350)',
     '--input': 'oklch(0.26 0.016 350)',

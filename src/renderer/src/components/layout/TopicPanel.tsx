@@ -269,7 +269,7 @@ export function TopicPanel({ collapsed }: TopicPanelProps): React.JSX.Element {
                         {t('topic.clearMessages')}
                       </ContextMenuItem>
                       <ContextMenuItem
-                        className="text-destructive focus:text-destructive"
+                        variant="destructive"
                         onClick={() => handleDeleteOpen(conv.id)}>
                         <Trash2 className="mr-2 h-3.5 w-3.5" />
                         {t('common.delete')}

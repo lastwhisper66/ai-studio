@@ -55,7 +55,7 @@ export const mintTheme: ColorTheme = {
     '--muted-foreground': 'oklch(0.62 0.016 158)',
     '--accent': 'oklch(0.24 0.018 158)',
     '--accent-foreground': 'oklch(0.92 0.008 158)',
-    '--destructive': 'oklch(0.396 0.141 25.723)',
+    '--destructive': 'oklch(0.704 0.191 22.216)',
     '--destructive-foreground': 'oklch(0.985 0 0)',
     '--border': 'oklch(0.26 0.016 158)',
     '--input': 'oklch(0.26 0.016 158)',
