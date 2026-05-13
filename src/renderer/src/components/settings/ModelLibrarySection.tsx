@@ -229,7 +229,9 @@ export function ModelLibrarySection(): React.JSX.Element {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete}>{t('common.delete')}</AlertDialogAction>
+            <AlertDialogAction variant="destructive" onClick={confirmDelete}>
+              {t('common.delete')}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

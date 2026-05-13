@@ -82,7 +82,7 @@ export function AssistantCard({
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          variant="destructive"
+          variant={assistant.isDefault ? 'default' : 'destructive'}
           disabled={assistant.isDefault}
           onClick={() => !assistant.isDefault && onDelete(assistant)}>
           <Trash2 className="h-3.5 w-3.5" />
