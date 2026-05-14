@@ -21,6 +21,7 @@ import { registerSelectionHandlers } from './selection-handlers'
 import { registerUserHandlers } from './user-handlers'
 import { registerUpdaterHandlers } from './updater-handlers'
 import { registerBackupHandlers } from './backup-handlers'
+import { registerBuiltinsHandlers } from './builtins-handlers'
 import { installDirtyTracker } from '../backup/dirty-tracker'
 
 export function registerAllIpcHandlers(): void {
@@ -29,6 +30,7 @@ export function registerAllIpcHandlers(): void {
   registerConversationHandlers()
   registerMessageHandlers()
   registerSettingsHandlers()
+  registerBuiltinsHandlers()
   registerChatHandlers()
   registerProviderHandlers()
   registerModelHandlers()
