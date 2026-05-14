@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { QuickAction } from '@shared/types'
 import { getDb } from './database'
-import { QUICK_ACTION_SEEDS } from './seeds/actions'
+import { QUICK_ACTIONS } from '../builtins'
 
 interface QuickActionRow {
   id: string
@@ -140,7 +140,7 @@ export function seedQuickActions(): void {
   )
   // Only insert missing built-ins; existing rows may contain user-edited prompts.
   const seed = db.transaction(() => {
-    for (const b of QUICK_ACTION_SEEDS) {
+    for (const b of QUICK_ACTIONS) {
       stmt.run(b.id, b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, now, now)
     }
   })
@@ -157,7 +157,7 @@ const OLD_IMAGE_TRANSLATE_PROMPTS = [
 
 export function migrateBuiltinTranslatePrompts(): void {
   const db = getDb()
-  for (const seed of QUICK_ACTION_SEEDS) {
+  for (const seed of QUICK_ACTIONS) {
     if (!seed.id.includes('translate')) continue
     const oldPrompts =
       seed.id === 'builtin-image-translate' ? OLD_IMAGE_TRANSLATE_PROMPTS : OLD_TRANSLATE_PROMPTS
@@ -168,4 +168,20 @@ export function migrateBuiltinTranslatePrompts(): void {
       ).run(seed.systemPrompt, seed.id, oldPrompt)
     }
   }
+}
+
+/** Force-overwrite every is_builtin=1 quick_action row with current source values. */
+export function applyBuiltinQuickActionsUpdate(): void {
+  const db = getDb()
+  const stmt = db.prepare(
+    `UPDATE quick_actions SET
+       name = ?, description = ?, system_prompt = ?, icon = ?, sort_order = ?,
+       updated_at = datetime('now')
+     WHERE id = ? AND is_builtin = 1`,
+  )
+  db.transaction(() => {
+    for (const b of QUICK_ACTIONS) {
+      stmt.run(b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, b.id)
+    }
+  })()
 }
