@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { QuickAction } from '@shared/types'
 import { getDb } from './database'
-import { QUICK_ACTION_SEEDS } from './seeds/actions'
+import { QUICK_ACTIONS } from '../builtins'
 
 interface QuickActionRow {
   id: string
@@ -140,32 +140,25 @@ export function seedQuickActions(): void {
   )
   // Only insert missing built-ins; existing rows may contain user-edited prompts.
   const seed = db.transaction(() => {
-    for (const b of QUICK_ACTION_SEEDS) {
+    for (const b of QUICK_ACTIONS) {
       stmt.run(b.id, b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, now, now)
     }
   })
   seed()
 }
 
-const OLD_TRANSLATE_PROMPTS = [
-  'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
-]
-
-const OLD_IMAGE_TRANSLATE_PROMPTS = [
-  'You are a professional translator. Translate the text or image content sent by the user into the language specified in the follow-up instruction. If the content is already in that language, output it unchanged. Only output the translation, nothing else.',
-]
-
-export function migrateBuiltinTranslatePrompts(): void {
+/** Force-overwrite every is_builtin=1 quick_action row with current source values. */
+export function applyBuiltinQuickActionsUpdate(): void {
   const db = getDb()
-  for (const seed of QUICK_ACTION_SEEDS) {
-    if (!seed.id.includes('translate')) continue
-    const oldPrompts =
-      seed.id === 'builtin-image-translate' ? OLD_IMAGE_TRANSLATE_PROMPTS : OLD_TRANSLATE_PROMPTS
-    for (const oldPrompt of oldPrompts) {
-      db.prepare(
-        `UPDATE quick_actions SET system_prompt = ?, updated_at = datetime('now')
-         WHERE id = ? AND is_builtin = 1 AND system_prompt = ?`,
-      ).run(seed.systemPrompt, seed.id, oldPrompt)
+  const stmt = db.prepare(
+    `UPDATE quick_actions SET
+       name = ?, description = ?, system_prompt = ?, icon = ?, sort_order = ?,
+       updated_at = datetime('now')
+     WHERE id = ? AND is_builtin = 1`,
+  )
+  db.transaction(() => {
+    for (const b of QUICK_ACTIONS) {
+      stmt.run(b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, b.id)
     }
-  }
+  })()
 }

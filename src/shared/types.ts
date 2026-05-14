@@ -681,3 +681,18 @@ export interface BackupProgress {
   /** 0–100; absent for indeterminate phases. */
   percent?: number
 }
+
+// ── Builtin presets (assistant templates / quick & selection actions) ────────
+export type BuiltinCategory = 'templates' | 'quickActions' | 'selectionActions'
+
+export interface BuiltinCategoryStatus {
+  hasUpdate: boolean
+  currentVersion: number
+  appliedVersion: number
+}
+
+export interface BuiltinUpdatesStatus {
+  templates: BuiltinCategoryStatus
+  quickActions: BuiltinCategoryStatus
+  selectionActions: BuiltinCategoryStatus
+}

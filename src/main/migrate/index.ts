@@ -13,10 +13,19 @@
 
 import { migrateBackupSettings } from './backup-settings'
 import { migrateAssistantLibraryFields } from './assistant-library-fields'
+import { cleanupSeedI18nKeys } from './cleanup-seed-i18n-keys'
+import { initBuiltinAppliedVersions } from './init-builtin-applied-versions'
 
-export { migrateBackupSettings, migrateAssistantLibraryFields }
+export {
+  migrateBackupSettings,
+  migrateAssistantLibraryFields,
+  cleanupSeedI18nKeys,
+  initBuiltinAppliedVersions,
+}
 
 export function runMigrations(): void {
   migrateBackupSettings()
   migrateAssistantLibraryFields()
+  cleanupSeedI18nKeys() // Must run AFTER assistant-library-fields seeds templates.
+  initBuiltinAppliedVersions() // Idempotent; runs every boot but writes only on first.
 }

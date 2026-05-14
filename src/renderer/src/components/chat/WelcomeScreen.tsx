@@ -1,7 +1,6 @@
 import { Lightbulb, Code2, MessageSquare } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import type { Assistant } from '@shared/types'
 
 interface WelcomeScreenProps {
@@ -16,7 +15,6 @@ export function WelcomeScreen({
   onSelectAssistant,
 }: WelcomeScreenProps): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
 
   const suggestions = [
     {
@@ -57,11 +55,9 @@ export function WelcomeScreen({
                   onClick={() => onSelectAssistant(a.id)}
                   className="flex items-center gap-2.5 rounded-xl border bg-card/50 px-3 py-2.5 text-left transition-colors hover:bg-accent">
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{st(a.name)}</div>
+                    <div className="truncate text-sm font-medium">{a.name}</div>
                     {a.description && (
-                      <div className="truncate text-xs text-muted-foreground">
-                        {st(a.description)}
-                      </div>
+                      <div className="truncate text-xs text-muted-foreground">{a.description}</div>
                     )}
                   </div>
                 </button>

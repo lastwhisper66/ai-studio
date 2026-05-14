@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import type { SelectionAction } from '@shared/types'
 import { getDb } from './database'
-import { SELECTION_ACTION_SEEDS } from './seeds/actions'
+import { SELECTION_ACTIONS } from '../builtins'
 
 interface SelectionActionRow {
   id: string
@@ -160,7 +160,7 @@ export function seedSelectionActions(): void {
   )
   // Only insert missing built-ins; existing rows may contain user-edited prompts.
   const seed = db.transaction(() => {
-    for (const b of SELECTION_ACTION_SEEDS) {
+    for (const b of SELECTION_ACTIONS) {
       stmt.run(b.id, b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, now, now)
     }
   })
@@ -168,19 +168,20 @@ export function seedSelectionActions(): void {
   invalidateCache()
 }
 
-const OLD_SELECTION_TRANSLATE_PROMPTS = [
-  'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
-]
-
-export function migrateBuiltinSelectionTranslatePrompts(): void {
+/** Force-overwrite every is_builtin=1 selection_action row with current source values. */
+export function applyBuiltinSelectionActionsUpdate(): void {
   const db = getDb()
-  const seed = SELECTION_ACTION_SEEDS.find((s) => s.id === 'builtin-sel-translate')
-  if (!seed) return
-  for (const oldPrompt of OLD_SELECTION_TRANSLATE_PROMPTS) {
-    db.prepare(
-      `UPDATE selection_actions SET system_prompt = ?, updated_at = datetime('now')
-       WHERE id = ? AND is_builtin = 1 AND system_prompt = ?`,
-    ).run(seed.systemPrompt, seed.id, oldPrompt)
-  }
+  const stmt = db.prepare(
+    `UPDATE selection_actions SET
+       name = ?, description = ?, system_prompt = ?, icon = ?, sort_order = ?,
+       updated_at = ?
+     WHERE id = ? AND is_builtin = 1`,
+  )
+  const now = new Date().toISOString()
+  db.transaction(() => {
+    for (const b of SELECTION_ACTIONS) {
+      stmt.run(b.name, b.description, b.systemPrompt, b.icon, b.sortOrder, now, b.id)
+    }
+  })()
   invalidateCache()
 }

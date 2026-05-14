@@ -12,6 +12,7 @@ import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
 import { initBackupStore } from '@renderer/stores/backupStore'
+import { useBuiltinUpdateStore } from '@renderer/stores/builtinUpdateStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
@@ -31,6 +32,7 @@ function App(): React.JSX.Element {
   const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
   const loadModelGroups = useModelGroupStore((s) => s.load)
   const initKeybindings = useKeybindingStore((s) => s.init)
+  const loadBuiltinStatus = useBuiltinUpdateStore((s) => s.loadStatus)
   const settingsLoaded = useSettingsStore((s) => s.isLoaded)
 
   useEffect(() => {
@@ -42,6 +44,7 @@ function App(): React.JSX.Element {
     loadPhrases()
     loadModelDefinitions()
     loadModelGroups()
+    loadBuiltinStatus()
     initBackupStore()
   }, [
     loadConversations,
@@ -52,6 +55,7 @@ function App(): React.JSX.Element {
     loadPhrases,
     loadModelDefinitions,
     loadModelGroups,
+    loadBuiltinStatus,
   ])
 
   // Refresh settings when the main window regains focus so that changes made

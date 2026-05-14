@@ -6,8 +6,8 @@ import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useAssistantTemplateStore } from '@renderer/stores/assistantTemplateStore'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { AssistantSettingsDialog } from '@renderer/components/chat/AssistantSettingsDialog'
+import { BuiltinUpdateBanner } from '@renderer/components/settings/BuiltinUpdateBanner'
 import { CategorySidebar } from './CategorySidebar'
 import { LibraryToolbar, type LibraryTab } from './LibraryToolbar'
 import { TemplateCard } from './TemplateCard'
@@ -15,10 +15,10 @@ import { AssistantCard } from './AssistantCard'
 import { ImportConflictDialog } from './ImportConflictDialog'
 import { listAllCategories, listAssistantGroups } from './categories'
 
-function matchesSearch(a: Assistant, q: string, st: (s: string) => string): boolean {
+function matchesSearch(a: Assistant, q: string): boolean {
   if (!q) return true
   const needle = q.toLowerCase()
-  const haystack = [st(a.name), st(a.description), a.systemPrompt, ...a.promptSuggestions.map(st)]
+  const haystack = [a.name, a.description, a.systemPrompt, ...a.promptSuggestions]
     .join(' ')
     .toLowerCase()
   return haystack.includes(needle)
@@ -26,7 +26,6 @@ function matchesSearch(a: Assistant, q: string, st: (s: string) => string): bool
 
 export function AssistantLibraryView(): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
 
   const templates = useAssistantTemplateStore((s) => s.templates)
   const createTemplate = useAssistantTemplateStore((s) => s.createTemplate)
@@ -68,14 +67,14 @@ export function AssistantLibraryView(): React.JSX.Element {
   const visibleTemplates = useMemo(() => {
     return templates
       .filter((tpl) => activeCategory === null || tpl.category === activeCategory)
-      .filter((tpl) => matchesSearch(tpl, search, st))
-  }, [templates, activeCategory, search, st])
+      .filter((tpl) => matchesSearch(tpl, search))
+  }, [templates, activeCategory, search])
 
   const visibleAssistants = useMemo(() => {
     return assistants
       .filter((a) => activeCategory === null || a.group === activeCategory)
-      .filter((a) => matchesSearch(a, search, st))
-  }, [assistants, activeCategory, search, st])
+      .filter((a) => matchesSearch(a, search))
+  }, [assistants, activeCategory, search])
 
   // ── Category counts ───────────────────────────────────────
   const categoryCounts = useMemo(() => {
@@ -128,7 +127,7 @@ export function AssistantLibraryView(): React.JSX.Element {
 
   const handleDuplicateTemplate = async (template: Assistant): Promise<void> => {
     await createTemplate({
-      name: `${st(template.name)} ${t('library.card.copySuffix')}`,
+      name: `${template.name} ${t('library.card.copySuffix')}`,
       icon: template.icon,
       description: template.description,
       systemPrompt: template.systemPrompt,
@@ -231,6 +230,7 @@ export function AssistantLibraryView(): React.JSX.Element {
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
+          <BuiltinUpdateBanner category="templates" />
           <LibraryToolbar
             activeTab={tab}
             onTabChange={(next) => {

@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@renderer/components/ui/dropdown-menu'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { AgentCardChassis } from './AgentCardChassis'
 
@@ -35,7 +34,6 @@ export function TemplateCard({
   onDelete,
 }: TemplateCardProps): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
   const assistants = useAssistantStore((s) => s.assistants)
 
   const derived = useMemo(
@@ -104,7 +102,7 @@ export function TemplateCard({
   return (
     <AgentCardChassis
       icon={template.icon}
-      name={st(template.name)}
+      name={template.name}
       topRightBadge={
         template.category ? (
           <Badge variant="outline" className="shrink-0 text-[10px]">
@@ -112,7 +110,7 @@ export function TemplateCard({
           </Badge>
         ) : undefined
       }
-      description={st(template.description)}
+      description={template.description}
       metaSlot={
         <>
           <Badge variant="outline" className="text-[10px]">

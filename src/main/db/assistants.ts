@@ -3,7 +3,7 @@ import type { Assistant } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { getDb } from './database'
-import { DEFAULT_ASSISTANT_SEED } from './seeds/assistants'
+import { DEFAULT_ASSISTANT } from '../builtins'
 
 export interface AssistantRow {
   id: string
@@ -258,11 +258,22 @@ export function seedDefaultAssistant(): void {
          VALUES (?, ?, ?, ?, ?)`,
       )
       .run(
-        DEFAULT_ASSISTANT_SEED.id,
-        DEFAULT_ASSISTANT_SEED.name,
-        DEFAULT_ASSISTANT_SEED.description,
-        DEFAULT_ASSISTANT_SEED.isDefault ? 1 : 0,
-        DEFAULT_ASSISTANT_SEED.sortOrder,
+        DEFAULT_ASSISTANT.id,
+        DEFAULT_ASSISTANT.name,
+        DEFAULT_ASSISTANT.description,
+        DEFAULT_ASSISTANT.isDefault ? 1 : 0,
+        DEFAULT_ASSISTANT.sortOrder,
       )
   }
+}
+
+/** Force-overwrite the default-assistant row's name/description to current source values. */
+export function applyDefaultAssistantUpdate(): void {
+  getDb()
+    .prepare(
+      `UPDATE assistants
+         SET name = ?, description = ?, updated_at = datetime('now')
+       WHERE id = ?`,
+    )
+    .run(DEFAULT_ASSISTANT.name, DEFAULT_ASSISTANT.description, DEFAULT_ASSISTANT.id)
 }

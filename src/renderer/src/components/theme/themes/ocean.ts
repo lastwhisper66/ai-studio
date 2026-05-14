@@ -55,7 +55,7 @@ export const oceanTheme: ColorTheme = {
     '--muted-foreground': 'oklch(0.60 0.028 230)',
     '--accent': 'oklch(0.25 0.042 235)',
     '--accent-foreground': 'oklch(0.92 0.012 225)',
-    '--destructive': 'oklch(0.396 0.141 25.723)',
+    '--destructive': 'oklch(0.704 0.191 22.216)',
     '--destructive-foreground': 'oklch(0.985 0 0)',
     '--border': 'oklch(0.27 0.035 235)',
     '--input': 'oklch(0.27 0.035 235)',

@@ -14,7 +14,6 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { cn } from '@renderer/lib/utils'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
@@ -41,6 +40,7 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useSelectionActionStore } from '@renderer/stores/selectionActionStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
+import { BuiltinUpdateBanner } from '@renderer/components/settings/BuiltinUpdateBanner'
 import { ShortcutRecorder } from '@renderer/components/settings/ShortcutRecorder'
 import { ModelPickerDialog } from '@renderer/components/chat/ModelPickerDialog'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
@@ -81,7 +81,6 @@ function parseProgramList(raw: string | undefined): string[] {
 
 export function SelectionAssistantSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
   const { settings, saveSettings } = useSettingsStore()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -217,8 +216,8 @@ export function SelectionAssistantSection(): React.JSX.Element {
       return
     }
     setEditingAction(action)
-    setFormName(st(action.name))
-    setFormDescription(st(action.description))
+    setFormName(action.name)
+    setFormDescription(action.description)
     setFormSystemPrompt(action.systemPrompt)
     setEditDialogOpen(true)
   }
@@ -226,16 +225,9 @@ export function SelectionAssistantSection(): React.JSX.Element {
   const handleSave = async (): Promise<void> => {
     if (!formName.trim()) return
     if (editingAction) {
-      // Preserve `seed.*` keys when the user opens Edit and saves without
-      // actually changing the display text (see QuickAssistantSection).
-      const name = formName.trim() === st(editingAction.name) ? editingAction.name : formName.trim()
-      const description =
-        formDescription.trim() === st(editingAction.description)
-          ? editingAction.description
-          : formDescription.trim()
       await updateAction(editingAction.id, {
-        name,
-        description,
+        name: formName.trim(),
+        description: formDescription.trim(),
         systemPrompt: formSystemPrompt.trim(),
       })
     } else {
@@ -298,6 +290,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
   return (
     <div className="space-y-5">
+      <BuiltinUpdateBanner category="selectionActions" />
       {/* Header */}
       <div className="rounded-xl border bg-card/50 p-5">
         <h2 className="text-base font-semibold">{t('settings.selectionAssistant.title')}</h2>
@@ -489,7 +482,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{st(action.name)}</p>
+                      <p className="text-sm font-medium">{action.name}</p>
                       {action.isBuiltin && (
                         <span className="bg-primary/10 text-primary rounded px-1.5 py-0.5 text-[10px] font-medium">
                           {t('settings.quickAssistant.builtin')}
@@ -498,7 +491,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
                     </div>
                     {action.description && (
                       <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                        {st(action.description)}
+                        {action.description}
                       </p>
                     )}
                   </div>
