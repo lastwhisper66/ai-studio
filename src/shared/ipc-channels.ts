@@ -202,4 +202,7 @@ export const IpcChannels = {
   UPDATER_OPEN_RELEASE_PAGE: 'updater:open-release-page',
   UPDATER_GET_STATE: 'updater:get-state',
   UPDATER_STATE_CHANGED: 'updater:state-changed',
+  // Builtins (preset library: assistant templates / quick & selection actions)
+  BUILTINS_GET_UPDATES_STATUS: 'builtins:get-updates-status',
+  BUILTINS_APPLY_UPDATE: 'builtins:apply-update',
 } as const

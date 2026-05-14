@@ -62,6 +62,8 @@ import type {
   RemoteType,
   RollbackBackupItem,
   SyncResult,
+  BuiltinCategory,
+  BuiltinUpdatesStatus,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -454,6 +456,13 @@ const api = {
 
   getLatestRelease: (): Promise<IpcResult<AppReleaseInfo>> =>
     ipcRenderer.invoke(IpcChannels.APP_GET_LATEST_RELEASE),
+
+  // Builtins (preset library)
+  getBuiltinUpdatesStatus: (): Promise<IpcResult<BuiltinUpdatesStatus>> =>
+    ipcRenderer.invoke(IpcChannels.BUILTINS_GET_UPDATES_STATUS),
+
+  applyBuiltinUpdate: (category: BuiltinCategory): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.BUILTINS_APPLY_UPDATE, category),
 
   // Zoom
   setZoom: (factor: number): Promise<void> =>
