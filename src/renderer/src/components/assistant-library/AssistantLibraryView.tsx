@@ -7,6 +7,7 @@ import { useAssistantTemplateStore } from '@renderer/stores/assistantTemplateSto
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { AssistantSettingsDialog } from '@renderer/components/chat/AssistantSettingsDialog'
+import { BuiltinUpdateBanner } from '@renderer/components/settings/BuiltinUpdateBanner'
 import { CategorySidebar } from './CategorySidebar'
 import { LibraryToolbar, type LibraryTab } from './LibraryToolbar'
 import { TemplateCard } from './TemplateCard'
@@ -229,6 +230,7 @@ export function AssistantLibraryView(): React.JSX.Element {
         />
 
         <div className="flex min-w-0 flex-1 flex-col">
+          <BuiltinUpdateBanner category="templates" />
           <LibraryToolbar
             activeTab={tab}
             onTabChange={(next) => {

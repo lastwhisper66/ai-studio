@@ -40,6 +40,7 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useSelectionActionStore } from '@renderer/stores/selectionActionStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
+import { BuiltinUpdateBanner } from '@renderer/components/settings/BuiltinUpdateBanner'
 import { ShortcutRecorder } from '@renderer/components/settings/ShortcutRecorder'
 import { ModelPickerDialog } from '@renderer/components/chat/ModelPickerDialog'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
@@ -289,6 +290,7 @@ export function SelectionAssistantSection(): React.JSX.Element {
 
   return (
     <div className="space-y-5">
+      <BuiltinUpdateBanner category="selectionActions" />
       {/* Header */}
       <div className="rounded-xl border bg-card/50 p-5">
         <h2 className="text-base font-semibold">{t('settings.selectionAssistant.title')}</h2>
