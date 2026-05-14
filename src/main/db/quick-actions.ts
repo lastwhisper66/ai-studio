@@ -147,29 +147,6 @@ export function seedQuickActions(): void {
   seed()
 }
 
-const OLD_TRANSLATE_PROMPTS = [
-  'You are a professional translator. Translate the input text into the language specified in the follow-up instruction. If the input is already in that language, output it unchanged. Only output the translation, nothing else. Preserve the original formatting and tone.',
-]
-
-const OLD_IMAGE_TRANSLATE_PROMPTS = [
-  'You are a professional translator. Translate the text or image content sent by the user into the language specified in the follow-up instruction. If the content is already in that language, output it unchanged. Only output the translation, nothing else.',
-]
-
-export function migrateBuiltinTranslatePrompts(): void {
-  const db = getDb()
-  for (const seed of QUICK_ACTIONS) {
-    if (!seed.id.includes('translate')) continue
-    const oldPrompts =
-      seed.id === 'builtin-image-translate' ? OLD_IMAGE_TRANSLATE_PROMPTS : OLD_TRANSLATE_PROMPTS
-    for (const oldPrompt of oldPrompts) {
-      db.prepare(
-        `UPDATE quick_actions SET system_prompt = ?, updated_at = datetime('now')
-         WHERE id = ? AND is_builtin = 1 AND system_prompt = ?`,
-      ).run(seed.systemPrompt, seed.id, oldPrompt)
-    }
-  }
-}
-
 /** Force-overwrite every is_builtin=1 quick_action row with current source values. */
 export function applyBuiltinQuickActionsUpdate(): void {
   const db = getDb()
