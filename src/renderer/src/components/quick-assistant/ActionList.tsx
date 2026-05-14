@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
 import type { QuickAction } from '@shared/types'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { quickActionIconMap, defaultQuickActionIcon } from './icons'
 
 interface ActionListProps {
@@ -18,14 +17,13 @@ export function ActionList({
   onExecute,
 }: ActionListProps): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
 
   return (
     <div className="flex flex-col gap-1 p-2">
       {actions.map((action, index) => {
         const Icon = quickActionIconMap[action.icon] || defaultQuickActionIcon
-        const name = st(action.name)
-        const description = st(action.description)
+        const name = action.name
+        const description = action.description
         return (
           <button
             key={action.id}

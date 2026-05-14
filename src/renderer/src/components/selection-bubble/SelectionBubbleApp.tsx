@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { HelpCircle, Pin, PinOff, Square, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { MarkdownRenderer } from '@renderer/components/chat/MarkdownRenderer'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import {
@@ -467,7 +466,6 @@ function ActionSelect({
   onChange,
   placeholder,
 }: ActionSelectProps): React.JSX.Element {
-  const st = useSeedTranslator()
   const current = actions.find((a) => a.id === currentId)
   const Icon = current
     ? (selectionActionIconMap[current.icon] ?? defaultSelectionActionIcon)
@@ -477,7 +475,7 @@ function ActionSelect({
     <Select value={currentId} onValueChange={onChange}>
       <SelectTrigger className="h-6 w-auto gap-1 border-none px-1.5 text-xs shadow-none focus:ring-0">
         <Icon className="h-3.5 w-3.5" />
-        <span className="font-medium">{current ? st(current.name) : placeholder}</span>
+        <span className="font-medium">{current ? current.name : placeholder}</span>
       </SelectTrigger>
       <SelectContent position="popper">
         {actions.map((a) => {
@@ -486,7 +484,7 @@ function ActionSelect({
             <SelectItem key={a.id} value={a.id}>
               <span className="flex items-center gap-2">
                 <ItemIcon className="h-3.5 w-3.5" />
-                <span>{st(a.name)}</span>
+                <span>{a.name}</span>
               </span>
             </SelectItem>
           )

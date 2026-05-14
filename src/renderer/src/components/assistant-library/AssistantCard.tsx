@@ -11,7 +11,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@renderer/components/ui/dropdown-menu'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { AgentCardChassis } from './AgentCardChassis'
 
@@ -35,7 +34,6 @@ export function AssistantCard({
   onDelete,
 }: AssistantCardProps): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
   const providers = useProviderStore((s) => s.providers)
 
   const providerName = useMemo(() => {
@@ -100,7 +98,7 @@ export function AssistantCard({
   return (
     <AgentCardChassis
       icon={assistant.icon}
-      name={st(assistant.name)}
+      name={assistant.name}
       topRightBadge={
         <div className="flex items-center gap-1">
           {assistant.isDefault && <Star className="h-3.5 w-3.5 fill-current text-amber-500" />}
@@ -111,7 +109,7 @@ export function AssistantCard({
           )}
         </div>
       }
-      description={st(assistant.description)}
+      description={assistant.description}
       metaSlot={
         needsConfig ? (
           <Badge variant="destructive" className="gap-1 text-[10px]">

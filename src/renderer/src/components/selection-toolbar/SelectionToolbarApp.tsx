@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SelectionToolbarPayload } from '@shared/types'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import i18n from '@renderer/i18n'
 import { defaultSelectionActionIcon, selectionActionIconMap } from './icons'
 
@@ -11,7 +10,6 @@ export function SelectionToolbarApp(): React.JSX.Element {
   const readySignalled = useRef(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const lastReportedWidth = useRef(0)
-  const st = useSeedTranslator()
 
   useEffect(() => {
     const unsubscribe = window.api.onSelectionToolbarData((data) => {
@@ -88,8 +86,8 @@ export function SelectionToolbarApp(): React.JSX.Element {
             return (
               <button
                 key={action.id}
-                title={st(action.description) || st(action.name)}
-                aria-label={st(action.name)}
+                title={action.description || action.name}
+                aria-label={action.name}
                 onMouseDown={(e) => {
                   // mousedown (not click) so we trigger before blur-induced hide
                   e.preventDefault()
@@ -97,7 +95,7 @@ export function SelectionToolbarApp(): React.JSX.Element {
                 }}
                 className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md px-2 text-xs transition-colors">
                 <Icon className="h-4 w-4 shrink-0" />
-                <span className="whitespace-nowrap">{st(action.name)}</span>
+                <span className="whitespace-nowrap">{action.name}</span>
               </button>
             )
           })

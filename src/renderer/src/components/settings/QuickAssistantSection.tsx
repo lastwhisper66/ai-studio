@@ -11,7 +11,6 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { Switch } from '@renderer/components/ui/switch'
 import { Label } from '@renderer/components/ui/label'
 import { Button } from '@renderer/components/ui/button'
@@ -44,7 +43,6 @@ const QUICK_ASSISTANT_ACTION = 'toggle-quick-assistant'
 
 export function QuickAssistantSection(): React.JSX.Element {
   const { t } = useTranslation()
-  const st = useSeedTranslator()
   const { settings, saveSettings } = useSettingsStore()
   const providers = useProviderStore((s) => s.providers)
   const models = useProviderStore((s) => s.models)
@@ -117,8 +115,8 @@ export function QuickAssistantSection(): React.JSX.Element {
 
   const openEdit = (action: QuickAction): void => {
     setEditingAction(action)
-    setFormName(st(action.name))
-    setFormDescription(st(action.description))
+    setFormName(action.name)
+    setFormDescription(action.description)
     setFormSystemPrompt(action.systemPrompt)
     setEditDialogOpen(true)
   }
@@ -126,17 +124,9 @@ export function QuickAssistantSection(): React.JSX.Element {
   const handleSave = async (): Promise<void> => {
     if (!formName.trim()) return
     if (editingAction) {
-      // If the user didn't actually edit the display values, keep the
-      // original raw strings (which may be `seed.*` i18n keys) so that the
-      // built-in row stays translatable on language change.
-      const name = formName.trim() === st(editingAction.name) ? editingAction.name : formName.trim()
-      const description =
-        formDescription.trim() === st(editingAction.description)
-          ? editingAction.description
-          : formDescription.trim()
       await updateAction(editingAction.id, {
-        name,
-        description,
+        name: formName.trim(),
+        description: formDescription.trim(),
         systemPrompt: formSystemPrompt.trim(),
       })
     } else {
@@ -280,8 +270,8 @@ export function QuickAssistantSection(): React.JSX.Element {
         <div className="mt-4 space-y-2">
           {actions.map((action) => {
             const Icon = quickActionIconMap[action.icon] || defaultQuickActionIcon
-            const displayName = st(action.name)
-            const displayDesc = st(action.description)
+            const displayName = action.name
+            const displayDesc = action.description
             return (
               <div
                 key={action.id}

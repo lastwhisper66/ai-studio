@@ -1,8 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { RotateCcw, Save, ChevronDown } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import i18n from '@renderer/i18n'
-import { maybeTranslateSeed } from '@renderer/hooks/useSeedTranslator'
 import { Input } from '@renderer/components/ui/input'
 import { Label } from '@renderer/components/ui/label'
 import { Textarea } from '@renderer/components/ui/textarea'
@@ -77,12 +75,10 @@ function defaultFormState(): FormState {
 }
 
 function stateFromAssistant(a: Assistant): FormState {
-  const translateSeed = (v: string): string =>
-    maybeTranslateSeed(v, (key, params) => i18n.t(key, params ?? {}) as string)
   return {
-    name: translateSeed(a.name),
+    name: a.name,
     icon: a.icon ?? '',
-    description: translateSeed(a.description),
+    description: a.description,
     providerId: a.providerId ?? '',
     model: a.model,
     temperature: a.temperature || '0.7',
@@ -93,7 +89,7 @@ function stateFromAssistant(a: Assistant): FormState {
     topPEnabled: a.topP !== '',
     contextCount: a.contextCount || '10',
     contextCountEnabled: a.contextCount !== '',
-    systemPrompt: translateSeed(a.systemPrompt),
+    systemPrompt: a.systemPrompt,
     group: a.group,
     category: a.category,
     recommendedModel: a.recommendedModel,
@@ -185,37 +181,18 @@ export function AssistantSettingsDialog({
     setForm((prev) => (prev ? { ...prev, [field]: value } : prev))
   }
 
-  // Keep `seed.*` keys intact when the user didn't actually edit a display
-  // value. `assistant` holds the original raw strings; we compare the form
-  // value against its translated form and, if unchanged, commit the raw key.
-  const sanitizeSeed = (
-    field: 'name' | 'description' | 'systemPrompt',
-    display: string,
-  ): string => {
-    if (!assistant) return display
-    const raw = assistant[field]
-    if (
-      typeof raw === 'string' &&
-      raw.startsWith('seed.') &&
-      display === maybeTranslateSeed(raw, (k, p) => i18n.t(k, p ?? {}) as string)
-    ) {
-      return raw
-    }
-    return display
-  }
-
   const handleBlur = (field: keyof FormState): void => {
     if (!form) return
     const value = form[field]
     switch (field) {
       case 'name':
-        if (typeof value === 'string' && value.trim()) commit({ name: sanitizeSeed('name', value) })
+        if (typeof value === 'string' && value.trim()) commit({ name: value })
         break
       case 'description':
-        commit({ description: sanitizeSeed('description', value as string) })
+        commit({ description: value as string })
         break
       case 'systemPrompt':
-        commit({ systemPrompt: sanitizeSeed('systemPrompt', value as string) })
+        commit({ systemPrompt: value as string })
         break
       case 'model':
         commit({ model: value as string })
@@ -285,13 +262,6 @@ export function AssistantSettingsDialog({
     if (isTemplate) {
       const templatePayload = {
         ...sharedPayload,
-        name: isCreateMode ? sharedPayload.name : sanitizeSeed('name', sharedPayload.name),
-        description: isCreateMode
-          ? sharedPayload.description
-          : sanitizeSeed('description', sharedPayload.description),
-        systemPrompt: isCreateMode
-          ? sharedPayload.systemPrompt
-          : sanitizeSeed('systemPrompt', sharedPayload.systemPrompt),
         category: form.category,
         recommendedModel: form.recommendedModel,
       }
@@ -303,13 +273,6 @@ export function AssistantSettingsDialog({
     } else {
       const assistantPayload = {
         ...sharedPayload,
-        name: isCreateMode ? sharedPayload.name : sanitizeSeed('name', form.name),
-        description: isCreateMode
-          ? sharedPayload.description
-          : sanitizeSeed('description', form.description),
-        systemPrompt: isCreateMode
-          ? sharedPayload.systemPrompt
-          : sanitizeSeed('systemPrompt', form.systemPrompt),
         providerId: form.providerId || null,
         model: form.model,
         group: form.group,

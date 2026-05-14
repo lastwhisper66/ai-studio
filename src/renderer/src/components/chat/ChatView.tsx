@@ -14,7 +14,6 @@ import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
-import { useSeedTranslator } from '@renderer/hooks/useSeedTranslator'
 import { useUserAvatar } from '@renderer/hooks/useUserAvatar'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
 import { MessageList } from './MessageList'
@@ -32,7 +31,6 @@ interface ChatViewProps {
 export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): React.JSX.Element {
   const { t } = useTranslation()
   const resolveError = useLocalizedError()
-  const st = useSeedTranslator()
   const {
     activeConversationId,
     conversations,
@@ -190,7 +188,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
           <button
             className="flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium transition-colors hover:bg-accent"
             onClick={() => handleOpenSettings()}>
-            <span>{activeAssistant ? st(activeAssistant.name) : t('chat.newChat')}</span>
+            <span>{activeAssistant ? activeAssistant.name : t('chat.newChat')}</span>
           </button>
 
           <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
