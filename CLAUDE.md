@@ -58,6 +58,12 @@ src/
 │   │   ├── openai-response-stream.ts #  OpenAI Responses API streaming (`provider = openai-response`)
 │   │   ├── gemini-stream.ts        #   `@google/genai` streaming
 │   │   └── claude-stream.ts        #   `@anthropic-ai/sdk` streaming
+│   ├── builtins/                   # Source of truth for built-in presets: default assistant + 10 templates + 4 quick actions + 5 selection actions; per-category BUILTIN_*_VERSION constants
+│   │   ├── index.ts                # Aggregating exports + BUILTIN_TEMPLATES_VERSION / BUILTIN_QUICK_ACTIONS_VERSION / BUILTIN_SELECTION_ACTIONS_VERSION
+│   │   ├── default-assistant.ts    # DEFAULT_ASSISTANT (中文)
+│   │   ├── assistant-templates.ts  # ASSISTANT_TEMPLATES (10 个, 中文)
+│   │   ├── quick-actions.ts        # QUICK_ACTIONS (4 个, 英文)
+│   │   └── selection-actions.ts    # SELECTION_ACTIONS (5 个, 英文)
 │   ├── db/
 │   │   ├── database.ts             #   init/close, WAL, schema creation, seeding
 │   │   ├── index.ts                #   Re-exports every CRUD module
@@ -74,7 +80,7 @@ src/
 │   │   ├── translation-history.ts
 │   │   ├── quick-actions.ts        #   Built-in + user actions for Quick Assistant
 │   │   ├── selection-actions.ts    #   Built-in + user actions for Selection Assistant
-│   │   └── seeds/                  #   `providers.ts`, `actions.ts`, `assistants.ts`, `catalogs.ts`, `index.ts`
+│   │   └── seeds/                  #   `providers.ts`, `catalogs.ts`, `index.ts`
 │   ├── migrate/                    # Boot-time, idempotent data migrations. `index.ts` exports `runMigrations()` (called once after `initDatabase()` in `main/index.ts`); each migration lives in its own file (e.g. `backup-settings.ts`). Add new migrations here.
 │   ├── ipc/                        # 21 handler files; one per domain — see "IPC Channels" below
 │   └── utils/
@@ -166,6 +172,7 @@ All channel names are constants in `src/shared/ipc-channels.ts` (`IpcChannels` o
 | **selection-bubble**       | `ready`, `data` (push), `close`, `set-pinned`, `set-streaming`                                                                                                                                                                 |
 | **selection-action**       | CRUD: `list`, `create`, `update`, `delete`, `reorder`                                                                                                                                                                          |
 | **selection** (streaming)  | `request`, `stop`, push `chunk`, `end`, `error`. Toggle/runtime: `toggle`, `update-shortcut`, push `state-changed`, `refresh-filter`                                                                                           |
+| **builtins**               | `get-updates-status`, `apply-update`                                                                                                                                                                                           |
 
 Streaming responses always go via event push, never request-response — abort with `chat:stop-generation` / `translate:stop` / `quick-assistant:stop` / `selection:stop` (each routes to its own `AbortController`).
 
@@ -287,6 +294,7 @@ npm run build:linux       # Linux build (untested in CI)
 - **AI calls**: only in `src/main/ai/`. Never import an AI SDK from preload or renderer.
 - **DB access**: only in `src/main/db/`. Renderer talks via IPC.
 - **Boot-time migrations**: any one-shot, idempotent data migration (settings reshape, schema fixups, file moves) lives in `src/main/migrate/`. Add a new file per migration and register it in `src/main/migrate/index.ts` `runMigrations()`. Migrations MUST be idempotent — they run on every boot.
+- **Built-in presets** (assistant templates / quick actions / selection actions / default assistant): the single source of truth is `src/main/builtins/`. DB rows are populated via `INSERT OR IGNORE` on boot, so user edits to built-ins are never auto-overwritten. To roll a content change out to existing installs, bump the corresponding `BUILTIN_TEMPLATES_VERSION` / `BUILTIN_QUICK_ACTIONS_VERSION` / `BUILTIN_SELECTION_ACTIONS_VERSION` in `src/main/builtins/index.ts`; the relevant settings section will then display a "sync to latest" banner. The user must explicitly confirm sync — boot never overwrites their edits.
 - **IPC plumbing**: every new channel must be declared in `src/shared/ipc-channels.ts` `IpcChannels` constant first, then wrapped in `src/preload/index.ts`, then handled in a `src/main/ipc/<domain>-handlers.ts`. Keep one file per domain.
 - **Errors**: throw `AppError` (main) with an `ERROR_CODES` key; handlers wrap it into `IpcResult<T>` with a `LocalizedError` payload. The renderer renders it through `useLocalizedError` so the user sees i18n'd text.
 - **Streaming**: always event-push, never `await` a chunked response over `invoke`. Use a per-domain `AbortController` (one in `chat-handlers`, `translate-handlers`, `quick-assistant-handlers`, `selection-handlers`).
