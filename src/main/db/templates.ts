@@ -5,7 +5,7 @@ import { rowToAssistant, type AssistantRow, listAssistants, getAssistant } from 
 import { listProviders } from './providers'
 import { listAllModels } from './models'
 import { getSetting, setSetting } from './settings'
-import { ASSISTANT_TEMPLATE_SEEDS } from './seeds/assistant-templates'
+import { ASSISTANT_TEMPLATES } from '../builtins'
 
 export interface CreateTemplateData {
   name: string
@@ -236,7 +236,7 @@ export function saveAsTemplate(assistantId: string): Assistant {
 
 // ── Seeding ─────────────────────────────────────────────────────
 
-/** INSERT OR IGNORE the 10 built-in templates with i18n keys. */
+/** INSERT OR IGNORE the 10 built-in templates with literal Chinese values. */
 function insertBuiltinTemplates(): void {
   const db = getDb()
   const stmt = db.prepare(
@@ -249,15 +249,15 @@ function insertBuiltinTemplates(): void {
                ?, ?, 'builtin', 1, NULL, ?)`,
   )
   const seed = db.transaction(() => {
-    ASSISTANT_TEMPLATE_SEEDS.forEach((s, i) => {
+    ASSISTANT_TEMPLATES.forEach((s, i) => {
       stmt.run(
         s.id,
-        s.nameKey,
-        s.iconEmoji,
-        s.descriptionKey,
-        s.systemPromptKey,
+        s.name,
+        s.icon,
+        s.description,
+        s.systemPrompt,
         s.temperature ?? '',
-        JSON.stringify(s.promptSuggestionKeys),
+        JSON.stringify(s.promptSuggestions),
         s.category,
         s.recommendedModel,
         i,
@@ -282,36 +282,39 @@ export function seedAssistantTemplates(): void {
 
 export type ResetBuiltinsMode = 'overwrite' | 'restore-deleted'
 
-export function resetBuiltinTemplates(mode: ResetBuiltinsMode): void {
+/** Force-overwrite every is_builtin=1 template row with current source values. */
+export function applyBuiltinTemplatesUpdate(): void {
   const db = getDb()
+  const stmt = db.prepare(
+    `UPDATE assistants SET
+       name = ?, icon = ?, description = ?, system_prompt = ?,
+       prompt_suggestions = ?, category = ?, recommended_model = ?,
+       temperature = ?,
+       updated_at = datetime('now')
+     WHERE id = ? AND is_builtin = 1 AND kind = 'template'`,
+  )
+  db.transaction(() => {
+    for (const s of ASSISTANT_TEMPLATES) {
+      stmt.run(
+        s.name,
+        s.icon,
+        s.description,
+        s.systemPrompt,
+        JSON.stringify(s.promptSuggestions),
+        s.category,
+        s.recommendedModel,
+        s.temperature ?? '',
+        s.id,
+      )
+    }
+  })()
+}
 
+export function resetBuiltinTemplates(mode: ResetBuiltinsMode): void {
   if (mode === 'overwrite') {
-    const stmt = db.prepare(
-      `UPDATE assistants SET
-         name = ?, icon = ?, description = ?, system_prompt = ?,
-         prompt_suggestions = ?, category = ?, recommended_model = ?,
-         temperature = ?,
-         updated_at = datetime('now')
-       WHERE id = ? AND is_builtin = 1 AND kind = 'template'`,
-    )
-    db.transaction(() => {
-      for (const s of ASSISTANT_TEMPLATE_SEEDS) {
-        stmt.run(
-          s.nameKey,
-          s.iconEmoji,
-          s.descriptionKey,
-          s.systemPromptKey,
-          JSON.stringify(s.promptSuggestionKeys),
-          s.category,
-          s.recommendedModel,
-          s.temperature ?? '',
-          s.id,
-        )
-      }
-    })()
+    applyBuiltinTemplatesUpdate()
     return
   }
-
   // restore-deleted: bypass the one-shot gate to re-INSERT missing built-ins.
   insertBuiltinTemplates()
 }
