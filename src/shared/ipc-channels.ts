@@ -31,6 +31,9 @@ export const IpcChannels = {
   SETTINGS_SET_BATCH: 'settings:set-batch',
   SETTINGS_LANGUAGE_CHANGED: 'settings:language-changed',
   SETTINGS_CHANGED: 'settings:changed',
+  // Tray (main → renderer push)
+  TRAY_NEW_CONVERSATION: 'tray:new-conversation',
+  TRAY_NAVIGATE_SETTINGS: 'tray:navigate-settings',
   // Provider
   PROVIDER_LIST: 'provider:list',
   PROVIDER_GET: 'provider:get',
