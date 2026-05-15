@@ -16,6 +16,26 @@ import { useBuiltinUpdateStore } from '@renderer/stores/builtinUpdateStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
+import type { SettingsSection } from '@renderer/components/settings/SettingsSidebar'
+
+const TRAY_SETTINGS_SECTIONS: ReadonlySet<SettingsSection> = new Set([
+  'provider',
+  'model-library',
+  'model-group',
+  'general',
+  'network',
+  'display',
+  'data',
+  'phrases',
+  'keyboard-shortcuts',
+  'quick-assistant',
+  'selection-assistant',
+  'about',
+])
+
+function isSettingsSection(value: string | undefined): value is SettingsSection {
+  return value !== undefined && TRAY_SETTINGS_SECTIONS.has(value as SettingsSection)
+}
 
 function isFromZoomablePreview(event: WheelEvent): boolean {
   const target = event.target
@@ -72,6 +92,22 @@ function App(): React.JSX.Element {
   useEffect(() => {
     if (settingsLoaded) initKeybindings()
   }, [settingsLoaded, initKeybindings])
+
+  // Tray → renderer bridges: 新建会话 / 跳设置页
+  useEffect(() => {
+    const offNewConv = window.api.onTrayNewConversation(() => {
+      const assistantId = useAssistantStore.getState().activeAssistantId ?? undefined
+      void useConversationStore.getState().createConversation(undefined, assistantId)
+    })
+    const offNavSettings = window.api.onTrayNavigateSettings(({ section }) => {
+      const target: SettingsSection = isSettingsSection(section) ? section : 'general'
+      useSettingsStore.getState().navigateToSettings(target)
+    })
+    return () => {
+      offNewConv()
+      offNavSettings()
+    }
+  }, [])
 
   // Reconcile i18n with the persisted `general.language` setting exactly once
   // after settings load. On a fresh install the setting is empty, so we adopt
