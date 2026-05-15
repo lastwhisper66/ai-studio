@@ -900,8 +900,20 @@
   },
   "tray": {
     "openMainWindow": "Open main window",
+    "newConversation": "New conversation",
+    "screenshotTranslate": "Screenshot translate",
     "enableSelectionAssistant": "Enable selection assistant",
-    "about": "About",
+    "alwaysOnTop": "Always on top",
+    "autoLaunch": "Launch on startup",
+    "autoLaunchDevDisabled": "Launch on startup (disabled in dev)",
+    "closeToTray": "Close to tray",
+    "startMinimized": "Start minimized to tray",
+    "openSettings": "Open settings",
+    "settingsAndMaintenance": "Settings & maintenance",
+    "checkUpdate": "Check for updates",
+    "openDataDir": "Open data folder",
+    "about": "About AI Studio",
+    "version": "v{{version}}",
     "quit": "Quit"
   },
   "dialog": {
