@@ -714,6 +714,20 @@ const api = {
     return () => ipcRenderer.removeListener(IpcChannels.SELECTION_STATE_CHANGED, handler)
   },
 
+  // Tray
+  onTrayNewConversation: (callback: () => void): (() => void) => {
+    const handler = (): void => callback()
+    ipcRenderer.on(IpcChannels.TRAY_NEW_CONVERSATION, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRAY_NEW_CONVERSATION, handler)
+  },
+
+  onTrayNavigateSettings: (callback: (payload: { section?: string }) => void): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, payload: { section?: string }): void =>
+      callback(payload ?? {})
+    ipcRenderer.on(IpcChannels.TRAY_NAVIGATE_SETTINGS, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.TRAY_NAVIGATE_SETTINGS, handler)
+  },
+
   // User profile
   saveUserAvatar: (): Promise<IpcResult<string | null>> =>
     ipcRenderer.invoke(IpcChannels.USER_SAVE_AVATAR),
