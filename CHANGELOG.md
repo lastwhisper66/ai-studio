@@ -2,10 +2,9 @@
 
 ## [1.5.0](https://github.com/lastwhisper66/ai-studio/compare/v1.4.0...v1.5.0) (2026-05-15)
 
-
 ### Features
 
-* trigger release for builtin updates feature ([a1a6c61](https://github.com/lastwhisper66/ai-studio/commit/a1a6c61ba2c6d793d324cab6d296e8567bd05ec8))
+- trigger release for builtin updates feature ([a1a6c61](https://github.com/lastwhisper66/ai-studio/commit/a1a6c61ba2c6d793d324cab6d296e8567bd05ec8))
 
 ## [1.4.0](https://github.com/lastwhisper66/ai-studio/compare/v1.3.0...v1.4.0) (2026-05-10)
 
