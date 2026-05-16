@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.1](https://github.com/lastwhisper66/ai-studio/compare/v1.6.0...v1.6.1) (2026-05-16)
+
+
+### Bug Fixes
+
+* **updater:** use releases.atom to avoid GitHub API rate limit, surface 403 reason ([67f13fe](https://github.com/lastwhisper66/ai-studio/commit/67f13fe91baadbc721c9b5f0c8326516542739f4))
+
 ## [1.6.0](https://github.com/lastwhisper66/ai-studio/compare/v1.5.0...v1.6.0) (2026-05-16)
 
 
