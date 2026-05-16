@@ -344,6 +344,10 @@ function createWindow(): void {
         return
       }
     }
+    // Tear down the tray BEFORE closing the DB. Otherwise the subsequent
+    // `closed` event (fired by app.exit) would call updateTrayMenu(), which
+    // reads settings from a now-closed DB and throws DB_NOT_INITIALIZED.
+    destroyTray()
     try {
       closeDatabase()
     } finally {
