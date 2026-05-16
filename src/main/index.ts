@@ -1,15 +1,4 @@
-import {
-  app,
-  shell,
-  BrowserWindow,
-  screen,
-  globalShortcut,
-  ipcMain,
-  Tray,
-  Menu,
-  nativeImage,
-  dialog,
-} from 'electron'
+import { app, shell, BrowserWindow, screen, globalShortcut, ipcMain } from 'electron'
 import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync, unlinkSync } from 'fs'
 import { join, dirname } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -19,7 +8,7 @@ import { initDatabase, closeDatabase } from './db'
 import { getSetting, setSetting } from './db'
 import { registerAllIpcHandlers } from './ipc'
 import { applySslSetting } from './ai'
-import { initMainI18n, onLanguageChange, t } from './i18n'
+import { initMainI18n, onLanguageChange } from './i18n'
 import { backupSyncService } from './backup/sync-service'
 import { runMigrations } from './migrate'
 import { cleanupStaleAvatarStaging } from './backup/snapshot'
@@ -33,7 +22,6 @@ import {
   initSpellCheck,
   getQuickAssistantEnabled,
   initQuickAssistant,
-  getSelectionAssistantEnabled,
   setMainWindow,
   initAutoUpdateEnabled,
 } from './app-state'
@@ -56,6 +44,7 @@ import {
   refreshSelectionFilterConfig,
   toggleSelectionAssistant,
 } from './selection-service'
+import { createTray, updateTrayMenu, destroyTray } from './tray'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -276,59 +265,12 @@ function resetZoom(win: BrowserWindow): void {
 // ── Window creation ─────────────────────────────────────────────
 
 let isQuitting = false
-let tray: Tray | null = null
 let mainWindow: BrowserWindow | null = null
 
 function showWindow(win: BrowserWindow): void {
   if (win.isMinimized()) win.restore()
   win.show()
   win.focus()
-}
-
-function updateTrayMenu(): void {
-  if (!tray || tray.isDestroyed()) return
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: t('tray.openMainWindow'),
-      click: () => {
-        if (mainWindow) showWindow(mainWindow)
-      },
-    },
-    { type: 'separator' },
-    {
-      label: t('tray.enableSelectionAssistant'),
-      type: 'checkbox',
-      checked: getSelectionAssistantEnabled(),
-      click: () => {
-        const enabled = toggleSelectionAssistant()
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send(IpcChannels.SELECTION_STATE_CHANGED, enabled)
-        }
-        updateTrayMenu()
-      },
-    },
-    { type: 'separator' },
-    {
-      label: t('tray.about'),
-      click: () => {
-        dialog.showMessageBox({
-          type: 'info',
-          title: t('dialog.about.title'),
-          message: `AI Studio v${app.getVersion()}`,
-          detail: t('dialog.about.detail'),
-        })
-      },
-    },
-    { type: 'separator' },
-    {
-      label: t('tray.quit'),
-      click: () => {
-        isQuitting = true
-        app.quit()
-      },
-    },
-  ])
-  tray.setContextMenu(contextMenu)
 }
 
 function createWindow(): void {
@@ -409,6 +351,11 @@ function createWindow(): void {
     }
   })
 
+  win.on('closed', () => {
+    mainWindow = null
+    updateTrayMenu()
+  })
+
   // Notify renderer of maximize/unmaximize state changes
   win.on('maximize', () => {
     win.webContents.send(IpcChannels.WINDOW_MAXIMIZED_CHANGE, true)
@@ -420,6 +367,7 @@ function createWindow(): void {
   // Notify renderer of always-on-top state changes
   win.on('always-on-top-changed', (_event, isAlwaysOnTop) => {
     win.webContents.send(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, isAlwaysOnTop)
+    updateTrayMenu()
   })
 
   win.webContents.setWindowOpenHandler((details) => {
@@ -587,14 +535,13 @@ if (!gotTheLock) {
     initAutoUpdater()
 
     // ── System tray ───────────────────────────────────────────────
-    const iconPath = join(app.getAppPath(), 'resources', 'icon.png')
-    const trayIcon = nativeImage.createFromPath(iconPath)
-    tray = new Tray(trayIcon)
-    tray.setToolTip('AI Studio')
-    updateTrayMenu()
-
-    tray.on('click', () => {
-      if (mainWindow) showWindow(mainWindow)
+    createTray({
+      getMainWindow: () => mainWindow,
+      ensureMainWindow: () => {
+        if (!mainWindow || mainWindow.isDestroyed()) createWindow()
+        return mainWindow!
+      },
+      showWindow,
     })
 
     app.on('activate', () => {
@@ -613,7 +560,7 @@ app.on('before-quit', () => {
 
 app.on('window-all-closed', () => {
   globalShortcut.unregisterAll()
-  tray?.destroy()
+  destroyTray()
   closeDatabase()
   app.quit()
 })

@@ -900,8 +900,20 @@
   },
   "tray": {
     "openMainWindow": "打开主窗口",
+    "newConversation": "新建会话",
+    "screenshotTranslate": "开始截图翻译",
     "enableSelectionAssistant": "启用划词助手",
-    "about": "关于",
+    "alwaysOnTop": "始终置顶主窗",
+    "autoLaunch": "开机自启",
+    "autoLaunchDevDisabled": "开机自启（开发模式不可用）",
+    "closeToTray": "关闭时隐藏到托盘",
+    "startMinimized": "启动时最小化到托盘",
+    "openSettings": "打开设置",
+    "settingsAndMaintenance": "设置与维护",
+    "checkUpdate": "检查更新",
+    "openDataDir": "打开数据目录",
+    "about": "关于 AI Studio",
+    "version": "v{{version}}",
     "quit": "退出"
   },
   "dialog": {
