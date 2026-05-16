@@ -5,7 +5,8 @@
 **Goal:** 把托盘右键菜单从 4 项扩展为 14 项 + 1 个子菜单，覆盖快速操作 / 开关 / 设置入口；并把 settings 副作用与广播抽出为独立模块，让 tray 能订阅"任意设置变化"自动刷新 checkbox。
 
 **Architecture:**
-- 新建 3 个 main 进程模块：`tray.ts`（菜单实例 + 行为）/ `settings-bus.ts`（main 进程内的设置事件总线）/ `settings-side-effects.ts`（apply* dispatch 表）。
+
+- 新建 3 个 main 进程模块：`tray.ts`（菜单实例 + 行为）/ `settings-bus.ts`（main 进程内的设置事件总线）/ `settings-side-effects.ts`（apply\* dispatch 表）。
 - 新增 2 个 IPC channel (`tray:new-conversation` / `tray:navigate-settings`) 让 main 把用户点击转发给 renderer 触发新建会话 / 跳设置页。
 - 设置变化通过 `settings-bus` 的 EventEmitter 触发 `updateTrayMenu()`，避免循环依赖。
 
@@ -18,11 +19,13 @@
 ## File Structure
 
 新建：
+
 - `src/main/settings-side-effects.ts` — `applyZoomSetting` / `applyLanguageSetting` / `settingSideEffects` dispatch 表 / `applySideEffects`
 - `src/main/settings-bus.ts` — `applyAndBroadcast` / `writeSettingFromMain` / `writeSettingsFromMain` / `onSettingsChanged` + 内部 `broadcastToRenderers` 与 `EventEmitter`
 - `src/main/tray.ts` — `createTray` / `updateTrayMenu` / `destroyTray`；module-internal Tray 实例、TrayDeps、菜单构造、点击 handler
 
 修改：
+
 - `src/main/ipc/settings-handlers.ts` — 删除 module-private 副作用/广播逻辑，handler 改为薄壳
 - `src/main/index.ts` — 删除内联 tray 代码，改调 `createTray(...)`；追加 `'always-on-top-changed'` / `'closed'` 回调的 `updateTrayMenu()` 调用
 - `src/shared/ipc-channels.ts` — 新增 2 个常量
@@ -38,6 +41,7 @@
 ## Task 1: 抽出 settings-side-effects.ts
 
 **Files:**
+
 - Create: `src/main/settings-side-effects.ts`
 - Modify: `src/main/ipc/settings-handlers.ts`
 
@@ -150,6 +154,7 @@ git commit -m "refactor: extract settings side effects into dedicated module"
 ## Task 2: 新增 settings-bus.ts 与 handler 改造
 
 **Files:**
+
 - Create: `src/main/settings-bus.ts`
 - Modify: `src/main/ipc/settings-handlers.ts`
 
@@ -178,10 +183,7 @@ function broadcastToRenderers(entries: Record<string, string>, excludeSenderId?:
  * 副作用 + 跨 renderer 广播 + 主进程内事件；**不写库**。
  * IPC handler 调本函数（已经在 IPC 入口写过库），主进程内写设置用 writeSettingFromMain。
  */
-export function applyAndBroadcast(
-  entries: Record<string, string>,
-  excludeSenderId?: number,
-): void {
+export function applyAndBroadcast(entries: Record<string, string>, excludeSenderId?: number): void {
   for (const [k, v] of Object.entries(entries)) applySideEffects(k, v)
   broadcastToRenderers(entries, excludeSenderId)
   emitter.emit('changed', entries)
@@ -198,9 +200,7 @@ export function writeSettingsFromMain(entries: Record<string, string>): void {
   applyAndBroadcast(entries)
 }
 
-export function onSettingsChanged(
-  handler: (entries: Record<string, string>) => void,
-): () => void {
+export function onSettingsChanged(handler: (entries: Record<string, string>) => void): () => void {
   emitter.on('changed', handler)
   return () => emitter.off('changed', handler)
 }
@@ -228,18 +228,15 @@ export function registerSettingsHandlers(): void {
     }
   })
 
-  ipcMain.handle(
-    IpcChannels.SETTINGS_SET,
-    (event, key: string, value: string): IpcResult<void> => {
-      try {
-        setSetting(key, value)
-        applyAndBroadcast({ [key]: value }, event.sender.id)
-        return { success: true }
-      } catch (e) {
-        return { success: false, error: toLocalizedError(e) }
-      }
-    },
-  )
+  ipcMain.handle(IpcChannels.SETTINGS_SET, (event, key: string, value: string): IpcResult<void> => {
+    try {
+      setSetting(key, value)
+      applyAndBroadcast({ [key]: value }, event.sender.id)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: toLocalizedError(e) }
+    }
+  })
 
   ipcMain.handle(IpcChannels.SETTINGS_GET_ALL, (): IpcResult<Record<string, string>> => {
     try {
@@ -289,6 +286,7 @@ git commit -m "refactor: introduce settings-bus for main-process setting writes"
 ## Task 3: 新增 IPC channel 常量
 
 **Files:**
+
 - Modify: `src/shared/ipc-channels.ts`
 
 - [ ] **Step 1: 加 2 个常量**
@@ -321,6 +319,7 @@ git commit -m "ipc: add tray:new-conversation and tray:navigate-settings channel
 ## Task 4: 扩充 tray i18n 文案
 
 **Files:**
+
 - Modify: `src/renderer/src/i18n/locales/zh-CN.json`
 - Modify: `src/renderer/src/i18n/locales/en.json`
 
@@ -390,6 +389,7 @@ git commit -m "i18n: expand tray namespace for new context menu items"
 ## Task 5: 新建 tray.ts 核心模块
 
 **Files:**
+
 - Create: `src/main/tray.ts`
 
 - [ ] **Step 1: 创建 tray.ts**
@@ -659,6 +659,7 @@ git commit -m "feat(tray): extract tray module with extended context menu"
 ## Task 6: 改 index.ts 接入 tray 模块
 
 **Files:**
+
 - Modify: `src/main/index.ts`
 
 - [ ] **Step 1: 删除内联 tray 代码并接入新模块**
@@ -672,6 +673,7 @@ import { createTray, updateTrayMenu, destroyTray } from './tray'
 ```
 
 (b) 删除变量声明（第 279 行附近）：
+
 ```ts
 let tray: Tray | null = null
 ```
@@ -681,15 +683,15 @@ let tray: Tray | null = null
 (d) 找到原有的"System tray"区段（第 589-598 行附近），替换为：
 
 ```ts
-    // ── System tray ───────────────────────────────────────────────
-    createTray({
-      getMainWindow: () => mainWindow,
-      ensureMainWindow: () => {
-        if (!mainWindow || mainWindow.isDestroyed()) createWindow()
-        return mainWindow!
-      },
-      showWindow,
-    })
+// ── System tray ───────────────────────────────────────────────
+createTray({
+  getMainWindow: () => mainWindow,
+  ensureMainWindow: () => {
+    if (!mainWindow || mainWindow.isDestroyed()) createWindow()
+    return mainWindow!
+  },
+  showWindow,
+})
 ```
 
 (e) 找到 `app.on('window-all-closed', ...)`（第 614-619 行附近），把 `tray?.destroy()` 替换为 `destroyTray()`：
@@ -708,19 +710,19 @@ app.on('window-all-closed', () => {
 找到第 421 行的 `win.on('always-on-top-changed', ...)`，改为：
 
 ```ts
-  win.on('always-on-top-changed', (_event, isAlwaysOnTop) => {
-    win.webContents.send(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, isAlwaysOnTop)
-    updateTrayMenu()
-  })
+win.on('always-on-top-changed', (_event, isAlwaysOnTop) => {
+  win.webContents.send(IpcChannels.WINDOW_ALWAYS_ON_TOP_CHANGE, isAlwaysOnTop)
+  updateTrayMenu()
+})
 ```
 
 在 `createWindow()` 内、`win.on('close', ...)` 之后增加 `'closed'` 监听（如已存在则在内部追加 `updateTrayMenu()`）：
 
 ```ts
-  win.on('closed', () => {
-    mainWindow = null
-    updateTrayMenu()
-  })
+win.on('closed', () => {
+  mainWindow = null
+  updateTrayMenu()
+})
 ```
 
 如果文件里已经有 `mainWindow = win` 与 close 处理但没有 `'closed'` 监听，则补上即可。
@@ -742,6 +744,7 @@ Expected: PASS。
 Run: `npm run dev`
 
 测试要点：
+
 1. 启动后，托盘图标可见，左键打开主窗。
 2. 托盘右键 → 出现 14 行 + "设置与维护"子菜单。
 3. 点"打开主窗口"，主窗显示并聚焦。
@@ -775,6 +778,7 @@ git commit -m "feat(main): wire tray module and refresh hooks"
 ## Task 7: preload 暴露 tray 订阅 API
 
 **Files:**
+
 - Modify: `src/preload/index.ts`
 
 - [ ] **Step 1: 加 2 个订阅函数**
@@ -825,6 +829,7 @@ git commit -m "preload: expose tray subscription APIs"
 ## Task 8: renderer 订阅 tray IPC
 
 **Files:**
+
 - Modify: `src/renderer/src/App.tsx`
 
 - [ ] **Step 1: 在 App 组件内加 useEffect 订阅两个 channel**
@@ -832,37 +837,37 @@ git commit -m "preload: expose tray subscription APIs"
 在 `src/renderer/src/App.tsx` 内，找到现有的 focus / keybinding init useEffect 块（约第 63-74 行），在它们之后插入：
 
 ```ts
-  // Tray → renderer bridges: 新建会话 / 跳设置页
-  useEffect(() => {
-    const offNewConv = window.api.onTrayNewConversation(() => {
-      const assistantId = useAssistantStore.getState().activeAssistantId ?? undefined
-      void useConversationStore.getState().createConversation(undefined, assistantId)
-    })
-    const offNavSettings = window.api.onTrayNavigateSettings(({ section }) => {
-      const validSections: ReadonlyArray<string> = [
-        'provider',
-        'model-library',
-        'model-group',
-        'general',
-        'network',
-        'display',
-        'data',
-        'phrases',
-        'keyboard-shortcuts',
-        'quick-assistant',
-        'selection-assistant',
-        'about',
-      ]
-      const target = section && validSections.includes(section) ? section : 'general'
-      // target 已通过 whitelist 检查；cast 为 SettingsSection 字面量联合类型。
-      // 不直接 import SettingsSection 是为了避免拖入额外的 renderer 内部依赖。
-      useSettingsStore.getState().navigateToSettings(target as never)
-    })
-    return () => {
-      offNewConv()
-      offNavSettings()
-    }
-  }, [])
+// Tray → renderer bridges: 新建会话 / 跳设置页
+useEffect(() => {
+  const offNewConv = window.api.onTrayNewConversation(() => {
+    const assistantId = useAssistantStore.getState().activeAssistantId ?? undefined
+    void useConversationStore.getState().createConversation(undefined, assistantId)
+  })
+  const offNavSettings = window.api.onTrayNavigateSettings(({ section }) => {
+    const validSections: ReadonlyArray<string> = [
+      'provider',
+      'model-library',
+      'model-group',
+      'general',
+      'network',
+      'display',
+      'data',
+      'phrases',
+      'keyboard-shortcuts',
+      'quick-assistant',
+      'selection-assistant',
+      'about',
+    ]
+    const target = section && validSections.includes(section) ? section : 'general'
+    // target 已通过 whitelist 检查；cast 为 SettingsSection 字面量联合类型。
+    // 不直接 import SettingsSection 是为了避免拖入额外的 renderer 内部依赖。
+    useSettingsStore.getState().navigateToSettings(target as never)
+  })
+  return () => {
+    offNewConv()
+    offNavSettings()
+  }
+}, [])
 ```
 
 `createConversation` 第二个参数 `assistantId` 是当前激活 assistant id（与现有 Ctrl+N 快捷键流程对齐——见 `conversationStore.ts:436`）。
@@ -884,6 +889,7 @@ Expected: 无错误。
 Run: `npm run dev`
 
 测试要点：
+
 1. 在主窗未聚焦时，托盘右键 → 新建会话 → 主窗显示并出现一个新会话。
 2. 托盘右键 → 打开设置 → 主窗显示并切到设置页（默认 General）。
 3. 托盘右键 → 设置与维护 → 检查更新 → 主窗显示并跳到关于页；右下角或关于面板里看到 updater 状态变化（dev 下应为 `not-available`）。
@@ -901,6 +907,7 @@ git commit -m "renderer: subscribe to tray IPC for new-conversation / navigate-s
 ## Task 9: 收尾 — spec + plan 入仓 + 全量回归
 
 **Files:**
+
 - Track: `docs/superpowers/specs/2026-05-15-tray-context-menu-design.md`
 - Track: `docs/superpowers/plans/2026-05-15-tray-context-menu-plan.md`
 

@@ -499,6 +499,20 @@ export interface AppReleaseInfo {
   publishedAt?: string
 }
 
+export type UpdaterErrorCode =
+  | 'rate-limit-primary'
+  | 'rate-limit-secondary'
+  | 'http'
+  | 'network'
+  | 'parse'
+
+export interface UpdaterErrorMeta {
+  /** HTTP status code, when the error originated from a response. */
+  statusCode?: number
+  /** ISO 8601 timestamp at which a primary rate limit window resets. */
+  resetAt?: string
+}
+
 export interface UpdaterState {
   status: UpdaterStatus
   currentVersion: string
@@ -506,7 +520,11 @@ export interface UpdaterState {
   releaseNotes?: string
   releaseUrl?: string
   downloadProgress?: UpdaterDownloadProgress
+  /** Raw English fallback message — kept for logs and as last-resort UI text. */
   error?: string
+  /** Structured error tag the renderer uses to pick an i18n template. */
+  errorCode?: UpdaterErrorCode
+  errorMeta?: UpdaterErrorMeta
   /** true when running on macOS without a signed build — UI should show "open download page" instead of "download now". */
   isMacFallback: boolean
   /** true when the user explicitly triggered a check (vs silent startup check); controls whether "already up to date" UI is shown. */

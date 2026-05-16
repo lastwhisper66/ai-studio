@@ -1017,7 +1017,14 @@
     "installNow": "立即重启安装",
     "installLater": "稍后安装",
     "errorTitle": "更新检查失败",
-    "retry": "重试"
+    "retry": "重试",
+    "error": {
+      "rate-limit-primary": "GitHub 接口达到匿名访问限额，将在 {{resetAt}} 后恢复。你可以直接打开 Releases 页面查看新版本。",
+      "rate-limit-secondary": "GitHub 触发了短时访问保护，请稍后再试，或直接打开 Releases 页面查看新版本。",
+      "http": "GitHub 返回了 {{statusCode}} 响应。可能是网络或代理问题，请稍后再试。",
+      "network": "无法连接到 GitHub，请检查网络或代理设置。",
+      "parse": "无法解析 GitHub 返回的数据。"
+    }
   },
   "library": {
     "openShortcut": "助手库 →",
