@@ -208,8 +208,14 @@ export function createTray(d: TrayDeps): void {
 
 export function updateTrayMenu(): void {
   if (!tray || tray.isDestroyed()) return
-  const contextMenu = Menu.buildFromTemplate(buildMenuTemplate())
-  tray.setContextMenu(contextMenu)
+  try {
+    const contextMenu = Menu.buildFromTemplate(buildMenuTemplate())
+    tray.setContextMenu(contextMenu)
+  } catch {
+    // Best-effort: a late callback (e.g. `closed` after shutdown) may try to
+    // rebuild the menu when the DB is already closed. Skip silently — the
+    // tray is about to be destroyed anyway.
+  }
 }
 
 export function destroyTray(): void {
