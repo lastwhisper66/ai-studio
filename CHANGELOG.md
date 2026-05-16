@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.6.0](https://github.com/lastwhisper66/ai-studio/compare/v1.5.0...v1.6.0) (2026-05-16)
+
+
+### Features
+
+* extend tray context menu with new-conversation and settings entries ([13491c2](https://github.com/lastwhisper66/ai-studio/commit/13491c2077039261d5badaf20c84c7a9d2d5635c))
+* **main:** wire tray module and refresh hooks ([e690af2](https://github.com/lastwhisper66/ai-studio/commit/e690af274a611537f0b0ec936ca544bcd6972112))
+* **tray:** extract tray module with extended context menu ([6c0b1e9](https://github.com/lastwhisper66/ai-studio/commit/6c0b1e9949235a04e465a5dd9413edb427eac5d7))
+
+
+### Code Refactoring
+
+* extract settings side effects into dedicated module ([b15f6e8](https://github.com/lastwhisper66/ai-studio/commit/b15f6e8d8e053478c1b09ed863f83fbd43d502e7))
+* introduce settings-bus for main-process setting writes ([7866fd1](https://github.com/lastwhisper66/ai-studio/commit/7866fd117ade92f344020601c186bef51ad33f3a))
+
 ## [1.5.0](https://github.com/lastwhisper66/ai-studio/compare/v1.4.0...v1.5.0) (2026-05-15)
 
 ### Features
