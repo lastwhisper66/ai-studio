@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.6.2](https://github.com/lastwhisper66/ai-studio/compare/v1.6.1...v1.6.2) (2026-05-16)
+
+
+### Bug Fixes
+
+* **tray:** tear down tray before closeDatabase() to fix quit-time crash ([bb685d9](https://github.com/lastwhisper66/ai-studio/commit/bb685d9eccc241bdbf7a481cda53158fdbb5f5c2))
+* **tray:** tear down tray before closeDatabase() to fix quit-time crash ([ed073a5](https://github.com/lastwhisper66/ai-studio/commit/ed073a50b3e696a2918efa7335bf17a455dc4260))
+
 ## [1.6.1](https://github.com/lastwhisper66/ai-studio/compare/v1.6.0...v1.6.1) (2026-05-16)
 
 
