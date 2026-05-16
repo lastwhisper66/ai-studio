@@ -1,6 +1,12 @@
 import { app, BrowserWindow, shell, net } from 'electron'
 import { autoUpdater } from 'electron-updater'
-import type { AppReleaseInfo, UpdaterState, UpdaterDownloadProgress } from '@shared/types'
+import type {
+  AppReleaseInfo,
+  UpdaterErrorCode,
+  UpdaterErrorMeta,
+  UpdaterState,
+  UpdaterDownloadProgress,
+} from '@shared/types'
 import { IpcChannels } from '@shared/ipc-channels'
 import { getAutoUpdateEnabled } from './app-state'
 
@@ -9,10 +15,23 @@ export const GITHUB_REPO = 'ai-studio'
 export const PROJECT_PAGE_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}`
 export const RELEASES_PAGE_URL = `${PROJECT_PAGE_URL}/releases`
 const RELEASE_PAGE_URL = `${RELEASES_PAGE_URL}/latest`
+const ATOM_FEED_URL = `${PROJECT_PAGE_URL}/releases.atom`
 const STARTUP_CHECK_DELAY_MS = 5_000
 const GITHUB_RELEASE_TIMEOUT_MS = 15_000
 
 const isMacFallback = process.platform === 'darwin'
+
+class UpdaterFetchError extends Error {
+  readonly code: UpdaterErrorCode
+  readonly meta?: UpdaterErrorMeta
+
+  constructor(message: string, code: UpdaterErrorCode, meta?: UpdaterErrorMeta) {
+    super(message)
+    this.name = 'UpdaterFetchError'
+    this.code = code
+    this.meta = meta
+  }
+}
 
 let state: UpdaterState = {
   status: 'idle',
@@ -57,6 +76,94 @@ function compareVersions(a: string, b: string): number {
   return 0
 }
 
+interface HttpResponse {
+  statusCode: number
+  headers: Record<string, string | string[]>
+  body: string
+}
+
+/** GET helper built on Electron `net.request` with a single timeout. */
+function httpGet(url: string, headers: Record<string, string>): Promise<HttpResponse> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const request = net.request({ method: 'GET', url, redirect: 'follow' })
+    const timeout = setTimeout(() => {
+      if (settled) return
+      settled = true
+      request.abort()
+      reject(
+        new UpdaterFetchError(
+          `Request to ${url} timed out after ${GITHUB_RELEASE_TIMEOUT_MS}ms`,
+          'network',
+        ),
+      )
+    }, GITHUB_RELEASE_TIMEOUT_MS)
+
+    const finish = (callback: () => void): void => {
+      if (settled) return
+      settled = true
+      clearTimeout(timeout)
+      callback()
+    }
+
+    for (const [key, value] of Object.entries(headers)) {
+      request.setHeader(key, value)
+    }
+
+    let body = ''
+    request.on('response', (response) => {
+      response.on('data', (chunk) => {
+        body += chunk.toString('utf-8')
+      })
+      response.on('error', (err) =>
+        finish(() =>
+          reject(
+            err instanceof UpdaterFetchError
+              ? err
+              : new UpdaterFetchError(err?.message ?? String(err), 'network'),
+          ),
+        ),
+      )
+      response.on('end', () => {
+        finish(() =>
+          resolve({
+            statusCode: response.statusCode ?? 0,
+            headers: response.headers as Record<string, string | string[]>,
+            body,
+          }),
+        )
+      })
+    })
+    request.on('error', (err) =>
+      finish(() => reject(new UpdaterFetchError(err?.message ?? String(err), 'network'))),
+    )
+    request.end()
+  })
+}
+
+function pickHeader(headers: Record<string, string | string[]>, name: string): string | undefined {
+  const value = headers[name] ?? headers[name.toLowerCase()]
+  if (Array.isArray(value)) return value[0]
+  return value
+}
+
+/** Decode the XML entities Atom uses to escape HTML inside `<content>`. */
+function decodeXmlEntities(input: string): string {
+  return input
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
+    .replace(/&amp;/g, '&')
+}
+
+/** Returns true for plain semver tags like `1.2.3` / `v1.2.3`; false for pre-releases (`-rc.1`, `-beta`). */
+function isStableTag(tag: string): boolean {
+  return /^v?\d+\.\d+\.\d+$/.test(tag)
+}
+
 function normalizeReleaseNotes(releaseNotes: unknown): string {
   if (typeof releaseNotes === 'string') return releaseNotes
   if (!Array.isArray(releaseNotes)) return ''
@@ -71,74 +178,113 @@ function normalizeReleaseNotes(releaseNotes: unknown): string {
 }
 
 export async function fetchLatestReleaseFromGitHub(): Promise<AppReleaseInfo> {
-  return new Promise((resolve, reject) => {
-    let settled = false
-    const request = net.request({
-      method: 'GET',
-      url: `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
-      redirect: 'follow',
-    })
-    const timeout = setTimeout(() => {
-      if (settled) return
-      settled = true
-      request.abort()
-      reject(
-        new Error('GitHub release request timed out. Please check your network and try again.'),
+  const response = await httpGet(
+    `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
+    {
+      Accept: 'application/vnd.github+json',
+      'User-Agent': `${GITHUB_REPO}-updater`,
+    },
+  )
+
+  if (response.statusCode === 403) {
+    const remaining = pickHeader(response.headers, 'x-ratelimit-remaining')
+    const resetEpoch = Number(pickHeader(response.headers, 'x-ratelimit-reset'))
+    const lowerBody = response.body.toLowerCase()
+    if (remaining === '0' && Number.isFinite(resetEpoch) && resetEpoch > 0) {
+      throw new UpdaterFetchError(
+        `GitHub API primary rate limit exceeded (resets at ${new Date(resetEpoch * 1000).toISOString()})`,
+        'rate-limit-primary',
+        { statusCode: 403, resetAt: new Date(resetEpoch * 1000).toISOString() },
       )
-    }, GITHUB_RELEASE_TIMEOUT_MS)
-
-    const finish = (callback: () => void): void => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      callback()
     }
+    if (lowerBody.includes('secondary rate limit') || lowerBody.includes('abuse')) {
+      throw new UpdaterFetchError(
+        'GitHub API secondary rate limit triggered',
+        'rate-limit-secondary',
+        { statusCode: 403 },
+      )
+    }
+    throw new UpdaterFetchError(`GitHub API responded with 403`, 'http', { statusCode: 403 })
+  }
 
-    request.setHeader('Accept', 'application/vnd.github+json')
-    request.setHeader('User-Agent', `${GITHUB_REPO}-updater`)
-
-    let body = ''
-    request.on('response', (response) => {
-      response.on('data', (chunk) => {
-        body += chunk.toString('utf-8')
-      })
-      response.on('error', (err) => finish(() => reject(err)))
-      response.on('end', () => {
-        finish(() => {
-          try {
-            const statusCode = response.statusCode ?? 0
-            if (statusCode < 200 || statusCode >= 300) {
-              reject(new Error(`GitHub API responded with ${statusCode}`))
-              return
-            }
-
-            const json = JSON.parse(body) as {
-              tag_name?: string
-              name?: string
-              body?: string
-              html_url?: string
-              published_at?: string
-            }
-            if (!json.tag_name) {
-              reject(new Error('GitHub response missing tag_name'))
-              return
-            }
-            resolve({
-              version: json.tag_name.replace(/^v/, ''),
-              name: json.name,
-              notes: json.body ?? '',
-              url: json.html_url ?? RELEASE_PAGE_URL,
-              publishedAt: json.published_at,
-            })
-          } catch (e) {
-            reject(e instanceof Error ? e : new Error(String(e)))
-          }
-        })
-      })
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new UpdaterFetchError(`GitHub API responded with ${response.statusCode}`, 'http', {
+      statusCode: response.statusCode,
     })
-    request.on('error', (err) => finish(() => reject(err)))
-    request.end()
+  }
+
+  let json: {
+    tag_name?: string
+    name?: string
+    body?: string
+    html_url?: string
+    published_at?: string
+  }
+  try {
+    json = JSON.parse(response.body)
+  } catch (e) {
+    throw new UpdaterFetchError(
+      `Failed to parse GitHub API response: ${e instanceof Error ? e.message : String(e)}`,
+      'parse',
+    )
+  }
+  if (!json.tag_name) {
+    throw new UpdaterFetchError('GitHub response missing tag_name', 'parse')
+  }
+  return {
+    version: json.tag_name.replace(/^v/, ''),
+    name: json.name,
+    notes: json.body ?? '',
+    url: json.html_url ?? RELEASE_PAGE_URL,
+    publishedAt: json.published_at,
+  }
+}
+
+/**
+ * Fetch the latest stable release via the `releases.atom` feed served from
+ * `github.com` (not `api.github.com`). Unlike the JSON API, the Atom feed is
+ * not subject to the 60-requests-per-hour unauthenticated rate limit, so this
+ * is the preferred primary path. We fall back to the JSON API only if Atom
+ * parsing fails or yields no stable entry.
+ */
+export async function fetchLatestReleaseFromAtom(): Promise<AppReleaseInfo> {
+  const response = await httpGet(ATOM_FEED_URL, {
+    Accept: 'application/atom+xml, application/xml;q=0.9, */*;q=0.5',
+    'User-Agent': `${GITHUB_REPO}-updater`,
   })
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new UpdaterFetchError(`GitHub Atom feed responded with ${response.statusCode}`, 'http', {
+      statusCode: response.statusCode,
+    })
+  }
+
+  const xml = response.body
+  const entryRegex = /<entry\b[\s\S]*?<\/entry>/g
+  let match: RegExpExecArray | null
+  while ((match = entryRegex.exec(xml)) !== null) {
+    const block = match[0]
+    const linkMatch = block.match(
+      /<link\b[^>]*\brel=["']alternate["'][^>]*\bhref=["']([^"']+)["'][^>]*\/?>/i,
+    )
+    const url = linkMatch?.[1] ?? ''
+    const tagMatch = url.match(/\/releases\/tag\/([^/?#]+)/)
+    const tag = tagMatch?.[1] ? decodeURIComponent(tagMatch[1]) : ''
+    if (!tag || !isStableTag(tag)) continue
+
+    const titleMatch = block.match(/<title>([\s\S]*?)<\/title>/)
+    const updatedMatch = block.match(/<updated>([\s\S]*?)<\/updated>/)
+    const contentMatch = block.match(/<content\b[^>]*>([\s\S]*?)<\/content>/i)
+
+    return {
+      version: tag.replace(/^v/, ''),
+      name: titleMatch?.[1] ? decodeXmlEntities(titleMatch[1].trim()) : undefined,
+      notes: contentMatch?.[1] ? decodeXmlEntities(contentMatch[1].trim()) : '',
+      url: url || RELEASE_PAGE_URL,
+      publishedAt: updatedMatch?.[1]?.trim(),
+    }
+  }
+  throw new UpdaterFetchError('Atom feed contained no stable release entry', 'parse')
 }
 
 function getErrorMessage(error: unknown): string {
@@ -153,36 +299,20 @@ function invalidateActiveCheck(): void {
 }
 
 async function runGitHubUpdateCheck(operationId: number): Promise<void> {
+  let latest: AppReleaseInfo
   try {
-    const latest = await fetchLatestReleaseFromGitHub()
-    if (operationId !== checkOperationId) return
-
-    const cmp = compareVersions(latest.version, state.currentVersion)
-    const manualCheck = activeCheckManual
-    if (cmp > 0) {
-      setState({
-        status: 'available',
-        latestVersion: latest.version,
-        releaseNotes: latest.notes,
-        releaseUrl: latest.url,
-        manualCheck,
-        error: undefined,
-        downloadProgress: undefined,
-      })
-    } else {
-      setState({
-        status: 'not-available',
-        latestVersion: undefined,
-        releaseNotes: undefined,
-        releaseUrl: undefined,
-        downloadProgress: undefined,
-        manualCheck,
-        error: undefined,
-      })
+    // Prefer the rate-limit-free Atom feed. Fall back to api.github.com only
+    // if Atom is unreachable or returns no parseable stable entry.
+    try {
+      latest = await fetchLatestReleaseFromAtom()
+    } catch (atomErr) {
+      if (operationId !== checkOperationId) return
+      latest = await fetchLatestReleaseFromGitHub()
+      void atomErr
     }
   } catch (e) {
     if (operationId !== checkOperationId) return
-
+    const fetchErr = e instanceof UpdaterFetchError ? e : undefined
     setState({
       status: 'error',
       latestVersion: undefined,
@@ -190,7 +320,40 @@ async function runGitHubUpdateCheck(operationId: number): Promise<void> {
       releaseUrl: undefined,
       downloadProgress: undefined,
       error: getErrorMessage(e),
+      errorCode: fetchErr?.code,
+      errorMeta: fetchErr?.meta,
       manualCheck: activeCheckManual,
+    })
+    return
+  }
+
+  if (operationId !== checkOperationId) return
+
+  const cmp = compareVersions(latest.version, state.currentVersion)
+  const manualCheck = activeCheckManual
+  if (cmp > 0) {
+    setState({
+      status: 'available',
+      latestVersion: latest.version,
+      releaseNotes: latest.notes,
+      releaseUrl: latest.url,
+      manualCheck,
+      error: undefined,
+      errorCode: undefined,
+      errorMeta: undefined,
+      downloadProgress: undefined,
+    })
+  } else {
+    setState({
+      status: 'not-available',
+      latestVersion: undefined,
+      releaseNotes: undefined,
+      releaseUrl: undefined,
+      downloadProgress: undefined,
+      manualCheck,
+      error: undefined,
+      errorCode: undefined,
+      errorMeta: undefined,
     })
   }
 }
@@ -212,7 +375,13 @@ function bindElectronUpdaterEvents(): void {
     setState({ status: 'downloaded' })
   })
   autoUpdater.on('error', (err) => {
-    setState({ status: 'error', error: err?.message ?? String(err), downloadProgress: undefined })
+    setState({
+      status: 'error',
+      error: err?.message ?? String(err),
+      errorCode: undefined,
+      errorMeta: undefined,
+      downloadProgress: undefined,
+    })
   })
 }
 
@@ -269,6 +438,8 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
     status: 'checking',
     manualCheck: manual,
     error: undefined,
+    errorCode: undefined,
+    errorMeta: undefined,
     downloadProgress: undefined,
   })
 
@@ -324,6 +495,8 @@ export async function downloadUpdate(): Promise<void> {
     setState({
       status: 'error',
       error: getErrorMessage(e),
+      errorCode: undefined,
+      errorMeta: undefined,
       manualCheck: true,
       downloadProgress: undefined,
     })

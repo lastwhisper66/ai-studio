@@ -34,6 +34,13 @@ function formatBytes(bytes: number): string {
   return `${n.toFixed(i === 0 ? 0 : 1)} ${units[i]}`
 }
 
+function formatResetTime(resetAt: string | undefined): string {
+  if (!resetAt) return ''
+  const date = new Date(resetAt)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
 export function UpdateDialog(): React.JSX.Element | null {
   const { t } = useTranslation()
   const [state, setState] = useState<UpdaterState>(IDLE_STATE)
@@ -158,13 +165,24 @@ export function UpdateDialog(): React.JSX.Element | null {
           </div>
         )
 
-      case 'error':
+      case 'error': {
+        const code = state.errorCode
+        const resetTime = formatResetTime(state.errorMeta?.resetAt)
+        const i18nKey = code ? `updater.error.${code}` : null
+        const message = i18nKey
+          ? t(i18nKey, {
+              resetAt: resetTime,
+              statusCode: state.errorMeta?.statusCode ?? '',
+              defaultValue: state.error ?? '',
+            })
+          : (state.error ?? '')
         return (
           <div className="flex items-start gap-3 py-4">
-            <AlertCircle className="mt-0.5 size-5 text-destructive" />
-            <p className="text-sm break-all">{state.error ?? ''}</p>
+            <AlertCircle className="text-destructive mt-0.5 size-5" />
+            <p className="text-sm break-all">{message}</p>
           </div>
         )
+      }
 
       default:
         return <div />
@@ -212,18 +230,27 @@ export function UpdateDialog(): React.JSX.Element | null {
           </>
         )
 
-      case 'error':
+      case 'error': {
+        const isRateLimited =
+          state.errorCode === 'rate-limit-primary' || state.errorCode === 'rate-limit-secondary'
         return (
           <>
             <Button variant="outline" onClick={handleDismiss}>
               {t('common.close')}
             </Button>
+            {isRateLimited && (
+              <Button variant="outline" onClick={() => window.api.openReleasePage()}>
+                <ExternalLink className="size-4" />
+                {t('updater.openDownloadPage')}
+              </Button>
+            )}
             <Button onClick={() => window.api.checkForUpdates()}>
               <RotateCw className="size-4" />
               {t('updater.retry')}
             </Button>
           </>
         )
+      }
 
       case 'checking':
       case 'not-available':

@@ -1017,7 +1017,14 @@
     "installNow": "Restart and install now",
     "installLater": "Install later",
     "errorTitle": "Update check failed",
-    "retry": "Retry"
+    "retry": "Retry",
+    "error": {
+      "rate-limit-primary": "GitHub API anonymous rate limit reached. It resets at {{resetAt}}. You can open the Releases page to check for new versions in the meantime.",
+      "rate-limit-secondary": "GitHub temporarily throttled this request. Please try again later, or open the Releases page directly.",
+      "http": "GitHub responded with {{statusCode}}. This may be a network or proxy issue — please try again later.",
+      "network": "Could not reach GitHub. Please check your network or proxy settings.",
+      "parse": "Could not parse the response from GitHub."
+    }
   },
   "library": {
     "openShortcut": "Library →",
