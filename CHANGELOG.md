@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.7.0](https://github.com/lastwhisper66/ai-studio/compare/v1.6.2...v1.7.0) (2026-05-17)
+
+
+### Features
+
+* **db:** seed assistant templates in seedDatabaseDefaults ([77af984](https://github.com/lastwhisper66/ai-studio/commit/77af984d8e583b2776cc2ce9da4ed2ae591c154f))
+* **migrate:** promote model_definitions.group_name into model_groups ([61650df](https://github.com/lastwhisper66/ai-studio/commit/61650dfd190bedd18d80a66c5e5b11fcd6036dd9))
+* **modelGroupStore:** add reorder() and resolveRule() ([303887c](https://github.com/lastwhisper66/ai-studio/commit/303887c112a7c118157aa412b4d62d1280178a45))
+* **remote-model-dialog:** order groups by model_groups.sort_order ([cb4cf43](https://github.com/lastwhisper66/ai-studio/commit/cb4cf430a6776173fb5605dbefdcf55b26de642c))
+* **settings:** add BatchToolbar for model definitions ([c2bed09](https://github.com/lastwhisper66/ai-studio/commit/c2bed098f40b0baffb1b61e704e34135d17a771c))
+* **settings:** add GroupRulesPanel with drag-sort and pseudo-nodes ([b8517da](https://github.com/lastwhisper66/ai-studio/commit/b8517da0939552fcc91510f3552b514673f2e242))
+* **settings:** add MatchPreviewBar component ([41f10c7](https://github.com/lastwhisper66/ai-studio/commit/41f10c704db32f67252ca9b1e2677d0ac5d6a459))
+* **settings:** add ModelDefinitionsPanel with batch selection ([201c7e9](https://github.com/lastwhisper66/ai-studio/commit/201c7e9fb6b5417f8f966e4393e1cb9fdbd4426f))
+* **settings:** add ModelManagementSection (two-column merged page) ([114f62f](https://github.com/lastwhisper66/ai-studio/commit/114f62f02f06a8276d026c69bafd8fa1b67e5516))
+* **settings:** extract ModelDefinitionDialog (no group field) ([2c471ce](https://github.com/lastwhisper66/ai-studio/commit/2c471cebffdf72e4e480e5586396ca2b43ccae7a))
+* **settings:** extract ModelGroupDialog into its own file ([f320b40](https://github.com/lastwhisper66/ai-studio/commit/f320b4009fe6967c267cf27a74d41b645dcae098))
+* **settings:** improve BatchToolbar UX and drop unused capabilities ([dfb9e9c](https://github.com/lastwhisper66/ai-studio/commit/dfb9e9c5d4900e5ebd18d724d08115c703840e0a))
+* **settings:** switch SettingsSidebar entry to model-management ([bf54fc3](https://github.com/lastwhisper66/ai-studio/commit/bf54fc31d1016676995e345d788b2dba4437b5b9))
+* **theme:** default to system theme on first launch ([e14f1f6](https://github.com/lastwhisper66/ai-studio/commit/e14f1f6c69232a0db81292f5a12afe1a8af0369c))
+* **window:** prompt for close behavior on first close ([a00d79f](https://github.com/lastwhisper66/ai-studio/commit/a00d79f76dc3de0534207dac0cfd5dbe7814239f))
+
+
+### Bug Fixes
+
+* **capability-config:** distinct icons for free/embedding/reranking ([da3dfe5](https://github.com/lastwhisper66/ai-studio/commit/da3dfe5f3aeb123497a3eb15f5ec570cde5f6000))
+* **translate:** store native language labels in translation history ([b575b6a](https://github.com/lastwhisper66/ai-studio/commit/b575b6ab0cac3832be65ab78aae972915b30e5d9))
+
+
+### Code Refactoring
+
+* **builtins:** shorten quick action names, drop selection Polish ([c1e06bc](https://github.com/lastwhisper66/ai-studio/commit/c1e06bc4e6c4ce1cbe27a85cfe40d84392eba6e6))
+* **migrate:** switch to PRAGMA user_version-based scheduler ([6c09fc1](https://github.com/lastwhisper66/ai-studio/commit/6c09fc1c2562088807f7caef85da899133fcd67f))
+* **model-catalog:** coalesce model groups by vendor ([25a5c8c](https://github.com/lastwhisper66/ai-studio/commit/25a5c8c303550bc5918e75d1f2908b28fb7d2dd8))
+* **model-definitions:** drop unused provider_types field ([de849f0](https://github.com/lastwhisper66/ai-studio/commit/de849f04e22b05d4e06fba6a17dd9078833ac77b))
+* **translate:** drop result/history banner headers, float buttons ([5fa86ef](https://github.com/lastwhisper66/ai-studio/commit/5fa86eff552ef625f108c6d8bab7dbaf89e1a2de))
+* **types:** mark ModelDefinition.group as deprecated ([7992149](https://github.com/lastwhisper66/ai-studio/commit/79921499602cf37ddaf5423dcdf7c495f44a3878))
+* **window:** simplify close-behavior dialog to two-button footer ([8bae1a5](https://github.com/lastwhisper66/ai-studio/commit/8bae1a5c4297260527637da44c2a9c286d5a62b3))
+
 ## [1.6.2](https://github.com/lastwhisper66/ai-studio/compare/v1.6.1...v1.6.2) (2026-05-16)
 
 
