@@ -39,7 +39,7 @@ export function installDirtyTracker(): void {
         try {
           // Don't mark dirty for our own backup.* settings changes — would
           // cause loops once Phase 5's sync-service starts writing
-          // backup.lastSyncedAt / backup.lastRemoteSeenAt back to settings.
+          // backup.remote.*.lastSyncedAt / backup.remote.*.lastRemoteSeenAt back to settings.
           if (channel === 'settings:set' || channel === 'settings:set-batch') {
             const firstArg = args[0]
             if (looksLikeBackupOnly(firstArg)) return result

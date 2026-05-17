@@ -333,7 +333,7 @@ export function writePreApplyRollback(triggeredBy: RemoteType | 'manual' = 'manu
 }
 
 /**
- * Keep at most `backup.maxRetainedBackups` rollback files (default 5),
+ * Keep at most `backup.remote.<type>.maxRetainedBackups` rollback files (default 5),
  * deleting oldest first. Filenames embed an ISO timestamp so lex-descending
  * sort = newest-first. The just-written `keepPath` is never pruned even if
  * clock skew or filename collision would otherwise place it outside the
