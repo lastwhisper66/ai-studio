@@ -80,6 +80,8 @@ export function TranslateView(): React.JSX.Element {
     sourceText: string
     sourceLang: string
     targetLang: string
+    sourceLangDisplay: string
+    targetLangDisplay: string
   } | null>(null)
   const sessionIdRef = useRef(0)
 
@@ -146,6 +148,14 @@ export function TranslateView(): React.JSX.Element {
     [],
   )
 
+  const resolveSourceDisplayLabel = useCallback(
+    (lang: string) =>
+      lang === 'auto'
+        ? t('translate.autoDetect')
+        : (LANGUAGES.find((l) => l.code === lang)?.label ?? lang),
+    [t],
+  )
+
   const doTranslate = useCallback(
     async (text: string, srcLang: string, tgtLang: string) => {
       currentTranslationRef.current = null
@@ -158,12 +168,16 @@ export function TranslateView(): React.JSX.Element {
 
       const sourceLabel = resolveSourceLabel(srcLang)
       const targetLabel = LANGUAGES.find((l) => l.code === tgtLang)?.englishLabel ?? tgtLang
+      const sourceDisplay = resolveSourceDisplayLabel(srcLang)
+      const targetDisplay = LANGUAGES.find((l) => l.code === tgtLang)?.label ?? tgtLang
 
       currentTranslationRef.current = {
         requestId: id,
         sourceText: text,
         sourceLang: sourceLabel,
         targetLang: targetLabel,
+        sourceLangDisplay: sourceDisplay,
+        targetLangDisplay: targetDisplay,
       }
 
       const result = await window.api.translate({
@@ -184,7 +198,14 @@ export function TranslateView(): React.JSX.Element {
         currentTranslationRef.current = null
       }
     },
-    [resolveSourceLabel, localProviderId, localModelId, translateSettings, t],
+    [
+      resolveSourceLabel,
+      resolveSourceDisplayLabel,
+      localProviderId,
+      localModelId,
+      translateSettings,
+      t,
+    ],
   )
 
   const handleTargetLangChange = useCallback(
@@ -236,8 +257,8 @@ export function TranslateView(): React.JSX.Element {
           .createTranslationHistory(
             params.sourceText,
             data.fullText,
-            params.sourceLang,
-            params.targetLang,
+            params.sourceLangDisplay,
+            params.targetLangDisplay,
           )
           .then((result) => {
             if (result.success && result.data) {
