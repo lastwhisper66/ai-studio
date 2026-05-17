@@ -41,20 +41,11 @@ export const SELECTION_ACTIONS: readonly BuiltinSelectionAction[] = [
     sortOrder: 2,
   },
   {
-    id: 'builtin-sel-rewrite',
-    name: 'Polish',
-    description: 'Rewrite for a more fluent, professional tone',
-    systemPrompt:
-      'You are a professional editor. Rewrite the given text to be clearer, more fluent, and more polished while preserving its original meaning and tone. Only output the rewritten text.',
-    icon: 'Wand2',
-    sortOrder: 3,
-  },
-  {
     id: 'builtin-sel-search',
     name: 'Search',
     description: 'Search the selected text with a search engine',
     systemPrompt: '',
     icon: 'Search',
-    sortOrder: 4,
+    sortOrder: 3,
   },
 ]
