@@ -15,12 +15,14 @@ import { migrateBackupSettings } from './backup-settings'
 import { migrateAssistantLibraryFields } from './assistant-library-fields'
 import { cleanupSeedI18nKeys } from './cleanup-seed-i18n-keys'
 import { initBuiltinAppliedVersions } from './init-builtin-applied-versions'
+import { promoteDefinitionGroupsToModelGroups } from './promote-definition-groups-to-model-groups'
 
 export {
   migrateBackupSettings,
   migrateAssistantLibraryFields,
   cleanupSeedI18nKeys,
   initBuiltinAppliedVersions,
+  promoteDefinitionGroupsToModelGroups,
 }
 
 export function runMigrations(): void {
@@ -28,4 +30,5 @@ export function runMigrations(): void {
   migrateAssistantLibraryFields()
   cleanupSeedI18nKeys() // Must run AFTER assistant-library-fields seeds templates.
   initBuiltinAppliedVersions() // Idempotent; runs every boot but writes only on first.
+  promoteDefinitionGroupsToModelGroups()
 }
