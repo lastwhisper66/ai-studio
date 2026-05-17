@@ -102,6 +102,7 @@ export const IpcChannels = {
   WINDOW_MINIMIZE: 'window:minimize',
   WINDOW_MAXIMIZE: 'window:maximize',
   WINDOW_CLOSE: 'window:close',
+  WINDOW_CLOSE_PROMPT: 'window:close-prompt',
   WINDOW_IS_MAXIMIZED: 'window:is-maximized',
   WINDOW_MAXIMIZED_CHANGE: 'window:maximized-change',
   WINDOW_TOGGLE_ALWAYS_ON_TOP: 'window:toggle-always-on-top',

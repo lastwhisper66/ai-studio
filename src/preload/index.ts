@@ -483,6 +483,12 @@ const api = {
 
   windowClose: (): void => ipcRenderer.send(IpcChannels.WINDOW_CLOSE),
 
+  onWindowClosePrompt: (callback: () => void): (() => void) => {
+    const handler = (): void => callback()
+    ipcRenderer.on(IpcChannels.WINDOW_CLOSE_PROMPT, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.WINDOW_CLOSE_PROMPT, handler)
+  },
+
   windowIsMaximized: (): Promise<boolean> => ipcRenderer.invoke(IpcChannels.WINDOW_IS_MAXIMIZED),
 
   onWindowMaximizedChange: (callback: (isMaximized: boolean) => void): (() => void) => {
