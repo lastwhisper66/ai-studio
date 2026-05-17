@@ -10,20 +10,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@renderer/components/ui/dialog'
-import type { ModelCapability, ModelDefinition, ProviderType } from '@shared/types'
+import type { ModelCapability, ModelDefinition } from '@shared/types'
 import { CAPABILITY_CONFIG, FULL_CAPABILITIES } from './capability-config'
-
-const ALL_PROVIDER_TYPES: { value: ProviderType; label: string }[] = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'openai-response', label: 'OpenAI Response' },
-  { value: 'azure', label: 'Azure' },
-  { value: 'gemini', label: 'Gemini' },
-  { value: 'claude', label: 'Claude' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'silicon', label: 'Silicon Flow' },
-  { value: 'newapi', label: 'NewAPI' },
-]
 
 export interface ModelDefinitionDialogProps {
   open: boolean
@@ -31,11 +19,7 @@ export interface ModelDefinitionDialogProps {
   initial?: ModelDefinition
   /** Optional pattern hint shown when adding from a specific rule. */
   groupPatternHint?: string
-  onSave: (data: {
-    name: string
-    capabilities: ModelCapability[]
-    providerTypes: ProviderType[]
-  }) => Promise<void>
+  onSave: (data: { name: string; capabilities: ModelCapability[] }) => Promise<void>
 }
 
 export function ModelDefinitionDialog({
@@ -48,14 +32,12 @@ export function ModelDefinitionDialog({
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
   const [capabilities, setCapabilities] = useState<ModelCapability[]>(initial?.capabilities ?? [])
-  const [providerTypes, setProviderTypes] = useState<ProviderType[]>(initial?.providerTypes ?? [])
 
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open reset
       setName(initial?.name ?? '')
       setCapabilities(initial?.capabilities ?? [])
-      setProviderTypes(initial?.providerTypes ?? [])
     }
   }, [open, initial])
 
@@ -63,13 +45,9 @@ export function ModelDefinitionDialog({
     setCapabilities((prev) => (prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]))
   }
 
-  const toggleProviderType = (pt: ProviderType): void => {
-    setProviderTypes((prev) => (prev.includes(pt) ? prev.filter((p) => p !== pt) : [...prev, pt]))
-  }
-
   const handleSave = async (): Promise<void> => {
     if (!name.trim()) return
-    await onSave({ name: name.trim(), capabilities, providerTypes })
+    await onSave({ name: name.trim(), capabilities })
   }
 
   return (
@@ -117,30 +95,6 @@ export function ModelDefinitionDialog({
                     style={isActive ? { backgroundColor: cfg.color } : undefined}>
                     {isActive && <X className="h-3 w-3" />}
                     <Icon className="h-3 w-3" /> {t(cfg.labelKey)}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">{t('modelLibrary.providerTypes')}</label>
-            <p className="text-muted-foreground text-xs">{t('modelLibrary.providerTypesHint')}</p>
-            <div className="flex flex-wrap gap-2">
-              {ALL_PROVIDER_TYPES.map(({ value, label }) => {
-                const isActive = providerTypes.includes(value)
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => toggleProviderType(value)}
-                    className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary text-primary-foreground border-transparent'
-                        : 'border-border text-muted-foreground hover:border-foreground/30'
-                    }`}>
-                    {isActive && <X className="h-3 w-3" />}
-                    {label}
                   </button>
                 )
               })}

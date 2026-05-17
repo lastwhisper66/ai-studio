@@ -115,7 +115,6 @@ export const ModelDefinitionsPanel = forwardRef<
         <BatchToolbar
           selected={selectedDefs}
           onUpdateCapabilities={(id, caps) => update(id, { capabilities: caps })}
-          onUpdateProviderTypes={(id, pts) => update(id, { providerTypes: pts })}
           onDelete={(id) => remove(id)}
           onBatchDone={() => setSelectedIds(new Set())}
         />

@@ -826,8 +826,6 @@
       "selected": "{{count}} selected",
       "addCap": "+ Capability",
       "removeCap": "− Capability",
-      "addProvider": "+ Provider",
-      "removeProvider": "− Provider",
       "delete": "Delete selected",
       "confirmDelete": "Delete the {{count}} selected model definition(s)?"
     },
@@ -857,8 +855,6 @@
     "noResults": "No matching models",
     "modelName": "Model Name",
     "capabilities": "Capabilities",
-    "providerTypes": "Provider Types",
-    "providerTypesHint": "Leave empty to make visible to all providers",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
   },
   "modelGroup": {

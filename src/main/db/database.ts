@@ -164,7 +164,6 @@ function createTables(): void {
       name TEXT NOT NULL UNIQUE,
       group_name TEXT NOT NULL DEFAULT '',
       capabilities TEXT NOT NULL DEFAULT '[]',
-      provider_types TEXT NOT NULL DEFAULT '[]',
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );

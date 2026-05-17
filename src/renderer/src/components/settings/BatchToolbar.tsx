@@ -15,27 +15,13 @@ import {
   AlertDialogTitle,
 } from '@renderer/components/ui/alert-dialog'
 import { CAPABILITY_CONFIG, FULL_CAPABILITIES } from './capability-config'
-import type { ModelCapability, ModelDefinition, ProviderType } from '@shared/types'
-
-const ALL_PROVIDER_TYPES: { value: ProviderType; label: string }[] = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'openai-response', label: 'OpenAI Response' },
-  { value: 'azure', label: 'Azure' },
-  { value: 'gemini', label: 'Gemini' },
-  { value: 'claude', label: 'Claude' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'deepseek', label: 'DeepSeek' },
-  { value: 'silicon', label: 'Silicon Flow' },
-  { value: 'newapi', label: 'NewAPI' },
-]
+import type { ModelCapability, ModelDefinition } from '@shared/types'
 
 export interface BatchToolbarProps {
   /** Currently selected definitions (full objects so we can compute union/diff). */
   selected: ModelDefinition[]
   /** Called for each selected id with the new capability set. */
   onUpdateCapabilities: (id: string, capabilities: ModelCapability[]) => Promise<void>
-  /** Called for each selected id with the new provider-types set. */
-  onUpdateProviderTypes: (id: string, providerTypes: ProviderType[]) => Promise<void>
   /** Called for each selected id to remove it. */
   onDelete: (id: string) => Promise<void>
   /** Called after a batch finishes successfully (e.g. to clear the selection). */
@@ -45,7 +31,6 @@ export interface BatchToolbarProps {
 export function BatchToolbar({
   selected,
   onUpdateCapabilities,
-  onUpdateProviderTypes,
   onDelete,
   onBatchDone,
 }: BatchToolbarProps): React.JSX.Element {
@@ -67,10 +52,6 @@ export function BatchToolbar({
     for (const cap of FULL_CAPABILITIES) {
       if (selected.every((d) => d.capabilities.includes(cap))) capsAllHave.push(cap)
     }
-  }
-  const providerTypesInUse: ProviderType[] = []
-  for (const pt of ALL_PROVIDER_TYPES) {
-    if (selected.some((d) => d.providerTypes.includes(pt.value))) providerTypesInUse.push(pt.value)
   }
 
   const addCaps = async (caps: ModelCapability[]): Promise<void> => {
@@ -94,34 +75,6 @@ export function BatchToolbar({
       for (const def of selected) {
         const next = def.capabilities.filter((c) => !caps.includes(c))
         await onUpdateCapabilities(def.id, next)
-      }
-      onBatchDone()
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const addProviders = async (pts: ProviderType[]): Promise<void> => {
-    if (pts.length === 0) return
-    setBusy(true)
-    try {
-      for (const def of selected) {
-        const next = Array.from(new Set([...def.providerTypes, ...pts]))
-        await onUpdateProviderTypes(def.id, next)
-      }
-      onBatchDone()
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const removeProviders = async (pts: ProviderType[]): Promise<void> => {
-    if (pts.length === 0) return
-    setBusy(true)
-    try {
-      for (const def of selected) {
-        const next = def.providerTypes.filter((p) => !pts.includes(p))
-        await onUpdateProviderTypes(def.id, next)
       }
       onBatchDone()
     } finally {
@@ -162,21 +115,6 @@ export function BatchToolbar({
         caps={capsInUse}
         onConfirm={removeCaps}
         disabled={busy || noSelection || capsInUse.length === 0}
-      />
-
-      <ProviderPopover
-        triggerLabel={t('modelManage.batch.addProvider')}
-        triggerIcon={<Plus className="h-3 w-3" />}
-        items={ALL_PROVIDER_TYPES}
-        onConfirm={addProviders}
-        disabled={busy || noSelection}
-      />
-      <ProviderPopover
-        triggerLabel={t('modelManage.batch.removeProvider')}
-        triggerIcon={<Minus className="h-3 w-3" />}
-        items={ALL_PROVIDER_TYPES.filter((p) => providerTypesInUse.includes(p.value))}
-        onConfirm={removeProviders}
-        disabled={busy || noSelection || providerTypesInUse.length === 0}
       />
 
       <Button
@@ -298,75 +236,6 @@ function CapPopover({
           })}
           <div className="flex justify-end pt-2">
             <Button size="sm" disabled={!hasAdditions} onClick={confirm} className="h-7">
-              {t('common.confirm')}
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
-interface ProviderPopoverProps {
-  triggerLabel: string
-  triggerIcon: React.ReactNode
-  items: { value: ProviderType; label: string }[]
-  onConfirm: (chosen: ProviderType[]) => Promise<void>
-  disabled: boolean
-}
-
-function ProviderPopover({
-  triggerLabel,
-  triggerIcon,
-  items,
-  onConfirm,
-  disabled,
-}: ProviderPopoverProps): React.JSX.Element {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const [picked, setPicked] = useState<ProviderType[]>([])
-
-  const toggle = (p: ProviderType): void => {
-    setPicked((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
-  }
-
-  const confirm = async (): Promise<void> => {
-    await onConfirm(picked)
-    setPicked([])
-    setOpen(false)
-  }
-
-  return (
-    <Popover
-      open={open}
-      onOpenChange={(v) => {
-        if (!v) setPicked([])
-        setOpen(v)
-      }}>
-      <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" disabled={disabled} className="h-7 gap-1 text-xs">
-          {triggerIcon}
-          {triggerLabel}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-56" align="start">
-        <div className="space-y-1">
-          {items.map(({ value, label }) => {
-            const isPicked = picked.includes(value)
-            return (
-              <button
-                key={value}
-                type="button"
-                onClick={() => toggle(value)}
-                className={`hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors ${
-                  isPicked ? 'bg-accent' : ''
-                }`}>
-                {label}
-              </button>
-            )
-          })}
-          <div className="flex justify-end pt-2">
-            <Button size="sm" disabled={picked.length === 0} onClick={confirm} className="h-7">
               {t('common.confirm')}
             </Button>
           </div>

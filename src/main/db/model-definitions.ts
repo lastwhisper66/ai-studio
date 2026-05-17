@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import type { ModelDefinition, ModelCapability, ProviderType } from '@shared/types'
+import type { ModelDefinition, ModelCapability } from '@shared/types'
 import { getDb } from './database'
 import { MODEL_DEFINITION_SEEDS, MODEL_DEFINITIONS_SEED_VERSION } from './seeds/catalogs'
 
@@ -8,7 +8,6 @@ interface ModelDefinitionRow {
   name: string
   group_name: string
   capabilities: string
-  provider_types: string
   created_at: string
   updated_at: string
 }
@@ -20,18 +19,11 @@ function rowToModelDefinition(row: ModelDefinitionRow): ModelDefinition {
   } catch {
     capabilities = []
   }
-  let providerTypes: ProviderType[] = []
-  try {
-    providerTypes = JSON.parse(row.provider_types ?? '[]')
-  } catch {
-    providerTypes = []
-  }
   return {
     id: row.id,
     name: row.name,
     group: row.group_name,
     capabilities,
-    providerTypes,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -64,23 +56,16 @@ export interface CreateModelDefinitionData {
   name: string
   group?: string
   capabilities?: ModelCapability[]
-  providerTypes?: ProviderType[]
 }
 
 export function createModelDefinition(data: CreateModelDefinitionData): ModelDefinition {
   const id = randomUUID()
   getDb()
     .prepare(
-      `INSERT INTO model_definitions (id, name, group_name, capabilities, provider_types)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO model_definitions (id, name, group_name, capabilities)
+       VALUES (?, ?, ?, ?)`,
     )
-    .run(
-      id,
-      data.name,
-      data.group ?? '',
-      JSON.stringify(data.capabilities ?? []),
-      JSON.stringify(data.providerTypes ?? []),
-    )
+    .run(id, data.name, data.group ?? '', JSON.stringify(data.capabilities ?? []))
   return getModelDefinition(id)!
 }
 
@@ -88,7 +73,6 @@ export interface UpdateModelDefinitionData {
   name?: string
   group?: string
   capabilities?: ModelCapability[]
-  providerTypes?: ProviderType[]
 }
 
 export function updateModelDefinition(
@@ -109,10 +93,6 @@ export function updateModelDefinition(
   if (data.capabilities !== undefined) {
     fields.push('capabilities = ?')
     values.push(JSON.stringify(data.capabilities))
-  }
-  if (data.providerTypes !== undefined) {
-    fields.push('provider_types = ?')
-    values.push(JSON.stringify(data.providerTypes))
   }
 
   if (fields.length === 0) return getModelDefinition(id)
@@ -187,24 +167,17 @@ export function seedModelDefinitions(): void {
   if (currentVersion >= MODEL_DEFINITIONS_SEED_VERSION) return
 
   const insert = db.prepare(
-    `INSERT INTO model_definitions (id, name, group_name, capabilities, provider_types)
-     VALUES (?, ?, ?, ?, ?)
+    `INSERT INTO model_definitions (id, name, group_name, capabilities)
+     VALUES (?, ?, ?, ?)
      ON CONFLICT(name) DO UPDATE SET
        group_name = excluded.group_name,
        capabilities = excluded.capabilities,
-       provider_types = excluded.provider_types,
        updated_at = datetime('now')
      WHERE updated_at = created_at`,
   )
   const tx = db.transaction(() => {
     for (const s of MODEL_DEFINITION_SEEDS) {
-      insert.run(
-        randomUUID(),
-        s.name,
-        s.group,
-        JSON.stringify(s.capabilities),
-        JSON.stringify(s.providerTypes),
-      )
+      insert.run(randomUUID(), s.name, s.group, JSON.stringify(s.capabilities))
     }
     db.prepare(
       `INSERT INTO settings (key, value) VALUES ('model_definitions_seed_version', ?)

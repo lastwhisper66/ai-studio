@@ -360,13 +360,12 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
 
   // ---------- model_definitions ----------
   const upsertDef = db.prepare(`
-    INSERT INTO model_definitions (id, name, group_name, capabilities, provider_types)
-    VALUES (@id, @name, @group_name, @capabilities, @provider_types)
+    INSERT INTO model_definitions (id, name, group_name, capabilities)
+    VALUES (@id, @name, @group_name, @capabilities)
     ON CONFLICT(id) DO UPDATE SET
       name = excluded.name,
       group_name = excluded.group_name,
       capabilities = excluded.capabilities,
-      provider_types = excluded.provider_types,
       updated_at = datetime('now')
   `)
   for (const d of snapshot.modelDefinitions) {
@@ -375,7 +374,6 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
       name: d.name,
       group_name: d.group ?? '',
       capabilities: JSON.stringify(d.capabilities ?? []),
-      provider_types: JSON.stringify(d.providerTypes ?? []),
     })
   }
 

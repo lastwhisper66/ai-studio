@@ -1,4 +1,4 @@
-import type { ModelCapability, ProviderType } from '@shared/types'
+import type { ModelCapability } from '@shared/types'
 import modelDefinitionData from './seed-model-definitions.json'
 import modelGroupData from './seed-model-groups.json'
 
@@ -9,7 +9,6 @@ export interface ModelDefinitionSeed {
   name: string
   group: string
   capabilities: ModelCapability[]
-  providerTypes: ProviderType[]
 }
 
 export interface ModelGroupSeed {

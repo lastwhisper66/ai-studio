@@ -134,7 +134,7 @@ SQLite, WAL journal, foreign keys ON. Schema and seeding live in `src/main/db/da
 - **settings** — `key` (PK), `value`. Values for keys matching `*.apiKey` (e.g. `api.apiKey`, providers' `api_key`) are encrypted with Electron `safeStorage`
 - **providers** — `id` (PK), `type` (`ProviderType`), `name`, `api_key`, `base_url`, `enabled`, `is_default`, `sort_order`, `created_at`, `updated_at`
 - **models** — `id` (PK), `provider_id` (FK→providers, CASCADE), `name`, `group_name`, `capabilities` (JSON `ModelCapability[]`), `enabled`, `sort_order`, `created_at`; indexed on `provider_id`
-- **model_definitions** — global capability library (`id`, `name` UNIQUE, `group_name`, `capabilities`, `provider_types`); indexed on `name`
+- **model_definitions** — global capability library (`id`, `name` UNIQUE, `group_name`, `capabilities`); indexed on `name`
 - **model_groups** — regex grouping rules for remote model fetches (`id`, `pattern` UNIQUE, `display_name`, `sort_order`); indexed on `pattern`
 - **assistants** — `id` (PK), `name`, `icon`, `description`, `system_prompt`, `provider_id`, `model`, `temperature`, `max_completion_tokens`, `top_p`, `context_count`, `prompt_suggestions` (JSON string array), `is_default`, `group_name`, `sort_order`, timestamps
 - **phrases** — `id`, `title`, `content`, `sort_order`, `created_at` (quick-phrase library)

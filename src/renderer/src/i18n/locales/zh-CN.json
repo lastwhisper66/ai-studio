@@ -826,8 +826,6 @@
       "selected": "已选 {{count}}",
       "addCap": "+ 能力",
       "removeCap": "− 能力",
-      "addProvider": "+ Provider",
-      "removeProvider": "− Provider",
       "delete": "删除选中",
       "confirmDelete": "确定要删除选中的 {{count}} 个模型定义？"
     },
@@ -857,8 +855,6 @@
     "noResults": "没有匹配的模型",
     "modelName": "模型名称",
     "capabilities": "能力标签",
-    "providerTypes": "适用供应商",
-    "providerTypesHint": "留空表示对所有供应商可见",
     "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
   },
   "modelGroup": {

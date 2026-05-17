@@ -16,6 +16,7 @@ import { migrateAssistantLibraryFields } from './assistant-library-fields'
 import { cleanupSeedI18nKeys } from './cleanup-seed-i18n-keys'
 import { initBuiltinAppliedVersions } from './init-builtin-applied-versions'
 import { promoteDefinitionGroupsToModelGroups } from './promote-definition-groups-to-model-groups'
+import { dropModelDefinitionProviderTypes } from './drop-model-definition-provider-types'
 
 export {
   migrateBackupSettings,
@@ -23,6 +24,7 @@ export {
   cleanupSeedI18nKeys,
   initBuiltinAppliedVersions,
   promoteDefinitionGroupsToModelGroups,
+  dropModelDefinitionProviderTypes,
 }
 
 export function runMigrations(): void {
@@ -31,4 +33,5 @@ export function runMigrations(): void {
   cleanupSeedI18nKeys() // Must run AFTER assistant-library-fields seeds templates.
   initBuiltinAppliedVersions() // Idempotent; runs every boot but writes only on first.
   promoteDefinitionGroupsToModelGroups()
+  dropModelDefinitionProviderTypes()
 }

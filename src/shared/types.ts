@@ -201,7 +201,6 @@ export interface ModelDefinition {
    */
   group: string
   capabilities: ModelCapability[]
-  providerTypes: ProviderType[]
   createdAt: string
   updatedAt: string
 }

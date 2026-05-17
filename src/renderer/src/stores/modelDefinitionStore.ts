@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ModelDefinition, ModelCapability, ProviderType } from '@shared/types'
+import type { ModelDefinition, ModelCapability } from '@shared/types'
 
 interface ModelDefinitionStore {
   definitions: ModelDefinition[]
@@ -10,7 +10,6 @@ interface ModelDefinitionStore {
     name: string
     group?: string
     capabilities?: ModelCapability[]
-    providerTypes?: ProviderType[]
   }) => Promise<ModelDefinition | undefined>
   update: (
     id: string,
@@ -18,7 +17,6 @@ interface ModelDefinitionStore {
       name?: string
       group?: string
       capabilities?: ModelCapability[]
-      providerTypes?: ProviderType[]
     },
   ) => Promise<void>
   remove: (id: string) => Promise<void>
