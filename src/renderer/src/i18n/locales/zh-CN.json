@@ -195,8 +195,7 @@
     "title": "设置",
     "sections": {
       "provider": "模型服务",
-      "modelLibrary": "模型库",
-      "modelGroup": "模型分组",
+      "modelManagement": "模型与分组",
       "general": "通用设置",
       "network": "网络设置",
       "display": "显示设置",
@@ -804,20 +803,33 @@
       "reasoning": "推理",
       "vision": "视觉",
       "web": "联网",
-      "free": "免费",
-      "embedding": "嵌入",
-      "reranking": "重排",
       "tools": "工具"
     },
     "cap": {
       "reasoning": "推理",
       "vision": "视觉",
       "web": "联网",
-      "free": "免费",
-      "embedding": "嵌入",
-      "reranking": "重排",
       "tools": "工具"
-    }
+    },
+    "allModels": "全部模型",
+    "unmatched": "未匹配模型",
+    "newGroup": "新建分组",
+    "deleteRuleImpact": "{{count}} 个模型将变为未匹配状态。",
+    "preview": {
+      "placeholder": "输入模型名预览匹配",
+      "matchedDef": "命中定义",
+      "matchedRule": "命中规则",
+      "fallback": "未命中规则，推断为 \"{{name}}\"",
+      "noDefMatch": "未命中模型定义"
+    },
+    "batch": {
+      "selected": "已选 {{count}}",
+      "addCap": "+ 能力",
+      "removeCap": "− 能力",
+      "delete": "删除选中",
+      "confirmDelete": "确定要删除选中的 {{count}} 个模型定义？"
+    },
+    "newDefinitionGroupHint": "新建的模型若名字不与 \"{{pattern}}\" 前缀匹配，会出现在「未匹配模型」中。"
   },
   "addModel": {
     "title": "添加模型",
@@ -836,32 +848,23 @@
     "save": "保存"
   },
   "modelLibrary": {
-    "title": "模型库",
     "description": "定义模型的能力标签，添加模型时自动匹配",
     "addDefinition": "添加模型",
     "editDefinition": "编辑模型",
-    "searchPlaceholder": "搜索模型名称或分组",
     "empty": "模型库为空，点击上方按钮添加模型定义",
     "noResults": "没有匹配的模型",
     "modelName": "模型名称",
-    "group": "分组",
     "capabilities": "能力标签",
-    "providerTypes": "适用供应商",
-    "providerTypesHint": "留空表示对所有供应商可见",
-    "ungrouped": "未分组",
     "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
   },
   "modelGroup": {
-    "title": "模型分组",
-    "description": "定义远程模型的分组规则，按前缀匹配模型名称",
     "addGroup": "添加分组",
     "editGroup": "编辑分组",
-    "empty": "暂无分组规则，点击上方按钮添加",
     "deleteTitle": "删除分组",
     "deleteDescription": "确定要删除「{{name}}」分组规则吗？此操作不可撤销。",
     "pattern": "匹配模式",
     "patternPlaceholder": "例如: claude-opus, gpt-5.1",
-    "patternHint": "模型名称以此前缀开头时归入该分组（最长匹配优先）",
+    "patternHint": "前缀 (prefix) — 大小写不敏感；最长前缀优先",
     "displayName": "显示名称",
     "displayNamePlaceholder": "例如: Claude Opus, GPT-5.1"
   },
@@ -897,6 +900,12 @@
       "chat": "聊天",
       "window": "窗口"
     }
+  },
+  "closeBehavior": {
+    "title": "关闭窗口时的默认行为",
+    "description": "选择您希望应用程序在点击关闭按钮时的默认行为，之后可以随时在「设置 → 通用 → 窗口」中修改。",
+    "minimizeTitle": "最小化到任务栏",
+    "quitTitle": "直接退出应用程序"
   },
   "tray": {
     "openMainWindow": "打开主窗口",

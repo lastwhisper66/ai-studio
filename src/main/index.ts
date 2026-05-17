@@ -329,7 +329,9 @@ function createWindow(): void {
     }
   })
 
-  // Close behavior: hide to tray or quit, controlled by app.closeToTray setting
+  // Close behavior: on first close, ask the user whether to minimize to tray
+  // or quit (persisted to app.closeToTray + app.closeBehaviorPrompted). On
+  // subsequent closes, honor the stored preference.
   win.on('close', (e) => {
     try {
       saveWindowState(win)
@@ -337,6 +339,12 @@ function createWindow(): void {
       // Non-critical — silently ignore
     }
     if (!isQuitting && !isResetting) {
+      const prompted = getSetting('app.closeBehaviorPrompted') === 'true'
+      if (!prompted) {
+        e.preventDefault()
+        win.webContents.send(IpcChannels.WINDOW_CLOSE_PROMPT)
+        return
+      }
       const closeToTray = getCloseToTray()
       if (closeToTray) {
         e.preventDefault()

@@ -1,31 +1,32 @@
 /**
- * Central registry of one-shot, idempotent boot-time migrations.
+ * 启动期数据库迁移。
  *
- * Each migration MUST be:
- *   - Idempotent (re-running after success is a no-op).
- *   - Self-contained (no cross-migration ordering assumptions unless declared
- *     by listing them in `runMigrations` in the intended order).
- *   - Forgiving — never throw on already-migrated data.
+ * 机制：用 SQLite 内置的 `PRAGMA user_version` 追踪"已应用到第几号迁移"。
+ * 每个迁移只跑一次；启动开销趋近于 0。
  *
- * Add new migrations here so the boot sequence in `src/main/index.ts` stays
- * a single `runMigrations()` call.
+ * 新增迁移的步骤参见 CLAUDE.md → Key Conventions → "Boot-time migrations"。
  */
 
-import { migrateBackupSettings } from './backup-settings'
-import { migrateAssistantLibraryFields } from './assistant-library-fields'
-import { cleanupSeedI18nKeys } from './cleanup-seed-i18n-keys'
-import { initBuiltinAppliedVersions } from './init-builtin-applied-versions'
+import type Database from 'better-sqlite3'
+import { getDb } from '../db/database'
 
-export {
-  migrateBackupSettings,
-  migrateAssistantLibraryFields,
-  cleanupSeedI18nKeys,
-  initBuiltinAppliedVersions,
+interface Migration {
+  version: number
+  name: string
+  up(db: Database.Database): void
 }
 
+const MIGRATIONS: Migration[] = []
+
 export function runMigrations(): void {
-  migrateBackupSettings()
-  migrateAssistantLibraryFields()
-  cleanupSeedI18nKeys() // Must run AFTER assistant-library-fields seeds templates.
-  initBuiltinAppliedVersions() // Idempotent; runs every boot but writes only on first.
+  const db = getDb()
+  const current = db.pragma('user_version', { simple: true }) as number
+  for (const m of MIGRATIONS) {
+    if (m.version <= current) continue
+    db.transaction(() => {
+      m.up(db)
+      db.pragma(`user_version = ${m.version}`)
+    })()
+    console.log(`[migrate] applied ${m.version}-${m.name}`)
+  }
 }

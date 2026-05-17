@@ -195,8 +195,7 @@
     "title": "Settings",
     "sections": {
       "provider": "Providers",
-      "modelLibrary": "Model Library",
-      "modelGroup": "Model Groups",
+      "modelManagement": "Models & Groups",
       "general": "General",
       "network": "Network",
       "display": "Display",
@@ -804,20 +803,33 @@
       "reasoning": "Reasoning",
       "vision": "Vision",
       "web": "Web",
-      "free": "Free",
-      "embedding": "Embedding",
-      "reranking": "Reranking",
       "tools": "Tools"
     },
     "cap": {
       "reasoning": "Reasoning",
       "vision": "Vision",
       "web": "Web",
-      "free": "Free",
-      "embedding": "Embedding",
-      "reranking": "Reranking",
       "tools": "Tools"
-    }
+    },
+    "allModels": "All Models",
+    "unmatched": "Unmatched Models",
+    "newGroup": "New Group",
+    "deleteRuleImpact": "{{count}} model(s) will become unmatched.",
+    "preview": {
+      "placeholder": "Type a model name to preview matching",
+      "matchedDef": "Matched definition",
+      "matchedRule": "Matched rule",
+      "fallback": "No rule matched; inferred as \"{{name}}\"",
+      "noDefMatch": "No definition matched"
+    },
+    "batch": {
+      "selected": "{{count}} selected",
+      "addCap": "+ Capability",
+      "removeCap": "− Capability",
+      "delete": "Delete selected",
+      "confirmDelete": "Delete the {{count}} selected model definition(s)?"
+    },
+    "newDefinitionGroupHint": "New definitions whose name does not start with \"{{pattern}}\" will appear under \"Unmatched Models\"."
   },
   "addModel": {
     "title": "Add Model",
@@ -836,32 +848,23 @@
     "save": "Save"
   },
   "modelLibrary": {
-    "title": "Model Library",
     "description": "Define model capabilities for auto-matching when adding models",
     "addDefinition": "Add Model",
     "editDefinition": "Edit Model",
-    "searchPlaceholder": "Search model name or group",
     "empty": "Model library is empty. Click the button above to add a model definition.",
     "noResults": "No matching models",
     "modelName": "Model Name",
-    "group": "Group",
     "capabilities": "Capabilities",
-    "providerTypes": "Provider Types",
-    "providerTypesHint": "Leave empty to make visible to all providers",
-    "ungrouped": "Ungrouped",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
   },
   "modelGroup": {
-    "title": "Model Groups",
-    "description": "Define grouping rules for remote models by prefix matching",
     "addGroup": "Add Group",
     "editGroup": "Edit Group",
-    "empty": "No grouping rules yet. Click the button above to add one.",
     "deleteTitle": "Delete Group",
     "deleteDescription": "Are you sure you want to delete the \"{{name}}\" group rule? This cannot be undone.",
     "pattern": "Pattern",
     "patternPlaceholder": "e.g. claude-opus, gpt-5.1",
-    "patternHint": "Models whose name starts with this prefix will be grouped together (longest match wins)",
+    "patternHint": "Prefix match — case-insensitive; longest prefix wins",
     "displayName": "Display Name",
     "displayNamePlaceholder": "e.g. Claude Opus, GPT-5.1"
   },
@@ -897,6 +900,12 @@
       "chat": "Chat",
       "window": "Window"
     }
+  },
+  "closeBehavior": {
+    "title": "Default behavior when closing the window",
+    "description": "Choose what the application should do when you click the close button. You can change this later under Settings → General → Window.",
+    "minimizeTitle": "Minimize to tray",
+    "quitTitle": "Quit the application"
   },
   "tray": {
     "openMainWindow": "Open main window",

@@ -5,8 +5,7 @@ import { useProviderStore } from '@renderer/stores/providerStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
-import { ModelLibrarySection } from './ModelLibrarySection'
-import { ModelGroupSection } from './ModelGroupSection'
+import { ModelManagementSection } from './ModelManagementSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { NetworkSection } from './NetworkSection'
@@ -36,19 +35,16 @@ export function SettingsPage(): React.JSX.Element {
         <h1 className="text-base font-semibold">{t('settings.title')}</h1>
       </div>
 
-      {/* Two-column layout. The Provider, Model Library, Model Group AND
-          Data sections render their own internal "list-on-left + detail" so
-          we hand them the full pane; everything else gets a scrollable
-          panel of plain forms. */}
+      {/* Two-column layout. The Provider, Model Management AND Data sections
+          render their own internal "list-on-left + detail" so we hand them the
+          full pane; everything else gets a scrollable panel of plain forms. */}
       <div className="flex min-h-0 flex-1">
         <SettingsSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
 
         {activeSection === 'provider' ? (
           <ProviderSection />
-        ) : activeSection === 'model-library' ? (
-          <ModelLibrarySection />
-        ) : activeSection === 'model-group' ? (
-          <ModelGroupSection />
+        ) : activeSection === 'model-management' ? (
+          <ModelManagementSection />
         ) : activeSection === 'data' ? (
           <DataSection />
         ) : (

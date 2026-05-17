@@ -8,7 +8,7 @@ const COLOR_VAR_KEYS = Object.keys(colorThemes[0].light) as (keyof ThemeColors)[
 
 function getStoredTheme(): Theme {
   const stored = localStorage.getItem('theme')
-  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'dark'
+  return stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
 }
 
 function getStoredColorTheme(): ColorThemeId {

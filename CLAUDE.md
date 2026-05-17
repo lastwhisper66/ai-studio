@@ -134,7 +134,7 @@ SQLite, WAL journal, foreign keys ON. Schema and seeding live in `src/main/db/da
 - **settings** — `key` (PK), `value`. Values for keys matching `*.apiKey` (e.g. `api.apiKey`, providers' `api_key`) are encrypted with Electron `safeStorage`
 - **providers** — `id` (PK), `type` (`ProviderType`), `name`, `api_key`, `base_url`, `enabled`, `is_default`, `sort_order`, `created_at`, `updated_at`
 - **models** — `id` (PK), `provider_id` (FK→providers, CASCADE), `name`, `group_name`, `capabilities` (JSON `ModelCapability[]`), `enabled`, `sort_order`, `created_at`; indexed on `provider_id`
-- **model_definitions** — global capability library (`id`, `name` UNIQUE, `group_name`, `capabilities`, `provider_types`); indexed on `name`
+- **model_definitions** — global capability library (`id`, `name` UNIQUE, `group_name`, `capabilities`); indexed on `name`
 - **model_groups** — regex grouping rules for remote model fetches (`id`, `pattern` UNIQUE, `display_name`, `sort_order`); indexed on `pattern`
 - **assistants** — `id` (PK), `name`, `icon`, `description`, `system_prompt`, `provider_id`, `model`, `temperature`, `max_completion_tokens`, `top_p`, `context_count`, `prompt_suggestions` (JSON string array), `is_default`, `group_name`, `sort_order`, timestamps
 - **phrases** — `id`, `title`, `content`, `sort_order`, `created_at` (quick-phrase library)
@@ -293,7 +293,14 @@ npm run build:linux       # Linux build (untested in CI)
 
 - **AI calls**: only in `src/main/ai/`. Never import an AI SDK from preload or renderer.
 - **DB access**: only in `src/main/db/`. Renderer talks via IPC.
-- **Boot-time migrations**: any one-shot, idempotent data migration (settings reshape, schema fixups, file moves) lives in `src/main/migrate/`. Add a new file per migration and register it in `src/main/migrate/index.ts` `runMigrations()`. Migrations MUST be idempotent — they run on every boot.
+- **Boot-time migrations**: 迁移机制基于 SQLite `PRAGMA user_version`，调度器在 `src/main/migrate/index.ts`。新增迁移：
+  - 在 `src/main/migrate/` 下新建 `NNN-short-name.ts`（NNN 是下一个连续数字，从 001 起）。导出形如 `{ version: NNN, name: 'short-name', up(db) { ... } }` 的 `Migration` 对象。
+  - 在 `index.ts` 顶部 import 并 `push` 到 `MIGRATIONS` 数组（保持数组按 `version` 升序）。
+  - **不需要**在 `up()` 内部写幂等检查 —— 框架保证每个 version 只跑一次。
+  - **不需要**手动开事务 —— 框架把 `up()` 和 `user_version` 推进包在同一事务里。
+  - 一旦某个版本号发布到 git 主干，**永远不要修改它的 `up()`**（已经升级过的库不会再跑它）。要修改，新增一个更高 version 的迁移。
+  - 迁移失败会抛出，让应用启动失败暴露问题，不要 try/catch 吞错。
+  - 此外把 schema 变更也优先考虑直接进 `database.ts` 的 `createTables()`（新装库直接拿到最终形态，迁移只服务于"已存在的库"）—— 但**不要**回头改 `createTables()` 在已发布版本之后的 schema，那会让新装库和老库分裂。
 - **Built-in presets** (assistant templates / quick actions / selection actions / default assistant): the single source of truth is `src/main/builtins/`. DB rows are populated via `INSERT OR IGNORE` on boot, so user edits to built-ins are never auto-overwritten. To roll a content change out to existing installs, bump the corresponding `BUILTIN_TEMPLATES_VERSION` / `BUILTIN_QUICK_ACTIONS_VERSION` / `BUILTIN_SELECTION_ACTIONS_VERSION` in `src/main/builtins/index.ts`; the relevant settings section will then display a "sync to latest" banner. The user must explicitly confirm sync — boot never overwrites their edits.
 - **IPC plumbing**: every new channel must be declared in `src/shared/ipc-channels.ts` `IpcChannels` constant first, then wrapped in `src/preload/index.ts`, then handled in a `src/main/ipc/<domain>-handlers.ts`. Keep one file per domain.
 - **Errors**: throw `AppError` (main) with an `ERROR_CODES` key; handlers wrap it into `IpcResult<T>` with a `LocalizedError` payload. The renderer renders it through `useLocalizedError` so the user sees i18n'd text.
@@ -311,7 +318,7 @@ The app supports a multi-provider architecture where providers, models, and assi
 - **Providers**: configured AI backends. Each has connection settings, an API key, and an `is_default` flag. CRUD: `db/providers.ts` + `ipc/provider-handlers.ts` + `providerStore`. `provider:test-connection` does a 1-message ping; `model:fetch-remote` lists models from the remote `/v1/models` endpoint.
 - **Model Library** (`model_definitions`): a global catalog of model name → capability tags. When you add a remote model whose name matches a definition, capabilities are inferred automatically. Editable via Settings → Model Library.
 - **Model Groups** (`model_groups`): regex patterns mapping model names to display group names. Used to organize the model picker after a remote fetch.
-- **Models**: belong to a provider; `enabled` + `sort_order` + `capabilities` (JSON `ModelCapability[]`: `reasoning|vision|web|free|embedding|reranking|tools`).
+- **Models**: belong to a provider; `enabled` + `sort_order` + `capabilities` (JSON `ModelCapability[]`: `reasoning|vision|web|tools`).
 - **Assistants**: named configurations with a system prompt, provider/model binding, generation parameters (temperature, max_completion_tokens, top_p, context_count), prompt suggestions, group, default flag.
 
 ## Security

@@ -10,7 +10,7 @@ export interface BuiltinQuickAction {
 export const QUICK_ACTIONS: readonly BuiltinQuickAction[] = [
   {
     id: 'builtin-answer',
-    name: 'Answer question',
+    name: 'Answer',
     description: 'Ask the AI a question and get an answer',
     systemPrompt:
       "You are a knowledgeable and helpful assistant. Answer the user's question clearly, accurately, and concisely.",
@@ -19,7 +19,7 @@ export const QUICK_ACTIONS: readonly BuiltinQuickAction[] = [
   },
   {
     id: 'builtin-translate',
-    name: 'Text translation',
+    name: 'Translate',
     description: 'Translate text into another language',
     systemPrompt:
       'You are a professional translation engine. Translate the text provided by the user into the target language specified below.\n' +
@@ -33,7 +33,7 @@ export const QUICK_ACTIONS: readonly BuiltinQuickAction[] = [
   },
   {
     id: 'builtin-summary',
-    name: 'Summarize content',
+    name: 'Summarize',
     description: 'Concisely summarize the provided text',
     systemPrompt:
       'You are a summarization expert. Provide a clear, concise summary that captures all key points of the input text. Use bullet points or structured format when it improves clarity.',
@@ -42,7 +42,7 @@ export const QUICK_ACTIONS: readonly BuiltinQuickAction[] = [
   },
   {
     id: 'builtin-image-translate',
-    name: 'Image translation',
+    name: 'Image Translate',
     description: 'Recognize and translate text in an image',
     systemPrompt:
       'You are a professional translation engine. Translate the text or image content sent by the user into the target language specified below.\n' +
