@@ -813,7 +813,7 @@
     },
     "allModels": "All Models",
     "unmatched": "Unmatched Models",
-    "newGroup": "New Rule",
+    "newGroup": "New Group",
     "deleteRuleImpact": "{{count}} model(s) will become unmatched.",
     "preview": {
       "placeholder": "Type a model name to preview matching",

@@ -122,69 +122,65 @@ export const ModelDefinitionsPanel = forwardRef<
 
       {/* List */}
       <ScrollArea className="flex-1">
-        <div className="p-2">
-          {filtered.length === 0 ? (
-            <div className="text-muted-foreground py-12 text-center text-sm">
-              {definitions.length === 0 ? t('modelLibrary.empty') : t('modelLibrary.noResults')}
-            </div>
-          ) : (
-            <div className="space-y-0.5">
-              {filtered.map((def) => {
-                const isSelected = selectedIds.has(def.id)
-                const isHighlighted = highlightId === def.id
-                return (
-                  <div
-                    key={def.id}
-                    ref={(el) => {
-                      if (el) rowRefs.current.set(def.id, el)
-                      else rowRefs.current.delete(def.id)
-                    }}
-                    className={`group flex items-center gap-2 rounded-md border-l-2 px-2 py-1.5 transition-colors ${
-                      isSelected
-                        ? 'bg-accent/50 border-primary'
-                        : 'border-transparent hover:bg-accent/30'
-                    } ${isHighlighted ? 'ring-2 ring-primary/60' : ''}`}>
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={() => toggleOne(def.id)}
-                      aria-label={`Select ${def.name}`}
-                    />
-                    <span className="min-w-0 flex-1 truncate text-sm">{def.name}</span>
+        {filtered.length === 0 ? (
+          <div className="text-muted-foreground py-12 text-center text-sm">
+            {definitions.length === 0 ? t('modelLibrary.empty') : t('modelLibrary.noResults')}
+          </div>
+        ) : (
+          <div className="divide-y border-b">
+            {filtered.map((def) => {
+              const isSelected = selectedIds.has(def.id)
+              const isHighlighted = highlightId === def.id
+              return (
+                <div
+                  key={def.id}
+                  ref={(el) => {
+                    if (el) rowRefs.current.set(def.id, el)
+                    else rowRefs.current.delete(def.id)
+                  }}
+                  className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
+                    isSelected ? 'bg-accent/50' : 'hover:bg-accent/30'
+                  } ${isHighlighted ? 'ring-primary/60 ring-2 ring-inset' : ''}`}>
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleOne(def.id)}
+                    aria-label={`Select ${def.name}`}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm">{def.name}</span>
 
-                    <div className="flex gap-1">
-                      {def.capabilities.map((cap) => {
-                        const cfg = CAPABILITY_CONFIG[cap]
-                        if (!cfg) return null
-                        const Icon = cfg.icon
-                        return (
-                          <span
-                            key={cap}
-                            className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
-                            style={{ backgroundColor: cfg.color }}>
-                            <Icon className="h-3 w-3" /> {t(cfg.labelKey)}
-                          </span>
-                        )
-                      })}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setEditing(def)}
-                      className="text-muted-foreground hover:text-foreground rounded p-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeleting(def)}
-                      className="text-muted-foreground hover:text-destructive rounded p-1 opacity-0 transition-opacity group-hover:opacity-100">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
+                  <div className="flex gap-1">
+                    {def.capabilities.map((cap) => {
+                      const cfg = CAPABILITY_CONFIG[cap]
+                      if (!cfg) return null
+                      const Icon = cfg.icon
+                      return (
+                        <span
+                          key={cap}
+                          className="flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-white"
+                          style={{ backgroundColor: cfg.color }}>
+                          <Icon className="h-3 w-3" /> {t(cfg.labelKey)}
+                        </span>
+                      )
+                    })}
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditing(def)}
+                    className="text-muted-foreground hover:text-foreground rounded p-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleting(def)}
+                    className="text-muted-foreground hover:text-destructive rounded p-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </ScrollArea>
 
       {/* Add dialog */}

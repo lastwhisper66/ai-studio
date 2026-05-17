@@ -1,95 +1,95 @@
 [
   {
     "name": "gpt-5.4",
-    "group": "GPT-5.4",
+    "group": "GPT",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gpt-5.4-mini",
-    "group": "GPT-5.4",
+    "group": "GPT",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gpt-5.4-nano",
-    "group": "GPT-5.4",
+    "group": "GPT",
     "capabilities": ["reasoning", "tools", "web"]
   },
   {
     "name": "gpt-5.4-pro",
-    "group": "GPT-5.4",
+    "group": "GPT",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gpt-5.1",
-    "group": "GPT-5.1",
+    "group": "GPT",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gpt-5.1-mini",
-    "group": "GPT-5.1",
+    "group": "GPT",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
 
   {
     "name": "claude-opus-4-7",
-    "group": "Claude Opus",
+    "group": "Claude",
     "capabilities": ["reasoning", "vision", "tools"]
   },
   {
     "name": "claude-opus-4-6",
-    "group": "Claude Opus",
+    "group": "Claude",
     "capabilities": ["reasoning", "vision", "tools"]
   },
   {
     "name": "claude-sonnet-4-6",
-    "group": "Claude Sonnet",
+    "group": "Claude",
     "capabilities": ["reasoning", "vision", "tools"]
   },
   {
     "name": "claude-haiku-4-5",
-    "group": "Claude Haiku",
+    "group": "Claude",
     "capabilities": ["reasoning", "vision", "tools"]
   },
 
   {
     "name": "gemini-3.1-pro-preview",
-    "group": "Gemini 3.1",
+    "group": "Gemini",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gemini-3.1-flash-lite-preview",
-    "group": "Gemini 3.1",
+    "group": "Gemini",
     "capabilities": ["reasoning", "vision", "tools"]
   },
   {
     "name": "gemini-3-flash-preview",
-    "group": "Gemini 3",
+    "group": "Gemini",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gemini-2.5-pro",
-    "group": "Gemini 2.5",
+    "group": "Gemini",
     "capabilities": ["reasoning", "vision", "tools", "web"]
   },
   {
     "name": "gemini-2.5-flash",
-    "group": "Gemini 2.5",
+    "group": "Gemini",
     "capabilities": ["reasoning", "vision", "tools"]
   },
   {
     "name": "gemini-2.5-flash-lite",
-    "group": "Gemini 2.5",
+    "group": "Gemini",
     "capabilities": ["vision", "tools"]
   },
 
   {
     "name": "deepseek-chat",
-    "group": "DeepSeek-V3.2",
+    "group": "DeepSeek",
     "capabilities": ["tools"]
   },
   {
     "name": "deepseek-reasoner",
-    "group": "DeepSeek-V3.2",
+    "group": "DeepSeek",
     "capabilities": ["reasoning", "tools"]
   },
 
@@ -102,11 +102,6 @@
     "name": "deepseek-ai/DeepSeek-R1",
     "group": "DeepSeek",
     "capabilities": ["reasoning"]
-  },
-  {
-    "name": "Qwen/Qwen3-235B-A22B",
-    "group": "Qwen3",
-    "capabilities": ["reasoning", "tools"]
   },
   {
     "name": "Pro/zai-org/GLM-5",

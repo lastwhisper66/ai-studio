@@ -17,6 +17,8 @@ import { cleanupSeedI18nKeys } from './cleanup-seed-i18n-keys'
 import { initBuiltinAppliedVersions } from './init-builtin-applied-versions'
 import { promoteDefinitionGroupsToModelGroups } from './promote-definition-groups-to-model-groups'
 import { dropModelDefinitionProviderTypes } from './drop-model-definition-provider-types'
+import { coalesceModelGroupsByVendor } from './coalesce-model-groups-by-vendor'
+import { removeQwen3Builtin } from './remove-qwen3-builtin'
 
 export {
   migrateBackupSettings,
@@ -25,6 +27,8 @@ export {
   initBuiltinAppliedVersions,
   promoteDefinitionGroupsToModelGroups,
   dropModelDefinitionProviderTypes,
+  coalesceModelGroupsByVendor,
+  removeQwen3Builtin,
 }
 
 export function runMigrations(): void {
@@ -34,4 +38,6 @@ export function runMigrations(): void {
   initBuiltinAppliedVersions() // Idempotent; runs every boot but writes only on first.
   promoteDefinitionGroupsToModelGroups()
   dropModelDefinitionProviderTypes()
+  coalesceModelGroupsByVendor() // Must run AFTER promote… so it can clean up rows promote created.
+  removeQwen3Builtin() // Must run AFTER promote… so it can clean up the Qwen3 group it created.
 }

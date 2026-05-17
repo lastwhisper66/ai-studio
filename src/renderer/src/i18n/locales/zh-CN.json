@@ -813,7 +813,7 @@
     },
     "allModels": "全部模型",
     "unmatched": "未匹配模型",
-    "newGroup": "新建规则",
+    "newGroup": "新建分组",
     "deleteRuleImpact": "{{count}} 个模型将变为未匹配状态。",
     "preview": {
       "placeholder": "输入模型名预览匹配",
