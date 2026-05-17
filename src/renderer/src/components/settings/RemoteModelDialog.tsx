@@ -81,7 +81,9 @@ export function RemoteModelDialog({
 
   // Group by model group rules (independent from model definitions)
   const resolveGroup = useModelGroupStore((s) => s.resolve)
+  const groupsRef = useModelGroupStore((s) => s.groups)
   const groups = useMemo(() => {
+    // 1. Bucket models by display group name.
     const map = new Map<string, RemoteModel[]>()
     for (const model of filteredModels) {
       const groupName = resolveGroup(model.id)
@@ -89,13 +91,31 @@ export function RemoteModelDialog({
       existing.push(model)
       map.set(groupName, existing)
     }
-    // Sort groups alphabetically, models within groups alphabetically
-    return new Map(
-      [...map.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, models]) => [name, [...models].sort((a, b) => a.id.localeCompare(b.id))]),
-    )
-  }, [filteredModels, resolveGroup])
+    // 2. Determine display order: prefer the order of `groupsRef` (already
+    //    sorted by sort_order ASC, display_name ASC from listModelGroups);
+    //    unknown displayNames (e.g. inferModelGroup fallbacks) fall through
+    //    in alphabetical order at the end.
+    const ordered: [string, RemoteModel[]][] = []
+    const seen = new Set<string>()
+    for (const g of groupsRef) {
+      const bucket = map.get(g.displayName)
+      if (bucket) {
+        ordered.push([g.displayName, bucket.slice().sort((a, b) => a.id.localeCompare(b.id))])
+        seen.add(g.displayName)
+      }
+    }
+    const leftovers = [...map.entries()]
+      .filter(([name]) => !seen.has(name))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(
+        ([name, models]) =>
+          [name, models.slice().sort((a, b) => a.id.localeCompare(b.id))] as [
+            string,
+            RemoteModel[],
+          ],
+      )
+    return new Map([...ordered, ...leftovers])
+  }, [filteredModels, resolveGroup, groupsRef])
 
   const toggleGroup = (group: string): void => {
     setCollapsedGroups((prev) => {
