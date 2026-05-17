@@ -12,11 +12,39 @@ interface ModelGroupStore {
   ) => Promise<void>
   remove: (id: string) => Promise<void>
   /**
+   * Persist a new ordering. `orderedIds` must contain every existing group id
+   * exactly once. Updates each row's `sort_order` and replaces the local
+   * cached array in one shot. Failure rolls back the local cache.
+   */
+  reorder: (orderedIds: string[]) => Promise<void>
+  /**
    * Resolve a display group name for a model ID.
    * Two-level matching: exact → longest prefix.
-   * Falls back to inferModelGroup() for unmatched models.
+   * Falls back to `inferModelGroup()` when no rule matches (returns a string).
    */
   resolve: (modelId: string) => string
+  /**
+   * Same matching rules as `resolve`, but returns the full ModelGroup object
+   * (or undefined when no rule matches). Does NOT fall back to
+   * `inferModelGroup`. Used by the MatchPreviewBar's "matched rule" row and
+   * by the "unmatched models" pseudo-node filter.
+   */
+  resolveRule: (modelId: string) => ModelGroup | undefined
+}
+
+function matchRule(groups: ModelGroup[], modelId: string): ModelGroup | undefined {
+  const lower = modelId.toLowerCase()
+
+  const exact = groups.find((g) => g.pattern.toLowerCase() === lower)
+  if (exact) return exact
+
+  let best: ModelGroup | undefined
+  for (const g of groups) {
+    if (lower.startsWith(g.pattern.toLowerCase())) {
+      if (!best || g.pattern.length > best.pattern.length) best = g
+    }
+  }
+  return best
 }
 
 export const useModelGroupStore = create<ModelGroupStore>((set, get) => ({
@@ -52,26 +80,32 @@ export const useModelGroupStore = create<ModelGroupStore>((set, get) => ({
     }
   },
 
-  resolve: (modelId: string): string => {
-    const { groups } = get()
-    const lower = modelId.toLowerCase()
-
-    // Level 1: exact match
-    const exact = groups.find((g) => g.pattern.toLowerCase() === lower)
-    if (exact) return exact.displayName
-
-    // Level 2: prefix match — longest pattern wins
-    let best: ModelGroup | undefined
-    for (const g of groups) {
-      if (lower.startsWith(g.pattern.toLowerCase())) {
-        if (!best || g.pattern.length > best.pattern.length) {
-          best = g
-        }
-      }
+  reorder: async (orderedIds) => {
+    const previous = get().groups
+    const byId = new Map(previous.map((g) => [g.id, g]))
+    const reordered = orderedIds
+      .map((id, idx) => {
+        const g = byId.get(id)
+        return g ? { ...g, sortOrder: idx } : undefined
+      })
+      .filter((g): g is ModelGroup => g !== undefined)
+    set({ groups: reordered })
+    try {
+      await Promise.all(
+        orderedIds.map((id, idx) => window.api.updateModelGroup(id, { sortOrder: idx })),
+      )
+    } catch (err) {
+      set({ groups: previous })
+      throw err
     }
-    if (best) return best.displayName
+  },
 
-    // Fallback: infer from model ID
-    return inferModelGroup(modelId)
+  resolve: (modelId: string): string => {
+    const hit = matchRule(get().groups, modelId)
+    return hit ? hit.displayName : inferModelGroup(modelId)
+  },
+
+  resolveRule: (modelId: string): ModelGroup | undefined => {
+    return matchRule(get().groups, modelId)
   },
 }))
