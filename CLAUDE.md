@@ -311,7 +311,7 @@ The app supports a multi-provider architecture where providers, models, and assi
 - **Providers**: configured AI backends. Each has connection settings, an API key, and an `is_default` flag. CRUD: `db/providers.ts` + `ipc/provider-handlers.ts` + `providerStore`. `provider:test-connection` does a 1-message ping; `model:fetch-remote` lists models from the remote `/v1/models` endpoint.
 - **Model Library** (`model_definitions`): a global catalog of model name → capability tags. When you add a remote model whose name matches a definition, capabilities are inferred automatically. Editable via Settings → Model Library.
 - **Model Groups** (`model_groups`): regex patterns mapping model names to display group names. Used to organize the model picker after a remote fetch.
-- **Models**: belong to a provider; `enabled` + `sort_order` + `capabilities` (JSON `ModelCapability[]`: `reasoning|vision|web|free|embedding|reranking|tools`).
+- **Models**: belong to a provider; `enabled` + `sort_order` + `capabilities` (JSON `ModelCapability[]`: `reasoning|vision|web|tools`).
 - **Assistants**: named configurations with a system prompt, provider/model binding, generation parameters (temperature, max_completion_tokens, top_p, context_count), prompt suggestions, group, default flag.
 
 ## Security

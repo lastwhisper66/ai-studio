@@ -1,4 +1,4 @@
-import { Brain, Eye, Globe, Wrench, Sparkles, Boxes, ArrowUpDown } from 'lucide-react'
+import { Brain, Eye, Globe, Wrench } from 'lucide-react'
 import type { ModelCapability } from '@shared/types'
 
 export const CAPABILITY_CONFIG: Record<
@@ -12,9 +12,6 @@ export const CAPABILITY_CONFIG: Record<
   reasoning: { labelKey: 'modelManage.cap.reasoning', color: '#3b82f6', icon: Brain },
   vision: { labelKey: 'modelManage.cap.vision', color: '#22c55e', icon: Eye },
   web: { labelKey: 'modelManage.cap.web', color: '#06b6d4', icon: Globe },
-  free: { labelKey: 'modelManage.cap.free', color: '#f59e0b', icon: Sparkles },
-  embedding: { labelKey: 'modelManage.cap.embedding', color: '#a855f7', icon: Boxes },
-  reranking: { labelKey: 'modelManage.cap.reranking', color: '#ec4899', icon: ArrowUpDown },
   tools: { labelKey: 'modelManage.cap.tools', color: '#ef4444', icon: Wrench },
 }
 
@@ -22,12 +19,4 @@ export const CAPABILITY_CONFIG: Record<
 export const ALL_CAPABILITIES: ModelCapability[] = ['reasoning', 'vision', 'web', 'tools']
 
 /** Full capability list for AddModelDialog picker */
-export const FULL_CAPABILITIES: ModelCapability[] = [
-  'reasoning',
-  'vision',
-  'web',
-  'tools',
-  'free',
-  'embedding',
-  'reranking',
-]
+export const FULL_CAPABILITIES: ModelCapability[] = ['reasoning', 'vision', 'web', 'tools']

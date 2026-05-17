@@ -803,18 +803,12 @@
       "reasoning": "Reasoning",
       "vision": "Vision",
       "web": "Web",
-      "free": "Free",
-      "embedding": "Embedding",
-      "reranking": "Reranking",
       "tools": "Tools"
     },
     "cap": {
       "reasoning": "Reasoning",
       "vision": "Vision",
       "web": "Web",
-      "free": "Free",
-      "embedding": "Embedding",
-      "reranking": "Reranking",
       "tools": "Tools"
     },
     "allModels": "All Models",

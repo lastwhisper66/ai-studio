@@ -803,18 +803,12 @@
       "reasoning": "推理",
       "vision": "视觉",
       "web": "联网",
-      "free": "免费",
-      "embedding": "嵌入",
-      "reranking": "重排",
       "tools": "工具"
     },
     "cap": {
       "reasoning": "推理",
       "vision": "视觉",
       "web": "联网",
-      "free": "免费",
-      "embedding": "嵌入",
-      "reranking": "重排",
       "tools": "工具"
     },
     "allModels": "全部模型",

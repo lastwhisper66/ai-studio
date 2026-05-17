@@ -178,14 +178,7 @@ export interface RemoteModelFetchPayload {
   baseUrl: string
 }
 
-export type ModelCapability =
-  | 'reasoning'
-  | 'vision'
-  | 'web'
-  | 'free'
-  | 'embedding'
-  | 'reranking'
-  | 'tools'
+export type ModelCapability = 'reasoning' | 'vision' | 'web' | 'tools'
 
 export interface Model {
   id: string

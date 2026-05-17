@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Minus, Trash2 } from 'lucide-react'
 import { Button } from '@renderer/components/ui/button'
+import { Checkbox } from '@renderer/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import {
   AlertDialog,
@@ -47,17 +48,25 @@ export function BatchToolbar({
   onUpdateProviderTypes,
   onDelete,
   onBatchDone,
-}: BatchToolbarProps): React.JSX.Element | null {
+}: BatchToolbarProps): React.JSX.Element {
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  if (selected.length === 0) return null
+  const noSelection = selected.length === 0
 
   // Caps that at least one selected def has — used for "remove cap" picker.
   const capsInUse: ModelCapability[] = []
   for (const cap of FULL_CAPABILITIES) {
     if (selected.some((d) => d.capabilities.includes(cap))) capsInUse.push(cap)
+  }
+  // Caps that ALL selected defs have — pre-checked & locked in "add cap" picker
+  // so the user can see what's already there without being able to "uncheck-then-add".
+  const capsAllHave: ModelCapability[] = []
+  if (selected.length > 0) {
+    for (const cap of FULL_CAPABILITIES) {
+      if (selected.every((d) => d.capabilities.includes(cap))) capsAllHave.push(cap)
+    }
   }
   const providerTypesInUse: ProviderType[] = []
   for (const pt of ALL_PROVIDER_TYPES) {
@@ -143,15 +152,16 @@ export function BatchToolbar({
         triggerLabel={t('modelManage.batch.addCap')}
         triggerIcon={<Plus className="h-3 w-3" />}
         caps={FULL_CAPABILITIES}
+        lockedCaps={capsAllHave}
         onConfirm={addCaps}
-        disabled={busy}
+        disabled={busy || noSelection}
       />
       <CapPopover
         triggerLabel={t('modelManage.batch.removeCap')}
         triggerIcon={<Minus className="h-3 w-3" />}
         caps={capsInUse}
         onConfirm={removeCaps}
-        disabled={busy || capsInUse.length === 0}
+        disabled={busy || noSelection || capsInUse.length === 0}
       />
 
       <ProviderPopover
@@ -159,20 +169,20 @@ export function BatchToolbar({
         triggerIcon={<Plus className="h-3 w-3" />}
         items={ALL_PROVIDER_TYPES}
         onConfirm={addProviders}
-        disabled={busy}
+        disabled={busy || noSelection}
       />
       <ProviderPopover
         triggerLabel={t('modelManage.batch.removeProvider')}
         triggerIcon={<Minus className="h-3 w-3" />}
         items={ALL_PROVIDER_TYPES.filter((p) => providerTypesInUse.includes(p.value))}
         onConfirm={removeProviders}
-        disabled={busy || providerTypesInUse.length === 0}
+        disabled={busy || noSelection || providerTypesInUse.length === 0}
       />
 
       <Button
         size="sm"
         variant="destructive"
-        disabled={busy}
+        disabled={busy || noSelection}
         onClick={() => setConfirmDelete(true)}
         className="ml-auto h-7 gap-1 text-xs">
         <Trash2 className="h-3 w-3" />
@@ -203,6 +213,8 @@ interface CapPopoverProps {
   triggerLabel: string
   triggerIcon: React.ReactNode
   caps: ModelCapability[]
+  /** Caps to show as pre-checked + read-only (e.g. caps every selected def already has). */
+  lockedCaps?: ModelCapability[]
   onConfirm: (chosen: ModelCapability[]) => Promise<void>
   disabled: boolean
 }
@@ -211,6 +223,7 @@ function CapPopover({
   triggerLabel,
   triggerIcon,
   caps,
+  lockedCaps = [],
   onConfirm,
   disabled,
 }: CapPopoverProps): React.JSX.Element {
@@ -219,20 +232,25 @@ function CapPopover({
   const [picked, setPicked] = useState<ModelCapability[]>([])
 
   const toggle = (c: ModelCapability): void => {
+    if (lockedCaps.includes(c)) return
     setPicked((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]))
   }
 
   const confirm = async (): Promise<void> => {
-    await onConfirm(picked)
+    const additions = picked.filter((c) => !lockedCaps.includes(c))
+    await onConfirm(additions)
     setPicked([])
     setOpen(false)
   }
+
+  const hasAdditions = picked.some((c) => !lockedCaps.includes(c))
 
   return (
     <Popover
       open={open}
       onOpenChange={(v) => {
-        if (!v) setPicked([])
+        if (v) setPicked([...lockedCaps])
+        else setPicked([])
         setOpen(v)
       }}>
       <PopoverTrigger asChild>
@@ -247,21 +265,39 @@ function CapPopover({
             const cfg = CAPABILITY_CONFIG[cap]
             const Icon = cfg.icon
             const isPicked = picked.includes(cap)
+            const isLocked = lockedCaps.includes(cap)
             return (
-              <button
+              <div
                 key={cap}
-                type="button"
+                role="button"
+                tabIndex={isLocked ? -1 : 0}
+                aria-disabled={isLocked}
                 onClick={() => toggle(cap)}
-                className={`hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs transition-colors ${
-                  isPicked ? 'bg-accent' : ''
-                }`}>
+                onKeyDown={(e) => {
+                  if (isLocked) return
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    toggle(cap)
+                  }
+                }}
+                className={`focus-visible:ring-ring/50 flex w-full items-center gap-2 rounded px-2 py-1 text-xs transition-colors outline-none focus-visible:ring-2 ${
+                  isLocked
+                    ? 'text-muted-foreground cursor-not-allowed'
+                    : 'hover:bg-accent cursor-pointer'
+                } ${isPicked && !isLocked ? 'bg-accent' : ''}`}>
+                <Checkbox
+                  checked={isPicked}
+                  disabled={isLocked}
+                  tabIndex={-1}
+                  className="pointer-events-none size-3.5"
+                />
                 <Icon className="h-3 w-3" style={{ color: cfg.color }} />
                 {t(cfg.labelKey)}
-              </button>
+              </div>
             )
           })}
           <div className="flex justify-end pt-2">
-            <Button size="sm" disabled={picked.length === 0} onClick={confirm} className="h-7">
+            <Button size="sm" disabled={!hasAdditions} onClick={confirm} className="h-7">
               {t('common.confirm')}
             </Button>
           </div>

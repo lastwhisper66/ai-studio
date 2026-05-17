@@ -110,18 +110,16 @@ export const ModelDefinitionsPanel = forwardRef<
         </div>
       </div>
 
-      {/* Batch toolbar (auto-hides when nothing selected) */}
-      {selectedDefs.length > 0 && (
-        <div className="border-b px-3 py-2">
-          <BatchToolbar
-            selected={selectedDefs}
-            onUpdateCapabilities={(id, caps) => update(id, { capabilities: caps })}
-            onUpdateProviderTypes={(id, pts) => update(id, { providerTypes: pts })}
-            onDelete={(id) => remove(id)}
-            onBatchDone={() => setSelectedIds(new Set())}
-          />
-        </div>
-      )}
+      {/* Batch toolbar (always visible; buttons disabled when nothing selected) */}
+      <div className="border-b px-3 py-2">
+        <BatchToolbar
+          selected={selectedDefs}
+          onUpdateCapabilities={(id, caps) => update(id, { capabilities: caps })}
+          onUpdateProviderTypes={(id, pts) => update(id, { providerTypes: pts })}
+          onDelete={(id) => remove(id)}
+          onBatchDone={() => setSelectedIds(new Set())}
+        />
+      </div>
 
       {/* List */}
       <ScrollArea className="flex-1">
