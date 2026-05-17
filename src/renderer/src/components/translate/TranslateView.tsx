@@ -10,7 +10,6 @@ import {
   ChevronDown,
   X,
   Trash2,
-  History,
   WrapText,
   FileText,
 } from 'lucide-react'
@@ -528,28 +527,25 @@ export function TranslateView(): React.JSX.Element {
         </div>
 
         {/* Result panel */}
-        <div className="flex min-w-0 flex-1 flex-col bg-muted/30">
-          <div className="flex items-center justify-between border-b px-4 py-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              {t('translate.result')}
-            </span>
-            {translatedText && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy}>
-                    {copied ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {copied ? t('translate.copied') : t('translate.copyTranslation')}
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
+        <div className="relative flex min-w-0 flex-1 flex-col bg-muted/30">
+          {translatedText && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className="absolute right-5 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  onClick={handleCopy}>
+                  {copied ? (
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {copied ? t('translate.copied') : t('translate.copyTranslation')}
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           <div className="flex-1 overflow-auto">
             <div
@@ -578,43 +574,37 @@ export function TranslateView(): React.JSX.Element {
         </div>
 
         {/* History panel */}
-        <div className="flex w-64 flex-col border-l">
-          <div className="flex items-center justify-between border-b px-4 py-2">
-            <span className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-              <History className="h-3.5 w-3.5" />
-              {t('translate.history.title')}
-            </span>
-            {history.length > 0 && (
-              <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-7 w-7">
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </DialogTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>{t('translate.history.clearHistory')}</TooltipContent>
-                </Tooltip>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>{t('translate.history.clearHistory')}</DialogTitle>
-                    <DialogDescription>
-                      {t('translate.history.clearHistoryConfirm')}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setClearHistoryOpen(false)}>
-                      {t('common.cancel')}
-                    </Button>
-                    <Button variant="destructive" onClick={handleClearHistory}>
-                      {t('common.confirm')}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
+        <div className="relative flex w-64 flex-col border-l">
+          {history.length > 0 && (
+            <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DialogTrigger asChild>
+                    <button className="absolute right-5 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </DialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{t('translate.history.clearHistory')}</TooltipContent>
+              </Tooltip>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('translate.history.clearHistory')}</DialogTitle>
+                  <DialogDescription>
+                    {t('translate.history.clearHistoryConfirm')}
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setClearHistoryOpen(false)}>
+                    {t('common.cancel')}
+                  </Button>
+                  <Button variant="destructive" onClick={handleClearHistory}>
+                    {t('common.confirm')}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
           <ScrollArea className="flex-1">
             {history.length === 0 ? (
               <div className="flex h-full items-center justify-center p-4">
