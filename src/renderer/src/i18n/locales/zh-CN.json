@@ -905,10 +905,7 @@
     "title": "关闭窗口时的默认行为",
     "description": "选择您希望应用程序在点击关闭按钮时的默认行为，之后可以随时在「设置 → 通用 → 窗口」中修改。",
     "minimizeTitle": "最小化到任务栏",
-    "minimizeDescription": "隐藏到系统托盘，后台保持运行，方便快速唤起。",
-    "quitTitle": "直接退出应用程序",
-    "quitDescription": "完全退出，不在后台占用资源。",
-    "hint": "您可以按 Esc 暂时关闭此对话框，下次点击关闭按钮时将再次询问。"
+    "quitTitle": "直接退出应用程序"
   },
   "tray": {
     "openMainWindow": "打开主窗口",

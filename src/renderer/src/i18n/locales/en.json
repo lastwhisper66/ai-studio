@@ -905,10 +905,7 @@
     "title": "Default behavior when closing the window",
     "description": "Choose what the application should do when you click the close button. You can change this later under Settings → General → Window.",
     "minimizeTitle": "Minimize to tray",
-    "minimizeDescription": "Hide to the system tray and keep running in the background for quick access.",
-    "quitTitle": "Quit the application",
-    "quitDescription": "Exit completely without using background resources.",
-    "hint": "Press Esc to dismiss this dialog for now — you'll be asked again next time."
+    "quitTitle": "Quit the application"
   },
   "tray": {
     "openMainWindow": "Open main window",
