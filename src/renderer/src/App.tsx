@@ -20,8 +20,7 @@ import type { SettingsSection } from '@renderer/components/settings/SettingsSide
 
 const TRAY_SETTINGS_SECTIONS: ReadonlySet<SettingsSection> = new Set([
   'provider',
-  'model-library',
-  'model-group',
+  'model-management',
   'general',
   'network',
   'display',
@@ -35,6 +34,11 @@ const TRAY_SETTINGS_SECTIONS: ReadonlySet<SettingsSection> = new Set([
 
 function isSettingsSection(value: string | undefined): value is SettingsSection {
   return value !== undefined && TRAY_SETTINGS_SECTIONS.has(value as SettingsSection)
+}
+
+function migrateLegacySection(section: string | undefined): string | undefined {
+  if (section === 'model-library' || section === 'model-group') return 'model-management'
+  return section
 }
 
 function isFromZoomablePreview(event: WheelEvent): boolean {
@@ -100,7 +104,8 @@ function App(): React.JSX.Element {
       void useConversationStore.getState().createConversation(undefined, assistantId)
     })
     const offNavSettings = window.api.onTrayNavigateSettings(({ section }) => {
-      const target: SettingsSection = isSettingsSection(section) ? section : 'general'
+      const migrated = migrateLegacySection(section)
+      const target: SettingsSection = isSettingsSection(migrated) ? migrated : 'general'
       useSettingsStore.getState().navigateToSettings(target)
     })
     return () => {

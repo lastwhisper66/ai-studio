@@ -1,7 +1,6 @@
 import {
   Cloud,
   Library,
-  FolderTree,
   Settings2,
   Globe,
   Monitor,
@@ -18,8 +17,7 @@ import { Separator } from '@renderer/components/ui/separator'
 
 export type SettingsSection =
   | 'provider'
-  | 'model-library'
-  | 'model-group'
+  | 'model-management'
   | 'general'
   | 'network'
   | 'display'
@@ -40,8 +38,7 @@ type SectionItem = { id: SettingsSection; labelKey: string; icon: React.ElementT
 const sectionGroups: SectionItem[][] = [
   [
     { id: 'provider', labelKey: 'settings.sections.provider', icon: Cloud },
-    { id: 'model-library', labelKey: 'settings.sections.modelLibrary', icon: Library },
-    { id: 'model-group', labelKey: 'settings.sections.modelGroup', icon: FolderTree },
+    { id: 'model-management', labelKey: 'settings.sections.modelManagement', icon: Library },
   ],
   [
     { id: 'general', labelKey: 'settings.sections.general', icon: Settings2 },
