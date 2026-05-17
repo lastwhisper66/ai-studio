@@ -197,6 +197,7 @@
       "provider": "Providers",
       "modelLibrary": "Model Library",
       "modelGroup": "Model Groups",
+      "modelManagement": "Models & Groups",
       "general": "General",
       "network": "Network",
       "display": "Display",
@@ -817,7 +818,28 @@
       "embedding": "Embedding",
       "reranking": "Reranking",
       "tools": "Tools"
-    }
+    },
+    "allModels": "All Models",
+    "unmatched": "Unmatched Models",
+    "newGroup": "New Rule",
+    "deleteRuleImpact": "{{count}} model(s) will become unmatched.",
+    "preview": {
+      "placeholder": "Type a model name to preview matching",
+      "matchedDef": "Matched definition",
+      "matchedRule": "Matched rule",
+      "fallback": "No rule matched; inferred as \"{{name}}\"",
+      "noDefMatch": "No definition matched"
+    },
+    "batch": {
+      "selected": "{{count}} selected",
+      "addCap": "+ Capability",
+      "removeCap": "− Capability",
+      "addProvider": "+ Provider",
+      "removeProvider": "− Provider",
+      "delete": "Delete selected",
+      "confirmDelete": "Delete the {{count}} selected model definition(s)?"
+    },
+    "newDefinitionGroupHint": "New definitions whose name does not start with \"{{pattern}}\" will appear under \"Unmatched Models\"."
   },
   "addModel": {
     "title": "Add Model",
@@ -861,7 +883,7 @@
     "deleteDescription": "Are you sure you want to delete the \"{{name}}\" group rule? This cannot be undone.",
     "pattern": "Pattern",
     "patternPlaceholder": "e.g. claude-opus, gpt-5.1",
-    "patternHint": "Models whose name starts with this prefix will be grouped together (longest match wins)",
+    "patternHint": "Prefix match — case-insensitive; longest prefix wins",
     "displayName": "Display Name",
     "displayNamePlaceholder": "e.g. Claude Opus, GPT-5.1"
   },

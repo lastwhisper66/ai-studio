@@ -197,6 +197,7 @@
       "provider": "模型服务",
       "modelLibrary": "模型库",
       "modelGroup": "模型分组",
+      "modelManagement": "模型与分组",
       "general": "通用设置",
       "network": "网络设置",
       "display": "显示设置",
@@ -817,7 +818,28 @@
       "embedding": "嵌入",
       "reranking": "重排",
       "tools": "工具"
-    }
+    },
+    "allModels": "全部模型",
+    "unmatched": "未匹配模型",
+    "newGroup": "新建规则",
+    "deleteRuleImpact": "{{count}} 个模型将变为未匹配状态。",
+    "preview": {
+      "placeholder": "输入模型名预览匹配",
+      "matchedDef": "命中定义",
+      "matchedRule": "命中规则",
+      "fallback": "未命中规则，推断为 \"{{name}}\"",
+      "noDefMatch": "未命中模型定义"
+    },
+    "batch": {
+      "selected": "已选 {{count}}",
+      "addCap": "+ 能力",
+      "removeCap": "− 能力",
+      "addProvider": "+ Provider",
+      "removeProvider": "− Provider",
+      "delete": "删除选中",
+      "confirmDelete": "确定要删除选中的 {{count}} 个模型定义？"
+    },
+    "newDefinitionGroupHint": "新建的模型若名字不与 \"{{pattern}}\" 前缀匹配，会出现在「未匹配模型」中。"
   },
   "addModel": {
     "title": "添加模型",
@@ -861,7 +883,7 @@
     "deleteDescription": "确定要删除「{{name}}」分组规则吗？此操作不可撤销。",
     "pattern": "匹配模式",
     "patternPlaceholder": "例如: claude-opus, gpt-5.1",
-    "patternHint": "模型名称以此前缀开头时归入该分组（最长匹配优先）",
+    "patternHint": "前缀 (prefix) — 大小写不敏感；最长前缀优先",
     "displayName": "显示名称",
     "displayNamePlaceholder": "例如: Claude Opus, GPT-5.1"
   },
