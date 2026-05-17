@@ -195,8 +195,6 @@
     "title": "Settings",
     "sections": {
       "provider": "Providers",
-      "modelLibrary": "Model Library",
-      "modelGroup": "Model Groups",
       "modelManagement": "Models & Groups",
       "general": "General",
       "network": "Network",
@@ -858,27 +856,20 @@
     "save": "Save"
   },
   "modelLibrary": {
-    "title": "Model Library",
     "description": "Define model capabilities for auto-matching when adding models",
     "addDefinition": "Add Model",
     "editDefinition": "Edit Model",
-    "searchPlaceholder": "Search model name or group",
     "empty": "Model library is empty. Click the button above to add a model definition.",
     "noResults": "No matching models",
     "modelName": "Model Name",
-    "group": "Group",
     "capabilities": "Capabilities",
     "providerTypes": "Provider Types",
     "providerTypesHint": "Leave empty to make visible to all providers",
-    "ungrouped": "Ungrouped",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
   },
   "modelGroup": {
-    "title": "Model Groups",
-    "description": "Define grouping rules for remote models by prefix matching",
     "addGroup": "Add Group",
     "editGroup": "Edit Group",
-    "empty": "No grouping rules yet. Click the button above to add one.",
     "deleteTitle": "Delete Group",
     "deleteDescription": "Are you sure you want to delete the \"{{name}}\" group rule? This cannot be undone.",
     "pattern": "Pattern",

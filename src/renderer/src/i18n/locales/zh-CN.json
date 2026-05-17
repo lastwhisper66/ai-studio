@@ -195,8 +195,6 @@
     "title": "设置",
     "sections": {
       "provider": "模型服务",
-      "modelLibrary": "模型库",
-      "modelGroup": "模型分组",
       "modelManagement": "模型与分组",
       "general": "通用设置",
       "network": "网络设置",
@@ -858,27 +856,20 @@
     "save": "保存"
   },
   "modelLibrary": {
-    "title": "模型库",
     "description": "定义模型的能力标签，添加模型时自动匹配",
     "addDefinition": "添加模型",
     "editDefinition": "编辑模型",
-    "searchPlaceholder": "搜索模型名称或分组",
     "empty": "模型库为空，点击上方按钮添加模型定义",
     "noResults": "没有匹配的模型",
     "modelName": "模型名称",
-    "group": "分组",
     "capabilities": "能力标签",
     "providerTypes": "适用供应商",
     "providerTypesHint": "留空表示对所有供应商可见",
-    "ungrouped": "未分组",
     "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
   },
   "modelGroup": {
-    "title": "模型分组",
-    "description": "定义远程模型的分组规则，按前缀匹配模型名称",
     "addGroup": "添加分组",
     "editGroup": "编辑分组",
-    "empty": "暂无分组规则，点击上方按钮添加",
     "deleteTitle": "删除分组",
     "deleteDescription": "确定要删除「{{name}}」分组规则吗？此操作不可撤销。",
     "pattern": "匹配模式",
