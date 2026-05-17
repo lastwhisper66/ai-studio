@@ -201,6 +201,11 @@ export interface Model {
 export interface ModelDefinition {
   id: string
   name: string
+  /**
+   * @deprecated 自 2026-05 起不再由 UI 维护。"模型属于哪个分组" 由 `model_groups`
+   * 推导。该字段仍在 DB 中保留以兼容旧种子，但新 UI / 新代码不读不写。
+   * 详见 `docs/superpowers/specs/2026-05-17-model-group-merge-design.md`。
+   */
   group: string
   capabilities: ModelCapability[]
   providerTypes: ProviderType[]
