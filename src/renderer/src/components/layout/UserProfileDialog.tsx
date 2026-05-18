@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { User } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@renderer/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@renderer/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@renderer/components/ui/avatar'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
@@ -20,12 +26,12 @@ export function UserProfileDialog({
 }: UserProfileDialogProps): React.JSX.Element {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {open && <UserProfileContent />}
+      {open && <UserProfileContent onClose={() => onOpenChange(false)} />}
     </Dialog>
   )
 }
 
-function UserProfileContent(): React.JSX.Element {
+function UserProfileContent({ onClose }: { onClose: () => void }): React.JSX.Element {
   const { t } = useTranslation()
   const settings = useSettingsStore((s) => s.settings)
   const saveSettings = useSettingsStore((s) => s.saveSettings)
@@ -47,11 +53,12 @@ function UserProfileContent(): React.JSX.Element {
     await saveSettings({ 'user.avatarPath': '' })
   }
 
-  const handleNameBlur = (): void => {
+  const handleSave = async (): Promise<void> => {
     const trimmed = name.trim()
     if (trimmed !== displayName) {
-      saveSettings({ 'user.displayName': trimmed })
+      await saveSettings({ 'user.displayName': trimmed })
     }
+    onClose()
   }
 
   return (
@@ -82,10 +89,21 @@ function UserProfileContent(): React.JSX.Element {
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onBlur={handleNameBlur}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              handleSave()
+            }
+          }}
           placeholder={t('userProfile.displayNamePlaceholder')}
         />
       </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+        <Button onClick={handleSave}>{t('common.save')}</Button>
+      </DialogFooter>
     </DialogContent>
   )
 }
