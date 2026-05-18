@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/lastwhisper66/ai-studio/compare/v1.7.0...v1.7.1) (2026-05-18)
+
+
+### Code Refactoring
+
+* **user-profile:** replace blur autosave with explicit save button ([95d4b01](https://github.com/lastwhisper66/ai-studio/commit/95d4b0142132d69e6ee91da90f7666a75bea2a67))
+
 ## [1.7.0](https://github.com/lastwhisper66/ai-studio/compare/v1.6.2...v1.7.0) (2026-05-17)
 
 
