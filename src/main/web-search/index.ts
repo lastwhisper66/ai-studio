@@ -5,6 +5,7 @@ import { getSetting } from '../db/settings'
 import { searchTavily } from './providers/tavily'
 import { searchBrave } from './providers/brave'
 import { searchSearxng } from './providers/searxng'
+import { searchExa } from './providers/exa'
 
 export interface WebSearchSettings {
   enabled: boolean
@@ -100,6 +101,14 @@ export async function runWebSearch(args: RunWebSearchArgs): Promise<WebSearchRes
         signal: args.signal,
         timeoutMs: settings.timeoutMs,
       })
+    case 'exa':
+      return searchExa({
+        query,
+        maxResults: settings.maxResults,
+        apiKey: settings.exaApiKey,
+        signal: args.signal,
+        timeoutMs: settings.timeoutMs,
+      })
     default:
       throw new AppError(ERROR_CODES.WEB_SEARCH_NOT_CONFIGURED, { provider: settings.provider })
   }
@@ -141,6 +150,14 @@ export async function runProviderSearchDirect(
         url: payload.searxngUrl ?? '',
         username: payload.searxngAuthUser,
         password: payload.searxngAuthPass,
+        signal: payload.signal,
+        timeoutMs: payload.timeoutMs,
+      })
+    case 'exa':
+      return searchExa({
+        query: payload.query,
+        maxResults: payload.maxResults,
+        apiKey: payload.apiKey ?? '',
         signal: payload.signal,
         timeoutMs: payload.timeoutMs,
       })
