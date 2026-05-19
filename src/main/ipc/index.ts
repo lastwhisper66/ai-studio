@@ -22,6 +22,7 @@ import { registerUserHandlers } from './user-handlers'
 import { registerUpdaterHandlers } from './updater-handlers'
 import { registerBackupHandlers } from './backup-handlers'
 import { registerBuiltinsHandlers } from './builtins-handlers'
+import { registerWebSearchHandlers } from './web-search-handlers'
 import { installDirtyTracker } from '../backup/dirty-tracker'
 
 export function registerAllIpcHandlers(): void {
@@ -32,6 +33,7 @@ export function registerAllIpcHandlers(): void {
   registerSettingsHandlers()
   registerBuiltinsHandlers()
   registerChatHandlers()
+  registerWebSearchHandlers()
   registerProviderHandlers()
   registerModelHandlers()
   registerModelDefinitionHandlers()
