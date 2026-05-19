@@ -25,6 +25,7 @@ function sanitizeSnippet(value: string | undefined): string {
   if (!value) return ''
   // Strip C0 control chars except \n; collapse whitespace; trim.
   const cleaned = value
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x09\x0B-\x1F]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()

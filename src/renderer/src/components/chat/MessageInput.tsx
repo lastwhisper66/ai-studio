@@ -37,7 +37,12 @@ import { isImageMime } from '@shared/types'
 type AttachedFile = FileData
 
 interface MessageInputProps {
-  onSend: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => void
+  onSend: (
+    content: string,
+    files?: FileData[],
+    reasoningEffort?: ReasoningEffort,
+    webSearch?: boolean,
+  ) => void
   onStop: () => void
   isStreaming: boolean
   droppedFiles?: FileData[]
@@ -240,7 +245,6 @@ export function MessageInput({
   const [input, setInput] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
-  const [webSearch, setWebSearch] = useState(false)
   const [reasoning, setReasoning] = useState<ReasoningLevel>('off')
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -249,6 +253,18 @@ export function MessageInput({
   const renameConversation = useConversationStore((s) => s.renameConversation)
   const insertDivider = useConversationStore((s) => s.insertDivider)
   const focusInputTrigger = useConversationStore((s) => s.focusInputTrigger)
+  const webSearchEnabledMap = useConversationStore((s) => s.webSearchByConversation)
+  const setWebSearchInStore = useConversationStore((s) => s.setWebSearch)
+  const webSearch = activeConversationId
+    ? (webSearchEnabledMap[activeConversationId] ?? false)
+    : false
+  const toggleWebSearch = (): void => {
+    if (!activeConversationId) return
+    setWebSearchInStore(activeConversationId, !webSearch)
+  }
+  const webSearchGlobalEnabled = useSettingsStore(
+    (s) => (s.settings['webSearch.enabled'] ?? 'false') === 'true',
+  )
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {
@@ -289,9 +305,6 @@ export function MessageInput({
 
   const buildContent = (): string => {
     let content = input.trim()
-    if (webSearch) {
-      content = `[网络搜索已开启]\n${content}`
-    }
     for (const f of attachedFiles) {
       if (f.mimeType.startsWith('text/') || f.mimeType === 'application/json') {
         // Correctly decode UTF-8 encoded text files
@@ -320,7 +333,7 @@ export function MessageInput({
     const effort = reasoning !== 'off' ? reasoning : undefined
     setInput('')
     setAttachedFiles([])
-    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort)
+    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort, webSearch)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -493,12 +506,14 @@ export function MessageInput({
                 onClick={handleAttach}
               />
               <ReasoningPopover value={reasoning} onChange={setReasoning} />
-              <ToolButton
-                icon={<Globe className="h-4 w-4" />}
-                label={t('chat.webSearch')}
-                active={webSearch}
-                onClick={() => setWebSearch((v) => !v)}
-              />
+              {webSearchGlobalEnabled && activeConversationId && (
+                <ToolButton
+                  icon={<Globe className="h-4 w-4" />}
+                  label={t('chat.webSearch')}
+                  active={webSearch}
+                  onClick={toggleWebSearch}
+                />
+              )}
               <PhrasePopover
                 onSelect={(c) => {
                   const el = textareaRef.current
