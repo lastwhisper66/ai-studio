@@ -13,6 +13,8 @@ import { MathBlock } from './MathBlock'
 interface MarkdownRendererProps {
   content: string
   isStreaming?: boolean
+  /** When provided, [n] markers in body text become #cite-n links. */
+  citationCount?: number
 }
 
 interface LatexDelimiter {
@@ -60,6 +62,63 @@ function escapeHtml(value: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/**
+ * Walks the markdown source and replaces `[n]` markers (n: 1..citationCount)
+ * with markdown links `[\[n\]](#cite-n)`. Skips fenced code blocks and inline
+ * code spans so we don't mangle code samples.
+ */
+function linkifyCitations(content: string, citationCount: number): string {
+  if (citationCount <= 0) return content
+  const pattern = new RegExp(`\\[(\\d+)\\]`, 'g')
+  const lines = content.split(/(\n)/) // keep newlines as separators
+
+  let inFence = false
+  const out: string[] = []
+  for (const segment of lines) {
+    if (segment === '\n') {
+      out.push(segment)
+      continue
+    }
+    if (/^\s*```/.test(segment)) {
+      inFence = !inFence
+      out.push(segment)
+      continue
+    }
+    if (inFence) {
+      out.push(segment)
+      continue
+    }
+    // Within a line: skip inline code spans (backtick-delimited).
+    const s = segment
+    let result = ''
+    let i = 0
+    while (i < s.length) {
+      const tick = s.indexOf('`', i)
+      if (tick === -1) {
+        result += s.slice(i).replace(pattern, (m, n) => {
+          const idx = parseInt(n, 10)
+          return idx >= 1 && idx <= citationCount ? `[\\[${n}\\]](#cite-${n})` : m
+        })
+        break
+      }
+      const before = s.slice(i, tick)
+      result += before.replace(pattern, (m, n) => {
+        const idx = parseInt(n, 10)
+        return idx >= 1 && idx <= citationCount ? `[\\[${n}\\]](#cite-${n})` : m
+      })
+      const close = s.indexOf('`', tick + 1)
+      if (close === -1) {
+        result += s.slice(tick)
+        break
+      }
+      result += s.slice(tick, close + 1) // keep the inline-code span verbatim
+      i = close + 1
+    }
+    out.push(result)
+  }
+  return out.join('')
 }
 
 function renderLatexDelimiter(value: string, className: string): string {
@@ -397,9 +456,13 @@ const rehypePlugins: any[] = [rehypeRaw, [rehypeSanitize, sanitizeSchema]]
 export const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
   isStreaming = false,
+  citationCount = 0,
 }: MarkdownRendererProps) {
   const components = useMemo(() => createComponents(isStreaming), [isStreaming])
-  const normalizedContent = useMemo(() => normalizeLatexMathDelimiters(content), [content])
+  const normalizedContent = useMemo(() => {
+    const linkified = citationCount > 0 ? linkifyCitations(content, citationCount) : content
+    return normalizeLatexMathDelimiters(linkified)
+  }, [content, citationCount])
 
   return (
     <div className="markdown-body">
