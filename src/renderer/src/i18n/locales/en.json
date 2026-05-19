@@ -72,6 +72,7 @@
     "reasoningHigh": "High",
     "reasoningXhigh": "Extra High",
     "webSearch": "Web search",
+    "sources": "Sources ({{count}})",
     "thinkingProcess": "Thinking",
     "thinkingTime": "Thought for {{time}}",
     "thinkingInProgress": "Thinking...",
@@ -204,6 +205,7 @@
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
       "selectionAssistant": "Selection Assistant",
+      "webSearch": "Web Search",
       "about": "About"
     },
     "provider": {
@@ -747,6 +749,30 @@
       "confirmTitle": "Confirm sync",
       "confirmDescription": "This will overwrite all built-in items with the latest version; any edits you made to built-ins will be lost and cannot be recovered.",
       "confirmAction": "Overwrite and sync"
+    },
+    "webSearch": {
+      "title": "Web Search",
+      "description": "Toggle web search per chat. Search results are injected as context, and the assistant cites sources in its reply.",
+      "enabled": "Enable web search",
+      "enabledHint": "When on, a search-toggle button appears in the main chat input.",
+      "provider": "Search provider",
+      "apiKey": "API Key",
+      "searxngUrl": "SearXNG instance URL",
+      "username": "Username (optional)",
+      "password": "Password (optional)",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "Connected, {{count}} results returned",
+      "testFailed": "Connection failed",
+      "maxResults": "Results per search (1-20)",
+      "timeoutSec": "Timeout seconds (3-60)",
+      "rewriteQuery": "Rewrite query",
+      "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails.",
+      "utilityModel": "Utility model",
+      "utilityModelHint": "Used for short tasks like topic naming and query rewriting. Falls back to the conversation's assistant model when empty.",
+      "utilityProvider": "Provider",
+      "utilityModelName": "Model",
+      "useAssistantModel": "Use assistant model"
     }
   },
   "translate": {
@@ -1002,6 +1028,16 @@
       "busy": "A backup operation is already in progress.",
       "cancelled": "Operation was cancelled.",
       "applyFailed": "Failed to apply the backup; your existing data was not changed."
+    },
+    "webSearch": {
+      "notConfigured": "Web search is not configured. Open Settings to set it up.",
+      "apiKeyMissing": "Missing API key for {{provider}}.",
+      "requestFailed": "{{provider}} search failed: {{message}}",
+      "timeout": "{{provider}} search timed out",
+      "rewriteFailed": "Query rewrite failed: {{reason}}"
+    },
+    "utilityModel": {
+      "notConfigured": "Utility model is not configured"
     }
   },
   "notification": {

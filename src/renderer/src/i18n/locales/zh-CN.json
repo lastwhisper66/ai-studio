@@ -72,6 +72,7 @@
     "reasoningHigh": "高",
     "reasoningXhigh": "极高",
     "webSearch": "网络搜索",
+    "sources": "参考来源 ({{count}})",
     "thinkingProcess": "思考过程",
     "thinkingTime": "已思考 {{time}}",
     "thinkingInProgress": "思考中...",
@@ -204,6 +205,7 @@
       "phrases": "快捷短语",
       "quickAssistant": "快捷助手",
       "selectionAssistant": "划词助手",
+      "webSearch": "网络搜索",
       "about": "关于"
     },
     "provider": {
@@ -747,6 +749,30 @@
       "confirmTitle": "同步前确认",
       "confirmDescription": "此操作会用最新版本覆盖所有内置项；您对内置项做过的任何修改都将丢失，且不可恢复。",
       "confirmAction": "覆盖并同步"
+    },
+    "webSearch": {
+      "title": "网络搜索",
+      "description": "聊天时一键开启网络搜索,将搜索结果作为上下文交给模型,并在回复中显示引用来源。",
+      "enabled": "启用网络搜索",
+      "enabledHint": "开启后,主聊天输入框会出现网络搜索开关按钮。",
+      "provider": "搜索服务商",
+      "apiKey": "API Key",
+      "searxngUrl": "SearXNG 实例 URL",
+      "username": "用户名(可选)",
+      "password": "密码(可选)",
+      "test": "测试连接",
+      "testing": "测试中...",
+      "testOk": "连接成功,返回 {{count}} 条结果",
+      "testFailed": "连接失败",
+      "maxResults": "返回结果数 (1-20)",
+      "timeoutSec": "超时秒数 (3-60)",
+      "rewriteQuery": "启用查询改写",
+      "rewriteQueryHint": "使用轻量模型把多轮对话上下文合并为单条搜索词,失败时自动用原文。",
+      "utilityModel": "工具模型",
+      "utilityModelHint": "用于话题命名、网络搜索 query 改写等短任务。留空则使用对话所属助手的模型。",
+      "utilityProvider": "服务商",
+      "utilityModelName": "模型",
+      "useAssistantModel": "使用对话模型"
     }
   },
   "translate": {
@@ -1002,6 +1028,16 @@
       "busy": "已有备份操作正在进行。",
       "cancelled": "操作已取消。",
       "applyFailed": "应用备份失败；现有数据未被修改。"
+    },
+    "webSearch": {
+      "notConfigured": "网络搜索未配置,请前往设置。",
+      "apiKeyMissing": "{{provider}} 的 API Key 缺失,请在设置中填写。",
+      "requestFailed": "{{provider}} 搜索请求失败: {{message}}",
+      "timeout": "{{provider}} 搜索超时",
+      "rewriteFailed": "查询改写失败: {{reason}}"
+    },
+    "utilityModel": {
+      "notConfigured": "工具模型未配置"
     }
   },
   "notification": {
