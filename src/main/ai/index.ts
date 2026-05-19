@@ -1,4 +1,5 @@
 import OpenAI from 'openai'
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
 import type { ApiSettings } from '@shared/types'
 import { getSetting } from '../db/settings'
 import { createOpenAIClient } from './openai-client'
@@ -38,19 +39,34 @@ export async function generateTitle(
   userMessage: string,
   assistantMessage: string,
 ): Promise<string> {
-  const titleMessages = [
+  const titleMessages: ChatCompletionMessageParam[] = [
     {
-      role: 'system' as const,
+      role: 'system',
       content:
         'Summarize this conversation into a title within 10 characters, in the same language as the conversation. Do not use punctuation or special symbols. Output only the title string without anything else.',
     },
-    { role: 'user' as const, content: userMessage },
-    { role: 'assistant' as const, content: assistantMessage.slice(0, 500) },
+    { role: 'user', content: userMessage },
+    { role: 'assistant', content: assistantMessage.slice(0, 500) },
   ]
 
+  // 1. Prefer the configured utility model.
+  try {
+    const { runUtilityCompletion } = await import('../utility-llm')
+    const raw = await runUtilityCompletion({
+      messages: titleMessages,
+      signal: AbortSignal.timeout(15_000),
+      temperature: 0.5,
+      maxCompletionTokens: 50,
+    })
+    const cleaned = cleanTitle(raw)
+    if (cleaned) return cleaned
+  } catch {
+    // utility model not configured OR network error — fall through.
+  }
+
+  // 2. Fall back to the conversation's own assistant model.
   try {
     if (OPENAI_COMPATIBLE_TYPES.has(settings.provider)) {
-      // Use OpenAI client directly for title generation (non-streaming, faster)
       const client = createOpenAIClient(settings)
       const response = await client.chat.completions.create({
         model: settings.model,
@@ -61,14 +77,13 @@ export async function generateTitle(
       const title = cleanTitle(response.choices[0]?.message?.content ?? '')
       if (title) return title
     } else {
-      // For Gemini/Claude/etc., use streamChat to generate title
       let title = ''
       const titleSettings = { ...settings, temperature: 0.5, maxCompletionTokens: 50 }
       await streamChat(
         {
           settings: titleSettings,
           messages: titleMessages,
-          signal: AbortSignal.timeout(15000),
+          signal: AbortSignal.timeout(15_000),
         },
         {
           onChunk: (delta) => {
@@ -82,6 +97,7 @@ export async function generateTitle(
   } catch {
     // fallback below
   }
-  // Fallback: use beginning of user message
+
+  // 3. Last-resort fallback: leading slice of user message.
   return userMessage.slice(0, 20)
 }
