@@ -9,6 +9,7 @@ import {
   TextQuote,
   Zap,
   TextSelect,
+  Search,
   Info,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -26,6 +27,7 @@ export type SettingsSection =
   | 'keyboard-shortcuts'
   | 'quick-assistant'
   | 'selection-assistant'
+  | 'web-search'
   | 'about'
 
 interface SettingsSidebarProps {
@@ -57,6 +59,7 @@ const sectionGroups: SectionItem[][] = [
       labelKey: 'settings.sections.selectionAssistant',
       icon: TextSelect,
     },
+    { id: 'web-search', labelKey: 'settings.sections.webSearch', icon: Search },
   ],
   [{ id: 'about', labelKey: 'settings.sections.about', icon: Info }],
 ]
