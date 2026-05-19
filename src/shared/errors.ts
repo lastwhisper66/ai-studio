@@ -80,6 +80,14 @@ export const ERROR_CODES = {
   BACKUP_CANCELLED: 'errors.backup.cancelled',
   BACKUP_APPLY_FAILED: 'errors.backup.applyFailed',
 
+  // web search
+  WEB_SEARCH_NOT_CONFIGURED: 'errors.webSearch.notConfigured',
+  WEB_SEARCH_API_KEY_MISSING: 'errors.webSearch.apiKeyMissing',
+  WEB_SEARCH_REQUEST_FAILED: 'errors.webSearch.requestFailed',
+  WEB_SEARCH_TIMEOUT: 'errors.webSearch.timeout',
+  WEB_SEARCH_REWRITE_FAILED: 'errors.webSearch.rewriteFailed',
+  UTILITY_MODEL_NOT_CONFIGURED: 'errors.utilityModel.notConfigured',
+
   // fallback
   INTERNAL: 'errors.internal',
 } as const
