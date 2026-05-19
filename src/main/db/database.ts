@@ -67,6 +67,7 @@ function createTables(): void {
       attachments TEXT,
       duration INTEGER,
       thinking_duration INTEGER,
+      sources TEXT,
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
 

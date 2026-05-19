@@ -9,6 +9,7 @@
 
 import type Database from 'better-sqlite3'
 import { getDb } from '../db/database'
+import { migration001MessagesSources } from './001-messages-sources'
 
 interface Migration {
   version: number
@@ -16,7 +17,7 @@ interface Migration {
   up(db: Database.Database): void
 }
 
-const MIGRATIONS: Migration[] = []
+const MIGRATIONS: Migration[] = [migration001MessagesSources]
 
 export function runMigrations(): void {
   const db = getDb()
