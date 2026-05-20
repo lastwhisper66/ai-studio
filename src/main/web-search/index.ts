@@ -8,7 +8,6 @@ import { searchSearxng } from './providers/searxng'
 import { searchExa } from './providers/exa'
 
 export interface WebSearchSettings {
-  enabled: boolean
   provider: WebSearchProviderType
   tavilyApiKey: string
   braveApiKey: string
@@ -23,7 +22,6 @@ export interface WebSearchSettings {
 
 export function loadWebSearchSettings(): WebSearchSettings {
   return {
-    enabled: getSetting('webSearch.enabled') === 'true',
     provider: (getSetting('webSearch.provider') as WebSearchProviderType) || 'tavily',
     tavilyApiKey: getSetting('webSearch.tavilyApiKey') ?? '',
     braveApiKey: getSetting('webSearch.braveApiKey') ?? '',

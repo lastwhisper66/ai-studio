@@ -33,16 +33,14 @@
 
 - 点击切换 ON/OFF；ON 时图标高亮（与 reasoning effort 按钮一致的激活态样式）。
 - 状态**只在当前会话内存中保留**，切换 conversation 后回到全局默认（off）。
-- 全局开关关闭时不渲染此按钮。
 - 当前激活的 search provider 凭据未配置时按钮 disabled + tooltip 引导去设置。
 
 **设置 → 网络搜索**：
 
-1. 顶部主开关。
-2. Tabs：Tavily / Brave / SearXNG / Exa，每个 tab 内显示对应凭据输入 + 帮助链接。
-3. "测试连接"按钮 → `ConnectionTestDialog` 风格的弹窗，显示"成功，N 条结果"或具体错误。
-4. 参数：结果数量（NumberInput，1–20，默认 5）、"启用 query 改写"开关（默认 on）。
-5. **工具模型**卡片：provider / model 下拉 + "清空"按钮，留空 → fallback 到对话所属 assistant 模型。说明文字："用于话题命名、网络搜索 query 改写等短任务。"
+1. Tabs：Tavily / Brave / SearXNG / Exa，每个 tab 内显示对应凭据输入 + 帮助链接。
+2. "测试连接"按钮 → `ConnectionTestDialog` 风格的弹窗，显示"成功，N 条结果"或具体错误。
+3. 参数：结果数量（NumberInput，1–20，默认 5）、"启用 query 改写"开关（默认 on）。
+4. **工具模型**卡片：provider / model 下拉 + "清空"按钮，留空 → fallback 到对话所属 assistant 模型。说明文字："用于话题命名、网络搜索 query 改写等短任务。"
 
 **回复消息**：
 
@@ -62,7 +60,7 @@ MessageInput.onSend → ChatView → window.api.chat.sendMessage({
 chat-handlers.ts
   1. 构建 apiMessages（现有流程）
   2. controller = new AbortController(); activeStreams.set(...)   // 注意顺序：提前到搜索之前
-  3. if (payload.webSearch && settings.webSearch.enabled && providerConfigured):
+  3. if (payload.webSearch && providerConfigured):
        a. query = settings.webSearch.rewriteQuery
             ? await rewriteQuery(apiMessages, signal).catch(() => lastUserText)
             : lastUserText
@@ -135,7 +133,6 @@ ALTER TABLE messages ADD COLUMN sources TEXT NULL;
 
 | Key                         | 类型 / 默认                                        | 加密 | 说明                                                         |
 | --------------------------- | -------------------------------------------------- | ---- | ------------------------------------------------------------ |
-| `webSearch.enabled`         | bool / `false`                                     | -    | 全局开关                                                     |
 | `webSearch.provider`        | `'tavily'\|'brave'\|'searxng'\|'exa'` / `'tavily'` | -    | 激活的搜索后端                                               |
 | `webSearch.tavilyApiKey`    | string / `''`                                      | ✓    | safeStorage（`*.apiKey` 规则）                               |
 | `webSearch.braveApiKey`     | string / `''`                                      | ✓    | 同上                                                         |
@@ -324,8 +321,7 @@ export interface SendMessagePayload {
 
 | 场景                                      | 行为                                                                      |
 | ----------------------------------------- | ------------------------------------------------------------------------- |
-| `webSearch.enabled = false`               | UI 不显示 Globe；后端无视 payload，正常聊天                               |
-| 全局开关 ON，但当前 provider 凭据为空     | UI 按钮 disable + tooltip；payload 即使带 true 后端也降级                 |
+| 当前 provider 凭据为空                    | UI 按钮 disable + tooltip 引导去设置；payload 即使带 true 后端也降级      |
 | 凭据缺失（payload 强行带 webSearch:true） | `runWebSearch` 抛 `WEB_SEARCH_API_KEY_MISSING` → 降级 + console.warn      |
 | HTTP 失败 / 4xx / 5xx                     | 抛 `WEB_SEARCH_REQUEST_FAILED` → 降级                                     |
 | 搜索超时                                  | `AbortSignal.timeout` → `WEB_SEARCH_TIMEOUT` → 降级                       |
@@ -371,20 +367,19 @@ export interface SendMessagePayload {
 
 ## 手测清单
 
-1. 关闭全局开关 → Globe 不出现，对话正常
-2. 打开全局开关但未配 provider → Globe 出现但 disable，hover 提示
-3. 配 Tavily key + 测试连接 → 弹"成功，3 条结果"
-4. 输入区 toggle on → 发"今天 NVIDIA 股价" → 回复带 [1] [2] + 折叠面板
-5. 多轮："那他们的 CEO 是谁" → query 改写后能搜到正确实体
-6. 关闭 query 改写 → 用原文搜，验证字段对齐
-7. 切到 SearXNG（错误 URL）→ 第一次报错；改正后正常
-8. 切到 Brave、Exa 重复 3、4
-9. 搜索中按 ESC → 立刻停止，无残留请求
-10. 搜索失败（拔网线）→ 降级为不联网回复，无 toast
-11. 切换 conversation → toggle 状态独立
-12. 重启 app → sources 列仍在，脚注仍可点
-13. 工具模型未配置时，话题命名仍工作（fallback）
-14. 工具模型配置后，title generation 走轻量模型
+1. 未配 provider → Globe 显示为 disabled，点击跳设置网络搜索页
+2. 配 Tavily key + 测试连接 → 弹"成功，3 条结果"
+3. 返回聊天 → Globe 变为可点击；toggle on → 发"今天 NVIDIA 股价" → 回复带 [1] [2] + 折叠面板
+4. 多轮："那他们的 CEO 是谁" → query 改写后能搜到正确实体
+5. 关闭 query 改写 → 用原文搜，验证字段对齐
+6. 切到 SearXNG（错误 URL）→ 第一次报错；改正后正常
+7. 切到 Brave、Exa 重复 2、3
+8. 搜索中按 ESC → 立刻停止，无残留请求
+9. 搜索失败（拔网线）→ 降级为不联网回复，无 toast
+10. 切换 conversation → toggle 状态独立
+11. 重启 app → sources 列仍在，脚注仍可点
+12. 工具模型未配置时，话题命名仍工作（fallback）
+13. 工具模型配置后，title generation 走轻量模型
 
 ## 未列入范围（Not in scope）
 

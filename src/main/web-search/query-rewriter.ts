@@ -38,6 +38,7 @@ export async function rewriteQuery(
 
   try {
     const raw = await runUtilityCompletion({
+      task: 'search-rewrite',
       messages,
       signal,
       timeoutMs: 10_000,

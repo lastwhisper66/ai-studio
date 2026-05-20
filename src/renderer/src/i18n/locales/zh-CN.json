@@ -72,6 +72,7 @@
     "reasoningHigh": "高",
     "reasoningXhigh": "极高",
     "webSearch": "网络搜索",
+    "webSearchDisabledTooltip": "点击前往设置启用并配置网络搜索",
     "sources": "参考来源 ({{count}})",
     "thinkingProcess": "思考过程",
     "thinkingTime": "已思考 {{time}}",
@@ -196,6 +197,7 @@
     "title": "设置",
     "sections": {
       "provider": "模型服务",
+      "utilityModels": "工具模型",
       "modelManagement": "模型与分组",
       "general": "通用设置",
       "network": "网络设置",
@@ -753,8 +755,6 @@
     "webSearch": {
       "title": "网络搜索",
       "description": "聊天时一键开启网络搜索,将搜索结果作为上下文交给模型,并在回复中显示引用来源。",
-      "enabled": "启用网络搜索",
-      "enabledHint": "开启后,主聊天输入框会出现网络搜索开关按钮。",
       "provider": "搜索服务商",
       "apiKey": "API Key",
       "searxngUrl": "SearXNG 实例 URL",
@@ -767,12 +767,21 @@
       "maxResults": "返回结果数 (1-20)",
       "timeoutSec": "超时秒数 (3-60)",
       "rewriteQuery": "启用查询改写",
-      "rewriteQueryHint": "使用轻量模型把多轮对话上下文合并为单条搜索词,失败时自动用原文。",
-      "utilityModel": "工具模型",
-      "utilityModelHint": "用于话题命名、网络搜索 query 改写等短任务。留空则使用对话所属助手的模型。",
-      "utilityProvider": "服务商",
-      "utilityModelName": "模型",
-      "useAssistantModel": "使用对话模型"
+      "rewriteQueryHint": "使用轻量模型把多轮对话上下文合并为单条搜索词,失败时自动用原文。"
+    },
+    "utilityModels": {
+      "title": "工具模型",
+      "description": "为后台短任务(话题命名、网络搜索查询改写等)单独配置模型。每个任务都可以选择不同的服务商和模型;留空则回退到对话所属助手的模型。",
+      "provider": "服务商",
+      "model": "模型",
+      "useAssistantModel": "使用对话模型",
+      "noProvider": "—",
+      "tasks": {
+        "titleName": "话题命名",
+        "titleHint": "对话首轮回复完成后,根据用户问题和助手回答生成简短的话题标题。",
+        "searchRewriteName": "搜索查询改写",
+        "searchRewriteHint": "把多轮对话上下文压缩为单条网络搜索查询,在调用搜索后端前执行。"
+      }
     }
   },
   "translate": {

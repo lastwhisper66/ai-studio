@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **后置变更（2026-05-20）：** 实施完成后,移除了设置中的"启用网络搜索"主开关。Globe 按钮可见性现在只由"当前 provider 凭据是否配置好"决定;`webSearch.enabled` 这个 setting key 不再被读取。下面计划中所有涉及 `webSearch.enabled` / master toggle / `enabledHint` 的代码片段、UI 步骤和手测项已不再准确,以代码为准。
+
 **Goal:** Add per-conversation web search to main chat: a Globe toggle in `MessageInput` that, when ON, pre-searches via the user-configured backend (Tavily / Brave / SearXNG / Exa), injects the results as a system message with `[n]` citation markers before calling the model, and renders the cited sources back in `MessageBubble`.
 
 **Architecture:** New `src/main/web-search/` module mirrors the structure of `src/main/ai/`. Pipeline runs inside `chat-handlers.ts` between message construction and `streamChat`. A new `src/main/utility-llm.ts` runs short LLM calls for query rewriting and title generation. Web search failures degrade silently to a non-web reply. Per-conversation toggle state is in-memory only (zustand Map).

@@ -234,7 +234,7 @@ export function registerChatHandlers(): void {
         // ── Web search pre-pipeline ──────────────────────────────────
         if (payload.webSearch) {
           const wsSettings = loadWebSearchSettings()
-          if (wsSettings.enabled && isProviderConfigured(wsSettings)) {
+          if (isProviderConfigured(wsSettings)) {
             try {
               const lastUserText = extractLastUserText(apiMessages)
               const query = wsSettings.rewriteQuery

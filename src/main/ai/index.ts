@@ -53,6 +53,7 @@ export async function generateTitle(
   try {
     const { runUtilityCompletion } = await import('../utility-llm')
     const raw = await runUtilityCompletion({
+      task: 'title',
       messages: titleMessages,
       signal: AbortSignal.timeout(15_000),
       temperature: 0.5,

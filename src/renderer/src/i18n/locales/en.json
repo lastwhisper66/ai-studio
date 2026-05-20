@@ -72,6 +72,7 @@
     "reasoningHigh": "High",
     "reasoningXhigh": "Extra High",
     "webSearch": "Web search",
+    "webSearchDisabledTooltip": "Click to open settings and configure web search",
     "sources": "Sources ({{count}})",
     "thinkingProcess": "Thinking",
     "thinkingTime": "Thought for {{time}}",
@@ -196,6 +197,7 @@
     "title": "Settings",
     "sections": {
       "provider": "Providers",
+      "utilityModels": "Utility Models",
       "modelManagement": "Models & Groups",
       "general": "General",
       "network": "Network",
@@ -753,8 +755,6 @@
     "webSearch": {
       "title": "Web Search",
       "description": "Toggle web search per chat. Search results are injected as context, and the assistant cites sources in its reply.",
-      "enabled": "Enable web search",
-      "enabledHint": "When on, a search-toggle button appears in the main chat input.",
       "provider": "Search provider",
       "apiKey": "API Key",
       "searxngUrl": "SearXNG instance URL",
@@ -767,12 +767,21 @@
       "maxResults": "Results per search (1-20)",
       "timeoutSec": "Timeout seconds (3-60)",
       "rewriteQuery": "Rewrite query",
-      "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails.",
-      "utilityModel": "Utility model",
-      "utilityModelHint": "Used for short tasks like topic naming and query rewriting. Falls back to the conversation's assistant model when empty.",
-      "utilityProvider": "Provider",
-      "utilityModelName": "Model",
-      "useAssistantModel": "Use assistant model"
+      "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails."
+    },
+    "utilityModels": {
+      "title": "Utility Models",
+      "description": "Configure dedicated models for short background tasks (topic naming, web-search query rewriting). Each task can pick its own provider and model; leave empty to fall back to the conversation's assistant model.",
+      "provider": "Provider",
+      "model": "Model",
+      "useAssistantModel": "Use assistant model",
+      "noProvider": "—",
+      "tasks": {
+        "titleName": "Topic naming",
+        "titleHint": "Generates a short topic title after the first assistant reply, based on the user message and the response.",
+        "searchRewriteName": "Search query rewriting",
+        "searchRewriteHint": "Collapses multi-turn conversation context into a single web search query before calling the search backend."
+      }
     }
   },
   "translate": {

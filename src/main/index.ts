@@ -460,8 +460,8 @@ if (!gotTheLock) {
       }
     }
 
-    initDatabase()
-    runMigrations()
+    const { isNew: isNewDatabase } = initDatabase()
+    runMigrations(isNewDatabase)
     // Sweep any leftover `.import-*` / `.trash-*` avatar staging dirs from a
     // previous run that crashed mid-restore. Safe to run unconditionally.
     cleanupStaleAvatarStaging()

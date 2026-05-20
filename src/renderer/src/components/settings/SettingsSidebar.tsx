@@ -10,6 +10,7 @@ import {
   Zap,
   TextSelect,
   Search,
+  Wrench,
   Info,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +19,7 @@ import { Separator } from '@renderer/components/ui/separator'
 
 export type SettingsSection =
   | 'provider'
+  | 'utility-models'
   | 'model-management'
   | 'general'
   | 'network'
@@ -40,6 +42,7 @@ type SectionItem = { id: SettingsSection; labelKey: string; icon: React.ElementT
 const sectionGroups: SectionItem[][] = [
   [
     { id: 'provider', labelKey: 'settings.sections.provider', icon: Cloud },
+    { id: 'utility-models', labelKey: 'settings.sections.utilityModels', icon: Wrench },
     { id: 'model-management', labelKey: 'settings.sections.modelManagement', icon: Library },
   ],
   [

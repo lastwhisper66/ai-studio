@@ -8,7 +8,7 @@ import { seedDatabaseDefaults } from './seeds'
 
 let db: Database.Database | null = null
 
-export function initDatabase(): void {
+export function initDatabase(): { isNew: boolean } {
   const dataDir = getDataDir()
   if (!existsSync(dataDir)) {
     mkdirSync(dataDir, { recursive: true })
@@ -18,6 +18,8 @@ export function initDatabase(): void {
     mkdirSync(avatarsDir, { recursive: true })
   }
   const dbPath = join(dataDir, 'ai-studio.db')
+  // Detect "fresh install" BEFORE opening — better-sqlite3 creates the file on open
+  const isNew = !existsSync(dbPath)
   db = new Database(dbPath)
 
   // Enable WAL mode for better concurrent read/write performance
@@ -26,6 +28,7 @@ export function initDatabase(): void {
   db.pragma('foreign_keys = ON')
 
   createTables()
+  return { isNew }
 }
 
 export function getDb(): Database.Database {

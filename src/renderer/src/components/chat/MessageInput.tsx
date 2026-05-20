@@ -171,12 +171,14 @@ function ToolButton({
   icon,
   label,
   active,
+  disabled,
   onClick,
   className,
 }: {
   icon: React.ReactNode
   label: string
   active?: boolean
+  disabled?: boolean
   onClick?: () => void
   className?: string
 }): React.JSX.Element {
@@ -187,8 +189,9 @@ function ToolButton({
           type="button"
           onClick={onClick}
           className={cn(
-            'hover:bg-muted text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors',
-            active && 'text-primary bg-primary/10 hover:bg-primary/15',
+            'text-muted-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+            disabled ? 'opacity-40' : 'hover:bg-muted hover:text-foreground',
+            !disabled && active && 'text-primary bg-primary/10 hover:bg-primary/15',
             className,
           )}>
           {icon}
@@ -258,13 +261,31 @@ export function MessageInput({
   const webSearch = activeConversationId
     ? (webSearchEnabledMap[activeConversationId] ?? false)
     : false
-  const toggleWebSearch = (): void => {
+  const navigateToSettings = useSettingsStore((s) => s.navigateToSettings)
+  const settings = useSettingsStore((s) => s.settings)
+  const webSearchAvailable = useMemo(() => {
+    const provider = settings['webSearch.provider'] ?? 'tavily'
+    switch (provider) {
+      case 'tavily':
+        return (settings['webSearch.tavilyApiKey'] ?? '').length > 0
+      case 'brave':
+        return (settings['webSearch.braveApiKey'] ?? '').length > 0
+      case 'exa':
+        return (settings['webSearch.exaApiKey'] ?? '').length > 0
+      case 'searxng':
+        return (settings['webSearch.searxngUrl'] ?? '').length > 0
+      default:
+        return false
+    }
+  }, [settings])
+  const handleWebSearchClick = (): void => {
+    if (!webSearchAvailable) {
+      navigateToSettings('web-search')
+      return
+    }
     if (!activeConversationId) return
     setWebSearchInStore(activeConversationId, !webSearch)
   }
-  const webSearchGlobalEnabled = useSettingsStore(
-    (s) => (s.settings['webSearch.enabled'] ?? 'false') === 'true',
-  )
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {
@@ -506,14 +527,15 @@ export function MessageInput({
                 onClick={handleAttach}
               />
               <ReasoningPopover value={reasoning} onChange={setReasoning} />
-              {webSearchGlobalEnabled && activeConversationId && (
-                <ToolButton
-                  icon={<Globe className="h-4 w-4" />}
-                  label={t('chat.webSearch')}
-                  active={webSearch}
-                  onClick={toggleWebSearch}
-                />
-              )}
+              <ToolButton
+                icon={<Globe className="h-4 w-4" />}
+                label={
+                  webSearchAvailable ? t('chat.webSearch') : t('chat.webSearchDisabledTooltip')
+                }
+                active={webSearch && webSearchAvailable && !!activeConversationId}
+                disabled={!webSearchAvailable}
+                onClick={handleWebSearchClick}
+              />
               <PhrasePopover
                 onSelect={(c) => {
                   const el = textareaRef.current

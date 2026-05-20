@@ -6,6 +6,7 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
 import { ModelManagementSection } from './ModelManagementSection'
+import { UtilityModelsSection } from './UtilityModelsSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { NetworkSection } from './NetworkSection'
@@ -52,6 +53,7 @@ export function SettingsPage(): React.JSX.Element {
           <ScrollArea className="flex-1">
             <div className="p-6">
               {activeSection === 'general' && <GeneralSection />}
+              {activeSection === 'utility-models' && <UtilityModelsSection />}
               {activeSection === 'network' && <NetworkSection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'phrases' && <PhrasesSection />}
