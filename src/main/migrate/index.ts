@@ -11,6 +11,7 @@ import type Database from 'better-sqlite3'
 import { getDb } from '../db/database'
 import { migration001MessagesSources } from './001-messages-sources'
 import { migration002SplitUtilityModel } from './002-split-utility-model'
+import { migration003WebSearchDefaultProvider } from './003-web-search-default-provider'
 
 interface Migration {
   version: number
@@ -18,7 +19,11 @@ interface Migration {
   up(db: Database.Database): void
 }
 
-const MIGRATIONS: Migration[] = [migration001MessagesSources, migration002SplitUtilityModel]
+const MIGRATIONS: Migration[] = [
+  migration001MessagesSources,
+  migration002SplitUtilityModel,
+  migration003WebSearchDefaultProvider,
+]
 
 export function runMigrations(isNewDatabase: boolean = false): void {
   const db = getDb()
