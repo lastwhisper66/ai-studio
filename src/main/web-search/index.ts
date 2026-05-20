@@ -21,8 +21,12 @@ export interface WebSearchSettings {
 }
 
 export function loadWebSearchSettings(): WebSearchSettings {
+  const runtimeProvider =
+    (getSetting('webSearch.defaultProvider') as WebSearchProviderType) ||
+    (getSetting('webSearch.provider') as WebSearchProviderType) ||
+    'tavily'
   return {
-    provider: (getSetting('webSearch.provider') as WebSearchProviderType) || 'tavily',
+    provider: runtimeProvider,
     tavilyApiKey: getSetting('webSearch.tavilyApiKey') ?? '',
     braveApiKey: getSetting('webSearch.braveApiKey') ?? '',
     exaApiKey: getSetting('webSearch.exaApiKey') ?? '',
