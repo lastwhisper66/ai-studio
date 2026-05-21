@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { WebSearchProviderType, WebSearchTestPayload } from '@shared/types'
+import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 
 export type TestState =
   | { kind: 'idle' }
@@ -20,6 +21,7 @@ export function useWebSearchTestConnection(provider: WebSearchProviderType): {
   reset: () => void
 } {
   const [state, setState] = useState<TestState>({ kind: 'idle' })
+  const resolveError = useLocalizedError()
 
   const run = async (creds: TestCredentials): Promise<void> => {
     setState({ kind: 'busy' })
@@ -36,7 +38,7 @@ export function useWebSearchTestConnection(provider: WebSearchProviderType): {
     } else {
       setState({
         kind: 'err',
-        message: result.error?.message ?? result.error?.code ?? 'unknown',
+        message: resolveError(result.error) || 'unknown',
       })
     }
   }

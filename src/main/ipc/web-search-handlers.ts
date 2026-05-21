@@ -14,7 +14,7 @@ export function registerWebSearchHandlers(): void {
           ...payload,
           query: 'ai studio test query',
           maxResults: 3,
-          timeoutMs: 10_000,
+          timeoutMs: 30_000,
           signal: controller.signal,
         })
         return { success: true, data: { resultCount: results.length } }
