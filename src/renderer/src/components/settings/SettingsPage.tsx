@@ -6,6 +6,7 @@ import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { SettingsSidebar, type SettingsSection } from './SettingsSidebar'
 import { ProviderSection } from './ProviderSection'
 import { ModelManagementSection } from './ModelManagementSection'
+import { UtilityModelsSection } from './UtilityModelsSection'
 import { GeneralSection } from './GeneralSection'
 import { DisplaySection } from './DisplaySection'
 import { NetworkSection } from './NetworkSection'
@@ -14,6 +15,7 @@ import { PhrasesSection } from './PhrasesSection'
 import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 import { QuickAssistantSection } from './QuickAssistantSection'
 import { SelectionAssistantSection } from './SelectionAssistantSection'
+import { WebSearchSection } from './web-search/WebSearchSection'
 import { AboutSection } from './AboutSection'
 
 export function SettingsPage(): React.JSX.Element {
@@ -47,10 +49,13 @@ export function SettingsPage(): React.JSX.Element {
           <ModelManagementSection />
         ) : activeSection === 'data' ? (
           <DataSection />
+        ) : activeSection === 'web-search' ? (
+          <WebSearchSection />
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6">
               {activeSection === 'general' && <GeneralSection />}
+              {activeSection === 'utility-models' && <UtilityModelsSection />}
               {activeSection === 'network' && <NetworkSection />}
               {activeSection === 'display' && <DisplaySection />}
               {activeSection === 'phrases' && <PhrasesSection />}

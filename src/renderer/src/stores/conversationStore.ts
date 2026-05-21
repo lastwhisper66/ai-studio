@@ -29,8 +29,18 @@ interface ConversationState {
   /** ID of the user message currently being edited; null = no edit active */
   editingMessageId: string | null
   focusInputTrigger: number
+  /** Per-conversation in-memory toggle for web search. Not persisted. */
+  webSearchByConversation: Record<string, boolean>
+  /**
+   * Web-search toggle set BEFORE any conversation is active (e.g. from the
+   * WelcomeScreen). Applied to the new conversation as soon as one is created.
+   */
+  pendingWebSearchEnabled: boolean
 
   requestInputFocus: () => void
+  getWebSearch: (conversationId: string) => boolean
+  setWebSearch: (conversationId: string, enabled: boolean) => void
+  setPendingWebSearch: (enabled: boolean) => void
   loadConversations: () => Promise<void>
   createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
@@ -47,6 +57,7 @@ interface ConversationState {
     content: string,
     files?: FileData[],
     reasoningEffort?: ReasoningEffort,
+    webSearch?: boolean,
   ) => Promise<void>
   resendMessage: (userMessageId: string) => Promise<void>
   editMessage: (messageId: string, newContent: string) => Promise<void>
@@ -208,8 +219,24 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     resendTargetId: null,
     editingMessageId: null,
     focusInputTrigger: 0,
+    webSearchByConversation: {},
+    pendingWebSearchEnabled: false,
 
     requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
+
+    getWebSearch: (conversationId: string) => {
+      return get().webSearchByConversation[conversationId] ?? false
+    },
+
+    setWebSearch: (conversationId: string, enabled: boolean) => {
+      set((state) => ({
+        webSearchByConversation: { ...state.webSearchByConversation, [conversationId]: enabled },
+      }))
+    },
+
+    setPendingWebSearch: (enabled: boolean) => {
+      set({ pendingWebSearchEnabled: enabled })
+    },
 
     clearError: () => set({ error: null }),
 
@@ -230,11 +257,19 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       const result = await window.api.createConversation(title, effectiveAssistantId)
       if (result.success && result.data) {
         const conversation = result.data
-        set((state) => ({
-          conversations: [conversation, ...state.conversations],
-          activeConversationId: conversation.id,
-          messages: [],
-        }))
+        set((state) => {
+          const pending = state.pendingWebSearchEnabled
+          const nextWebSearchMap = pending
+            ? { ...state.webSearchByConversation, [conversation.id]: true }
+            : state.webSearchByConversation
+          return {
+            conversations: [conversation, ...state.conversations],
+            activeConversationId: conversation.id,
+            messages: [],
+            webSearchByConversation: nextWebSearchMap,
+            pendingWebSearchEnabled: false,
+          }
+        })
         get().requestInputFocus()
         return true
       }
@@ -256,11 +291,16 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             (c) => c.assistantId === currentAssistantId,
           )
           const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
-          set({
-            conversations: remaining,
-            activeConversationId: nextId,
-            messages: [],
-            hasMoreMessages: false,
+          set((state) => {
+            const nextMap = { ...state.webSearchByConversation }
+            delete nextMap[id]
+            return {
+              conversations: remaining,
+              activeConversationId: nextId,
+              messages: [],
+              hasMoreMessages: false,
+              webSearchByConversation: nextMap,
+            }
           })
           if (nextId) {
             const msgResult = await window.api.listMessagesPaginated(nextId)
@@ -269,7 +309,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             }
           }
         } else {
-          set({ conversations: remaining })
+          set((state) => {
+            const nextMap = { ...state.webSearchByConversation }
+            delete nextMap[id]
+            return { conversations: remaining, webSearchByConversation: nextMap }
+          })
         }
       } else {
         set({ error: result.error ?? fallbackLocalizedError('Failed to delete conversation') })
@@ -294,11 +338,16 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             (c) => c.assistantId === currentAssistantId,
           )
           const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
-          set({
-            conversations: remaining,
-            activeConversationId: nextId,
-            messages: [],
-            hasMoreMessages: false,
+          set((state) => {
+            const nextMap = { ...state.webSearchByConversation }
+            for (const id of ids) delete nextMap[id]
+            return {
+              conversations: remaining,
+              activeConversationId: nextId,
+              messages: [],
+              hasMoreMessages: false,
+              webSearchByConversation: nextMap,
+            }
           })
           if (nextId) {
             const msgResult = await window.api.listMessagesPaginated(nextId)
@@ -307,7 +356,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             }
           }
         } else {
-          set({ conversations: remaining })
+          set((state) => {
+            const nextMap = { ...state.webSearchByConversation }
+            for (const id of ids) delete nextMap[id]
+            return { conversations: remaining, webSearchByConversation: nextMap }
+          })
         }
       } else {
         set({ error: result.error ?? fallbackLocalizedError('Failed to delete conversations') })
@@ -426,7 +479,12 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       }
     },
 
-    sendMessage: async (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => {
+    sendMessage: async (
+      content: string,
+      files?: FileData[],
+      reasoningEffort?: ReasoningEffort,
+      webSearch?: boolean,
+    ) => {
       if (get().isStreaming) return
 
       let conversationId = get().activeConversationId
@@ -445,7 +503,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
 
       await startStream({
         conversationId,
-        apiPayload: { conversationId, files, reasoningEffort },
+        apiPayload: { conversationId, files, reasoningEffort, webSearch },
         resendTargetId: null,
         registerTitleListener: true,
       })

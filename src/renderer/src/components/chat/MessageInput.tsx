@@ -37,7 +37,12 @@ import { isImageMime } from '@shared/types'
 type AttachedFile = FileData
 
 interface MessageInputProps {
-  onSend: (content: string, files?: FileData[], reasoningEffort?: ReasoningEffort) => void
+  onSend: (
+    content: string,
+    files?: FileData[],
+    reasoningEffort?: ReasoningEffort,
+    webSearch?: boolean,
+  ) => void
   onStop: () => void
   isStreaming: boolean
   droppedFiles?: FileData[]
@@ -105,6 +110,136 @@ function PhrasePopover({ onSelect }: { onSelect: (content: string) => void }): R
   )
 }
 
+// ── Web Search Popover ─────────────────────────────────────────
+type WebSearchProviderId = 'tavily' | 'brave' | 'searxng' | 'exa'
+
+const WEB_SEARCH_PROVIDER_LABELS: Record<WebSearchProviderId, string> = {
+  tavily: 'Tavily',
+  brave: 'Brave Search',
+  searxng: 'SearXNG',
+  exa: 'Exa',
+}
+
+function getWebSearchConfigured(
+  settings: Record<string, string>,
+  id: WebSearchProviderId,
+): boolean {
+  switch (id) {
+    case 'tavily':
+      return (settings['webSearch.tavilyApiKey'] ?? '').length > 0
+    case 'brave':
+      return (settings['webSearch.braveApiKey'] ?? '').length > 0
+    case 'exa':
+      return (settings['webSearch.exaApiKey'] ?? '').length > 0
+    case 'searxng':
+      return (settings['webSearch.searxngUrl'] ?? '').length > 0
+  }
+}
+
+function WebSearchPopover({
+  enabled,
+  onEnabledChange,
+}: {
+  enabled: boolean
+  onEnabledChange: (v: boolean) => void
+}): React.JSX.Element {
+  const { t } = useTranslation()
+  const settings = useSettingsStore((s) => s.settings)
+  const saveSettings = useSettingsStore((s) => s.saveSettings)
+  const navigateToSettings = useSettingsStore((s) => s.navigateToSettings)
+  const [open, setOpen] = useState(false)
+
+  const providerIds: WebSearchProviderId[] = ['tavily', 'brave', 'searxng', 'exa']
+  const configuredProviders = providerIds.filter((id) => getWebSearchConfigured(settings, id))
+  const rawDefault = settings['webSearch.defaultProvider'] as WebSearchProviderId | undefined
+  const defaultProvider: WebSearchProviderId | null =
+    rawDefault && configuredProviders.includes(rawDefault) ? rawDefault : null
+  const active = enabled && defaultProvider !== null
+
+  const handlePickProvider = (id: WebSearchProviderId): void => {
+    void saveSettings({ 'webSearch.defaultProvider': id })
+    onEnabledChange(true)
+    setOpen(false)
+  }
+
+  const handleTurnOff = (): void => {
+    void saveSettings({ 'webSearch.defaultProvider': '' })
+    onEnabledChange(false)
+    setOpen(false)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <Tooltip open={open ? false : undefined}>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'hover:bg-muted text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                active && 'text-primary bg-primary/10 hover:bg-primary/15',
+              )}>
+              <Globe className="h-4 w-4" />
+            </button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">{t('chat.webSearch')}</TooltipContent>
+      </Tooltip>
+      <PopoverContent side="top" align="start" className="w-64 p-0">
+        <div className="border-b px-3 py-2">
+          <p className="text-sm font-medium">{t('settings.webSearch.popoverTitle')}</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            {t('settings.webSearch.popoverHint')}
+          </p>
+        </div>
+        <div className="p-1">
+          <button
+            type="button"
+            className={cn(
+              'hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs',
+              !active && 'bg-accent font-medium',
+            )}
+            onClick={handleTurnOff}>
+            <Check className={cn('h-3 w-3', active && 'invisible')} />
+            {t('settings.webSearch.off')}
+          </button>
+          {configuredProviders.length === 0 ? (
+            <p className="text-muted-foreground px-2 py-3 text-center text-xs">
+              {t('settings.webSearch.noProvidersConfigured')}
+            </p>
+          ) : (
+            configuredProviders.map((id) => {
+              const isSelected = active && defaultProvider === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn(
+                    'hover:bg-accent flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs',
+                    isSelected && 'bg-accent font-medium',
+                  )}
+                  onClick={() => handlePickProvider(id)}>
+                  <Check className={cn('h-3 w-3', !isSelected && 'invisible')} />
+                  {WEB_SEARCH_PROVIDER_LABELS[id]}
+                </button>
+              )
+            })
+          )}
+        </div>
+        <div
+          className="hover:bg-accent text-muted-foreground flex cursor-pointer items-center gap-1.5 border-t px-3 py-2 text-xs transition-colors"
+          onClick={() => {
+            setOpen(false)
+            navigateToSettings('web-search')
+          }}>
+          <Settings className="h-3.5 w-3.5" />
+          {t('settings.webSearch.manageInSettings')}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
 // ── Reasoning Popover ───────────────────────────────────────────
 function ReasoningPopover({
   value,
@@ -166,12 +301,14 @@ function ToolButton({
   icon,
   label,
   active,
+  disabled,
   onClick,
   className,
 }: {
   icon: React.ReactNode
   label: string
   active?: boolean
+  disabled?: boolean
   onClick?: () => void
   className?: string
 }): React.JSX.Element {
@@ -182,8 +319,9 @@ function ToolButton({
           type="button"
           onClick={onClick}
           className={cn(
-            'hover:bg-muted text-muted-foreground hover:text-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors',
-            active && 'text-primary bg-primary/10 hover:bg-primary/15',
+            'text-muted-foreground flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+            disabled ? 'opacity-40' : 'hover:bg-muted hover:text-foreground',
+            !disabled && active && 'text-primary bg-primary/10 hover:bg-primary/15',
             className,
           )}>
           {icon}
@@ -240,7 +378,6 @@ export function MessageInput({
   const [input, setInput] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
-  const [webSearch, setWebSearch] = useState(false)
   const [reasoning, setReasoning] = useState<ReasoningLevel>('off')
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -249,6 +386,17 @@ export function MessageInput({
   const renameConversation = useConversationStore((s) => s.renameConversation)
   const insertDivider = useConversationStore((s) => s.insertDivider)
   const focusInputTrigger = useConversationStore((s) => s.focusInputTrigger)
+  const webSearchEnabledMap = useConversationStore((s) => s.webSearchByConversation)
+  const setWebSearchInStore = useConversationStore((s) => s.setWebSearch)
+  const pendingWebSearch = useConversationStore((s) => s.pendingWebSearchEnabled)
+  const setPendingWebSearch = useConversationStore((s) => s.setPendingWebSearch)
+  const webSearch = activeConversationId
+    ? (webSearchEnabledMap[activeConversationId] ?? false)
+    : pendingWebSearch
+  const setWebSearchForConv = (v: boolean): void => {
+    if (activeConversationId) setWebSearchInStore(activeConversationId, v)
+    else setPendingWebSearch(v)
+  }
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {
@@ -289,9 +437,6 @@ export function MessageInput({
 
   const buildContent = (): string => {
     let content = input.trim()
-    if (webSearch) {
-      content = `[网络搜索已开启]\n${content}`
-    }
     for (const f of attachedFiles) {
       if (f.mimeType.startsWith('text/') || f.mimeType === 'application/json') {
         // Correctly decode UTF-8 encoded text files
@@ -320,7 +465,7 @@ export function MessageInput({
     const effort = reasoning !== 'off' ? reasoning : undefined
     setInput('')
     setAttachedFiles([])
-    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort)
+    onSend(displayContent, imageFiles.length > 0 ? imageFiles : undefined, effort, webSearch)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
@@ -493,12 +638,7 @@ export function MessageInput({
                 onClick={handleAttach}
               />
               <ReasoningPopover value={reasoning} onChange={setReasoning} />
-              <ToolButton
-                icon={<Globe className="h-4 w-4" />}
-                label={t('chat.webSearch')}
-                active={webSearch}
-                onClick={() => setWebSearch((v) => !v)}
-              />
+              <WebSearchPopover enabled={webSearch} onEnabledChange={setWebSearchForConv} />
               <PhrasePopover
                 onSelect={(c) => {
                   const el = textareaRef.current

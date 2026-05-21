@@ -4,7 +4,14 @@ import type {
   ChatCompletionMessageParam,
 } from 'openai/resources/chat/completions'
 import { IpcChannels } from '@shared/ipc-channels'
-import type { SendMessagePayload, IpcResult, Message, FileData, ApiSettings } from '@shared/types'
+import type {
+  SendMessagePayload,
+  IpcResult,
+  Message,
+  FileData,
+  ApiSettings,
+  WebSearchResult,
+} from '@shared/types'
 import { isImageMime } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
@@ -15,6 +22,13 @@ import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
 import { streamChat, generateTitle, applySslSetting } from '../ai'
 import { showCompletionNotification } from '../utils/notification'
+import {
+  loadWebSearchSettings,
+  isProviderConfigured,
+  runWebSearch,
+  buildSearchContextMessage,
+} from '../web-search'
+import { rewriteQuery } from '../web-search/query-rewriter'
 
 const activeStreams = new Map<string, AbortController>()
 
@@ -29,6 +43,22 @@ export function abortAllChatStreams(): void {
   activeStreams.clear()
 }
 
+function extractLastUserText(messages: ChatCompletionMessageParam[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role !== 'user') continue
+    if (typeof m.content === 'string') return m.content
+    if (Array.isArray(m.content)) {
+      const text = m.content
+        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+        .map((p) => p.text)
+        .join(' ')
+      if (text) return text
+    }
+  }
+  return ''
+}
+
 export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,
@@ -40,6 +70,7 @@ export function registerChatHandlers(): void {
       const streamStartTime = Date.now()
       let reasoningStartTime: number | null = null
       let thinkingDuration: number | null = null
+      let webSearchSources: WebSearchResult[] | null = null
 
       try {
         const allMessages = listMessages(conversationId)
@@ -97,6 +128,12 @@ export function registerChatHandlers(): void {
 
         // Build settings from provider + assistant params (defaults if unset)
         applySslSetting()
+
+        // Controller is created early so the web-search pre-pipeline shares
+        // the same abort signal — Esc must stop both the search and the model call.
+        const controller = new AbortController()
+        activeStreams.set(conversationId, controller)
+
         const temperature = assistant?.temperature ? parseFloat(assistant.temperature) : 0.7
         const maxCompletionTokens = assistant?.maxCompletionTokens
           ? parseInt(assistant.maxCompletionTokens, 10)
@@ -194,8 +231,31 @@ export function registerChatHandlers(): void {
           }
         }
 
-        const controller = new AbortController()
-        activeStreams.set(conversationId, controller)
+        // ── Web search pre-pipeline ──────────────────────────────────
+        if (payload.webSearch) {
+          const wsSettings = loadWebSearchSettings()
+          if (isProviderConfigured(wsSettings)) {
+            try {
+              const lastUserText = extractLastUserText(apiMessages)
+              const query = wsSettings.rewriteQuery
+                ? await rewriteQuery(apiMessages, controller.signal).catch(() => lastUserText)
+                : lastUserText
+              const results = await runWebSearch({ query, signal: controller.signal })
+              if (results.length > 0) {
+                webSearchSources = results
+                const ctxMsg = buildSearchContextMessage(results)
+                const insertIdx = apiMessages.length > 0 && apiMessages[0].role === 'system' ? 1 : 0
+                apiMessages.splice(insertIdx, 0, ctxMsg)
+              } else {
+                console.info('[chat] web search returned 0 results, continuing without context')
+              }
+            } catch (err) {
+              console.warn('[chat] web search failed, falling back to no-search reply:', err)
+            }
+          } else {
+            console.info('[chat] web search requested but not configured/enabled')
+          }
+        }
 
         await streamChat(
           {
@@ -236,6 +296,7 @@ export function registerChatHandlers(): void {
           duration,
           reasoningContent: fullReasoning || undefined,
           thinkingDuration: thinkingDuration ?? undefined,
+          sources: webSearchSources ?? undefined,
         })
         if (!sender.isDestroyed()) {
           sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })
@@ -274,6 +335,7 @@ export function registerChatHandlers(): void {
               duration,
               reasoningContent: fullReasoning || undefined,
               thinkingDuration: thinkingDuration ?? undefined,
+              sources: webSearchSources ?? undefined,
             })
           }
           if (!sender.isDestroyed()) {

@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import type { Message, MessageRole, AttachmentMeta } from '@shared/types'
+import type { Message, MessageRole, AttachmentMeta, WebSearchResult } from '@shared/types'
 import { ERROR_CODES } from '@shared/errors'
 import { AppError } from '../errors'
 import { getDb } from './database'
@@ -16,6 +16,7 @@ interface MessageRow {
   duration: number | null
   thinking_duration: number | null
   attachments: string | null
+  sources: string | null
 }
 
 function rowToMessage(row: MessageRow): Message {
@@ -33,6 +34,13 @@ function rowToMessage(row: MessageRow): Message {
   if (row.attachments) {
     try {
       msg.attachments = JSON.parse(row.attachments) as AttachmentMeta[]
+    } catch {
+      // ignore malformed JSON
+    }
+  }
+  if (row.sources) {
+    try {
+      msg.sources = JSON.parse(row.sources) as WebSearchResult[]
     } catch {
       // ignore malformed JSON
     }
@@ -81,6 +89,7 @@ interface CreateMessageOptions {
   duration?: number
   reasoningContent?: string
   thinkingDuration?: number
+  sources?: WebSearchResult[]
 }
 
 export function createMessage(
@@ -89,15 +98,16 @@ export function createMessage(
   content: string,
   options?: CreateMessageOptions,
 ): Message {
-  const { attachments, duration, reasoningContent, thinkingDuration } = options ?? {}
+  const { attachments, duration, reasoningContent, thinkingDuration, sources } = options ?? {}
   const id = uuidv4()
   const now = new Date().toISOString()
   const db = getDb()
   const attachmentsJson = attachments && attachments.length > 0 ? JSON.stringify(attachments) : null
+  const sourcesJson = sources && sources.length > 0 ? JSON.stringify(sources) : null
 
   db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, attachments, duration, thinking_duration)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, attachments, duration, thinking_duration, sources)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     conversationId,
@@ -108,6 +118,7 @@ export function createMessage(
     attachmentsJson,
     duration ?? null,
     thinkingDuration ?? null,
+    sourcesJson,
   )
 
   // Update conversation's updated_at timestamp

@@ -64,6 +64,7 @@ import type {
   SyncResult,
   BuiltinCategory,
   BuiltinUpdatesStatus,
+  WebSearchTestPayload,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -198,6 +199,11 @@ const api = {
 
   testProviderConnection: (payload: ProviderConnectionTestPayload): Promise<IpcResult<string>> =>
     ipcRenderer.invoke(IpcChannels.PROVIDER_TEST_CONNECTION, payload),
+
+  testWebSearchConnection: (
+    payload: WebSearchTestPayload,
+  ): Promise<IpcResult<{ resultCount: number }>> =>
+    ipcRenderer.invoke(IpcChannels.WEB_SEARCH_TEST_CONNECTION, payload),
 
   // Models
   listModels: (): Promise<IpcResult<Model[]>> => ipcRenderer.invoke(IpcChannels.MODEL_LIST),

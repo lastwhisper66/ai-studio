@@ -149,6 +149,7 @@ export function MessageList({
                     reasoningContent={msg.reasoningContent}
                     messageId={msg.id}
                     attachments={msg.attachments}
+                    sources={msg.sources}
                     duration={msg.duration}
                     thinkingDuration={msg.thinkingDuration}
                     isEditing={editingMessageId === msg.id}

@@ -72,6 +72,8 @@
     "reasoningHigh": "High",
     "reasoningXhigh": "Extra High",
     "webSearch": "Web search",
+    "webSearchDisabledTooltip": "Click to open settings and configure web search",
+    "sources": "Sources ({{count}})",
     "thinkingProcess": "Thinking",
     "thinkingTime": "Thought for {{time}}",
     "thinkingInProgress": "Thinking...",
@@ -195,6 +197,7 @@
     "title": "Settings",
     "sections": {
       "provider": "Providers",
+      "utilityModels": "Utility Models",
       "modelManagement": "Models & Groups",
       "general": "General",
       "network": "Network",
@@ -204,6 +207,7 @@
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
       "selectionAssistant": "Selection Assistant",
+      "webSearch": "Web Search",
       "about": "About"
     },
     "provider": {
@@ -747,6 +751,47 @@
       "confirmTitle": "Confirm sync",
       "confirmDescription": "This will overwrite all built-in items with the latest version; any edits you made to built-ins will be lost and cannot be recovered.",
       "confirmAction": "Overwrite and sync"
+    },
+    "webSearch": {
+      "title": "Web Search",
+      "description": "Toggle web search per chat. Search results are injected as context, and the assistant cites sources in its reply.",
+      "provider": "Search provider",
+      "apiKey": "API Key",
+      "searxngUrl": "SearXNG instance URL",
+      "username": "Username (optional)",
+      "password": "Password (optional)",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "Connected, {{count}} results returned",
+      "testFailed": "Connection failed",
+      "maxResults": "Results per search (1-20)",
+      "timeoutSec": "Timeout seconds (3-60)",
+      "rewriteQuery": "Rewrite query",
+      "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails.",
+      "commonParams": "Common parameters",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "bannerTitle": "Configure providers",
+      "bannerBody": "Fill in credentials on a provider tab below. To pick which provider is used in chat, click the web search icon.",
+      "popoverTitle": "Web search",
+      "popoverHint": "Pick a search provider for this conversation, or turn web search off.",
+      "off": "Off",
+      "noProvidersConfigured": "No providers configured yet",
+      "manageInSettings": "Manage providers in settings…"
+    },
+    "utilityModels": {
+      "title": "Utility Models",
+      "description": "Configure dedicated models for short background tasks (topic naming, web-search query rewriting). Each task can pick its own provider and model; leave empty to fall back to the conversation's assistant model.",
+      "provider": "Provider",
+      "model": "Model",
+      "useAssistantModel": "Use assistant model",
+      "noProvider": "—",
+      "tasks": {
+        "titleName": "Topic naming",
+        "titleHint": "Generates a short topic title after the first assistant reply, based on the user message and the response.",
+        "searchRewriteName": "Search query rewriting",
+        "searchRewriteHint": "Collapses multi-turn conversation context into a single web search query before calling the search backend."
+      }
     }
   },
   "translate": {
@@ -1002,6 +1047,16 @@
       "busy": "A backup operation is already in progress.",
       "cancelled": "Operation was cancelled.",
       "applyFailed": "Failed to apply the backup; your existing data was not changed."
+    },
+    "webSearch": {
+      "notConfigured": "Web search is not configured. Open Settings to set it up.",
+      "apiKeyMissing": "Missing API key for {{provider}}.",
+      "requestFailed": "{{provider}} search failed: {{message}}",
+      "timeout": "{{provider}} search timed out",
+      "rewriteFailed": "Query rewrite failed: {{reason}}"
+    },
+    "utilityModel": {
+      "notConfigured": "Utility model is not configured"
     }
   },
   "notification": {

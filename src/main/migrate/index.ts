@@ -9,6 +9,9 @@
 
 import type Database from 'better-sqlite3'
 import { getDb } from '../db/database'
+import { migration001MessagesSources } from './001-messages-sources'
+import { migration002SplitUtilityModel } from './002-split-utility-model'
+import { migration003WebSearchDefaultProvider } from './003-web-search-default-provider'
 
 interface Migration {
   version: number
@@ -16,10 +19,24 @@ interface Migration {
   up(db: Database.Database): void
 }
 
-const MIGRATIONS: Migration[] = []
+const MIGRATIONS: Migration[] = [
+  migration001MessagesSources,
+  migration002SplitUtilityModel,
+  migration003WebSearchDefaultProvider,
+]
 
-export function runMigrations(): void {
+export function runMigrations(isNewDatabase: boolean = false): void {
   const db = getDb()
+  const latest = MIGRATIONS.length > 0 ? MIGRATIONS[MIGRATIONS.length - 1].version : 0
+
+  // A freshly created database already has the final schema from `createTables()`,
+  // so historical migrations (e.g. ALTER TABLE … ADD COLUMN sources) would fail with
+  // "duplicate column" errors. Skip them and stamp user_version to the latest.
+  if (isNewDatabase) {
+    if (latest > 0) db.pragma(`user_version = ${latest}`)
+    return
+  }
+
   const current = db.pragma('user_version', { simple: true }) as number
   for (const m of MIGRATIONS) {
     if (m.version <= current) continue

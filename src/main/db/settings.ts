@@ -5,6 +5,10 @@ const SENSITIVE_KEYS = new Set([
   'api.apiKey',
   'backup.remote.webdav.password',
   'backup.remote.s3.secretAccessKey',
+  'webSearch.tavilyApiKey',
+  'webSearch.braveApiKey',
+  'webSearch.exaApiKey',
+  'webSearch.searxngApiKey',
 ])
 
 export function encrypt(value: string): string {

@@ -10,7 +10,7 @@ import { MarkdownRenderer } from './MarkdownRenderer'
 import { ThinkingBlock } from './ThinkingBlock'
 import { useElapsedTime } from '@renderer/hooks/useElapsedTime'
 import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
-import type { MessageRole, AttachmentMeta } from '@shared/types'
+import type { MessageRole, AttachmentMeta, WebSearchResult } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 interface MessageBubbleProps {
@@ -21,6 +21,7 @@ interface MessageBubbleProps {
   isStreamingReasoning?: boolean
   messageId?: string
   attachments?: AttachmentMeta[]
+  sources?: WebSearchResult[] | null
   duration?: number | null
   thinkingDuration?: number | null
   streamStartTime?: number | null
@@ -111,6 +112,7 @@ export const MessageBubble = memo(function MessageBubble({
   isStreamingReasoning,
   messageId,
   attachments,
+  sources,
   duration,
   thinkingDuration,
   streamStartTime,
@@ -314,7 +316,35 @@ export const MessageBubble = memo(function MessageBubble({
                   thinkingDuration={thinkingDuration}
                 />
               )}
-              <MarkdownRenderer content={content} isStreaming={isStreaming} />
+              <MarkdownRenderer
+                content={content}
+                isStreaming={isStreaming}
+                citationCount={sources?.length ?? 0}
+              />
+              {sources && sources.length > 0 && (
+                <details className="mt-3 rounded-md border bg-muted/30 text-xs">
+                  <summary className="cursor-pointer select-none px-3 py-2 font-medium text-muted-foreground">
+                    {t('chat.sources', { count: sources.length })}
+                  </summary>
+                  <ol className="space-y-1 px-4 pb-3 pt-1">
+                    {sources.map((s) => (
+                      <li key={s.index} id={`cite-${s.index}`} className="leading-relaxed">
+                        <span className="text-muted-foreground">[{s.index}]</span>{' '}
+                        <a
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline">
+                          {s.title || s.url}
+                        </a>
+                        {s.snippet && (
+                          <p className="mt-0.5 text-muted-foreground line-clamp-2">{s.snippet}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ol>
+                </details>
+              )}
             </>
           )}
           {isStreaming && !isWaiting && !isStreamingReasoning && (

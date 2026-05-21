@@ -122,6 +122,7 @@ export interface Message {
   duration: number | null // response time in milliseconds
   thinkingDuration: number | null // reasoning phase duration in milliseconds
   attachments?: AttachmentMeta[]
+  sources?: WebSearchResult[] | null
 }
 
 export type ProviderType =
@@ -244,6 +245,8 @@ export interface SendMessagePayload {
   reasoningEffort?: ReasoningEffort
   /** When resending, the ID of the user message to resend from — context is truncated up to (inclusive) this message */
   resendMessageId?: string
+  /** When true, run the configured web-search backend before calling the model. */
+  webSearch?: boolean
 }
 
 /** chat:stream-chunk push data */
@@ -382,6 +385,28 @@ export interface TranslationHistoryItem {
   sourceLang: string
   targetLang: string
   createdAt: string
+}
+
+// ── Web Search ──────────────────────────────────────────────────
+
+export type WebSearchProviderType = 'tavily' | 'brave' | 'searxng' | 'exa'
+
+export interface WebSearchResult {
+  /** 1-based index that matches the [n] marker in the assistant reply. */
+  index: number
+  title: string
+  url: string
+  snippet: string
+  /** Optional relevance score returned by some providers. UI does not display it. */
+  score?: number
+}
+
+export interface WebSearchTestPayload {
+  provider: WebSearchProviderType
+  apiKey?: string
+  searxngUrl?: string
+  searxngAuthUser?: string
+  searxngAuthPass?: string
 }
 
 // ── Selection Assistant ─────────────────────────────────────────
