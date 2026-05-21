@@ -264,7 +264,8 @@ export function MessageInput({
   const navigateToSettings = useSettingsStore((s) => s.navigateToSettings)
   const settings = useSettingsStore((s) => s.settings)
   const webSearchAvailable = useMemo(() => {
-    const provider = settings['webSearch.provider'] ?? 'tavily'
+    const provider =
+      settings['webSearch.defaultProvider'] ?? settings['webSearch.provider'] ?? 'tavily'
     switch (provider) {
       case 'tavily':
         return (settings['webSearch.tavilyApiKey'] ?? '').length > 0
