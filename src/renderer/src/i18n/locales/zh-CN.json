@@ -767,7 +767,14 @@
       "maxResults": "返回结果数 (1-20)",
       "timeoutSec": "超时秒数 (3-60)",
       "rewriteQuery": "启用查询改写",
-      "rewriteQueryHint": "使用轻量模型把多轮对话上下文合并为单条搜索词,失败时自动用原文。"
+      "rewriteQueryHint": "使用轻量模型把多轮对话上下文合并为单条搜索词,失败时自动用原文。",
+      "defaultProvider": "默认供应商",
+      "setAsDefault": "设为默认",
+      "isCurrentDefault": "当前默认",
+      "notConfiguredHint": "未配置 API Key,无法设为默认",
+      "commonParams": "常规参数",
+      "configured": "已配置",
+      "notConfigured": "未配置"
     },
     "utilityModels": {
       "title": "工具模型",

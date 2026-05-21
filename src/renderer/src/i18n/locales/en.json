@@ -767,7 +767,14 @@
       "maxResults": "Results per search (1-20)",
       "timeoutSec": "Timeout seconds (3-60)",
       "rewriteQuery": "Rewrite query",
-      "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails."
+      "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails.",
+      "defaultProvider": "Default provider",
+      "setAsDefault": "Set as default",
+      "isCurrentDefault": "Current default",
+      "notConfiguredHint": "Fill in the API key first",
+      "commonParams": "Common parameters",
+      "configured": "Configured",
+      "notConfigured": "Not configured"
     },
     "utilityModels": {
       "title": "Utility Models",
