@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.8.0](https://github.com/lastwhisper66/ai-studio/compare/v1.7.1...v1.8.0) (2026-05-21)
+
+
+### Features
+
+* **settings:** split utility model per task; always-visible web-search toggle ([f48d6ee](https://github.com/lastwhisper66/ai-studio/commit/f48d6ee3e27d847f3e16334247af3dfddf6a6c54))
+* web search integration with multi-provider settings UI ([b1b2e60](https://github.com/lastwhisper66/ai-studio/commit/b1b2e60784e09b0e79a6bb98b65825b7eaaa54c8))
+* web-search picker popover + citation rendering fixes ([d3806d1](https://github.com/lastwhisper66/ai-studio/commit/d3806d197ababd31ccc872ec69216bff105030ae))
+* **web-search:** add Brave provider ([e6948e5](https://github.com/lastwhisper66/ai-studio/commit/e6948e59285d8a5c10066f8f2cefe78395a5ee08))
+* **web-search:** add Exa provider ([7672946](https://github.com/lastwhisper66/ai-studio/commit/7672946b37f87d280422a3c31cd9ee1bec748454))
+* **web-search:** add LLM-based query rewriter ([83c1a0f](https://github.com/lastwhisper66/ai-studio/commit/83c1a0f510b937757016a575789de8752a30433a))
+* **web-search:** add module skeleton with Tavily provider and context builder ([0f9033d](https://github.com/lastwhisper66/ai-studio/commit/0f9033d81d7a77649202e260e310bd1580bedc5d))
+* **web-search:** add SearXNG provider ([f15732f](https://github.com/lastwhisper66/ai-studio/commit/f15732f063e55e59024c9b414d1bcf27b5149fe0))
+* **web-search:** add shared types, IPC channel, error codes ([16753f6](https://github.com/lastwhisper66/ai-studio/commit/16753f67ccdd4be1347fc2d468810879fdb14f96))
+* **web-search:** add sources column to messages table ([b3e1c71](https://github.com/lastwhisper66/ai-studio/commit/b3e1c71aeaa76d3fbbac9df81a49497babc5754a))
+* **web-search:** add utility-llm; route title generation through it ([a23ac61](https://github.com/lastwhisper66/ai-studio/commit/a23ac6152d5fec60767b733cd12dc16174c80c50))
+* **web-search:** add Web Search settings section and routing ([5e63909](https://github.com/lastwhisper66/ai-studio/commit/5e63909ef86839833b8b7cd1fe4db4a0f05422c2))
+* **web-search:** add web-search:test-connection IPC ([fecdf94](https://github.com/lastwhisper66/ai-studio/commit/fecdf947cb7996e492afd92d405897c99bff8e02))
+* **web-search:** add zh-CN and en i18n strings ([c5ef9d1](https://github.com/lastwhisper66/ai-studio/commit/c5ef9d189216f9a3a219adda07721ae6f15b2fe6))
+* **web-search:** encrypt web-search API keys via safeStorage ([f7c243c](https://github.com/lastwhisper66/ai-studio/commit/f7c243ccc14218e668ab267de9132b3a34b98825))
+* **web-search:** extract useWebSearchTestConnection hook ([952f80c](https://github.com/lastwhisper66/ai-studio/commit/952f80c0711b85583ea3ffa637bc0156dcde8d79))
+* **web-search:** full settings UI with provider tabs and utility model ([7ec425e](https://github.com/lastwhisper66/ai-studio/commit/7ec425e6184060a52f1642dc217d4d771ad867db))
+* **web-search:** i18n strings for tabbed settings UI ([c82062e](https://github.com/lastwhisper66/ai-studio/commit/c82062e199b68a01d516966e597b2bfaed2ad4e2))
+* **web-search:** linkify [n] citation markers in MarkdownRenderer ([f78fcd1](https://github.com/lastwhisper66/ai-studio/commit/f78fcd1d265f38ad66a7d7990a5efc18f1e789f2))
+* **web-search:** loadWebSearchSettings reads defaultProvider ([7f7ef07](https://github.com/lastwhisper66/ai-studio/commit/7f7ef0729f52a5503e3a2f18b2fc54ab6f3d3b66))
+* **web-search:** MessageBubble renders sources panel with cite-n anchors ([42773f7](https://github.com/lastwhisper66/ai-studio/commit/42773f7b2c3f1cb7d809cb01bd363a2545074b11))
+* **web-search:** MessageInput Globe wired to store + global enable gate ([8370946](https://github.com/lastwhisper66/ai-studio/commit/83709461857dbad02d66fc06902000015ebaa5f8))
+* **web-search:** MessageInput uses defaultProvider ([8835d85](https://github.com/lastwhisper66/ai-studio/commit/8835d854b5742989fa16142625c961be80bf983c))
+* **web-search:** migration 003 backfill defaultProvider ([ebeec0d](https://github.com/lastwhisper66/ai-studio/commit/ebeec0db9c295cc4dbc348fa7f64dd8ce1f407c5))
+* **web-search:** per-conversation toggle state in conversationStore ([bd7022a](https://github.com/lastwhisper66/ai-studio/commit/bd7022ae426a62d7030b1b3deb24dab653ceaadf))
+* **web-search:** per-provider credential forms ([77dcd06](https://github.com/lastwhisper66/ai-studio/commit/77dcd069cb27f999d9f92bf0f5db05e9f9c8285c))
+* **web-search:** pre-search pipeline in chat handler ([cb6d867](https://github.com/lastwhisper66/ai-studio/commit/cb6d867a3605232d3837af28e1a957edf3bf46fd))
+* **web-search:** two-column WebSearchSection shell ([534e344](https://github.com/lastwhisper66/ai-studio/commit/534e3444b77f1db77dba9b63d9170a2e8545a5c0))
+* **web-search:** WebSearchCommonParams component ([ff7dcd1](https://github.com/lastwhisper66/ai-studio/commit/ff7dcd1b4d36ae3fd49b945211ee4fe2401712e0))
+* **web-search:** WebSearchHeader default-provider selector ([dc972ba](https://github.com/lastwhisper66/ai-studio/commit/dc972ba5c8a0660cb94521ae6cd9e09f01a7e613))
+* **web-search:** WebSearchTabList static tab nav ([6c98012](https://github.com/lastwhisper66/ai-studio/commit/6c980124aee72a9f71f6d13a3bfb78ba98778446))
+* **web-search:** wire new section, drop monolithic file ([fdd3913](https://github.com/lastwhisper66/ai-studio/commit/fdd39132da213fde6735dedfc192fce457c9f9c5))
+
+
+### Bug Fixes
+
+* **web-search:** surface real error in test connection ([c918e54](https://github.com/lastwhisper66/ai-studio/commit/c918e5484dd7a3cfeb5f93057d8b083fd11edb12))
+
 ## [1.7.1](https://github.com/lastwhisper66/ai-studio/compare/v1.7.0...v1.7.1) (2026-05-18)
 
 
