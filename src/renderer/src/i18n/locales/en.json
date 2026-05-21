@@ -768,13 +768,16 @@
       "timeoutSec": "Timeout seconds (3-60)",
       "rewriteQuery": "Rewrite query",
       "rewriteQueryHint": "Use a lightweight model to collapse multi-turn context into one search query. Falls back to the raw text if it fails.",
-      "defaultProvider": "Default provider",
-      "setAsDefault": "Set as default",
-      "isCurrentDefault": "Current default",
-      "notConfiguredHint": "Fill in the API key first",
       "commonParams": "Common parameters",
       "configured": "Configured",
-      "notConfigured": "Not configured"
+      "notConfigured": "Not configured",
+      "bannerTitle": "Configure providers",
+      "bannerBody": "Fill in credentials on a provider tab below. To pick which provider is used in chat, click the web search icon.",
+      "popoverTitle": "Web search",
+      "popoverHint": "Pick a search provider for this conversation, or turn web search off.",
+      "off": "Off",
+      "noProvidersConfigured": "No providers configured yet",
+      "manageInSettings": "Manage providers in settings…"
     },
     "utilityModels": {
       "title": "Utility Models",

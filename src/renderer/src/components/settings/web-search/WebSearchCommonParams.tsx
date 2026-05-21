@@ -11,7 +11,7 @@ export function WebSearchCommonParams(): React.JSX.Element {
 
   const maxResults = parseInt(settings['webSearch.maxResults'] ?? '5', 10) || 5
   const timeoutSec = Math.round(
-    (parseInt(settings['webSearch.timeoutMs'] ?? '15000', 10) || 15000) / 1000,
+    (parseInt(settings['webSearch.timeoutMs'] ?? '30000', 10) || 30000) / 1000,
   )
   const rewriteQuery = (settings['webSearch.rewriteQuery'] ?? 'true') === 'true'
 
@@ -40,7 +40,7 @@ export function WebSearchCommonParams(): React.JSX.Element {
           max={60}
           value={timeoutSec}
           onChange={(e) => {
-            const v = Math.max(3, Math.min(60, parseInt(e.target.value, 10) || 15))
+            const v = Math.max(3, Math.min(60, parseInt(e.target.value, 10) || 30))
             void saveSettings({ 'webSearch.timeoutMs': String(v * 1000) })
           }}
           className="w-24"

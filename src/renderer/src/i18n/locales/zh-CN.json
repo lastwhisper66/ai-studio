@@ -768,13 +768,16 @@
       "timeoutSec": "超时秒数 (3-60)",
       "rewriteQuery": "启用查询改写",
       "rewriteQueryHint": "使用轻量模型把多轮对话上下文合并为单条搜索词,失败时自动用原文。",
-      "defaultProvider": "默认供应商",
-      "setAsDefault": "设为默认",
-      "isCurrentDefault": "当前默认",
-      "notConfiguredHint": "未配置 API Key,无法设为默认",
       "commonParams": "常规参数",
       "configured": "已配置",
-      "notConfigured": "未配置"
+      "notConfigured": "未配置",
+      "bannerTitle": "配置搜索供应商",
+      "bannerBody": "在下方各服务商页签中填入凭据。要选择聊天中实际使用哪个供应商,请点击网络搜索图标。",
+      "popoverTitle": "网络搜索",
+      "popoverHint": "为本次对话选择一个搜索供应商,或关闭网络搜索。",
+      "off": "关闭",
+      "noProvidersConfigured": "尚未配置任何供应商",
+      "manageInSettings": "在设置中管理供应商…"
     },
     "utilityModels": {
       "title": "工具模型",

@@ -153,8 +153,17 @@ function convertLatexDelimitersInPlainText(value: string): string {
       continue
     }
 
+    // Skip markdown link bracket-escapes like `[\[1\]](url)` — the closing
+    // delimiter is followed by `](`, which is the link-text/href boundary.
+    const afterClose = contentEnd + delimiter.close.length
+    if (value[afterClose] === ']' && value[afterClose + 1] === '(') {
+      output += value.slice(index, afterClose)
+      index = afterClose
+      continue
+    }
+
     output += renderLatexDelimiter(value.slice(contentStart, contentEnd), delimiter.className)
-    index = contentEnd + delimiter.close.length
+    index = afterClose
   }
 
   return output
@@ -283,6 +292,34 @@ function createComponents(isStreaming: boolean): Record<string, React.ComponentT
     },
 
     a({ href, children, ...props }: ComponentPropsWithoutRef<'a'>) {
+      if (href && href.startsWith('#')) {
+        const targetId = href.slice(1)
+        return (
+          <a
+            href={href}
+            className="text-primary underline"
+            onClick={(event) => {
+              event.preventDefault()
+              const link = event.currentTarget as HTMLAnchorElement
+              const selector = `#${CSS.escape(targetId)}`
+              let scope: HTMLElement | null = link.parentElement
+              let target: HTMLElement | null = null
+              while (scope) {
+                target = scope.querySelector<HTMLElement>(selector)
+                if (target) break
+                scope = scope.parentElement
+              }
+              if (!target) return
+              for (let el: HTMLElement | null = target; el; el = el.parentElement) {
+                if (el.tagName === 'DETAILS') (el as HTMLDetailsElement).open = true
+              }
+              target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }}
+            {...props}>
+            {children}
+          </a>
+        )
+      }
       return (
         <a
           href={href}

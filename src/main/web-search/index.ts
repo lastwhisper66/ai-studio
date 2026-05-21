@@ -35,7 +35,7 @@ export function loadWebSearchSettings(): WebSearchSettings {
     searxngApiKey: getSetting('webSearch.searxngApiKey') ?? '',
     maxResults: parseInt(getSetting('webSearch.maxResults') ?? '5', 10) || 5,
     rewriteQuery: (getSetting('webSearch.rewriteQuery') ?? 'true') === 'true',
-    timeoutMs: parseInt(getSetting('webSearch.timeoutMs') ?? '15000', 10) || 15000,
+    timeoutMs: parseInt(getSetting('webSearch.timeoutMs') ?? '30000', 10) || 30000,
   }
 }
 

@@ -31,10 +31,16 @@ interface ConversationState {
   focusInputTrigger: number
   /** Per-conversation in-memory toggle for web search. Not persisted. */
   webSearchByConversation: Record<string, boolean>
+  /**
+   * Web-search toggle set BEFORE any conversation is active (e.g. from the
+   * WelcomeScreen). Applied to the new conversation as soon as one is created.
+   */
+  pendingWebSearchEnabled: boolean
 
   requestInputFocus: () => void
   getWebSearch: (conversationId: string) => boolean
   setWebSearch: (conversationId: string, enabled: boolean) => void
+  setPendingWebSearch: (enabled: boolean) => void
   loadConversations: () => Promise<void>
   createConversation: (title?: string, assistantId?: string) => Promise<boolean>
   deleteConversation: (id: string) => Promise<void>
@@ -214,6 +220,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     editingMessageId: null,
     focusInputTrigger: 0,
     webSearchByConversation: {},
+    pendingWebSearchEnabled: false,
 
     requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
 
@@ -225,6 +232,10 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       set((state) => ({
         webSearchByConversation: { ...state.webSearchByConversation, [conversationId]: enabled },
       }))
+    },
+
+    setPendingWebSearch: (enabled: boolean) => {
+      set({ pendingWebSearchEnabled: enabled })
     },
 
     clearError: () => set({ error: null }),
@@ -246,11 +257,19 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       const result = await window.api.createConversation(title, effectiveAssistantId)
       if (result.success && result.data) {
         const conversation = result.data
-        set((state) => ({
-          conversations: [conversation, ...state.conversations],
-          activeConversationId: conversation.id,
-          messages: [],
-        }))
+        set((state) => {
+          const pending = state.pendingWebSearchEnabled
+          const nextWebSearchMap = pending
+            ? { ...state.webSearchByConversation, [conversation.id]: true }
+            : state.webSearchByConversation
+          return {
+            conversations: [conversation, ...state.conversations],
+            activeConversationId: conversation.id,
+            messages: [],
+            webSearchByConversation: nextWebSearchMap,
+            pendingWebSearchEnabled: false,
+          }
+        })
         get().requestInputFocus()
         return true
       }

@@ -2,8 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import type { WebSearchProviderType } from '@shared/types'
-import { WebSearchTabList } from './WebSearchTabList'
-import { WebSearchHeader } from './WebSearchHeader'
+import { WebSearchTabList, type WebSearchTabId } from './WebSearchTabList'
 import { WebSearchCommonParams } from './WebSearchCommonParams'
 import { TavilyForm } from './providers/TavilyForm'
 import { BraveForm } from './providers/BraveForm'
@@ -12,11 +11,13 @@ import { SearxngForm } from './providers/SearxngForm'
 
 const VALID_PROVIDERS: WebSearchProviderType[] = ['tavily', 'brave', 'searxng', 'exa']
 
-function normalizeProvider(raw: string | undefined): WebSearchProviderType {
-  if (raw && (VALID_PROVIDERS as string[]).includes(raw)) {
-    return raw as WebSearchProviderType
-  }
-  return 'tavily'
+function isValidProvider(raw: string | undefined): raw is WebSearchProviderType {
+  return !!raw && (VALID_PROVIDERS as string[]).includes(raw)
+}
+
+function normalizeActiveTab(raw: string | undefined): WebSearchTabId {
+  if (raw === 'common') return 'common'
+  return isValidProvider(raw) ? raw : 'common'
 }
 
 export function WebSearchSection(): React.JSX.Element {
@@ -24,10 +25,7 @@ export function WebSearchSection(): React.JSX.Element {
   const settings = useSettingsStore((s) => s.settings)
   const saveSettings = useSettingsStore((s) => s.saveSettings)
 
-  const activeTab = normalizeProvider(settings['webSearch.provider'])
-  const defaultProvider = normalizeProvider(
-    settings['webSearch.defaultProvider'] ?? settings['webSearch.provider'],
-  )
+  const activeTab = normalizeActiveTab(settings['webSearch.provider'])
 
   const configuredMap: Record<WebSearchProviderType, boolean> = {
     tavily: (settings['webSearch.tavilyApiKey'] ?? '').length > 0,
@@ -36,24 +34,14 @@ export function WebSearchSection(): React.JSX.Element {
     exa: (settings['webSearch.exaApiKey'] ?? '').length > 0,
   }
 
-  const setActiveTab = (id: WebSearchProviderType): void => {
+  const setActiveTab = (id: WebSearchTabId): void => {
     void saveSettings({ 'webSearch.provider': id })
   }
 
   return (
     <div className="flex h-full flex-1 min-w-0">
-      <WebSearchTabList
-        active={activeTab}
-        defaultProvider={defaultProvider}
-        configuredMap={configuredMap}
-        onChange={setActiveTab}
-      />
+      <WebSearchTabList active={activeTab} configuredMap={configuredMap} onChange={setActiveTab} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <WebSearchHeader
-          activeTab={activeTab}
-          defaultProvider={defaultProvider}
-          configuredMap={configuredMap}
-        />
         <ScrollArea className="flex-1">
           <div className="max-w-2xl space-y-6 p-6">
             <header>
@@ -62,8 +50,14 @@ export function WebSearchSection(): React.JSX.Element {
                 {t('settings.webSearch.description')}
               </p>
             </header>
-            <WebSearchCommonParams />
+            <div className="border-primary/30 bg-primary/5 rounded-lg border p-4 text-sm">
+              <p className="text-foreground font-medium">{t('settings.webSearch.bannerTitle')}</p>
+              <p className="text-muted-foreground mt-1 leading-relaxed">
+                {t('settings.webSearch.bannerBody')}
+              </p>
+            </div>
             <div className="border-t pt-6">
+              {activeTab === 'common' && <WebSearchCommonParams />}
               {activeTab === 'tavily' && <TavilyForm />}
               {activeTab === 'brave' && <BraveForm />}
               {activeTab === 'searxng' && <SearxngForm />}
