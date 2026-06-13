@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://github.com/lastwhisper66/ai-studio/compare/v1.8.0...v1.9.0) (2026-06-13)
+
+
+### Features
+
+* **settings:** polish utility-models layout and model selection ([3250ec8](https://github.com/lastwhisper66/ai-studio/commit/3250ec8cf4e2fa5852c0885fdb1bb353477cb717))
+* **settings:** polish utility-models layout and model selection ([22520e0](https://github.com/lastwhisper66/ai-studio/commit/22520e0bda3609248e90276a585f8d0e80a9f364))
+
 ## [1.8.0](https://github.com/lastwhisper66/ai-studio/compare/v1.7.1...v1.8.0) (2026-05-21)
 
 
