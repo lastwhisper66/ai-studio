@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { Search, Tag, type LucideIcon } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Label } from '@renderer/components/ui/label'
 import {
@@ -15,6 +17,7 @@ type Task = 'title' | 'searchRewrite'
 
 interface TaskRow {
   key: Task
+  icon: LucideIcon
   nameKey: string
   hintKey: string
   providerSetting: string
@@ -24,6 +27,7 @@ interface TaskRow {
 const TASKS: TaskRow[] = [
   {
     key: 'title',
+    icon: Tag,
     nameKey: 'settings.utilityModels.tasks.titleName',
     hintKey: 'settings.utilityModels.tasks.titleHint',
     providerSetting: 'utilityModel.titleProviderId',
@@ -31,6 +35,7 @@ const TASKS: TaskRow[] = [
   },
   {
     key: 'searchRewrite',
+    icon: Search,
     nameKey: 'settings.utilityModels.tasks.searchRewriteName',
     hintKey: 'settings.utilityModels.tasks.searchRewriteHint',
     providerSetting: 'utilityModel.searchRewriteProviderId',
@@ -45,15 +50,30 @@ export function UtilityModelsSection(): React.JSX.Element {
   const providers = useProviderStore((s) => s.providers)
   const allModels = useProviderStore((s) => s.models)
 
+  // Only surface providers that actually have an enabled model — selecting a
+  // provider with no usable model would leave the model dropdown empty.
+  const configuredProviders = useMemo(
+    () =>
+      providers.filter(
+        (p) => p.enabled && allModels.some((m) => m.providerId === p.id && m.enabled),
+      ),
+    [providers, allModels],
+  )
+
   const handleProviderChange = (task: TaskRow, value: string): void => {
-    const next = value === '__none__' ? '' : value
-    // Switching provider invalidates the previously chosen model
-    void saveSettings({ [task.providerSetting]: next, [task.modelSetting]: '' })
+    if (value === '__none__') {
+      // "Use assistant model" — clear both slots.
+      void saveSettings({ [task.providerSetting]: '', [task.modelSetting]: '' })
+      return
+    }
+    // Auto-select the provider's first enabled model so the model slot isn't
+    // left on the empty placeholder.
+    const firstModel = allModels.find((m) => m.providerId === value && m.enabled)
+    void saveSettings({ [task.providerSetting]: value, [task.modelSetting]: firstModel?.id ?? '' })
   }
 
   const handleModelChange = (task: TaskRow, value: string): void => {
-    const next = value === '__none__' ? '' : value
-    void saveSettings({ [task.modelSetting]: next })
+    void saveSettings({ [task.modelSetting]: value })
   }
 
   return (
@@ -71,34 +91,36 @@ export function UtilityModelsSection(): React.JSX.Element {
         const providerModels: Model[] = providerId
           ? allModels.filter((m) => m.providerId === providerId && m.enabled)
           : []
+        const Icon = task.icon
 
         return (
           <div key={task.key} className="rounded-xl border bg-card/50 p-5">
-            <header>
-              <h3 className="text-sm font-semibold">{t(task.nameKey)}</h3>
-              <p className="text-muted-foreground mt-1 text-xs">{t(task.hintKey)}</p>
+            <header className="flex items-start gap-2.5">
+              <Icon className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold">{t(task.nameKey)}</h3>
+                <p className="text-muted-foreground mt-1 text-xs">{t(task.hintKey)}</p>
+              </div>
             </header>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4 grid max-w-md grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('settings.utilityModels.provider')}</Label>
                 <Select
                   value={providerId || '__none__'}
                   onValueChange={(v) => handleProviderChange(task, v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">
                       {t('settings.utilityModels.useAssistantModel')}
                     </SelectItem>
-                    {providers
-                      .filter((p) => p.enabled)
-                      .map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
+                    {configuredProviders.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -106,16 +128,13 @@ export function UtilityModelsSection(): React.JSX.Element {
               <div className="space-y-1.5">
                 <Label className="text-xs">{t('settings.utilityModels.model')}</Label>
                 <Select
-                  value={modelId || '__none__'}
+                  value={modelId || undefined}
                   disabled={!providerId}
                   onValueChange={(v) => handleModelChange(task, v)}>
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t('settings.utilityModels.noProvider')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__none__">
-                      {t('settings.utilityModels.noProvider')}
-                    </SelectItem>
                     {providerModels.map((m) => (
                       <SelectItem key={m.id} value={m.id}>
                         {m.name}
