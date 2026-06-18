@@ -21,6 +21,10 @@ interface ConversationState {
   isLoading: boolean
   error: LocalizedError | null
   isStreaming: boolean
+  /** Conversation the active stream belongs to. The streaming bubble only renders
+   * when this matches activeConversationId, so switching conversations mid-stream
+   * no longer leaks the in-progress response into the wrong conversation. */
+  streamingConversationId: string | null
   streamingContent: string
   streamingReasoningContent: string
   streamStartTime: number | null
@@ -86,6 +90,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     window.api.removeAllStreamListeners()
     set({
       isStreaming: true,
+      streamingConversationId: conversationId,
       streamingContent: '',
       streamingReasoningContent: '',
       streamStartTime: Date.now(),
@@ -142,6 +147,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
             return {
               messages: newMessages,
               isStreaming: false,
+              streamingConversationId: null,
               streamingContent: '',
               streamingReasoningContent: '',
               streamStartTime: null,
@@ -151,6 +157,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         } else {
           set({
             isStreaming: false,
+            streamingConversationId: null,
             streamingContent: '',
             streamingReasoningContent: '',
             streamStartTime: null,
@@ -166,6 +173,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         if (data.conversationId !== conversationId) return
         set({
           isStreaming: false,
+          streamingConversationId: null,
           streamingContent: '',
           streamingReasoningContent: '',
           streamStartTime: null,
@@ -195,6 +203,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     if (!result.success) {
       set({
         isStreaming: false,
+        streamingConversationId: null,
         streamingContent: '',
         streamingReasoningContent: '',
         streamStartTime: null,
@@ -213,6 +222,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     isLoading: false,
     error: null,
     isStreaming: false,
+    streamingConversationId: null,
     streamingContent: '',
     streamingReasoningContent: '',
     streamStartTime: null,
@@ -578,7 +588,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
 
     stopGeneration: () => {
       const {
-        activeConversationId: conversationId,
+        streamingConversationId: conversationId,
         streamingContent,
         streamingReasoningContent,
         resendTargetId,
@@ -611,6 +621,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
               return {
                 messages: newMessages,
                 isStreaming: false,
+                streamingConversationId: null,
                 streamingContent: '',
                 streamingReasoningContent: '',
                 streamStartTime: null,
@@ -621,6 +632,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           return {
             messages: [...state.messages, tempMessage],
             isStreaming: false,
+            streamingConversationId: null,
             streamingContent: '',
             streamingReasoningContent: '',
             streamStartTime: null,
@@ -630,6 +642,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       } else {
         set({
           isStreaming: false,
+          streamingConversationId: null,
           streamingContent: '',
           streamingReasoningContent: '',
           streamStartTime: null,

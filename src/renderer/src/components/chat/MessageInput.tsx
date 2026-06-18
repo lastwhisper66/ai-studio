@@ -45,6 +45,9 @@ interface MessageInputProps {
   ) => void
   onStop: () => void
   isStreaming: boolean
+  /** Another conversation is streaming — keep input editable but block sending
+   * (single in-flight stream at a time). */
+  sendDisabled?: boolean
   droppedFiles?: FileData[]
   onDroppedFilesConsumed?: () => void
 }
@@ -371,6 +374,7 @@ export function MessageInput({
   onSend,
   onStop,
   isStreaming,
+  sendDisabled = false,
   droppedFiles,
   onDroppedFilesConsumed,
 }: MessageInputProps): React.JSX.Element {
@@ -452,7 +456,7 @@ export function MessageInput({
   const handleSend = (): void => {
     const content = buildContent()
     if (!content && attachedFiles.length === 0) return
-    if (isStreaming) return
+    if (isStreaming || sendDisabled) return
     // Collect image files to send via IPC payload
     const imageFiles = attachedFiles.filter((f) => isImageMime(f.mimeType))
     // Use placeholder text when sending only images (images are not persisted in DB)
@@ -707,7 +711,7 @@ export function MessageInput({
                   size="icon"
                   className="h-8 w-8 rounded-lg"
                   onClick={handleSend}
-                  disabled={!input.trim() && attachedFiles.length === 0}>
+                  disabled={sendDisabled || (!input.trim() && attachedFiles.length === 0)}>
                   <Send className="h-3.5 w-3.5" />
                 </Button>
               )}

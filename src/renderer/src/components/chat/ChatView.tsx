@@ -39,6 +39,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     error,
     isLoading,
     isStreaming,
+    streamingConversationId,
     streamingContent,
     streamingReasoningContent,
     streamStartTime,
@@ -55,6 +56,14 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const providers = useProviderStore((s) => s.providers)
 
   const userAvatarUrl = useUserAvatar()
+
+  // A stream is global (single in-flight stream), but its bubble and the stop
+  // button must only appear in the conversation it belongs to. When the user
+  // switches away mid-stream, the other conversation sees no streaming UI.
+  const isStreamingHere = isStreaming && streamingConversationId === activeConversationId
+  // A different conversation is streaming — block sending here until it finishes
+  // (single-stream model), but keep the input usable for composing.
+  const isStreamingElsewhere = isStreaming && !isStreamingHere
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
   const activeAssistant = activeAssistantId
@@ -245,7 +254,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         messages={messages}
         streamingContent={streamingContent}
         streamingReasoningContent={streamingReasoningContent}
-        isStreaming={isStreaming}
+        isStreaming={isStreamingHere}
         isLoading={isLoading}
         hasActiveConversation={!!activeConversationId}
         hasMoreMessages={hasMoreMessages}
@@ -271,7 +280,8 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       <MessageInput
         onSend={sendMessage}
         onStop={stopGeneration}
-        isStreaming={isStreaming}
+        isStreaming={isStreamingHere}
+        sendDisabled={isStreamingElsewhere}
         droppedFiles={droppedFiles}
         onDroppedFilesConsumed={handleDroppedFilesConsumed}
       />
