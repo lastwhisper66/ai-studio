@@ -124,7 +124,16 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         if (data.conversationId !== conversationId) return
         const targetId = resendTargetId // captured from closure
         const tempId = `_stopping_${conversationId}`
-        if (data.message) {
+
+        // The streaming state is global, so always clear it. But the messages
+        // array belongs to whatever conversation is currently active — only
+        // splice the finished message in when the stream's conversation is
+        // still the active one. Otherwise the message is already persisted and
+        // will load when the user navigates back; touching the array here would
+        // leak it into the conversation the user switched to.
+        const streamEndedOnActive = get().activeConversationId === conversationId
+
+        if (data.message && streamEndedOnActive) {
           set((state) => {
             const hasTemp = state.messages.some((m) => m.id === tempId)
             const filtered = hasTemp
