@@ -404,6 +404,12 @@ function applyHookFilterConfig(hook: SelectionHookInstance): void {
 // ── Ctrlkey mode state ──────────────────────────────────────────
 let isCtrlkeyListenerActive = false
 let ctrlHoldTimer: ReturnType<typeof setTimeout> | null = null
+// True once a Ctrl hold has been handled (timer fired and shown the toolbar).
+// A held Ctrl key emits repeating key-down events via the low-level keyboard
+// hook; without this guard each repeat would re-arm the timer after it fires
+// and re-show the toolbar every ~350ms, producing visible flicker. Reset on
+// key-up so the next independent hold works again.
+let ctrlHoldHandled = false
 
 // ── Cached selection for ctrlkey mode ──────────────────────────
 // In ctrlkey mode the hook stays in active mode so text-selection events fire
@@ -450,7 +456,9 @@ function handleKeyDownCtrlkeyMode(data: KeyboardEventData): void {
     clearCtrlHoldTimer()
     return
   }
-  if (ctrlHoldTimer !== null) return
+  // Ignore the auto-repeat key-down stream while a single Ctrl hold is still
+  // pending (timer armed) or has already shown the toolbar this hold.
+  if (ctrlHoldTimer !== null || ctrlHoldHandled) return
 
   hookInstance.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
   hookInstance.off('mouse-down', handleMouseDownCtrlkeyMode)
@@ -459,6 +467,11 @@ function handleKeyDownCtrlkeyMode(data: KeyboardEventData): void {
   ctrlHoldTimer = setTimeout(() => {
     ctrlHoldTimer = null
     if (!hookInstance) return
+
+    // Mark this hold as handled so the repeating key-down events that keep
+    // arriving while Ctrl stays pressed don't re-arm the timer and re-show
+    // the toolbar (flicker). Cleared on key-up.
+    ctrlHoldHandled = true
 
     // Prefer cached selection from the last text-selection event (active mode).
     // Falls back to getCurrentSelection() when no cache exists (e.g. keyboard-
@@ -481,6 +494,7 @@ function handleKeyUpCtrlkeyMode(data: KeyboardEventData): void {
   if (!hookInstance) return
   if (!isCtrlKey(data.vkCode)) return
   clearCtrlHoldTimer()
+  ctrlHoldHandled = false
   hookInstance.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
   hookInstance.off('mouse-down', handleMouseDownCtrlkeyMode)
 }
@@ -503,6 +517,7 @@ function applyTriggerMode(hook: SelectionHookInstance): void {
     hook.off('mouse-wheel', handleMouseWheelCtrlkeyMode)
     hook.off('mouse-down', handleMouseDownCtrlkeyMode)
     clearCtrlHoldTimer()
+    ctrlHoldHandled = false
     isCtrlkeyListenerActive = false
   }
 
