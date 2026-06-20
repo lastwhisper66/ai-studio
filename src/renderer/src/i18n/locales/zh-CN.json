@@ -81,6 +81,7 @@
     "contextSystemPrompt": "系统提示词",
     "contextHistory": "历史上下文",
     "contextDraft": "当前输入",
+    "contextWebSearch": "网络搜索",
     "contextTokens": "{{count}} token",
     "thinkingProcess": "思考过程",
     "thinkingTime": "已思考 {{time}}",

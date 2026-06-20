@@ -31,9 +31,9 @@ import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
-import { countTokens, type ContextTokenBreakdown } from '@renderer/lib/tokenizer'
+import { countTokens } from '@renderer/lib/tokenizer'
 import { cn } from '@renderer/lib/utils'
-import type { FileData, ReasoningEffort } from '@shared/types'
+import type { ContextTokenUsage, FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
 import { ContextUsageRing } from './ContextUsageRing'
 
@@ -53,7 +53,8 @@ interface MessageInputProps {
   sendDisabled?: boolean
   droppedFiles?: FileData[]
   onDroppedFilesConsumed?: () => void
-  committedTokenBreakdown: Pick<ContextTokenBreakdown, 'systemPrompt' | 'history'>
+  committedTokenBreakdown: Pick<ContextTokenUsage, 'systemPrompt' | 'history'>
+  actualContextTokens?: ContextTokenUsage | null
   contextWindow: number | null
   contextModel: string
   hasContextModel: boolean
@@ -385,6 +386,7 @@ export function MessageInput({
   droppedFiles,
   onDroppedFilesConsumed,
   committedTokenBreakdown,
+  actualContextTokens,
   contextWindow,
   contextModel,
   hasContextModel,
@@ -436,14 +438,20 @@ export function MessageInput({
     () => countTokens(throttledDraftContent, contextModel),
     [contextModel, throttledDraftContent],
   )
-  const contextTokenBreakdown = useMemo<ContextTokenBreakdown>(
+  const hasDraftContent = draftContent.length > 0 || attachedFiles.length > 0
+  const liveContextTokenBreakdown = useMemo<ContextTokenUsage>(
     () => ({
       systemPrompt: committedTokenBreakdown.systemPrompt,
       history: committedTokenBreakdown.history,
       draft: draftTokens,
+      webSearch: 0,
     }),
     [committedTokenBreakdown.history, committedTokenBreakdown.systemPrompt, draftTokens],
   )
+  const contextTokenBreakdown =
+    !isStreaming && !hasDraftContent && actualContextTokens
+      ? actualContextTokens
+      : liveContextTokenBreakdown
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {

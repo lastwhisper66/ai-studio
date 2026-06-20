@@ -6,6 +6,7 @@ import type {
   FileData,
   ReasoningEffort,
   SendMessagePayload,
+  ContextTokenUsage,
 } from '@shared/types'
 import { isImageMime } from '@shared/types'
 import type { LocalizedError } from '@shared/errors'
@@ -35,6 +36,8 @@ interface ConversationState {
   focusInputTrigger: number
   /** Per-conversation in-memory toggle for web search. Not persisted. */
   webSearchByConversation: Record<string, boolean>
+  /** Last completed request's estimated context usage, including async context such as web search. */
+  lastContextTokensByConversation: Record<string, ContextTokenUsage>
   /**
    * Web-search toggle set BEFORE any conversation is active (e.g. from the
    * WelcomeScreen). Applied to the new conversation as soon as one is created.
@@ -88,13 +91,18 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     const { conversationId, resendTargetId } = opts
 
     window.api.removeAllStreamListeners()
-    set({
-      isStreaming: true,
-      streamingConversationId: conversationId,
-      streamingContent: '',
-      streamingReasoningContent: '',
-      streamStartTime: Date.now(),
-      resendTargetId,
+    set((state) => {
+      const nextContextTokens = { ...state.lastContextTokensByConversation }
+      delete nextContextTokens[conversationId]
+      return {
+        isStreaming: true,
+        streamingConversationId: conversationId,
+        streamingContent: '',
+        streamingReasoningContent: '',
+        streamStartTime: Date.now(),
+        resendTargetId,
+        lastContextTokensByConversation: nextContextTokens,
+      }
     })
 
     const cleanups: (() => void)[] = []
@@ -124,6 +132,15 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         if (data.conversationId !== conversationId) return
         const targetId = resendTargetId // captured from closure
         const tempId = `_stopping_${conversationId}`
+
+        if (data.contextTokens) {
+          set((state) => ({
+            lastContextTokensByConversation: {
+              ...state.lastContextTokensByConversation,
+              [conversationId]: data.contextTokens!,
+            },
+          }))
+        }
 
         // The streaming state is global, so always clear it. But the messages
         // array belongs to whatever conversation is currently active — only
@@ -239,6 +256,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     editingMessageId: null,
     focusInputTrigger: 0,
     webSearchByConversation: {},
+    lastContextTokensByConversation: {},
     pendingWebSearchEnabled: false,
 
     requestInputFocus: () => set((s) => ({ focusInputTrigger: s.focusInputTrigger + 1 })),
@@ -312,13 +330,16 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
           set((state) => {
             const nextMap = { ...state.webSearchByConversation }
+            const nextContextTokens = { ...state.lastContextTokensByConversation }
             delete nextMap[id]
+            delete nextContextTokens[id]
             return {
               conversations: remaining,
               activeConversationId: nextId,
               messages: [],
               hasMoreMessages: false,
               webSearchByConversation: nextMap,
+              lastContextTokensByConversation: nextContextTokens,
             }
           })
           if (nextId) {
@@ -330,8 +351,14 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         } else {
           set((state) => {
             const nextMap = { ...state.webSearchByConversation }
+            const nextContextTokens = { ...state.lastContextTokensByConversation }
             delete nextMap[id]
-            return { conversations: remaining, webSearchByConversation: nextMap }
+            delete nextContextTokens[id]
+            return {
+              conversations: remaining,
+              webSearchByConversation: nextMap,
+              lastContextTokensByConversation: nextContextTokens,
+            }
           })
         }
       } else {
@@ -359,13 +386,16 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           const nextId = sameAssistantRemaining.length > 0 ? sameAssistantRemaining[0].id : null
           set((state) => {
             const nextMap = { ...state.webSearchByConversation }
+            const nextContextTokens = { ...state.lastContextTokensByConversation }
             for (const id of ids) delete nextMap[id]
+            for (const id of ids) delete nextContextTokens[id]
             return {
               conversations: remaining,
               activeConversationId: nextId,
               messages: [],
               hasMoreMessages: false,
               webSearchByConversation: nextMap,
+              lastContextTokensByConversation: nextContextTokens,
             }
           })
           if (nextId) {
@@ -377,8 +407,14 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         } else {
           set((state) => {
             const nextMap = { ...state.webSearchByConversation }
+            const nextContextTokens = { ...state.lastContextTokensByConversation }
             for (const id of ids) delete nextMap[id]
-            return { conversations: remaining, webSearchByConversation: nextMap }
+            for (const id of ids) delete nextContextTokens[id]
+            return {
+              conversations: remaining,
+              webSearchByConversation: nextMap,
+              lastContextTokensByConversation: nextContextTokens,
+            }
           })
         }
       } else {
@@ -462,16 +498,31 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         imageFiles && imageFiles.length > 0 ? imageFiles : undefined,
       )
       if (result.success && result.data) {
-        set((state) => ({ messages: [...state.messages, result.data!] }))
+        set((state) => {
+          const nextContextTokens = { ...state.lastContextTokensByConversation }
+          delete nextContextTokens[activeConversationId]
+          return {
+            messages: [...state.messages, result.data!],
+            lastContextTokensByConversation: nextContextTokens,
+          }
+        })
       } else {
         set({ error: result.error ?? fallbackLocalizedError('Failed to send message') })
       }
     },
 
     deleteMessage: async (id: string) => {
+      const deletedConversationId = get().messages.find((m) => m.id === id)?.conversationId
       const result = await window.api.deleteMessage(id)
       if (result.success) {
-        set((state) => ({ messages: state.messages.filter((m) => m.id !== id) }))
+        set((state) => {
+          const nextContextTokens = { ...state.lastContextTokensByConversation }
+          if (deletedConversationId) delete nextContextTokens[deletedConversationId]
+          return {
+            messages: state.messages.filter((m) => m.id !== id),
+            lastContextTokensByConversation: nextContextTokens,
+          }
+        })
       } else {
         set({ error: result.error ?? fallbackLocalizedError('Failed to delete message') })
       }
@@ -481,8 +532,23 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       const result = await window.api.clearMessages(conversationId)
       if (result.success) {
         const { activeConversationId } = get()
+        const clearContextTokens = (
+          state: ConversationState,
+        ): Pick<ConversationState, 'lastContextTokensByConversation'> => {
+          const nextContextTokens = { ...state.lastContextTokensByConversation }
+          delete nextContextTokens[conversationId]
+          return { lastContextTokensByConversation: nextContextTokens }
+        }
         if (activeConversationId === conversationId) {
-          set({ messages: [], hasMoreMessages: false })
+          set((state) => {
+            return {
+              messages: [],
+              hasMoreMessages: false,
+              ...clearContextTokens(state),
+            }
+          })
+        } else {
+          set(clearContextTokens)
         }
       } else {
         set({ error: result.error ?? fallbackLocalizedError('Failed to clear messages') })
@@ -494,7 +560,14 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       if (!activeConversationId) return
       const result = await window.api.insertDivider(activeConversationId)
       if (result.success && result.data) {
-        set((state) => ({ messages: [...state.messages, result.data!] }))
+        set((state) => {
+          const nextContextTokens = { ...state.lastContextTokensByConversation }
+          delete nextContextTokens[activeConversationId]
+          return {
+            messages: [...state.messages, result.data!],
+            lastContextTokensByConversation: nextContextTokens,
+          }
+        })
       }
     },
 
@@ -585,6 +658,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           m.id === messageId ? { ...m, content: newContent } : m,
         ),
         editingMessageId: null,
+        lastContextTokensByConversation: Object.fromEntries(
+          Object.entries(state.lastContextTokensByConversation).filter(
+            ([conversationId]) => conversationId !== activeConversationId,
+          ),
+        ),
       }))
     },
 

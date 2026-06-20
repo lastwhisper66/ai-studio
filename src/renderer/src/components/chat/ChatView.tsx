@@ -57,6 +57,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     streamingContent,
     streamingReasoningContent,
     streamStartTime,
+    lastContextTokensByConversation,
     sendMessage,
     stopGeneration,
     loadMoreMessages,
@@ -160,6 +161,9 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     }),
     [activeAssistant?.systemPrompt, committedContextMessages, resolvedModelName],
   )
+  const actualContextTokens = activeConversationId
+    ? (lastContextTokensByConversation[activeConversationId] ?? null)
+    : null
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'assistant' | 'model' | 'prompt'>(
@@ -367,6 +371,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         droppedFiles={droppedFiles}
         onDroppedFilesConsumed={handleDroppedFilesConsumed}
         committedTokenBreakdown={committedTokenBreakdown}
+        actualContextTokens={actualContextTokens}
         contextWindow={contextWindow}
         contextModel={resolvedModelName}
         hasContextModel={!!activeAssistant && !!resolvedModelName}

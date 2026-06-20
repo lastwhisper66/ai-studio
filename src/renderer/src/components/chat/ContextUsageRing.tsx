@@ -2,10 +2,10 @@ import { Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/lib/utils'
-import type { ContextTokenBreakdown } from '@renderer/lib/tokenizer'
+import type { ContextTokenUsage } from '@shared/types'
 
 interface ContextUsageRingProps {
-  breakdown: ContextTokenBreakdown
+  breakdown: ContextTokenUsage
   limit: number | null
   hasModel: boolean
   onConfigure: () => void
@@ -21,7 +21,7 @@ function ContextUsageTooltip({
   used,
   percent,
 }: {
-  breakdown: ContextTokenBreakdown
+  breakdown: ContextTokenUsage
   limit: number | null
   used: number
   percent: number
@@ -64,6 +64,12 @@ function ContextUsageTooltip({
             {t('chat.contextTokens', { count: formatNumber(breakdown.draft) })}
           </span>
         </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">{t('chat.contextWebSearch')}</span>
+          <span className="tabular-nums">
+            {t('chat.contextTokens', { count: formatNumber(breakdown.webSearch) })}
+          </span>
+        </div>
         {limit == null && (
           <div className="flex items-center justify-between gap-4 pt-0.5 font-medium">
             <span>{t('chat.contextTotal')}</span>
@@ -86,7 +92,7 @@ export function ContextUsageRing({
   const { t } = useTranslation()
   if (!hasModel) return null
 
-  const used = breakdown.systemPrompt + breakdown.history + breakdown.draft
+  const used = breakdown.systemPrompt + breakdown.history + breakdown.draft + breakdown.webSearch
   const size = 18
   const stroke = 2
   const radius = (size - stroke) / 2

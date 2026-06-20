@@ -24,12 +24,10 @@ const CONTEXT_WINDOW_BACKFILL = [
   { name: 'Pro/zai-org/GLM-5', contextWindow: 128000 },
 ] as const
 
-export const migration004TokenUsageAndContextWindow = {
+export const migration004ContextWindow = {
   version: 4,
-  name: 'token-usage-and-context-window',
+  name: 'context-window',
   up(db: Database.Database): void {
-    db.exec(`ALTER TABLE messages ADD COLUMN input_tokens INTEGER`)
-    db.exec(`ALTER TABLE messages ADD COLUMN output_tokens INTEGER`)
     db.exec(`ALTER TABLE model_definitions ADD COLUMN context_window INTEGER`)
 
     const update = db.prepare(

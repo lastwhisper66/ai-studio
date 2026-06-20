@@ -125,6 +125,13 @@ export interface Message {
   sources?: WebSearchResult[] | null
 }
 
+export interface ContextTokenUsage {
+  systemPrompt: number
+  history: number
+  draft: number
+  webSearch: number
+}
+
 export type ProviderType =
   | 'openai'
   | 'openai-response'
@@ -266,6 +273,7 @@ export interface StreamReasoningChunkData {
 export interface StreamEndData {
   conversationId: string
   message: Message | null
+  contextTokens?: ContextTokenUsage | null
 }
 
 /** chat:stream-error push data */

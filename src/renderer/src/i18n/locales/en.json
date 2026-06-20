@@ -81,6 +81,7 @@
     "contextSystemPrompt": "System prompt",
     "contextHistory": "History context",
     "contextDraft": "Current draft",
+    "contextWebSearch": "Web search",
     "contextTokens": "{{count}} token",
     "thinkingProcess": "Thinking",
     "thinkingTime": "Thought for {{time}}",

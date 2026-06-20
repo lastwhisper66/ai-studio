@@ -13,14 +13,13 @@ export async function streamClaudeChat(
     baseURL: settings.baseUrl || undefined,
   })
 
-  // Extract system prompt from messages (first system message)
-  let systemPrompt: string | undefined
+  const systemPrompts: string[] = []
   const claudeMessages: Anthropic.MessageParam[] = []
 
   for (const msg of messages) {
     const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
     if (msg.role === 'system') {
-      systemPrompt = content
+      systemPrompts.push(content)
     } else if (msg.role === 'user') {
       claudeMessages.push({ role: 'user', content })
     } else if (msg.role === 'assistant') {
@@ -34,7 +33,7 @@ export async function streamClaudeChat(
       // Anthropic requires max_tokens — fall back to 4096 when caller leaves it unset.
       max_tokens: settings.maxCompletionTokens ?? 4096,
       messages: claudeMessages,
-      ...(systemPrompt ? { system: systemPrompt } : {}),
+      ...(systemPrompts.length > 0 ? { system: systemPrompts.join('\n\n') } : {}),
       ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
       ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
     },

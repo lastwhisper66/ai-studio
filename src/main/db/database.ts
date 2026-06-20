@@ -67,8 +67,6 @@ function createTables(): void {
       reasoning_content TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       token_count INTEGER,
-      input_tokens INTEGER,
-      output_tokens INTEGER,
       attachments TEXT,
       duration INTEGER,
       thinking_duration INTEGER,
