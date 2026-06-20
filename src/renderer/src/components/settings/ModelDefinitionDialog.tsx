@@ -19,7 +19,11 @@ export interface ModelDefinitionDialogProps {
   initial?: ModelDefinition
   /** Optional pattern hint shown when adding from a specific rule. */
   groupPatternHint?: string
-  onSave: (data: { name: string; capabilities: ModelCapability[] }) => Promise<void>
+  onSave: (data: {
+    name: string
+    capabilities: ModelCapability[]
+    contextWindow: number | null
+  }) => Promise<void>
 }
 
 export function ModelDefinitionDialog({
@@ -32,12 +36,16 @@ export function ModelDefinitionDialog({
   const { t } = useTranslation()
   const [name, setName] = useState(initial?.name ?? '')
   const [capabilities, setCapabilities] = useState<ModelCapability[]>(initial?.capabilities ?? [])
+  const [contextWindow, setContextWindow] = useState(
+    initial?.contextWindow != null ? String(initial.contextWindow) : '',
+  )
 
   useEffect(() => {
     if (open) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- dialog open reset
       setName(initial?.name ?? '')
       setCapabilities(initial?.capabilities ?? [])
+      setContextWindow(initial?.contextWindow != null ? String(initial.contextWindow) : '')
     }
   }, [open, initial])
 
@@ -45,9 +53,15 @@ export function ModelDefinitionDialog({
     setCapabilities((prev) => (prev.includes(cap) ? prev.filter((c) => c !== cap) : [...prev, cap]))
   }
 
+  const parsedContextWindow = contextWindow.trim() ? Number(contextWindow) : null
+  const isContextWindowInvalid =
+    parsedContextWindow !== null &&
+    (!Number.isInteger(parsedContextWindow) || parsedContextWindow <= 0)
+
   const handleSave = async (): Promise<void> => {
     if (!name.trim()) return
-    await onSave({ name: name.trim(), capabilities })
+    if (isContextWindowInvalid) return
+    await onSave({ name: name.trim(), capabilities, contextWindow: parsedContextWindow })
   }
 
   return (
@@ -71,6 +85,20 @@ export function ModelDefinitionDialog({
               <p className="text-muted-foreground text-xs">
                 {t('modelManage.newDefinitionGroupHint', { pattern: groupPatternHint })}
               </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">{t('modelLibrary.contextWindow')}</label>
+            <Input
+              value={contextWindow}
+              onChange={(e) => setContextWindow(e.target.value.replace(/[^\d]/g, ''))}
+              placeholder={t('modelLibrary.contextWindowPlaceholder')}
+              inputMode="numeric"
+            />
+            <p className="text-muted-foreground text-xs">{t('modelLibrary.contextWindowHint')}</p>
+            {isContextWindowInvalid && (
+              <p className="text-destructive text-xs">{t('modelLibrary.contextWindowInvalid')}</p>
             )}
           </div>
 
@@ -106,7 +134,7 @@ export function ModelDefinitionDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common.cancel')}
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim()}>
+          <Button onClick={handleSave} disabled={!name.trim() || isContextWindowInvalid}>
             {initial ? t('common.save') : t('modelLibrary.addDefinition')}
           </Button>
         </DialogFooter>

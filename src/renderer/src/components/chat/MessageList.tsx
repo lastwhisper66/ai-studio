@@ -152,6 +152,8 @@ export function MessageList({
                     sources={msg.sources}
                     duration={msg.duration}
                     thinkingDuration={msg.thinkingDuration}
+                    inputTokens={msg.inputTokens}
+                    outputTokens={msg.outputTokens}
                     isEditing={editingMessageId === msg.id}
                     assistantIcon={msg.role === 'assistant' ? activeAssistant?.icon : undefined}
                     userAvatarUrl={msg.role === 'user' ? userAvatarUrl : undefined}

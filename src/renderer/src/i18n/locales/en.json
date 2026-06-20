@@ -74,6 +74,12 @@
     "webSearch": "Web search",
     "webSearchDisabledTooltip": "Click to open settings and configure web search",
     "sources": "Sources ({{count}})",
+    "inputTokens": "Input tokens",
+    "outputTokens": "Output tokens",
+    "estimatedOutputTokens": "Estimated output tokens",
+    "duration": "Duration",
+    "contextUsage": "{{used}} / {{limit}} ({{percent}}%)",
+    "contextWindowMissing": "Context window not configured. Click to configure.",
     "thinkingProcess": "Thinking",
     "thinkingTime": "Thought for {{time}}",
     "thinkingInProgress": "Thinking...",
@@ -900,6 +906,10 @@
     "noResults": "No matching models",
     "modelName": "Model Name",
     "capabilities": "Capabilities",
+    "contextWindow": "Context window",
+    "contextWindowPlaceholder": "e.g. 128000",
+    "contextWindowHint": "Leave empty when the model's context window is unknown.",
+    "contextWindowInvalid": "Enter a positive integer or leave empty.",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
   },
   "modelGroup": {

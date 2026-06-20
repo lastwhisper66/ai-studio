@@ -50,7 +50,11 @@ export async function streamClaudeChat(
   })
 
   // Wait for the stream to complete
-  await stream.finalMessage()
+  const finalMessage = await stream.finalMessage()
+  callbacks.onUsage?.({
+    inputTokens: finalMessage.usage.input_tokens ?? null,
+    outputTokens: finalMessage.usage.output_tokens ?? null,
+  })
 
   callbacks.onEnd?.()
 }

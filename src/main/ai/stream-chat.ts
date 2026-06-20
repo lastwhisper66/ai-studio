@@ -5,10 +5,16 @@ import { streamOpenAIResponse } from './openai-response-stream'
 import { streamGeminiChat } from './gemini-stream'
 import { streamClaudeChat } from './claude-stream'
 
+export interface TokenUsage {
+  inputTokens: number | null
+  outputTokens: number | null
+}
+
 /** Callbacks for streaming chat responses. */
 export interface StreamCallbacks {
   onChunk: (delta: string, isReasoning?: boolean) => void
   onEnd?: () => void
+  onUsage?: (usage: TokenUsage) => void
 }
 
 /** Provider types that use the OpenAI-compatible chat completions API. */

@@ -74,6 +74,12 @@
     "webSearch": "网络搜索",
     "webSearchDisabledTooltip": "点击前往设置启用并配置网络搜索",
     "sources": "参考来源 ({{count}})",
+    "inputTokens": "输入 token",
+    "outputTokens": "输出 token",
+    "estimatedOutputTokens": "估算输出 token",
+    "duration": "耗时",
+    "contextUsage": "{{used}} / {{limit}} ({{percent}}%)",
+    "contextWindowMissing": "未配置上下文窗口大小，点击前往配置。",
     "thinkingProcess": "思考过程",
     "thinkingTime": "已思考 {{time}}",
     "thinkingInProgress": "思考中...",
@@ -900,6 +906,10 @@
     "noResults": "没有匹配的模型",
     "modelName": "模型名称",
     "capabilities": "能力标签",
+    "contextWindow": "上下文窗口",
+    "contextWindowPlaceholder": "例如 128000",
+    "contextWindowHint": "不知道模型上下文窗口时可留空。",
+    "contextWindowInvalid": "请输入正整数，或留空。",
     "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
   },
   "modelGroup": {

@@ -30,9 +30,12 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
+import { countTokens } from '@renderer/lib/tokenizer'
 import { cn } from '@renderer/lib/utils'
 import type { FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import { ContextUsageRing } from './ContextUsageRing'
 
 type AttachedFile = FileData
 
@@ -50,6 +53,10 @@ interface MessageInputProps {
   sendDisabled?: boolean
   droppedFiles?: FileData[]
   onDroppedFilesConsumed?: () => void
+  committedTokens: number
+  contextWindow: number | null
+  contextModel: string
+  hasContextModel: boolean
 }
 
 type ReasoningLevel = ReasoningEffort | 'off'
@@ -377,6 +384,10 @@ export function MessageInput({
   sendDisabled = false,
   droppedFiles,
   onDroppedFilesConsumed,
+  committedTokens,
+  contextWindow,
+  contextModel,
+  hasContextModel,
 }: MessageInputProps): React.JSX.Element {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -394,6 +405,7 @@ export function MessageInput({
   const setWebSearchInStore = useConversationStore((s) => s.setWebSearch)
   const pendingWebSearch = useConversationStore((s) => s.pendingWebSearchEnabled)
   const setPendingWebSearch = useConversationStore((s) => s.setPendingWebSearch)
+  const navigateToSettings = useSettingsStore((s) => s.navigateToSettings)
   const webSearch = activeConversationId
     ? (webSearchEnabledMap[activeConversationId] ?? false)
     : pendingWebSearch
@@ -401,6 +413,13 @@ export function MessageInput({
     if (activeConversationId) setWebSearchInStore(activeConversationId, v)
     else setPendingWebSearch(v)
   }
+
+  const throttledInput = useThrottledValue(input, input.length > 0)
+  const draftTokens = useMemo(
+    () => countTokens(throttledInput, contextModel),
+    [contextModel, throttledInput],
+  )
+  const contextUsedTokens = committedTokens + draftTokens
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {
@@ -697,6 +716,12 @@ export function MessageInput({
 
             {/* Right: send / stop */}
             <div className="flex items-center">
+              <ContextUsageRing
+                used={contextUsedTokens}
+                limit={contextWindow}
+                hasModel={hasContextModel}
+                onConfigure={() => navigateToSettings('model-management')}
+              />
               {isStreaming ? (
                 <Button
                   type="button"

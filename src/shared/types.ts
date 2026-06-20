@@ -119,6 +119,8 @@ export interface Message {
   reasoningContent: string | null
   createdAt: string
   tokenCount: number | null
+  inputTokens: number | null
+  outputTokens: number | null
   duration: number | null // response time in milliseconds
   thinkingDuration: number | null // reasoning phase duration in milliseconds
   attachments?: AttachmentMeta[]
@@ -202,6 +204,7 @@ export interface ModelDefinition {
    */
   group: string
   capabilities: ModelCapability[]
+  contextWindow: number | null
   createdAt: string
   updatedAt: string
 }

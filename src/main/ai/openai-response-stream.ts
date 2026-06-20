@@ -30,6 +30,22 @@ export async function streamOpenAIResponse(
   )
 
   for await (const event of stream) {
+    const completedEvent = event as {
+      type: string
+      response?: {
+        usage?: {
+          input_tokens?: number | null
+          output_tokens?: number | null
+        }
+      }
+    }
+    if (completedEvent.type === 'response.completed' && completedEvent.response?.usage) {
+      callbacks.onUsage?.({
+        inputTokens: completedEvent.response.usage.input_tokens ?? null,
+        outputTokens: completedEvent.response.usage.output_tokens ?? null,
+      })
+    }
+
     if (
       event.type === 'response.output_text.delta' &&
       'delta' in event &&

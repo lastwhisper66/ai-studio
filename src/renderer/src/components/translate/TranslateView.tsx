@@ -75,6 +75,7 @@ export function TranslateView(): React.JSX.Element {
   const [history, setHistory] = useState<TranslationHistoryItem[]>([])
   const [clearHistoryOpen, setClearHistoryOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const sourceViewportRef = useRef<HTMLDivElement>(null)
   const currentTranslationRef = useRef<{
     requestId: number
     sourceText: string
@@ -135,6 +136,27 @@ export function TranslateView(): React.JSX.Element {
       if (result.success && result.data) setHistory(result.data)
     })
   }, [])
+
+  const resizeSourceTextarea = useCallback(() => {
+    const el = textareaRef.current
+    if (!el) return
+    const viewportHeight = sourceViewportRef.current?.clientHeight ?? 0
+    el.style.height = 'auto'
+    el.style.height = `${Math.max(el.scrollHeight, viewportHeight)}px`
+  }, [])
+
+  useEffect(() => {
+    resizeSourceTextarea()
+  }, [resizeSourceTextarea, sourceText])
+
+  useEffect(() => {
+    const viewport = sourceViewportRef.current
+    if (!viewport) return
+
+    const observer = new ResizeObserver(resizeSourceTextarea)
+    observer.observe(viewport)
+    return () => observer.disconnect()
+  }, [resizeSourceTextarea])
 
   // Persist language selection changes
   const handleSourceLangChange = useCallback((value: string) => {
@@ -533,15 +555,17 @@ export function TranslateView(): React.JSX.Element {
               <TooltipContent>{t('translate.history.clearInput')}</TooltipContent>
             </Tooltip>
           )}
-          <textarea
-            ref={textareaRef}
-            className="flex-1 resize-none bg-transparent p-4 pr-10 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
-            placeholder={t('translate.inputPlaceholder')}
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isTranslating}
-          />
+          <ScrollArea className="min-h-0 flex-1" viewportRef={sourceViewportRef}>
+            <textarea
+              ref={textareaRef}
+              className="block min-h-full w-full resize-none overflow-hidden bg-transparent p-4 pr-10 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
+              placeholder={t('translate.inputPlaceholder')}
+              value={sourceText}
+              onChange={(e) => setSourceText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isTranslating}
+            />
+          </ScrollArea>
           <div className="flex items-center justify-end px-4 py-1 text-xs text-muted-foreground">
             {sourceText.length.toLocaleString()}
           </div>
@@ -568,7 +592,7 @@ export function TranslateView(): React.JSX.Element {
             </Tooltip>
           )}
 
-          <div className="flex-1 overflow-auto">
+          <ScrollArea className="flex-1" scrollbars="both">
             <div
               className={`p-4 ${
                 translateSettings.wordWrap
@@ -591,6 +615,9 @@ export function TranslateView(): React.JSX.Element {
                 </p>
               )}
             </div>
+          </ScrollArea>
+          <div className="flex items-center justify-end px-4 py-1 text-xs text-muted-foreground">
+            {translatedText.length.toLocaleString()}
           </div>
         </div>
 

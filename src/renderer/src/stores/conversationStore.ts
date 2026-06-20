@@ -617,6 +617,8 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           reasoningContent: streamingReasoningContent || null,
           createdAt: new Date().toISOString(),
           tokenCount: null,
+          inputTokens: null,
+          outputTokens: null,
           duration: null,
           thinkingDuration: null,
         }

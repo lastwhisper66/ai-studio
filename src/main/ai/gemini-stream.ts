@@ -48,7 +48,24 @@ export async function streamGeminiChat(
     },
   })
 
+  let usageMetadata: {
+    promptTokenCount?: number
+    candidatesTokenCount?: number
+    thoughtsTokenCount?: number
+  } | null = null
+
   for await (const chunk of response) {
+    const chunkUsage = (
+      chunk as {
+        usageMetadata?: {
+          promptTokenCount?: number
+          candidatesTokenCount?: number
+          thoughtsTokenCount?: number
+        }
+      }
+    ).usageMetadata
+    if (chunkUsage) usageMetadata = chunkUsage
+
     const parts = chunk.candidates?.[0]?.content?.parts
     if (parts) {
       for (const part of parts) {
@@ -59,6 +76,18 @@ export async function streamGeminiChat(
         }
       }
     }
+  }
+
+  if (usageMetadata) {
+    const hasOutput =
+      usageMetadata.candidatesTokenCount !== undefined ||
+      usageMetadata.thoughtsTokenCount !== undefined
+    callbacks.onUsage?.({
+      inputTokens: usageMetadata.promptTokenCount ?? null,
+      outputTokens: hasOutput
+        ? (usageMetadata.candidatesTokenCount ?? 0) + (usageMetadata.thoughtsTokenCount ?? 0)
+        : null,
+    })
   }
 
   callbacks.onEnd?.()
