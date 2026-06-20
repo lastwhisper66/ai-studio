@@ -2,16 +2,83 @@ import { Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
 import { cn } from '@renderer/lib/utils'
+import type { ContextTokenBreakdown } from '@renderer/lib/tokenizer'
 
 interface ContextUsageRingProps {
-  used: number
+  breakdown: ContextTokenBreakdown
   limit: number | null
   hasModel: boolean
   onConfigure: () => void
 }
 
-export function ContextUsageRing({
+function formatNumber(value: number): string {
+  return value.toLocaleString()
+}
+
+function ContextUsageTooltip({
+  breakdown,
+  limit,
   used,
+  percent,
+}: {
+  breakdown: ContextTokenBreakdown
+  limit: number | null
+  used: number
+  percent: number
+}): React.JSX.Element {
+  const { t } = useTranslation()
+
+  return (
+    <div className="w-56 space-y-1.5">
+      {limit == null ? (
+        <p className="text-xs">{t('chat.contextWindowMissing')}</p>
+      ) : (
+        <div className="flex items-center justify-between gap-4 text-xs font-medium">
+          <span>{t('chat.contextTotal')}</span>
+          <span className="tabular-nums">
+            {t('chat.contextUsage', {
+              used: formatNumber(used),
+              limit: formatNumber(limit),
+              percent,
+            })}
+          </span>
+        </div>
+      )}
+      <div className="h-px bg-border" />
+      <div className="space-y-1 text-xs">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">{t('chat.contextSystemPrompt')}</span>
+          <span className="tabular-nums">
+            {t('chat.contextTokens', { count: formatNumber(breakdown.systemPrompt) })}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">{t('chat.contextHistory')}</span>
+          <span className="tabular-nums">
+            {t('chat.contextTokens', { count: formatNumber(breakdown.history) })}
+          </span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-muted-foreground">{t('chat.contextDraft')}</span>
+          <span className="tabular-nums">
+            {t('chat.contextTokens', { count: formatNumber(breakdown.draft) })}
+          </span>
+        </div>
+        {limit == null && (
+          <div className="flex items-center justify-between gap-4 pt-0.5 font-medium">
+            <span>{t('chat.contextTotal')}</span>
+            <span className="tabular-nums">
+              {t('chat.contextTokens', { count: formatNumber(used) })}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function ContextUsageRing({
+  breakdown,
   limit,
   hasModel,
   onConfigure,
@@ -19,6 +86,7 @@ export function ContextUsageRing({
   const { t } = useTranslation()
   if (!hasModel) return null
 
+  const used = breakdown.systemPrompt + breakdown.history + breakdown.draft
   const size = 18
   const stroke = 2
   const radius = (size - stroke) / 2
@@ -54,7 +122,9 @@ export function ContextUsageRing({
             </span>
           </button>
         </TooltipTrigger>
-        <TooltipContent side="top">{t('chat.contextWindowMissing')}</TooltipContent>
+        <TooltipContent side="top">
+          <ContextUsageTooltip breakdown={breakdown} limit={limit} used={used} percent={percent} />
+        </TooltipContent>
       </Tooltip>
     )
   }
@@ -71,8 +141,8 @@ export function ContextUsageRing({
             ratio >= 0.9 && 'text-red-500',
           )}
           aria-label={t('chat.contextUsage', {
-            used: used.toLocaleString(),
-            limit: limit.toLocaleString(),
+            used: formatNumber(used),
+            limit: formatNumber(limit),
             percent,
           })}>
           <svg viewBox={`0 0 ${size} ${size}`} className="h-[18px] w-[18px] -rotate-90">
@@ -100,11 +170,7 @@ export function ContextUsageRing({
         </span>
       </TooltipTrigger>
       <TooltipContent side="top">
-        {t('chat.contextUsage', {
-          used: used.toLocaleString(),
-          limit: limit.toLocaleString(),
-          percent,
-        })}
+        <ContextUsageTooltip breakdown={breakdown} limit={limit} used={used} percent={percent} />
       </TooltipContent>
     </Tooltip>
   )

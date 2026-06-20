@@ -31,7 +31,7 @@ import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
-import { countTokens } from '@renderer/lib/tokenizer'
+import { countTokens, type ContextTokenBreakdown } from '@renderer/lib/tokenizer'
 import { cn } from '@renderer/lib/utils'
 import type { FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
@@ -53,7 +53,7 @@ interface MessageInputProps {
   sendDisabled?: boolean
   droppedFiles?: FileData[]
   onDroppedFilesConsumed?: () => void
-  committedTokens: number
+  committedTokenBreakdown: Pick<ContextTokenBreakdown, 'systemPrompt' | 'history'>
   contextWindow: number | null
   contextModel: string
   hasContextModel: boolean
@@ -384,7 +384,7 @@ export function MessageInput({
   sendDisabled = false,
   droppedFiles,
   onDroppedFilesConsumed,
-  committedTokens,
+  committedTokenBreakdown,
   contextWindow,
   contextModel,
   hasContextModel,
@@ -414,12 +414,36 @@ export function MessageInput({
     else setPendingWebSearch(v)
   }
 
-  const throttledInput = useThrottledValue(input, input.length > 0)
+  const textAttachmentContent = useMemo(() => {
+    let content = ''
+    for (const file of attachedFiles) {
+      if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json') {
+        try {
+          const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0))
+          const text = new TextDecoder('utf-8').decode(bytes)
+          content += `\n\n--- 附件: ${file.name} ---\n${text}`
+        } catch {
+          // Ignore malformed attachment payloads here; send-time handling follows the existing path.
+        }
+      }
+    }
+    return content
+  }, [attachedFiles])
+
+  const draftContent = `${input.trim()}${textAttachmentContent}`
+  const throttledDraftContent = useThrottledValue(draftContent, draftContent.length > 0)
   const draftTokens = useMemo(
-    () => countTokens(throttledInput, contextModel),
-    [contextModel, throttledInput],
+    () => countTokens(throttledDraftContent, contextModel),
+    [contextModel, throttledDraftContent],
   )
-  const contextUsedTokens = committedTokens + draftTokens
+  const contextTokenBreakdown = useMemo<ContextTokenBreakdown>(
+    () => ({
+      systemPrompt: committedTokenBreakdown.systemPrompt,
+      history: committedTokenBreakdown.history,
+      draft: draftTokens,
+    }),
+    [committedTokenBreakdown.history, committedTokenBreakdown.systemPrompt, draftTokens],
+  )
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {
@@ -437,7 +461,6 @@ export function MessageInput({
   // Consume files dropped from ChatView drag-and-drop overlay
   useEffect(() => {
     if (droppedFiles && droppedFiles.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing external prop to local state
       setAttachedFiles((prev) => [...prev, ...droppedFiles])
       onDroppedFilesConsumed?.()
       textareaRef.current?.focus()
@@ -459,17 +482,7 @@ export function MessageInput({
   }, [input, isExpanded])
 
   const buildContent = (): string => {
-    let content = input.trim()
-    for (const f of attachedFiles) {
-      if (f.mimeType.startsWith('text/') || f.mimeType === 'application/json') {
-        // Correctly decode UTF-8 encoded text files
-        const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0))
-        const text = new TextDecoder('utf-8').decode(bytes)
-        content += `\n\n--- 附件: ${f.name} ---\n${text}`
-      }
-      // Image files are sent separately via IPC payload, not embedded in text
-    }
-    return content
+    return draftContent
   }
 
   const handleSend = (): void => {
@@ -717,7 +730,7 @@ export function MessageInput({
             {/* Right: send / stop */}
             <div className="flex items-center">
               <ContextUsageRing
-                used={contextUsedTokens}
+                breakdown={contextTokenBreakdown}
                 limit={contextWindow}
                 hasModel={hasContextModel}
                 onConfigure={() => navigateToSettings('model-management')}

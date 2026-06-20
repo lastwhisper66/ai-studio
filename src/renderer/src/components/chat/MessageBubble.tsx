@@ -1,23 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef, memo, useMemo } from 'react'
-import {
-  Copy,
-  Check,
-  Trash2,
-  User,
-  Bot,
-  Clock,
-  RefreshCcw,
-  Pencil,
-  ArrowUp,
-  ArrowDown,
-} from 'lucide-react'
+import React, { useState, useCallback, useEffect, useRef, memo } from 'react'
+import { Copy, Check, Trash2, User, Bot, Clock, RefreshCcw, Pencil } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@renderer/components/ui/avatar'
 import { Textarea } from '@renderer/components/ui/textarea'
 import { Popover, PopoverContent, PopoverTrigger } from '@renderer/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
-import { countTokens } from '@renderer/lib/tokenizer'
 import { MarkdownRenderer } from './MarkdownRenderer'
 import { ThinkingBlock } from './ThinkingBlock'
 import { useElapsedTime } from '@renderer/hooks/useElapsedTime'
@@ -36,8 +24,6 @@ interface MessageBubbleProps {
   sources?: WebSearchResult[] | null
   duration?: number | null
   thinkingDuration?: number | null
-  inputTokens?: number | null
-  outputTokens?: number | null
   streamStartTime?: number | null
   isEditing?: boolean
   assistantIcon?: string
@@ -129,8 +115,6 @@ export const MessageBubble = memo(function MessageBubble({
   sources,
   duration,
   thinkingDuration,
-  inputTokens,
-  outputTokens,
   streamStartTime,
   isEditing,
   assistantIcon,
@@ -243,21 +227,6 @@ export const MessageBubble = memo(function MessageBubble({
   const showActions = !isStreaming && messageId
   const hasImages = attachments && attachments.some((a) => isImageMime(a.mimeType))
   const showDuration = !isUser && (isStreaming || (duration ?? 0) > 0)
-  const tokenUsageItems = useMemo(() => {
-    if (role !== 'assistant' || isStreaming) return []
-    const items: Array<{ type: 'input' | 'output'; value: number; estimated?: boolean }> = []
-    if (inputTokens != null) {
-      items.push({ type: 'input', value: inputTokens })
-    }
-    if (outputTokens != null) {
-      items.push({ type: 'output', value: outputTokens })
-    }
-    if (inputTokens == null && outputTokens == null && content.trim()) {
-      items.push({ type: 'output', value: countTokens(content), estimated: true })
-    }
-    return items
-  }, [content, inputTokens, isStreaming, outputTokens, role])
-  const showTokenUsage = tokenUsageItems.length > 0
   const isWaiting = isStreaming && !content && !reasoningContent
 
   return (
@@ -387,7 +356,7 @@ export const MessageBubble = memo(function MessageBubble({
         {hasImages && <AttachmentImages attachments={attachments!} />}
 
         {/* Action bar + message metrics — positioned at bottom */}
-        {(showActions || showDuration || showTokenUsage) && (
+        {(showActions || showDuration) && (
           <div
             className={`mt-1 flex items-center gap-0.5 ${
               isUser ? 'justify-end' : 'justify-start'
@@ -481,36 +450,10 @@ export const MessageBubble = memo(function MessageBubble({
                 </Tooltip>
               </>
             )}
-            {showTokenUsage && (
-              <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-                {tokenUsageItems.map((item) => {
-                  const Icon = item.type === 'input' ? ArrowUp : ArrowDown
-                  const label =
-                    item.type === 'input' ? t('chat.inputTokens') : t('chat.outputTokens')
-                  return (
-                    <Tooltip key={item.type}>
-                      <TooltipTrigger asChild>
-                        <span className="inline-flex items-center gap-0.5 tabular-nums">
-                          <Icon className="h-3 w-3" />
-                          {item.estimated ? '~' : ''}
-                          {item.value.toLocaleString()}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        {item.estimated ? t('chat.estimatedOutputTokens') : label}
-                      </TooltipContent>
-                    </Tooltip>
-                  )
-                })}
-              </span>
-            )}
             {showDuration && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span
-                    className={`flex items-center gap-1 text-xs text-muted-foreground ${
-                      showTokenUsage ? '' : 'ml-auto'
-                    }`}>
+                  <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     {isStreaming ? formatDuration(elapsed) : formatDuration(duration!)}
                   </span>

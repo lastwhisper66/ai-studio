@@ -17,7 +17,7 @@ import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { useUserAvatar } from '@renderer/hooks/useUserAvatar'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
-import { countContextTokens } from '@renderer/lib/tokenizer'
+import { countMessagesTokens, countTokens } from '@renderer/lib/tokenizer'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { AssistantSettingsDialog } from './AssistantSettingsDialog'
@@ -73,8 +73,10 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
 
   const userAvatarUrl = useUserAvatar()
-  const lastMessageId = messages.at(-1)?.id
-  const messageRevision = `${messages.length}:${lastMessageId ?? ''}`
+  const messageRevision = useMemo(
+    () => messages.map((m) => `${m.id}:${m.role}:${m.content.length}:${m.content}`).join('|'),
+    [messages],
+  )
   const [contextSource, setContextSource] = useState<{
     conversationId: string
     revision: string
@@ -151,13 +153,11 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     [effectiveContextSourceMessages, activeAssistant?.contextCount],
   )
 
-  const committedTokens = useMemo(
-    () =>
-      countContextTokens({
-        messages: committedContextMessages,
-        systemPrompt: activeAssistant?.systemPrompt,
-        model: resolvedModelName,
-      }),
+  const committedTokenBreakdown = useMemo(
+    () => ({
+      systemPrompt: countTokens(activeAssistant?.systemPrompt, resolvedModelName),
+      history: countMessagesTokens(committedContextMessages, resolvedModelName),
+    }),
     [activeAssistant?.systemPrompt, committedContextMessages, resolvedModelName],
   )
 
@@ -366,7 +366,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         sendDisabled={isStreamingElsewhere}
         droppedFiles={droppedFiles}
         onDroppedFilesConsumed={handleDroppedFilesConsumed}
-        committedTokens={committedTokens}
+        committedTokenBreakdown={committedTokenBreakdown}
         contextWindow={contextWindow}
         contextModel={resolvedModelName}
         hasContextModel={!!activeAssistant && !!resolvedModelName}

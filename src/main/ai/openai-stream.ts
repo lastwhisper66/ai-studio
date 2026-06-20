@@ -17,7 +17,6 @@ export async function streamOpenAIChat(
     model: settings.model,
     messages,
     stream: true,
-    stream_options: { include_usage: true },
     ...(settings.maxCompletionTokens !== undefined
       ? { max_completion_tokens: settings.maxCompletionTokens }
       : {}),
@@ -31,13 +30,6 @@ export async function streamOpenAIChat(
   const stream = await client.chat.completions.create(createParams, { signal })
 
   for await (const chunk of stream) {
-    if (chunk.usage) {
-      callbacks.onUsage?.({
-        inputTokens: chunk.usage.prompt_tokens ?? null,
-        outputTokens: chunk.usage.completion_tokens ?? null,
-      })
-    }
-
     const delta = chunk.choices[0]?.delta
     if (delta) {
       // DeepSeek / compatible providers include `reasoning_content` on the delta;

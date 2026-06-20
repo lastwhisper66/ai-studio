@@ -21,7 +21,6 @@ import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
 import { streamChat, generateTitle, applySslSetting } from '../ai'
-import type { TokenUsage } from '../ai'
 import { showCompletionNotification } from '../utils/notification'
 import {
   loadWebSearchSettings,
@@ -72,7 +71,6 @@ export function registerChatHandlers(): void {
       let reasoningStartTime: number | null = null
       let thinkingDuration: number | null = null
       let webSearchSources: WebSearchResult[] | null = null
-      let tokenUsage: TokenUsage = { inputTokens: null, outputTokens: null }
 
       try {
         const allMessages = listMessages(conversationId)
@@ -286,9 +284,6 @@ export function registerChatHandlers(): void {
                 }
               }
             },
-            onUsage: (usage) => {
-              tokenUsage = usage
-            },
           },
         )
 
@@ -302,8 +297,6 @@ export function registerChatHandlers(): void {
           reasoningContent: fullReasoning || undefined,
           thinkingDuration: thinkingDuration ?? undefined,
           sources: webSearchSources ?? undefined,
-          inputTokens: tokenUsage.inputTokens,
-          outputTokens: tokenUsage.outputTokens,
         })
         if (!sender.isDestroyed()) {
           sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })
@@ -343,8 +336,6 @@ export function registerChatHandlers(): void {
               reasoningContent: fullReasoning || undefined,
               thinkingDuration: thinkingDuration ?? undefined,
               sources: webSearchSources ?? undefined,
-              inputTokens: tokenUsage.inputTokens,
-              outputTokens: tokenUsage.outputTokens,
             })
           }
           if (!sender.isDestroyed()) {

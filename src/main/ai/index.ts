@@ -6,7 +6,7 @@ import { createOpenAIClient } from './openai-client'
 import { streamChat, OPENAI_COMPATIBLE_TYPES } from './stream-chat'
 
 export { streamChat, OPENAI_COMPATIBLE_TYPES }
-export type { StreamCallbacks, StreamChatOptions, TokenUsage } from './stream-chat'
+export type { StreamCallbacks, StreamChatOptions } from './stream-chat'
 
 /** Sync the NODE_TLS_REJECT_UNAUTHORIZED env var with the user's SSL setting. */
 export function applySslSetting(skip?: boolean): void {

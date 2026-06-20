@@ -13,8 +13,6 @@ interface MessageRow {
   reasoning_content: string | null
   created_at: string
   token_count: number | null
-  input_tokens: number | null
-  output_tokens: number | null
   duration: number | null
   thinking_duration: number | null
   attachments: string | null
@@ -30,8 +28,6 @@ function rowToMessage(row: MessageRow): Message {
     reasoningContent: row.reasoning_content,
     createdAt: row.created_at,
     tokenCount: row.token_count,
-    inputTokens: row.input_tokens,
-    outputTokens: row.output_tokens,
     duration: row.duration,
     thinkingDuration: row.thinking_duration,
   }
@@ -94,8 +90,6 @@ interface CreateMessageOptions {
   reasoningContent?: string
   thinkingDuration?: number
   sources?: WebSearchResult[]
-  inputTokens?: number | null
-  outputTokens?: number | null
 }
 
 export function createMessage(
@@ -104,15 +98,7 @@ export function createMessage(
   content: string,
   options?: CreateMessageOptions,
 ): Message {
-  const {
-    attachments,
-    duration,
-    reasoningContent,
-    thinkingDuration,
-    sources,
-    inputTokens,
-    outputTokens,
-  } = options ?? {}
+  const { attachments, duration, reasoningContent, thinkingDuration, sources } = options ?? {}
   const id = uuidv4()
   const now = new Date().toISOString()
   const db = getDb()
@@ -120,8 +106,8 @@ export function createMessage(
   const sourcesJson = sources && sources.length > 0 ? JSON.stringify(sources) : null
 
   db.prepare(
-    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, input_tokens, output_tokens, attachments, duration, thinking_duration, sources)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO messages (id, conversation_id, role, content, reasoning_content, created_at, attachments, duration, thinking_duration, sources)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     id,
     conversationId,
@@ -129,8 +115,6 @@ export function createMessage(
     content,
     reasoningContent || null,
     now,
-    inputTokens ?? null,
-    outputTokens ?? null,
     attachmentsJson,
     duration ?? null,
     thinkingDuration ?? null,

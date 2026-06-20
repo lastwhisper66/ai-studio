@@ -4,6 +4,12 @@ import type { Message } from '@shared/types'
 
 type EncodingName = 'o200k_base' | 'cl100k_base'
 
+export interface ContextTokenBreakdown {
+  systemPrompt: number
+  history: number
+  draft: number
+}
+
 const MAX_CACHE_ENTRIES = 1000
 const tokenCountCache = new Map<string, number>()
 
@@ -42,15 +48,22 @@ export function countTokens(text: string | null | undefined, model?: string | nu
   return remember(cacheKey, count)
 }
 
+export function countMessagesTokens(
+  messages: Pick<Message, 'id' | 'content'>[],
+  model?: string | null,
+): number {
+  let total = 0
+  for (const message of messages) {
+    total += countTokens(message.content, model)
+  }
+  return total
+}
+
 export function countContextTokens(args: {
   messages: Pick<Message, 'id' | 'content'>[]
   systemPrompt?: string | null
   model?: string | null
 }): number {
   const { messages, systemPrompt, model } = args
-  let total = countTokens(systemPrompt, model)
-  for (const message of messages) {
-    total += countTokens(message.content, model)
-  }
-  return total
+  return countTokens(systemPrompt, model) + countMessagesTokens(messages, model)
 }
