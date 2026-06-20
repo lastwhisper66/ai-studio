@@ -246,12 +246,18 @@ const api = {
     name: string
     group?: string
     capabilities?: ModelCapability[]
+    contextWindow?: number | null
   }): Promise<IpcResult<ModelDefinition>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_CREATE, data),
 
   updateModelDefinition: (
     id: string,
-    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+    data: {
+      name?: string
+      group?: string
+      capabilities?: ModelCapability[]
+      contextWindow?: number | null
+    },
   ): Promise<IpcResult<ModelDefinition | undefined>> =>
     ipcRenderer.invoke(IpcChannels.MODEL_DEFINITION_UPDATE, id, data),
 

@@ -147,6 +147,11 @@ export const ModelDefinitionsPanel = forwardRef<
                     aria-label={`Select ${def.name}`}
                   />
                   <span className="min-w-0 flex-1 truncate text-sm">{def.name}</span>
+                  {def.contextWindow != null && (
+                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
+                      {def.contextWindow.toLocaleString()}
+                    </span>
+                  )}
 
                   <div className="flex gap-1">
                     {def.capabilities.map((cap) => {

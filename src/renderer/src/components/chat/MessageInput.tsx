@@ -30,9 +30,12 @@ import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { usePhraseStore } from '@renderer/stores/phraseStore'
 import { useSettingsStore } from '@renderer/stores/settingsStore'
+import { useThrottledValue } from '@renderer/hooks/useThrottledValue'
+import { countTokens } from '@renderer/lib/tokenizer'
 import { cn } from '@renderer/lib/utils'
-import type { FileData, ReasoningEffort } from '@shared/types'
+import type { ContextTokenUsage, FileData, ReasoningEffort } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import { ContextUsageRing } from './ContextUsageRing'
 
 type AttachedFile = FileData
 
@@ -45,8 +48,16 @@ interface MessageInputProps {
   ) => void
   onStop: () => void
   isStreaming: boolean
+  /** Another conversation is streaming — keep input editable but block sending
+   * (single in-flight stream at a time). */
+  sendDisabled?: boolean
   droppedFiles?: FileData[]
   onDroppedFilesConsumed?: () => void
+  committedTokenBreakdown: Pick<ContextTokenUsage, 'systemPrompt' | 'history'>
+  actualContextTokens?: ContextTokenUsage | null
+  contextWindow: number | null
+  contextModel: string
+  hasContextModel: boolean
 }
 
 type ReasoningLevel = ReasoningEffort | 'off'
@@ -371,8 +382,14 @@ export function MessageInput({
   onSend,
   onStop,
   isStreaming,
+  sendDisabled = false,
   droppedFiles,
   onDroppedFilesConsumed,
+  committedTokenBreakdown,
+  actualContextTokens,
+  contextWindow,
+  contextModel,
+  hasContextModel,
 }: MessageInputProps): React.JSX.Element {
   const { t } = useTranslation()
   const [input, setInput] = useState('')
@@ -390,6 +407,7 @@ export function MessageInput({
   const setWebSearchInStore = useConversationStore((s) => s.setWebSearch)
   const pendingWebSearch = useConversationStore((s) => s.pendingWebSearchEnabled)
   const setPendingWebSearch = useConversationStore((s) => s.setPendingWebSearch)
+  const navigateToSettings = useSettingsStore((s) => s.navigateToSettings)
   const webSearch = activeConversationId
     ? (webSearchEnabledMap[activeConversationId] ?? false)
     : pendingWebSearch
@@ -397,6 +415,43 @@ export function MessageInput({
     if (activeConversationId) setWebSearchInStore(activeConversationId, v)
     else setPendingWebSearch(v)
   }
+
+  const textAttachmentContent = useMemo(() => {
+    let content = ''
+    for (const file of attachedFiles) {
+      if (file.mimeType.startsWith('text/') || file.mimeType === 'application/json') {
+        try {
+          const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0))
+          const text = new TextDecoder('utf-8').decode(bytes)
+          content += `\n\n--- 附件: ${file.name} ---\n${text}`
+        } catch {
+          // Ignore malformed attachment payloads here; send-time handling follows the existing path.
+        }
+      }
+    }
+    return content
+  }, [attachedFiles])
+
+  const draftContent = `${input.trim()}${textAttachmentContent}`
+  const throttledDraftContent = useThrottledValue(draftContent, draftContent.length > 0)
+  const draftTokens = useMemo(
+    () => countTokens(throttledDraftContent, contextModel),
+    [contextModel, throttledDraftContent],
+  )
+  const hasDraftContent = draftContent.length > 0 || attachedFiles.length > 0
+  const liveContextTokenBreakdown = useMemo<ContextTokenUsage>(
+    () => ({
+      systemPrompt: committedTokenBreakdown.systemPrompt,
+      history: committedTokenBreakdown.history,
+      draft: draftTokens,
+      webSearch: 0,
+    }),
+    [committedTokenBreakdown.history, committedTokenBreakdown.systemPrompt, draftTokens],
+  )
+  const contextTokenBreakdown =
+    !isStreaming && !hasDraftContent && actualContextTokens
+      ? actualContextTokens
+      : liveContextTokenBreakdown
 
   // Derive placeholder count from input content
   const placeholderCount = useMemo(() => {
@@ -414,7 +469,6 @@ export function MessageInput({
   // Consume files dropped from ChatView drag-and-drop overlay
   useEffect(() => {
     if (droppedFiles && droppedFiles.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing external prop to local state
       setAttachedFiles((prev) => [...prev, ...droppedFiles])
       onDroppedFilesConsumed?.()
       textareaRef.current?.focus()
@@ -436,23 +490,13 @@ export function MessageInput({
   }, [input, isExpanded])
 
   const buildContent = (): string => {
-    let content = input.trim()
-    for (const f of attachedFiles) {
-      if (f.mimeType.startsWith('text/') || f.mimeType === 'application/json') {
-        // Correctly decode UTF-8 encoded text files
-        const bytes = Uint8Array.from(atob(f.base64), (c) => c.charCodeAt(0))
-        const text = new TextDecoder('utf-8').decode(bytes)
-        content += `\n\n--- 附件: ${f.name} ---\n${text}`
-      }
-      // Image files are sent separately via IPC payload, not embedded in text
-    }
-    return content
+    return draftContent
   }
 
   const handleSend = (): void => {
     const content = buildContent()
     if (!content && attachedFiles.length === 0) return
-    if (isStreaming) return
+    if (isStreaming || sendDisabled) return
     // Collect image files to send via IPC payload
     const imageFiles = attachedFiles.filter((f) => isImageMime(f.mimeType))
     // Use placeholder text when sending only images (images are not persisted in DB)
@@ -693,6 +737,12 @@ export function MessageInput({
 
             {/* Right: send / stop */}
             <div className="flex items-center">
+              <ContextUsageRing
+                breakdown={contextTokenBreakdown}
+                limit={contextWindow}
+                hasModel={hasContextModel}
+                onConfigure={() => navigateToSettings('model-management')}
+              />
               {isStreaming ? (
                 <Button
                   type="button"
@@ -707,7 +757,7 @@ export function MessageInput({
                   size="icon"
                   className="h-8 w-8 rounded-lg"
                   onClick={handleSend}
-                  disabled={!input.trim() && attachedFiles.length === 0}>
+                  disabled={sendDisabled || (!input.trim() && attachedFiles.length === 0)}>
                   <Send className="h-3.5 w-3.5" />
                 </Button>
               )}

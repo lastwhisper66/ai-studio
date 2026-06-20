@@ -12,6 +12,7 @@ import { getDb } from '../db/database'
 import { migration001MessagesSources } from './001-messages-sources'
 import { migration002SplitUtilityModel } from './002-split-utility-model'
 import { migration003WebSearchDefaultProvider } from './003-web-search-default-provider'
+import { migration004ContextWindow } from './004-context-window'
 
 interface Migration {
   version: number
@@ -23,6 +24,7 @@ const MIGRATIONS: Migration[] = [
   migration001MessagesSources,
   migration002SplitUtilityModel,
   migration003WebSearchDefaultProvider,
+  migration004ContextWindow,
 ]
 
 export function runMigrations(isNewDatabase: boolean = false): void {

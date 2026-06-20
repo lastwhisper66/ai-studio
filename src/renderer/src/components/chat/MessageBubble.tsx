@@ -355,7 +355,7 @@ export const MessageBubble = memo(function MessageBubble({
         {/* Image attachments rendered below the text bubble */}
         {hasImages && <AttachmentImages attachments={attachments!} />}
 
-        {/* Action bar + duration — positioned at bottom */}
+        {/* Action bar + message metrics — positioned at bottom */}
         {(showActions || showDuration) && (
           <div
             className={`mt-1 flex items-center gap-0.5 ${
@@ -451,10 +451,15 @@ export const MessageBubble = memo(function MessageBubble({
               </>
             )}
             {showDuration && (
-              <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {isStreaming ? formatDuration(elapsed) : formatDuration(duration!)}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {isStreaming ? formatDuration(elapsed) : formatDuration(duration!)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">{t('chat.duration')}</TooltipContent>
+              </Tooltip>
             )}
           </div>
         )}

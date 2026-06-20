@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   X,
   ChevronRight,
@@ -13,19 +13,33 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui
 import { useConversationStore } from '@renderer/stores/conversationStore'
 import { useAssistantStore } from '@renderer/stores/assistantStore'
 import { useProviderStore } from '@renderer/stores/providerStore'
+import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { useUserAvatar } from '@renderer/hooks/useUserAvatar'
 import { getTemplateByType } from '@renderer/components/settings/provider-templates'
+import { countMessagesTokens, countTokens } from '@renderer/lib/tokenizer'
 import { MessageList } from './MessageList'
 import { MessageInput } from './MessageInput'
 import { AssistantSettingsDialog } from './AssistantSettingsDialog'
 import { ModelPickerDialog } from './ModelPickerDialog'
-import type { FileData } from '@shared/types'
+import type { FileData, Message } from '@shared/types'
 import { isImageMime } from '@shared/types'
 
 interface ChatViewProps {
   topicCollapsed: boolean
   onToggleTopic: () => void
+}
+
+function selectContextMessages(messages: Message[], contextCount?: string): Message[] {
+  const lastDividerIdx = messages.map((m) => m.role).lastIndexOf('divider')
+  const afterDivider = lastDividerIdx >= 0 ? messages.slice(lastDividerIdx + 1) : messages
+  const nonSystemMessages = afterDivider.filter((m) => m.role === 'user' || m.role === 'assistant')
+  const limit = contextCount ? parseInt(contextCount, 10) : Number.NaN
+  if (!Number.isNaN(limit) && limit < 100) {
+    if (limit === 0) return []
+    return nonSystemMessages.length > limit ? nonSystemMessages.slice(-limit) : nonSystemMessages
+  }
+  return nonSystemMessages
 }
 
 export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): React.JSX.Element {
@@ -39,9 +53,11 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
     error,
     isLoading,
     isStreaming,
+    streamingConversationId,
     streamingContent,
     streamingReasoningContent,
     streamStartTime,
+    lastContextTokensByConversation,
     sendMessage,
     stopGeneration,
     loadMoreMessages,
@@ -53,8 +69,61 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const updateAssistant = useAssistantStore((s) => s.updateAssistant)
 
   const providers = useProviderStore((s) => s.providers)
+  const resolveModelDefinition = useModelDefinitionStore((s) => s.resolve)
+  const modelDefinitionsLoaded = useModelDefinitionStore((s) => s.isLoaded)
+  const loadModelDefinitions = useModelDefinitionStore((s) => s.load)
 
   const userAvatarUrl = useUserAvatar()
+  const messageRevision = useMemo(
+    () => messages.map((m) => `${m.id}:${m.role}:${m.content.length}:${m.content}`).join('|'),
+    [messages],
+  )
+  const [contextSource, setContextSource] = useState<{
+    conversationId: string
+    revision: string
+    messages: Message[]
+  } | null>(null)
+
+  useEffect(() => {
+    if (!modelDefinitionsLoaded) void loadModelDefinitions()
+  }, [loadModelDefinitions, modelDefinitionsLoaded])
+
+  useEffect(() => {
+    let cancelled = false
+
+    if (!activeConversationId) {
+      return
+    }
+
+    const requestedConversationId = activeConversationId
+    const requestedRevision = messageRevision
+
+    void window.api
+      .listMessages(requestedConversationId)
+      .then((result) => {
+        if (cancelled) return
+        if (result.success && result.data) {
+          setContextSource({
+            conversationId: requestedConversationId,
+            revision: requestedRevision,
+            messages: result.data,
+          })
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [activeConversationId, messageRevision])
+
+  // A stream is global (single in-flight stream), but its bubble and the stop
+  // button must only appear in the conversation it belongs to. When the user
+  // switches away mid-stream, the other conversation sees no streaming UI.
+  const isStreamingHere = isStreaming && streamingConversationId === activeConversationId
+  // A different conversation is streaming — block sending here until it finishes
+  // (single-stream model), but keep the input usable for composing.
+  const isStreamingElsewhere = isStreaming && !isStreamingHere
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId)
   const activeAssistant = activeAssistantId
@@ -69,6 +138,32 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
   const resolvedProvider = providers.find((p) => p.id === resolvedProviderId)
   const resolvedModel = resolvedModelName || t('common.noModelSet')
   const template = resolvedProvider ? getTemplateByType(resolvedProvider.type) : undefined
+  const contextWindow = resolvedModelName
+    ? (resolveModelDefinition(resolvedModelName)?.contextWindow ?? null)
+    : null
+
+  const effectiveContextSourceMessages =
+    activeConversationId &&
+    contextSource?.conversationId === activeConversationId &&
+    contextSource.revision === messageRevision
+      ? contextSource.messages
+      : messages
+
+  const committedContextMessages = useMemo(
+    () => selectContextMessages(effectiveContextSourceMessages, activeAssistant?.contextCount),
+    [effectiveContextSourceMessages, activeAssistant?.contextCount],
+  )
+
+  const committedTokenBreakdown = useMemo(
+    () => ({
+      systemPrompt: countTokens(activeAssistant?.systemPrompt, resolvedModelName),
+      history: countMessagesTokens(committedContextMessages, resolvedModelName),
+    }),
+    [activeAssistant?.systemPrompt, committedContextMessages, resolvedModelName],
+  )
+  const actualContextTokens = activeConversationId
+    ? (lastContextTokensByConversation[activeConversationId] ?? null)
+    : null
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'assistant' | 'model' | 'prompt'>(
@@ -245,7 +340,7 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
         messages={messages}
         streamingContent={streamingContent}
         streamingReasoningContent={streamingReasoningContent}
-        isStreaming={isStreaming}
+        isStreaming={isStreamingHere}
         isLoading={isLoading}
         hasActiveConversation={!!activeConversationId}
         hasMoreMessages={hasMoreMessages}
@@ -271,9 +366,15 @@ export function ChatView({ topicCollapsed, onToggleTopic }: ChatViewProps): Reac
       <MessageInput
         onSend={sendMessage}
         onStop={stopGeneration}
-        isStreaming={isStreaming}
+        isStreaming={isStreamingHere}
+        sendDisabled={isStreamingElsewhere}
         droppedFiles={droppedFiles}
         onDroppedFilesConsumed={handleDroppedFilesConsumed}
+        committedTokenBreakdown={committedTokenBreakdown}
+        actualContextTokens={actualContextTokens}
+        contextWindow={contextWindow}
+        contextModel={resolvedModelName}
+        hasContextModel={!!activeAssistant && !!resolvedModelName}
       />
 
       {/* Drag-and-drop overlay */}

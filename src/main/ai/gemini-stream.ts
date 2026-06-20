@@ -13,14 +13,13 @@ export async function streamGeminiChat(
     ...(settings.baseUrl ? { httpOptions: { baseUrl: settings.baseUrl } } : {}),
   })
 
-  // Extract system instruction from messages (first system message)
-  let systemInstruction: string | undefined
+  const systemInstructions: string[] = []
   const chatMessages: { role: 'user' | 'model'; text: string }[] = []
 
   for (const msg of messages) {
     const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
     if (msg.role === 'system') {
-      systemInstruction = content
+      systemInstructions.push(content)
     } else if (msg.role === 'user') {
       chatMessages.push({ role: 'user', text: content })
     } else if (msg.role === 'assistant') {
@@ -39,7 +38,8 @@ export async function streamGeminiChat(
     contents,
     config: {
       abortSignal: signal,
-      systemInstruction: systemInstruction || undefined,
+      systemInstruction:
+        systemInstructions.length > 0 ? systemInstructions.join('\n\n') : undefined,
       ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
       ...(settings.maxCompletionTokens !== undefined
         ? { maxOutputTokens: settings.maxCompletionTokens }

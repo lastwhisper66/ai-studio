@@ -9,6 +9,7 @@ export interface ModelDefinitionSeed {
   name: string
   group: string
   capabilities: ModelCapability[]
+  contextWindow?: number
 }
 
 export interface ModelGroupSeed {

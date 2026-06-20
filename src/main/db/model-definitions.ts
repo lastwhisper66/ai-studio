@@ -8,6 +8,7 @@ interface ModelDefinitionRow {
   name: string
   group_name: string
   capabilities: string
+  context_window: number | null
   created_at: string
   updated_at: string
 }
@@ -24,6 +25,7 @@ function rowToModelDefinition(row: ModelDefinitionRow): ModelDefinition {
     name: row.name,
     group: row.group_name,
     capabilities,
+    contextWindow: row.context_window,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -56,16 +58,23 @@ export interface CreateModelDefinitionData {
   name: string
   group?: string
   capabilities?: ModelCapability[]
+  contextWindow?: number | null
 }
 
 export function createModelDefinition(data: CreateModelDefinitionData): ModelDefinition {
   const id = randomUUID()
   getDb()
     .prepare(
-      `INSERT INTO model_definitions (id, name, group_name, capabilities)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO model_definitions (id, name, group_name, capabilities, context_window)
+       VALUES (?, ?, ?, ?, ?)`,
     )
-    .run(id, data.name, data.group ?? '', JSON.stringify(data.capabilities ?? []))
+    .run(
+      id,
+      data.name,
+      data.group ?? '',
+      JSON.stringify(data.capabilities ?? []),
+      data.contextWindow ?? null,
+    )
   return getModelDefinition(id)!
 }
 
@@ -73,6 +82,7 @@ export interface UpdateModelDefinitionData {
   name?: string
   group?: string
   capabilities?: ModelCapability[]
+  contextWindow?: number | null
 }
 
 export function updateModelDefinition(
@@ -93,6 +103,10 @@ export function updateModelDefinition(
   if (data.capabilities !== undefined) {
     fields.push('capabilities = ?')
     values.push(JSON.stringify(data.capabilities))
+  }
+  if (data.contextWindow !== undefined) {
+    fields.push('context_window = ?')
+    values.push(data.contextWindow)
   }
 
   if (fields.length === 0) return getModelDefinition(id)
@@ -154,7 +168,7 @@ export function resolveModelDefinition(modelName: string): ModelDefinition | und
  * Seed the model_definitions table with built-in catalog data.
  * Uses a version number stored in the settings table so that new models
  * added in future app releases are merged in without overwriting user edits.
- * INSERT OR IGNORE ensures existing (user-modified) rows are never touched.
+ * ON CONFLICT updates only rows whose timestamps still indicate built-in defaults.
  */
 
 export function seedModelDefinitions(): void {
@@ -166,18 +180,41 @@ export function seedModelDefinitions(): void {
   const currentVersion = row ? Number(row.value) : 0
   if (currentVersion >= MODEL_DEFINITIONS_SEED_VERSION) return
 
-  const insert = db.prepare(
-    `INSERT INTO model_definitions (id, name, group_name, capabilities)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(name) DO UPDATE SET
-       group_name = excluded.group_name,
-       capabilities = excluded.capabilities,
-       updated_at = datetime('now')
-     WHERE updated_at = created_at`,
-  )
+  const columns = db.pragma('table_info(model_definitions)') as Array<{ name: string }>
+  const hasContextWindow = columns.some((column) => column.name === 'context_window')
+
+  const insert = hasContextWindow
+    ? db.prepare(
+        `INSERT INTO model_definitions (id, name, group_name, capabilities, context_window)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(name) DO UPDATE SET
+           group_name = excluded.group_name,
+           capabilities = excluded.capabilities,
+           context_window = excluded.context_window,
+           updated_at = datetime('now')
+         WHERE updated_at = created_at`,
+      )
+    : db.prepare(
+        `INSERT INTO model_definitions (id, name, group_name, capabilities)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(name) DO UPDATE SET
+           group_name = excluded.group_name,
+           capabilities = excluded.capabilities
+         WHERE updated_at = created_at`,
+      )
   const tx = db.transaction(() => {
-    for (const s of MODEL_DEFINITION_SEEDS) {
-      insert.run(randomUUID(), s.name, s.group, JSON.stringify(s.capabilities))
+    for (const seed of MODEL_DEFINITION_SEEDS) {
+      if (hasContextWindow) {
+        insert.run(
+          randomUUID(),
+          seed.name,
+          seed.group,
+          JSON.stringify(seed.capabilities),
+          seed.contextWindow ?? null,
+        )
+      } else {
+        insert.run(randomUUID(), seed.name, seed.group, JSON.stringify(seed.capabilities))
+      }
     }
     db.prepare(
       `INSERT INTO settings (key, value) VALUES ('model_definitions_seed_version', ?)

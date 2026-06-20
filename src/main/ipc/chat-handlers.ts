@@ -11,8 +11,10 @@ import type {
   FileData,
   ApiSettings,
   WebSearchResult,
+  ContextTokenUsage,
 } from '@shared/types'
 import { isImageMime } from '@shared/types'
+import { countContentTokens, countTokens } from '@shared/tokenizer'
 import { ERROR_CODES } from '@shared/errors'
 import { toLocalizedError } from '../errors'
 import { listMessages, createMessage } from '../db/messages'
@@ -59,6 +61,36 @@ function extractLastUserText(messages: ChatCompletionMessageParam[]): string {
   return ''
 }
 
+function estimateContextTokenUsage(args: {
+  apiMessages: ChatCompletionMessageParam[]
+  systemPrompt: string
+  webSearchContent: string | null
+  model: string
+}): ContextTokenUsage {
+  const conversationMessages = args.apiMessages.filter(
+    (message) => message.role === 'user' || message.role === 'assistant',
+  )
+  const lastUserIndex = conversationMessages.map((message) => message.role).lastIndexOf('user')
+  let history = 0
+  let draft = 0
+
+  for (let index = 0; index < conversationMessages.length; index++) {
+    const tokens = countContentTokens(conversationMessages[index].content, args.model)
+    if (index === lastUserIndex) {
+      draft += tokens
+    } else {
+      history += tokens
+    }
+  }
+
+  return {
+    systemPrompt: countTokens(args.systemPrompt, args.model),
+    history,
+    draft,
+    webSearch: countTokens(args.webSearchContent, args.model),
+  }
+}
+
 export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,
@@ -71,6 +103,8 @@ export function registerChatHandlers(): void {
       let reasoningStartTime: number | null = null
       let thinkingDuration: number | null = null
       let webSearchSources: WebSearchResult[] | null = null
+      let webSearchContextContent: string | null = null
+      let contextTokens: ContextTokenUsage | null = null
 
       try {
         const allMessages = listMessages(conversationId)
@@ -244,6 +278,7 @@ export function registerChatHandlers(): void {
               if (results.length > 0) {
                 webSearchSources = results
                 const ctxMsg = buildSearchContextMessage(results)
+                webSearchContextContent = typeof ctxMsg.content === 'string' ? ctxMsg.content : null
                 const insertIdx = apiMessages.length > 0 && apiMessages[0].role === 'system' ? 1 : 0
                 apiMessages.splice(insertIdx, 0, ctxMsg)
               } else {
@@ -256,6 +291,13 @@ export function registerChatHandlers(): void {
             console.info('[chat] web search requested but not configured/enabled')
           }
         }
+
+        contextTokens = estimateContextTokenUsage({
+          apiMessages,
+          systemPrompt: settings.systemPrompt,
+          webSearchContent: webSearchContextContent,
+          model: settings.model,
+        })
 
         await streamChat(
           {
@@ -299,7 +341,11 @@ export function registerChatHandlers(): void {
           sources: webSearchSources ?? undefined,
         })
         if (!sender.isDestroyed()) {
-          sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })
+          sender.send(IpcChannels.CHAT_STREAM_END, {
+            conversationId,
+            message: savedMessage,
+            contextTokens,
+          })
         }
 
         showCompletionNotification('chat')
@@ -339,7 +385,11 @@ export function registerChatHandlers(): void {
             })
           }
           if (!sender.isDestroyed()) {
-            sender.send(IpcChannels.CHAT_STREAM_END, { conversationId, message: savedMessage })
+            sender.send(IpcChannels.CHAT_STREAM_END, {
+              conversationId,
+              message: savedMessage,
+              contextTokens,
+            })
           }
           return { success: true }
         }
