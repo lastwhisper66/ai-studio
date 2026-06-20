@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.10.0](https://github.com/lastwhisper66/ai-studio/compare/v1.9.0...v1.10.0) (2026-06-20)
+
+
+### Features
+
+* **.gitignore:** add ignore rules for CodeGraph data files ([dda2571](https://github.com/lastwhisper66/ai-studio/commit/dda2571e4cc188906314210157c7df47c4e70485))
+* **chat:** token usage tracking & context window utilization ([605cb03](https://github.com/lastwhisper66/ai-studio/commit/605cb037b1aeac74c3bd91b5bcc8917252c08b5d))
+* **chat:** track token usage and context window utilization ([774c79f](https://github.com/lastwhisper66/ai-studio/commit/774c79f6b205a3cb357fdfb3f71db9a4c0bdb52f))
+
+
+### Bug Fixes
+
+* **chat:** bind streaming UI to its owning conversation ([e66a60d](https://github.com/lastwhisper66/ai-studio/commit/e66a60da4a0b6ae8bfc2184b59f9b4f74db12708))
+* **chat:** estimate final request context tokens ([2498808](https://github.com/lastwhisper66/ai-studio/commit/2498808fbc1a32197f5e6d82857868dcf801e862))
+* **chat:** keep finished message out of the switched-to conversation ([a842be4](https://github.com/lastwhisper66/ai-studio/commit/a842be44cdd49d43d2fb96109b1c5f111117dafd))
+* **selection:** stop toolbar flicker on long Ctrl hold ([84a7ecd](https://github.com/lastwhisper66/ai-studio/commit/84a7ecd8a432c26c9b3301c3143201b2229d09e2))
+
+
+### Code Refactoring
+
+* **chat:** estimate context tokens in input ring ([8122c91](https://github.com/lastwhisper66/ai-studio/commit/8122c91e04bbfd526051a0355b86e6a4fe05a4ad))
+
 ## [1.9.0](https://github.com/lastwhisper66/ai-studio/compare/v1.8.0...v1.9.0) (2026-06-13)
 
 
