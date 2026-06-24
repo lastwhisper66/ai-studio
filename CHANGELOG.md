@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.0](https://github.com/lastwhisper66/ai-studio/compare/v1.10.0...v1.11.0) (2026-06-24)
+
+
+### Features
+
+* **model-library:** sync model catalog from OpenRouter ([a753ef5](https://github.com/lastwhisper66/ai-studio/commit/a753ef5657624697501f57936c836833051a951c))
+* **model-library:** sync model catalog from OpenRouter ([da51e9c](https://github.com/lastwhisper66/ai-studio/commit/da51e9c586da678464998e3085420fc338fe1a58))
+
 ## [1.10.0](https://github.com/lastwhisper66/ai-studio/compare/v1.9.0...v1.10.0) (2026-06-20)
 
 
