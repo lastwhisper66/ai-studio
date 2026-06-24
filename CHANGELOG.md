@@ -2,151 +2,137 @@
 
 ## [1.10.0](https://github.com/lastwhisper66/ai-studio/compare/v1.9.0...v1.10.0) (2026-06-20)
 
-
 ### Features
 
-* **.gitignore:** add ignore rules for CodeGraph data files ([dda2571](https://github.com/lastwhisper66/ai-studio/commit/dda2571e4cc188906314210157c7df47c4e70485))
-* **chat:** token usage tracking & context window utilization ([605cb03](https://github.com/lastwhisper66/ai-studio/commit/605cb037b1aeac74c3bd91b5bcc8917252c08b5d))
-* **chat:** track token usage and context window utilization ([774c79f](https://github.com/lastwhisper66/ai-studio/commit/774c79f6b205a3cb357fdfb3f71db9a4c0bdb52f))
-
+- **.gitignore:** add ignore rules for CodeGraph data files ([dda2571](https://github.com/lastwhisper66/ai-studio/commit/dda2571e4cc188906314210157c7df47c4e70485))
+- **chat:** token usage tracking & context window utilization ([605cb03](https://github.com/lastwhisper66/ai-studio/commit/605cb037b1aeac74c3bd91b5bcc8917252c08b5d))
+- **chat:** track token usage and context window utilization ([774c79f](https://github.com/lastwhisper66/ai-studio/commit/774c79f6b205a3cb357fdfb3f71db9a4c0bdb52f))
 
 ### Bug Fixes
 
-* **chat:** bind streaming UI to its owning conversation ([e66a60d](https://github.com/lastwhisper66/ai-studio/commit/e66a60da4a0b6ae8bfc2184b59f9b4f74db12708))
-* **chat:** estimate final request context tokens ([2498808](https://github.com/lastwhisper66/ai-studio/commit/2498808fbc1a32197f5e6d82857868dcf801e862))
-* **chat:** keep finished message out of the switched-to conversation ([a842be4](https://github.com/lastwhisper66/ai-studio/commit/a842be44cdd49d43d2fb96109b1c5f111117dafd))
-* **selection:** stop toolbar flicker on long Ctrl hold ([84a7ecd](https://github.com/lastwhisper66/ai-studio/commit/84a7ecd8a432c26c9b3301c3143201b2229d09e2))
-
+- **chat:** bind streaming UI to its owning conversation ([e66a60d](https://github.com/lastwhisper66/ai-studio/commit/e66a60da4a0b6ae8bfc2184b59f9b4f74db12708))
+- **chat:** estimate final request context tokens ([2498808](https://github.com/lastwhisper66/ai-studio/commit/2498808fbc1a32197f5e6d82857868dcf801e862))
+- **chat:** keep finished message out of the switched-to conversation ([a842be4](https://github.com/lastwhisper66/ai-studio/commit/a842be44cdd49d43d2fb96109b1c5f111117dafd))
+- **selection:** stop toolbar flicker on long Ctrl hold ([84a7ecd](https://github.com/lastwhisper66/ai-studio/commit/84a7ecd8a432c26c9b3301c3143201b2229d09e2))
 
 ### Code Refactoring
 
-* **chat:** estimate context tokens in input ring ([8122c91](https://github.com/lastwhisper66/ai-studio/commit/8122c91e04bbfd526051a0355b86e6a4fe05a4ad))
+- **chat:** estimate context tokens in input ring ([8122c91](https://github.com/lastwhisper66/ai-studio/commit/8122c91e04bbfd526051a0355b86e6a4fe05a4ad))
 
 ## [1.9.0](https://github.com/lastwhisper66/ai-studio/compare/v1.8.0...v1.9.0) (2026-06-13)
 
-
 ### Features
 
-* **settings:** polish utility-models layout and model selection ([3250ec8](https://github.com/lastwhisper66/ai-studio/commit/3250ec8cf4e2fa5852c0885fdb1bb353477cb717))
-* **settings:** polish utility-models layout and model selection ([22520e0](https://github.com/lastwhisper66/ai-studio/commit/22520e0bda3609248e90276a585f8d0e80a9f364))
+- **settings:** polish utility-models layout and model selection ([3250ec8](https://github.com/lastwhisper66/ai-studio/commit/3250ec8cf4e2fa5852c0885fdb1bb353477cb717))
+- **settings:** polish utility-models layout and model selection ([22520e0](https://github.com/lastwhisper66/ai-studio/commit/22520e0bda3609248e90276a585f8d0e80a9f364))
 
 ## [1.8.0](https://github.com/lastwhisper66/ai-studio/compare/v1.7.1...v1.8.0) (2026-05-21)
 
-
 ### Features
 
-* **settings:** split utility model per task; always-visible web-search toggle ([f48d6ee](https://github.com/lastwhisper66/ai-studio/commit/f48d6ee3e27d847f3e16334247af3dfddf6a6c54))
-* web search integration with multi-provider settings UI ([b1b2e60](https://github.com/lastwhisper66/ai-studio/commit/b1b2e60784e09b0e79a6bb98b65825b7eaaa54c8))
-* web-search picker popover + citation rendering fixes ([d3806d1](https://github.com/lastwhisper66/ai-studio/commit/d3806d197ababd31ccc872ec69216bff105030ae))
-* **web-search:** add Brave provider ([e6948e5](https://github.com/lastwhisper66/ai-studio/commit/e6948e59285d8a5c10066f8f2cefe78395a5ee08))
-* **web-search:** add Exa provider ([7672946](https://github.com/lastwhisper66/ai-studio/commit/7672946b37f87d280422a3c31cd9ee1bec748454))
-* **web-search:** add LLM-based query rewriter ([83c1a0f](https://github.com/lastwhisper66/ai-studio/commit/83c1a0f510b937757016a575789de8752a30433a))
-* **web-search:** add module skeleton with Tavily provider and context builder ([0f9033d](https://github.com/lastwhisper66/ai-studio/commit/0f9033d81d7a77649202e260e310bd1580bedc5d))
-* **web-search:** add SearXNG provider ([f15732f](https://github.com/lastwhisper66/ai-studio/commit/f15732f063e55e59024c9b414d1bcf27b5149fe0))
-* **web-search:** add shared types, IPC channel, error codes ([16753f6](https://github.com/lastwhisper66/ai-studio/commit/16753f67ccdd4be1347fc2d468810879fdb14f96))
-* **web-search:** add sources column to messages table ([b3e1c71](https://github.com/lastwhisper66/ai-studio/commit/b3e1c71aeaa76d3fbbac9df81a49497babc5754a))
-* **web-search:** add utility-llm; route title generation through it ([a23ac61](https://github.com/lastwhisper66/ai-studio/commit/a23ac6152d5fec60767b733cd12dc16174c80c50))
-* **web-search:** add Web Search settings section and routing ([5e63909](https://github.com/lastwhisper66/ai-studio/commit/5e63909ef86839833b8b7cd1fe4db4a0f05422c2))
-* **web-search:** add web-search:test-connection IPC ([fecdf94](https://github.com/lastwhisper66/ai-studio/commit/fecdf947cb7996e492afd92d405897c99bff8e02))
-* **web-search:** add zh-CN and en i18n strings ([c5ef9d1](https://github.com/lastwhisper66/ai-studio/commit/c5ef9d189216f9a3a219adda07721ae6f15b2fe6))
-* **web-search:** encrypt web-search API keys via safeStorage ([f7c243c](https://github.com/lastwhisper66/ai-studio/commit/f7c243ccc14218e668ab267de9132b3a34b98825))
-* **web-search:** extract useWebSearchTestConnection hook ([952f80c](https://github.com/lastwhisper66/ai-studio/commit/952f80c0711b85583ea3ffa637bc0156dcde8d79))
-* **web-search:** full settings UI with provider tabs and utility model ([7ec425e](https://github.com/lastwhisper66/ai-studio/commit/7ec425e6184060a52f1642dc217d4d771ad867db))
-* **web-search:** i18n strings for tabbed settings UI ([c82062e](https://github.com/lastwhisper66/ai-studio/commit/c82062e199b68a01d516966e597b2bfaed2ad4e2))
-* **web-search:** linkify [n] citation markers in MarkdownRenderer ([f78fcd1](https://github.com/lastwhisper66/ai-studio/commit/f78fcd1d265f38ad66a7d7990a5efc18f1e789f2))
-* **web-search:** loadWebSearchSettings reads defaultProvider ([7f7ef07](https://github.com/lastwhisper66/ai-studio/commit/7f7ef0729f52a5503e3a2f18b2fc54ab6f3d3b66))
-* **web-search:** MessageBubble renders sources panel with cite-n anchors ([42773f7](https://github.com/lastwhisper66/ai-studio/commit/42773f7b2c3f1cb7d809cb01bd363a2545074b11))
-* **web-search:** MessageInput Globe wired to store + global enable gate ([8370946](https://github.com/lastwhisper66/ai-studio/commit/83709461857dbad02d66fc06902000015ebaa5f8))
-* **web-search:** MessageInput uses defaultProvider ([8835d85](https://github.com/lastwhisper66/ai-studio/commit/8835d854b5742989fa16142625c961be80bf983c))
-* **web-search:** migration 003 backfill defaultProvider ([ebeec0d](https://github.com/lastwhisper66/ai-studio/commit/ebeec0db9c295cc4dbc348fa7f64dd8ce1f407c5))
-* **web-search:** per-conversation toggle state in conversationStore ([bd7022a](https://github.com/lastwhisper66/ai-studio/commit/bd7022ae426a62d7030b1b3deb24dab653ceaadf))
-* **web-search:** per-provider credential forms ([77dcd06](https://github.com/lastwhisper66/ai-studio/commit/77dcd069cb27f999d9f92bf0f5db05e9f9c8285c))
-* **web-search:** pre-search pipeline in chat handler ([cb6d867](https://github.com/lastwhisper66/ai-studio/commit/cb6d867a3605232d3837af28e1a957edf3bf46fd))
-* **web-search:** two-column WebSearchSection shell ([534e344](https://github.com/lastwhisper66/ai-studio/commit/534e3444b77f1db77dba9b63d9170a2e8545a5c0))
-* **web-search:** WebSearchCommonParams component ([ff7dcd1](https://github.com/lastwhisper66/ai-studio/commit/ff7dcd1b4d36ae3fd49b945211ee4fe2401712e0))
-* **web-search:** WebSearchHeader default-provider selector ([dc972ba](https://github.com/lastwhisper66/ai-studio/commit/dc972ba5c8a0660cb94521ae6cd9e09f01a7e613))
-* **web-search:** WebSearchTabList static tab nav ([6c98012](https://github.com/lastwhisper66/ai-studio/commit/6c980124aee72a9f71f6d13a3bfb78ba98778446))
-* **web-search:** wire new section, drop monolithic file ([fdd3913](https://github.com/lastwhisper66/ai-studio/commit/fdd39132da213fde6735dedfc192fce457c9f9c5))
-
+- **settings:** split utility model per task; always-visible web-search toggle ([f48d6ee](https://github.com/lastwhisper66/ai-studio/commit/f48d6ee3e27d847f3e16334247af3dfddf6a6c54))
+- web search integration with multi-provider settings UI ([b1b2e60](https://github.com/lastwhisper66/ai-studio/commit/b1b2e60784e09b0e79a6bb98b65825b7eaaa54c8))
+- web-search picker popover + citation rendering fixes ([d3806d1](https://github.com/lastwhisper66/ai-studio/commit/d3806d197ababd31ccc872ec69216bff105030ae))
+- **web-search:** add Brave provider ([e6948e5](https://github.com/lastwhisper66/ai-studio/commit/e6948e59285d8a5c10066f8f2cefe78395a5ee08))
+- **web-search:** add Exa provider ([7672946](https://github.com/lastwhisper66/ai-studio/commit/7672946b37f87d280422a3c31cd9ee1bec748454))
+- **web-search:** add LLM-based query rewriter ([83c1a0f](https://github.com/lastwhisper66/ai-studio/commit/83c1a0f510b937757016a575789de8752a30433a))
+- **web-search:** add module skeleton with Tavily provider and context builder ([0f9033d](https://github.com/lastwhisper66/ai-studio/commit/0f9033d81d7a77649202e260e310bd1580bedc5d))
+- **web-search:** add SearXNG provider ([f15732f](https://github.com/lastwhisper66/ai-studio/commit/f15732f063e55e59024c9b414d1bcf27b5149fe0))
+- **web-search:** add shared types, IPC channel, error codes ([16753f6](https://github.com/lastwhisper66/ai-studio/commit/16753f67ccdd4be1347fc2d468810879fdb14f96))
+- **web-search:** add sources column to messages table ([b3e1c71](https://github.com/lastwhisper66/ai-studio/commit/b3e1c71aeaa76d3fbbac9df81a49497babc5754a))
+- **web-search:** add utility-llm; route title generation through it ([a23ac61](https://github.com/lastwhisper66/ai-studio/commit/a23ac6152d5fec60767b733cd12dc16174c80c50))
+- **web-search:** add Web Search settings section and routing ([5e63909](https://github.com/lastwhisper66/ai-studio/commit/5e63909ef86839833b8b7cd1fe4db4a0f05422c2))
+- **web-search:** add web-search:test-connection IPC ([fecdf94](https://github.com/lastwhisper66/ai-studio/commit/fecdf947cb7996e492afd92d405897c99bff8e02))
+- **web-search:** add zh-CN and en i18n strings ([c5ef9d1](https://github.com/lastwhisper66/ai-studio/commit/c5ef9d189216f9a3a219adda07721ae6f15b2fe6))
+- **web-search:** encrypt web-search API keys via safeStorage ([f7c243c](https://github.com/lastwhisper66/ai-studio/commit/f7c243ccc14218e668ab267de9132b3a34b98825))
+- **web-search:** extract useWebSearchTestConnection hook ([952f80c](https://github.com/lastwhisper66/ai-studio/commit/952f80c0711b85583ea3ffa637bc0156dcde8d79))
+- **web-search:** full settings UI with provider tabs and utility model ([7ec425e](https://github.com/lastwhisper66/ai-studio/commit/7ec425e6184060a52f1642dc217d4d771ad867db))
+- **web-search:** i18n strings for tabbed settings UI ([c82062e](https://github.com/lastwhisper66/ai-studio/commit/c82062e199b68a01d516966e597b2bfaed2ad4e2))
+- **web-search:** linkify [n] citation markers in MarkdownRenderer ([f78fcd1](https://github.com/lastwhisper66/ai-studio/commit/f78fcd1d265f38ad66a7d7990a5efc18f1e789f2))
+- **web-search:** loadWebSearchSettings reads defaultProvider ([7f7ef07](https://github.com/lastwhisper66/ai-studio/commit/7f7ef0729f52a5503e3a2f18b2fc54ab6f3d3b66))
+- **web-search:** MessageBubble renders sources panel with cite-n anchors ([42773f7](https://github.com/lastwhisper66/ai-studio/commit/42773f7b2c3f1cb7d809cb01bd363a2545074b11))
+- **web-search:** MessageInput Globe wired to store + global enable gate ([8370946](https://github.com/lastwhisper66/ai-studio/commit/83709461857dbad02d66fc06902000015ebaa5f8))
+- **web-search:** MessageInput uses defaultProvider ([8835d85](https://github.com/lastwhisper66/ai-studio/commit/8835d854b5742989fa16142625c961be80bf983c))
+- **web-search:** migration 003 backfill defaultProvider ([ebeec0d](https://github.com/lastwhisper66/ai-studio/commit/ebeec0db9c295cc4dbc348fa7f64dd8ce1f407c5))
+- **web-search:** per-conversation toggle state in conversationStore ([bd7022a](https://github.com/lastwhisper66/ai-studio/commit/bd7022ae426a62d7030b1b3deb24dab653ceaadf))
+- **web-search:** per-provider credential forms ([77dcd06](https://github.com/lastwhisper66/ai-studio/commit/77dcd069cb27f999d9f92bf0f5db05e9f9c8285c))
+- **web-search:** pre-search pipeline in chat handler ([cb6d867](https://github.com/lastwhisper66/ai-studio/commit/cb6d867a3605232d3837af28e1a957edf3bf46fd))
+- **web-search:** two-column WebSearchSection shell ([534e344](https://github.com/lastwhisper66/ai-studio/commit/534e3444b77f1db77dba9b63d9170a2e8545a5c0))
+- **web-search:** WebSearchCommonParams component ([ff7dcd1](https://github.com/lastwhisper66/ai-studio/commit/ff7dcd1b4d36ae3fd49b945211ee4fe2401712e0))
+- **web-search:** WebSearchHeader default-provider selector ([dc972ba](https://github.com/lastwhisper66/ai-studio/commit/dc972ba5c8a0660cb94521ae6cd9e09f01a7e613))
+- **web-search:** WebSearchTabList static tab nav ([6c98012](https://github.com/lastwhisper66/ai-studio/commit/6c980124aee72a9f71f6d13a3bfb78ba98778446))
+- **web-search:** wire new section, drop monolithic file ([fdd3913](https://github.com/lastwhisper66/ai-studio/commit/fdd39132da213fde6735dedfc192fce457c9f9c5))
 
 ### Bug Fixes
 
-* **web-search:** surface real error in test connection ([c918e54](https://github.com/lastwhisper66/ai-studio/commit/c918e5484dd7a3cfeb5f93057d8b083fd11edb12))
+- **web-search:** surface real error in test connection ([c918e54](https://github.com/lastwhisper66/ai-studio/commit/c918e5484dd7a3cfeb5f93057d8b083fd11edb12))
 
 ## [1.7.1](https://github.com/lastwhisper66/ai-studio/compare/v1.7.0...v1.7.1) (2026-05-18)
 
-
 ### Code Refactoring
 
-* **user-profile:** replace blur autosave with explicit save button ([95d4b01](https://github.com/lastwhisper66/ai-studio/commit/95d4b0142132d69e6ee91da90f7666a75bea2a67))
+- **user-profile:** replace blur autosave with explicit save button ([95d4b01](https://github.com/lastwhisper66/ai-studio/commit/95d4b0142132d69e6ee91da90f7666a75bea2a67))
 
 ## [1.7.0](https://github.com/lastwhisper66/ai-studio/compare/v1.6.2...v1.7.0) (2026-05-17)
 
-
 ### Features
 
-* **db:** seed assistant templates in seedDatabaseDefaults ([77af984](https://github.com/lastwhisper66/ai-studio/commit/77af984d8e583b2776cc2ce9da4ed2ae591c154f))
-* **migrate:** promote model_definitions.group_name into model_groups ([61650df](https://github.com/lastwhisper66/ai-studio/commit/61650dfd190bedd18d80a66c5e5b11fcd6036dd9))
-* **modelGroupStore:** add reorder() and resolveRule() ([303887c](https://github.com/lastwhisper66/ai-studio/commit/303887c112a7c118157aa412b4d62d1280178a45))
-* **remote-model-dialog:** order groups by model_groups.sort_order ([cb4cf43](https://github.com/lastwhisper66/ai-studio/commit/cb4cf430a6776173fb5605dbefdcf55b26de642c))
-* **settings:** add BatchToolbar for model definitions ([c2bed09](https://github.com/lastwhisper66/ai-studio/commit/c2bed098f40b0baffb1b61e704e34135d17a771c))
-* **settings:** add GroupRulesPanel with drag-sort and pseudo-nodes ([b8517da](https://github.com/lastwhisper66/ai-studio/commit/b8517da0939552fcc91510f3552b514673f2e242))
-* **settings:** add MatchPreviewBar component ([41f10c7](https://github.com/lastwhisper66/ai-studio/commit/41f10c704db32f67252ca9b1e2677d0ac5d6a459))
-* **settings:** add ModelDefinitionsPanel with batch selection ([201c7e9](https://github.com/lastwhisper66/ai-studio/commit/201c7e9fb6b5417f8f966e4393e1cb9fdbd4426f))
-* **settings:** add ModelManagementSection (two-column merged page) ([114f62f](https://github.com/lastwhisper66/ai-studio/commit/114f62f02f06a8276d026c69bafd8fa1b67e5516))
-* **settings:** extract ModelDefinitionDialog (no group field) ([2c471ce](https://github.com/lastwhisper66/ai-studio/commit/2c471cebffdf72e4e480e5586396ca2b43ccae7a))
-* **settings:** extract ModelGroupDialog into its own file ([f320b40](https://github.com/lastwhisper66/ai-studio/commit/f320b4009fe6967c267cf27a74d41b645dcae098))
-* **settings:** improve BatchToolbar UX and drop unused capabilities ([dfb9e9c](https://github.com/lastwhisper66/ai-studio/commit/dfb9e9c5d4900e5ebd18d724d08115c703840e0a))
-* **settings:** switch SettingsSidebar entry to model-management ([bf54fc3](https://github.com/lastwhisper66/ai-studio/commit/bf54fc31d1016676995e345d788b2dba4437b5b9))
-* **theme:** default to system theme on first launch ([e14f1f6](https://github.com/lastwhisper66/ai-studio/commit/e14f1f6c69232a0db81292f5a12afe1a8af0369c))
-* **window:** prompt for close behavior on first close ([a00d79f](https://github.com/lastwhisper66/ai-studio/commit/a00d79f76dc3de0534207dac0cfd5dbe7814239f))
-
+- **db:** seed assistant templates in seedDatabaseDefaults ([77af984](https://github.com/lastwhisper66/ai-studio/commit/77af984d8e583b2776cc2ce9da4ed2ae591c154f))
+- **migrate:** promote model_definitions.group_name into model_groups ([61650df](https://github.com/lastwhisper66/ai-studio/commit/61650dfd190bedd18d80a66c5e5b11fcd6036dd9))
+- **modelGroupStore:** add reorder() and resolveRule() ([303887c](https://github.com/lastwhisper66/ai-studio/commit/303887c112a7c118157aa412b4d62d1280178a45))
+- **remote-model-dialog:** order groups by model_groups.sort_order ([cb4cf43](https://github.com/lastwhisper66/ai-studio/commit/cb4cf430a6776173fb5605dbefdcf55b26de642c))
+- **settings:** add BatchToolbar for model definitions ([c2bed09](https://github.com/lastwhisper66/ai-studio/commit/c2bed098f40b0baffb1b61e704e34135d17a771c))
+- **settings:** add GroupRulesPanel with drag-sort and pseudo-nodes ([b8517da](https://github.com/lastwhisper66/ai-studio/commit/b8517da0939552fcc91510f3552b514673f2e242))
+- **settings:** add MatchPreviewBar component ([41f10c7](https://github.com/lastwhisper66/ai-studio/commit/41f10c704db32f67252ca9b1e2677d0ac5d6a459))
+- **settings:** add ModelDefinitionsPanel with batch selection ([201c7e9](https://github.com/lastwhisper66/ai-studio/commit/201c7e9fb6b5417f8f966e4393e1cb9fdbd4426f))
+- **settings:** add ModelManagementSection (two-column merged page) ([114f62f](https://github.com/lastwhisper66/ai-studio/commit/114f62f02f06a8276d026c69bafd8fa1b67e5516))
+- **settings:** extract ModelDefinitionDialog (no group field) ([2c471ce](https://github.com/lastwhisper66/ai-studio/commit/2c471cebffdf72e4e480e5586396ca2b43ccae7a))
+- **settings:** extract ModelGroupDialog into its own file ([f320b40](https://github.com/lastwhisper66/ai-studio/commit/f320b4009fe6967c267cf27a74d41b645dcae098))
+- **settings:** improve BatchToolbar UX and drop unused capabilities ([dfb9e9c](https://github.com/lastwhisper66/ai-studio/commit/dfb9e9c5d4900e5ebd18d724d08115c703840e0a))
+- **settings:** switch SettingsSidebar entry to model-management ([bf54fc3](https://github.com/lastwhisper66/ai-studio/commit/bf54fc31d1016676995e345d788b2dba4437b5b9))
+- **theme:** default to system theme on first launch ([e14f1f6](https://github.com/lastwhisper66/ai-studio/commit/e14f1f6c69232a0db81292f5a12afe1a8af0369c))
+- **window:** prompt for close behavior on first close ([a00d79f](https://github.com/lastwhisper66/ai-studio/commit/a00d79f76dc3de0534207dac0cfd5dbe7814239f))
 
 ### Bug Fixes
 
-* **capability-config:** distinct icons for free/embedding/reranking ([da3dfe5](https://github.com/lastwhisper66/ai-studio/commit/da3dfe5f3aeb123497a3eb15f5ec570cde5f6000))
-* **translate:** store native language labels in translation history ([b575b6a](https://github.com/lastwhisper66/ai-studio/commit/b575b6ab0cac3832be65ab78aae972915b30e5d9))
-
+- **capability-config:** distinct icons for free/embedding/reranking ([da3dfe5](https://github.com/lastwhisper66/ai-studio/commit/da3dfe5f3aeb123497a3eb15f5ec570cde5f6000))
+- **translate:** store native language labels in translation history ([b575b6a](https://github.com/lastwhisper66/ai-studio/commit/b575b6ab0cac3832be65ab78aae972915b30e5d9))
 
 ### Code Refactoring
 
-* **builtins:** shorten quick action names, drop selection Polish ([c1e06bc](https://github.com/lastwhisper66/ai-studio/commit/c1e06bc4e6c4ce1cbe27a85cfe40d84392eba6e6))
-* **migrate:** switch to PRAGMA user_version-based scheduler ([6c09fc1](https://github.com/lastwhisper66/ai-studio/commit/6c09fc1c2562088807f7caef85da899133fcd67f))
-* **model-catalog:** coalesce model groups by vendor ([25a5c8c](https://github.com/lastwhisper66/ai-studio/commit/25a5c8c303550bc5918e75d1f2908b28fb7d2dd8))
-* **model-definitions:** drop unused provider_types field ([de849f0](https://github.com/lastwhisper66/ai-studio/commit/de849f04e22b05d4e06fba6a17dd9078833ac77b))
-* **translate:** drop result/history banner headers, float buttons ([5fa86ef](https://github.com/lastwhisper66/ai-studio/commit/5fa86eff552ef625f108c6d8bab7dbaf89e1a2de))
-* **types:** mark ModelDefinition.group as deprecated ([7992149](https://github.com/lastwhisper66/ai-studio/commit/79921499602cf37ddaf5423dcdf7c495f44a3878))
-* **window:** simplify close-behavior dialog to two-button footer ([8bae1a5](https://github.com/lastwhisper66/ai-studio/commit/8bae1a5c4297260527637da44c2a9c286d5a62b3))
+- **builtins:** shorten quick action names, drop selection Polish ([c1e06bc](https://github.com/lastwhisper66/ai-studio/commit/c1e06bc4e6c4ce1cbe27a85cfe40d84392eba6e6))
+- **migrate:** switch to PRAGMA user_version-based scheduler ([6c09fc1](https://github.com/lastwhisper66/ai-studio/commit/6c09fc1c2562088807f7caef85da899133fcd67f))
+- **model-catalog:** coalesce model groups by vendor ([25a5c8c](https://github.com/lastwhisper66/ai-studio/commit/25a5c8c303550bc5918e75d1f2908b28fb7d2dd8))
+- **model-definitions:** drop unused provider_types field ([de849f0](https://github.com/lastwhisper66/ai-studio/commit/de849f04e22b05d4e06fba6a17dd9078833ac77b))
+- **translate:** drop result/history banner headers, float buttons ([5fa86ef](https://github.com/lastwhisper66/ai-studio/commit/5fa86eff552ef625f108c6d8bab7dbaf89e1a2de))
+- **types:** mark ModelDefinition.group as deprecated ([7992149](https://github.com/lastwhisper66/ai-studio/commit/79921499602cf37ddaf5423dcdf7c495f44a3878))
+- **window:** simplify close-behavior dialog to two-button footer ([8bae1a5](https://github.com/lastwhisper66/ai-studio/commit/8bae1a5c4297260527637da44c2a9c286d5a62b3))
 
 ## [1.6.2](https://github.com/lastwhisper66/ai-studio/compare/v1.6.1...v1.6.2) (2026-05-16)
 
-
 ### Bug Fixes
 
-* **tray:** tear down tray before closeDatabase() to fix quit-time crash ([bb685d9](https://github.com/lastwhisper66/ai-studio/commit/bb685d9eccc241bdbf7a481cda53158fdbb5f5c2))
-* **tray:** tear down tray before closeDatabase() to fix quit-time crash ([ed073a5](https://github.com/lastwhisper66/ai-studio/commit/ed073a50b3e696a2918efa7335bf17a455dc4260))
+- **tray:** tear down tray before closeDatabase() to fix quit-time crash ([bb685d9](https://github.com/lastwhisper66/ai-studio/commit/bb685d9eccc241bdbf7a481cda53158fdbb5f5c2))
+- **tray:** tear down tray before closeDatabase() to fix quit-time crash ([ed073a5](https://github.com/lastwhisper66/ai-studio/commit/ed073a50b3e696a2918efa7335bf17a455dc4260))
 
 ## [1.6.1](https://github.com/lastwhisper66/ai-studio/compare/v1.6.0...v1.6.1) (2026-05-16)
 
-
 ### Bug Fixes
 
-* **updater:** use releases.atom to avoid GitHub API rate limit, surface 403 reason ([67f13fe](https://github.com/lastwhisper66/ai-studio/commit/67f13fe91baadbc721c9b5f0c8326516542739f4))
+- **updater:** use releases.atom to avoid GitHub API rate limit, surface 403 reason ([67f13fe](https://github.com/lastwhisper66/ai-studio/commit/67f13fe91baadbc721c9b5f0c8326516542739f4))
 
 ## [1.6.0](https://github.com/lastwhisper66/ai-studio/compare/v1.5.0...v1.6.0) (2026-05-16)
 
-
 ### Features
 
-* extend tray context menu with new-conversation and settings entries ([13491c2](https://github.com/lastwhisper66/ai-studio/commit/13491c2077039261d5badaf20c84c7a9d2d5635c))
-* **main:** wire tray module and refresh hooks ([e690af2](https://github.com/lastwhisper66/ai-studio/commit/e690af274a611537f0b0ec936ca544bcd6972112))
-* **tray:** extract tray module with extended context menu ([6c0b1e9](https://github.com/lastwhisper66/ai-studio/commit/6c0b1e9949235a04e465a5dd9413edb427eac5d7))
-
+- extend tray context menu with new-conversation and settings entries ([13491c2](https://github.com/lastwhisper66/ai-studio/commit/13491c2077039261d5badaf20c84c7a9d2d5635c))
+- **main:** wire tray module and refresh hooks ([e690af2](https://github.com/lastwhisper66/ai-studio/commit/e690af274a611537f0b0ec936ca544bcd6972112))
+- **tray:** extract tray module with extended context menu ([6c0b1e9](https://github.com/lastwhisper66/ai-studio/commit/6c0b1e9949235a04e465a5dd9413edb427eac5d7))
 
 ### Code Refactoring
 
-* extract settings side effects into dedicated module ([b15f6e8](https://github.com/lastwhisper66/ai-studio/commit/b15f6e8d8e053478c1b09ed863f83fbd43d502e7))
-* introduce settings-bus for main-process setting writes ([7866fd1](https://github.com/lastwhisper66/ai-studio/commit/7866fd117ade92f344020601c186bef51ad33f3a))
+- extract settings side effects into dedicated module ([b15f6e8](https://github.com/lastwhisper66/ai-studio/commit/b15f6e8d8e053478c1b09ed863f83fbd43d502e7))
+- introduce settings-bus for main-process setting writes ([7866fd1](https://github.com/lastwhisper66/ai-studio/commit/7866fd117ade92f344020601c186bef51ad33f3a))
 
 ## [1.5.0](https://github.com/lastwhisper66/ai-studio/compare/v1.4.0...v1.5.0) (2026-05-15)
 

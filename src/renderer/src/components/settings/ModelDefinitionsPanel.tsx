@@ -1,10 +1,9 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Button } from '@renderer/components/ui/button'
 import { Input } from '@renderer/components/ui/input'
-import { Checkbox } from '@renderer/components/ui/checkbox'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +17,6 @@ import {
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { ModelDefinitionDialog } from './ModelDefinitionDialog'
-import { BatchToolbar } from './BatchToolbar'
 import { CatalogSyncBanner } from './CatalogSyncBanner'
 import { CAPABILITY_CONFIG } from './capability-config'
 import type { ModelDefinition } from '@shared/types'
@@ -48,17 +46,10 @@ export function ModelDefinitionsPanel({
   const { definitions, add, update, remove } = useModelDefinitionStore()
   const resolveDefinitionGroup = useModelGroupStore((s) => s.resolveDefinitionGroup)
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editing, setEditing] = useState<ModelDefinition | null>(null)
   const [deleting, setDeleting] = useState<ModelDefinition | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-
-  // Clear selection when the left-pane filter changes.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset selection on filter switch
-    setSelectedIds(new Set())
-  }, [selection])
 
   const filtered = useMemo(() => {
     // Search ignores the left-pane filter — it searches across all groups.
@@ -75,35 +66,12 @@ export function ModelDefinitionsPanel({
 
   // Pre-fill the dialog's `group` field when adding inside a named group.
   const defaultGroupForAdd = selection.kind === 'group' ? selection.displayName : undefined
-  const selectedDefs = filtered.filter((d) => selectedIds.has(d.id))
-  const allChecked = filtered.length > 0 && filtered.every((d) => selectedIds.has(d.id))
-
-  const toggleOne = (id: string): void => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const toggleAll = (): void => {
-    if (allChecked) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(filtered.map((d) => d.id)))
-    }
-  }
 
   return (
     <div className="flex flex-1 flex-col">
       <CatalogSyncBanner />
-      {/* Header row: select-all + count + search + Add Model | batch actions + Delete */}
+      {/* Header row: search + Add Model */}
       <div className="flex items-center gap-2 border-b px-3 py-2">
-        <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Select all" />
-        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-          {selectedIds.size} / {filtered.length}
-        </span>
         <div className="relative w-56">
           <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
           <Input
@@ -113,18 +81,13 @@ export function ModelDefinitionsPanel({
             className="h-7 pl-7 text-xs"
           />
         </div>
-        <Button size="sm" onClick={() => setShowAddDialog(true)} className="h-7 gap-1 text-xs">
+        <Button
+          size="sm"
+          onClick={() => setShowAddDialog(true)}
+          className="ml-auto h-7 gap-1 text-xs">
           <Plus className="h-3 w-3" />
           {t('modelLibrary.addDefinition')}
         </Button>
-        <div className="ml-auto flex items-center gap-2">
-          <BatchToolbar
-            selected={selectedDefs}
-            onUpdateCapabilities={(id, caps) => update(id, { capabilities: caps })}
-            onDelete={(id) => remove(id)}
-            onBatchDone={() => setSelectedIds(new Set())}
-          />
-        </div>
       </div>
 
       {/* List */}
@@ -136,18 +99,10 @@ export function ModelDefinitionsPanel({
         ) : (
           <div className="divide-y border-b">
             {filtered.map((def) => {
-              const isSelected = selectedIds.has(def.id)
               return (
                 <div
                   key={def.id}
-                  className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
-                    isSelected ? 'bg-accent/50' : 'hover:bg-accent/30'
-                  }`}>
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggleOne(def.id)}
-                    aria-label={`Select ${def.name}`}
-                  />
+                  className="group flex items-center gap-2 px-3 py-2 transition-colors hover:bg-accent/30">
                   <span className="min-w-0 flex-1 truncate text-sm">{def.name}</span>
                   {def.contextWindow != null && (
                     <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums">

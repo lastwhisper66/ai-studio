@@ -144,11 +144,14 @@ async function doSync(signal: AbortSignal): Promise<CatalogSyncResult> {
 }
 
 function classifyError(err: unknown, signal: AbortSignal): string {
-  if (signal.aborted) return 'network'
+  if (signal.aborted) return 'cancelled'
   if (err instanceof OpenRouterHttpError) return `http_${err.status}`
   if (err instanceof SyntaxError) return 'parse'
-  if (err instanceof Error && /timeout|abort|fetch failed/i.test(err.message)) return 'network'
-  return 'parse'
+  if (err instanceof Error) {
+    if (/timeout|fetch failed/i.test(err.message)) return 'network'
+    if (/sqlite|database/i.test(err.message)) return 'database'
+  }
+  return 'unknown'
 }
 
 function broadcastStatus(): void {
