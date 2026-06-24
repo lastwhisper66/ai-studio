@@ -65,6 +65,8 @@ import type {
   BuiltinCategory,
   BuiltinUpdatesStatus,
   WebSearchTestPayload,
+  CatalogSyncResult,
+  CatalogSyncStatus,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -771,6 +773,19 @@ const api = {
     const handler = (_e: Electron.IpcRendererEvent, state: UpdaterState): void => callback(state)
     ipcRenderer.on(IpcChannels.UPDATER_STATE_CHANGED, handler)
     return () => ipcRenderer.removeListener(IpcChannels.UPDATER_STATE_CHANGED, handler)
+  },
+
+  // Catalog (OpenRouter model catalog sync)
+  catalog: {
+    syncNow: (): Promise<IpcResult<CatalogSyncResult>> =>
+      ipcRenderer.invoke(IpcChannels.CATALOG_SYNC_NOW),
+    getStatus: (): Promise<IpcResult<CatalogSyncStatus>> =>
+      ipcRenderer.invoke(IpcChannels.CATALOG_GET_STATUS),
+    onStatusChanged: (cb: (status: CatalogSyncStatus) => void): (() => void) => {
+      const listener = (_evt: unknown, status: CatalogSyncStatus): void => cb(status)
+      ipcRenderer.on(IpcChannels.CATALOG_STATUS_CHANGED, listener)
+      return () => ipcRenderer.removeListener(IpcChannels.CATALOG_STATUS_CHANGED, listener)
+    },
   },
 
   // Backup

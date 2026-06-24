@@ -186,7 +186,7 @@ export interface RemoteModelFetchPayload {
   baseUrl: string
 }
 
-export type ModelCapability = 'reasoning' | 'vision' | 'web' | 'tools'
+export type ModelCapability = 'reasoning' | 'vision' | 'tools'
 
 export interface Model {
   id: string
@@ -210,6 +210,7 @@ export interface ModelDefinition {
   group: string
   capabilities: ModelCapability[]
   contextWindow: number | null
+  reasoningEfforts: string[] | null
   createdAt: string
   updatedAt: string
 }
@@ -744,4 +745,21 @@ export interface BuiltinUpdatesStatus {
   templates: BuiltinCategoryStatus
   quickActions: BuiltinCategoryStatus
   selectionActions: BuiltinCategoryStatus
+}
+
+export interface CatalogSyncResult {
+  definitionsCount: number
+  groupsCount: number
+  durationMs: number
+  /** 被过滤跳过的 OpenRouter 模型条数(:xxx / ~ / openrouter/ 等) */
+  skippedCount: number
+}
+
+export type CatalogSyncErrorCode = 'network' | 'parse' | string // http_<status>
+
+export interface CatalogSyncStatus {
+  lastSyncAt: string | null
+  lastSyncStatus: 'ok' | 'error' | null
+  lastSyncError: CatalogSyncErrorCode | null
+  isInFlight: boolean
 }

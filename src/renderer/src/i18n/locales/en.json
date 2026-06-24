@@ -366,7 +366,9 @@
         "title": "Built-in Templates",
         "description": "Reset or restore the templates that ship with the app.",
         "success": "Done.",
-        "errors": { "failed": "Operation failed" },
+        "errors": {
+          "failed": "Operation failed"
+        },
         "overwrite": {
           "title": "Overwrite modified built-ins",
           "description": "Restore all built-in templates to factory content. Local edits to built-ins will be lost.",
@@ -856,34 +858,24 @@
       "all": "All",
       "reasoning": "Reasoning",
       "vision": "Vision",
-      "web": "Web",
       "tools": "Tools"
     },
     "cap": {
       "reasoning": "Reasoning",
       "vision": "Vision",
-      "web": "Web",
       "tools": "Tools"
     },
     "allModels": "All Models",
     "unmatched": "Unmatched Models",
     "newGroup": "New Group",
+    "searchGroupPlaceholder": "Search groups",
     "deleteRuleImpact": "{{count}} model(s) will become unmatched.",
-    "preview": {
-      "placeholder": "Type a model name to preview matching",
-      "matchedDef": "Matched definition",
-      "matchedRule": "Matched rule",
-      "fallback": "No rule matched; inferred as \"{{name}}\"",
-      "noDefMatch": "No definition matched"
-    },
     "batch": {
-      "selected": "{{count}} selected",
       "addCap": "+ Capability",
       "removeCap": "− Capability",
       "delete": "Delete selected",
       "confirmDelete": "Delete the {{count}} selected model definition(s)?"
-    },
-    "newDefinitionGroupHint": "New definitions whose name does not start with \"{{pattern}}\" will appear under \"Unmatched Models\"."
+    }
   },
   "addModel": {
     "title": "Add Model",
@@ -908,12 +900,41 @@
     "empty": "Model library is empty. Click the button above to add a model definition.",
     "noResults": "No matching models",
     "modelName": "Model Name",
+    "group": "Group",
+    "groupPlaceholder": "e.g. OpenAI, MyCustom — leave empty for Unmatched",
+    "groupHint": "Definitions are grouped by this field. Pick an existing group or type a new one; empty falls into \"Unmatched\".",
+    "noGroupMatch": "No matching groups",
     "capabilities": "Capabilities",
     "contextWindow": "Context window",
     "contextWindowPlaceholder": "e.g. 128000",
     "contextWindowHint": "Leave empty when the model's context window is unknown.",
     "contextWindowInvalid": "Enter a positive integer or leave empty.",
-    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone."
+    "reasoningEfforts": "Reasoning effort options",
+    "reasoningEffortsHint": "Effort levels reported by OpenRouter (comma-separated); reserved for future effort selector UI",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+    "searchPlaceholder": "Search models",
+    "contextBadge": "Context: {{value}}"
+  },
+  "catalog": {
+    "banner": {
+      "syncing": "Syncing...",
+      "okPrefix": "Last synced ",
+      "errorPrefix": "Last sync failed: ",
+      "neverSynced": "Not yet synced. Click to fetch the latest model catalog.",
+      "syncNow": "Sync now",
+      "retry": "Retry"
+    },
+    "error": {
+      "network": "Network error",
+      "parse": "Malformed data",
+      "unknown": "Unknown error"
+    },
+    "time": {
+      "justNow": "just now",
+      "minutesAgo": "{{n}} min ago",
+      "hoursAgo": "{{n}} h ago",
+      "daysAgo": "{{n}} d ago"
+    }
   },
   "modelGroup": {
     "addGroup": "Add Group",
