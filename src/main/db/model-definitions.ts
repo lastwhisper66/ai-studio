@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto'
 import type { ModelDefinition, ModelCapability } from '@shared/types'
 import { getDb } from './database'
-import { MODEL_DEFINITION_SEEDS, MODEL_DEFINITIONS_SEED_VERSION } from './seeds/catalogs'
 
 interface ModelDefinitionRow {
   id: string
@@ -9,6 +8,7 @@ interface ModelDefinitionRow {
   group_name: string
   capabilities: string
   context_window: number | null
+  reasoning_efforts: string | null
   created_at: string
   updated_at: string
 }
@@ -20,12 +20,22 @@ function rowToModelDefinition(row: ModelDefinitionRow): ModelDefinition {
   } catch {
     capabilities = []
   }
+  let reasoningEfforts: string[] | null = null
+  if (row.reasoning_efforts) {
+    try {
+      const parsed = JSON.parse(row.reasoning_efforts)
+      if (Array.isArray(parsed)) reasoningEfforts = parsed
+    } catch {
+      reasoningEfforts = null
+    }
+  }
   return {
     id: row.id,
     name: row.name,
     group: row.group_name,
     capabilities,
     contextWindow: row.context_window,
+    reasoningEfforts,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -36,6 +46,11 @@ export function listModelDefinitions(): ModelDefinition[] {
     .prepare('SELECT * FROM model_definitions ORDER BY group_name ASC, name ASC')
     .all() as ModelDefinitionRow[]
   return rows.map(rowToModelDefinition)
+}
+
+export function countModelDefinitions(): number {
+  const row = getDb().prepare('SELECT COUNT(*) AS n FROM model_definitions').get() as { n: number }
+  return row.n
 }
 
 export function getModelDefinitionByName(name: string): ModelDefinition | undefined {
@@ -59,14 +74,15 @@ export interface CreateModelDefinitionData {
   group?: string
   capabilities?: ModelCapability[]
   contextWindow?: number | null
+  reasoningEfforts?: string[] | null
 }
 
 export function createModelDefinition(data: CreateModelDefinitionData): ModelDefinition {
   const id = randomUUID()
   getDb()
     .prepare(
-      `INSERT INTO model_definitions (id, name, group_name, capabilities, context_window)
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO model_definitions (id, name, group_name, capabilities, context_window, reasoning_efforts)
+       VALUES (?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -74,6 +90,9 @@ export function createModelDefinition(data: CreateModelDefinitionData): ModelDef
       data.group ?? '',
       JSON.stringify(data.capabilities ?? []),
       data.contextWindow ?? null,
+      data.reasoningEfforts === undefined || data.reasoningEfforts === null
+        ? null
+        : JSON.stringify(data.reasoningEfforts),
     )
   return getModelDefinition(id)!
 }
@@ -83,6 +102,7 @@ export interface UpdateModelDefinitionData {
   group?: string
   capabilities?: ModelCapability[]
   contextWindow?: number | null
+  reasoningEfforts?: string[] | null
 }
 
 export function updateModelDefinition(
@@ -107,6 +127,10 @@ export function updateModelDefinition(
   if (data.contextWindow !== undefined) {
     fields.push('context_window = ?')
     values.push(data.contextWindow)
+  }
+  if (data.reasoningEfforts !== undefined) {
+    fields.push('reasoning_efforts = ?')
+    values.push(data.reasoningEfforts === null ? null : JSON.stringify(data.reasoningEfforts))
   }
 
   if (fields.length === 0) return getModelDefinition(id)
@@ -162,64 +186,4 @@ export function resolveModelDefinition(modelName: string): ModelDefinition | und
   }
 
   return undefined
-}
-
-/**
- * Seed the model_definitions table with built-in catalog data.
- * Uses a version number stored in the settings table so that new models
- * added in future app releases are merged in without overwriting user edits.
- * ON CONFLICT updates only rows whose timestamps still indicate built-in defaults.
- */
-
-export function seedModelDefinitions(): void {
-  const db = getDb()
-
-  const row = db
-    .prepare("SELECT value FROM settings WHERE key = 'model_definitions_seed_version'")
-    .get() as { value: string } | undefined
-  const currentVersion = row ? Number(row.value) : 0
-  if (currentVersion >= MODEL_DEFINITIONS_SEED_VERSION) return
-
-  const columns = db.pragma('table_info(model_definitions)') as Array<{ name: string }>
-  const hasContextWindow = columns.some((column) => column.name === 'context_window')
-
-  const insert = hasContextWindow
-    ? db.prepare(
-        `INSERT INTO model_definitions (id, name, group_name, capabilities, context_window)
-         VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT(name) DO UPDATE SET
-           group_name = excluded.group_name,
-           capabilities = excluded.capabilities,
-           context_window = excluded.context_window,
-           updated_at = datetime('now')
-         WHERE updated_at = created_at`,
-      )
-    : db.prepare(
-        `INSERT INTO model_definitions (id, name, group_name, capabilities)
-         VALUES (?, ?, ?, ?)
-         ON CONFLICT(name) DO UPDATE SET
-           group_name = excluded.group_name,
-           capabilities = excluded.capabilities
-         WHERE updated_at = created_at`,
-      )
-  const tx = db.transaction(() => {
-    for (const seed of MODEL_DEFINITION_SEEDS) {
-      if (hasContextWindow) {
-        insert.run(
-          randomUUID(),
-          seed.name,
-          seed.group,
-          JSON.stringify(seed.capabilities),
-          seed.contextWindow ?? null,
-        )
-      } else {
-        insert.run(randomUUID(), seed.name, seed.group, JSON.stringify(seed.capabilities))
-      }
-    }
-    db.prepare(
-      `INSERT INTO settings (key, value) VALUES ('model_definitions_seed_version', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-    ).run(String(MODEL_DEFINITIONS_SEED_VERSION))
-  })
-  tx()
 }

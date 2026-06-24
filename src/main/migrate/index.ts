@@ -13,6 +13,9 @@ import { migration001MessagesSources } from './001-messages-sources'
 import { migration002SplitUtilityModel } from './002-split-utility-model'
 import { migration003WebSearchDefaultProvider } from './003-web-search-default-provider'
 import { migration004ContextWindow } from './004-context-window'
+import { migration005AddReasoningEfforts } from './005-add-reasoning-efforts'
+import { migration006StripWebCapability } from './006-strip-web-capability'
+import { migration007ResetModelDefinitionsEditFlag } from './007-reset-model-definitions-edit-flag'
 
 interface Migration {
   version: number
@@ -25,6 +28,9 @@ const MIGRATIONS: Migration[] = [
   migration002SplitUtilityModel,
   migration003WebSearchDefaultProvider,
   migration004ContextWindow,
+  migration005AddReasoningEfforts,
+  migration006StripWebCapability,
+  migration007ResetModelDefinitionsEditFlag,
 ]
 
 export function runMigrations(isNewDatabase: boolean = false): void {

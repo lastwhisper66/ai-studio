@@ -1,7 +1,6 @@
 import { randomUUID } from 'crypto'
 import type { ModelGroup } from '@shared/types'
 import { getDb } from './database'
-import { MODEL_GROUP_SEEDS, MODEL_GROUPS_SEED_VERSION } from './seeds/catalogs'
 
 interface ModelGroupRow {
   id: string
@@ -116,33 +115,4 @@ export function resolveModelGroup(modelName: string): ModelGroup | undefined {
   }
 
   return undefined
-}
-
-export function seedModelGroups(): void {
-  const db = getDb()
-
-  const row = db
-    .prepare("SELECT value FROM settings WHERE key = 'model_groups_seed_version'")
-    .get() as { value: string } | undefined
-  const currentVersion = row ? Number(row.value) : 0
-  if (currentVersion >= MODEL_GROUPS_SEED_VERSION) return
-
-  const insert = db.prepare(
-    `INSERT INTO model_groups (id, pattern, display_name)
-     VALUES (?, ?, ?)
-     ON CONFLICT(pattern) DO UPDATE SET
-       display_name = excluded.display_name,
-       updated_at = datetime('now')
-     WHERE updated_at = created_at`,
-  )
-  const tx = db.transaction(() => {
-    for (const s of MODEL_GROUP_SEEDS) {
-      insert.run(randomUUID(), s.pattern, s.displayName)
-    }
-    db.prepare(
-      `INSERT INTO settings (key, value) VALUES ('model_groups_seed_version', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-    ).run(String(MODEL_GROUPS_SEED_VERSION))
-  })
-  tx()
 }
