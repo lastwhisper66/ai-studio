@@ -47,25 +47,25 @@ function ContextUsageTooltip({
       <div className="h-px bg-border" />
       <div className="space-y-1 text-xs">
         <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">{t('chat.contextSystemPrompt')}</span>
+          <span>{t('chat.contextSystemPrompt')}</span>
           <span className="tabular-nums">
             {t('chat.contextTokens', { count: formatNumber(breakdown.systemPrompt) })}
           </span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">{t('chat.contextHistory')}</span>
+          <span>{t('chat.contextHistory')}</span>
           <span className="tabular-nums">
             {t('chat.contextTokens', { count: formatNumber(breakdown.history) })}
           </span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">{t('chat.contextDraft')}</span>
+          <span>{t('chat.contextDraft')}</span>
           <span className="tabular-nums">
             {t('chat.contextTokens', { count: formatNumber(breakdown.draft) })}
           </span>
         </div>
         <div className="flex items-center justify-between gap-4">
-          <span className="text-muted-foreground">{t('chat.contextWebSearch')}</span>
+          <span>{t('chat.contextWebSearch')}</span>
           <span className="tabular-nums">
             {t('chat.contextTokens', { count: formatNumber(breakdown.webSearch) })}
           </span>

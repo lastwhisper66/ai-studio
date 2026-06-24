@@ -11,6 +11,7 @@ import { applySslSetting } from './ai'
 import { initMainI18n, onLanguageChange } from './i18n'
 import { backupSyncService } from './backup/sync-service'
 import { runMigrations } from './migrate'
+import { cancelSync, scheduleCatalogSync } from './catalog-sync'
 import { cleanupStaleAvatarStaging } from './backup/snapshot'
 import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
 import {
@@ -462,6 +463,7 @@ if (!gotTheLock) {
 
     const { isNew: isNewDatabase } = initDatabase()
     runMigrations(isNewDatabase)
+    scheduleCatalogSync()
     // Sweep any leftover `.import-*` / `.trash-*` avatar staging dirs from a
     // previous run that crashed mid-restore. Safe to run unconditionally.
     cleanupStaleAvatarStaging()
@@ -566,6 +568,7 @@ if (!gotTheLock) {
 // On Windows, the close handler hides to tray; this fires only when
 // all windows are destroyed (e.g. during a true quit).
 app.on('before-quit', () => {
+  cancelSync()
   isQuitting = true
   cleanupSelectionService()
 })

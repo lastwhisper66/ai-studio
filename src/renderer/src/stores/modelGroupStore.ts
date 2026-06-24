@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ModelGroup } from '@shared/types'
+import type { ModelDefinition, ModelGroup } from '@shared/types'
 import { inferModelGroup } from '@renderer/lib/inferModelGroup'
 
 interface ModelGroupStore {
@@ -26,10 +26,20 @@ interface ModelGroupStore {
   /**
    * Same matching rules as `resolve`, but returns the full ModelGroup object
    * (or undefined when no rule matches). Does NOT fall back to
-   * `inferModelGroup`. Used by the MatchPreviewBar's "matched rule" row and
-   * by the "unmatched models" pseudo-node filter.
+   * `inferModelGroup`. Used by the MatchPreviewBar's "matched rule" row.
    */
   resolveRule: (modelId: string) => ModelGroup | undefined
+  /**
+   * Resolve the display group name a `ModelDefinition` row belongs to. Used
+   * by the Model Library UI (left-pane group list + right-pane filter).
+   *
+   * Groups are now driven by `def.group` exclusively. Pattern-prefix matching
+   * (the historic behaviour) is intentionally not applied: groups follow what
+   * OpenRouter declares, and users opt-in to custom groups by editing
+   * `def.group` directly. Returns `undefined` when the def has no group set
+   * — caller renders these as "unmatched".
+   */
+  resolveDefinitionGroup: (def: ModelDefinition) => string | undefined
 }
 
 function matchRule(groups: ModelGroup[], modelId: string): ModelGroup | undefined {
@@ -107,5 +117,11 @@ export const useModelGroupStore = create<ModelGroupStore>((set, get) => ({
 
   resolveRule: (modelId: string): ModelGroup | undefined => {
     return matchRule(get().groups, modelId)
+  },
+
+  resolveDefinitionGroup: (def: ModelDefinition): string | undefined => {
+    if (!def.group) return undefined
+    const trimmed = def.group.trim()
+    return trimmed.length > 0 ? trimmed : undefined
   },
 }))

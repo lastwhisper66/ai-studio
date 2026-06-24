@@ -11,6 +11,7 @@ interface ModelDefinitionStore {
     group?: string
     capabilities?: ModelCapability[]
     contextWindow?: number | null
+    reasoningEfforts?: string[] | null
   }) => Promise<ModelDefinition | undefined>
   update: (
     id: string,
@@ -19,6 +20,7 @@ interface ModelDefinitionStore {
       group?: string
       capabilities?: ModelCapability[]
       contextWindow?: number | null
+      reasoningEfforts?: string[] | null
     },
   ) => Promise<void>
   remove: (id: string) => Promise<void>

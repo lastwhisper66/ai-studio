@@ -1,9 +1,9 @@
-import { useState, useMemo, forwardRef, useImperativeHandle, useRef, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search } from 'lucide-react'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Button } from '@renderer/components/ui/button'
-import { Checkbox } from '@renderer/components/ui/checkbox'
+import { Input } from '@renderer/components/ui/input'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,107 +17,77 @@ import {
 import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { ModelDefinitionDialog } from './ModelDefinitionDialog'
-import { BatchToolbar } from './BatchToolbar'
+import { CatalogSyncBanner } from './CatalogSyncBanner'
 import { CAPABILITY_CONFIG } from './capability-config'
 import type { ModelDefinition } from '@shared/types'
 import { type GroupSelection } from './group-selection'
-
-export interface ModelDefinitionsPanelHandle {
-  /** Scroll a definition row into view and flash a highlight ring. */
-  highlightDefinition: (id: string) => void
-}
 
 export interface ModelDefinitionsPanelProps {
   selection: GroupSelection
 }
 
-export const ModelDefinitionsPanel = forwardRef<
-  ModelDefinitionsPanelHandle,
-  ModelDefinitionsPanelProps
->(function ModelDefinitionsPanel({ selection }, ref): React.JSX.Element {
+/** Format a context-window byte count as compact text (e.g. 128000 -> "128K"). */
+function formatContextWindow(n: number): string {
+  if (n >= 1_000_000) {
+    const v = n / 1_000_000
+    return `${Number.isInteger(v) ? v : v.toFixed(1)}M`
+  }
+  if (n >= 1_000) {
+    const v = n / 1_000
+    return `${Number.isInteger(v) ? v : v.toFixed(1)}K`
+  }
+  return String(n)
+}
+
+export function ModelDefinitionsPanel({
+  selection,
+}: ModelDefinitionsPanelProps): React.JSX.Element {
   const { t } = useTranslation()
   const { definitions, add, update, remove } = useModelDefinitionStore()
-  const resolveRule = useModelGroupStore((s) => s.resolveRule)
+  const resolveDefinitionGroup = useModelGroupStore((s) => s.resolveDefinitionGroup)
 
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editing, setEditing] = useState<ModelDefinition | null>(null)
   const [deleting, setDeleting] = useState<ModelDefinition | null>(null)
-  const [highlightId, setHighlightId] = useState<string | null>(null)
-  const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map())
-
-  useImperativeHandle(ref, () => ({
-    highlightDefinition: (id: string) => {
-      setHighlightId(id)
-      const el = rowRefs.current.get(id)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    },
-  }))
-
-  useEffect(() => {
-    if (!highlightId) return
-    const tid = setTimeout(() => setHighlightId(null), 1500)
-    return () => clearTimeout(tid)
-  }, [highlightId])
-
-  // Clear selection when the left-pane filter changes.
-  useEffect(() => {
-    setSelectedIds(new Set())
-  }, [selection])
+  const [searchQuery, setSearchQuery] = useState('')
 
   const filtered = useMemo(() => {
+    // Search ignores the left-pane filter — it searches across all groups.
+    const q = searchQuery.trim().toLowerCase()
+    if (q) {
+      return definitions.filter((d) => d.name.toLowerCase().includes(q))
+    }
     if (selection.kind === 'all') return definitions
     if (selection.kind === 'unmatched') {
-      return definitions.filter((d) => !resolveRule(d.name))
+      return definitions.filter((d) => !resolveDefinitionGroup(d))
     }
-    return definitions.filter((d) => resolveRule(d.name)?.id === selection.group.id)
-  }, [definitions, selection, resolveRule])
+    return definitions.filter((d) => resolveDefinitionGroup(d) === selection.displayName)
+  }, [definitions, selection, resolveDefinitionGroup, searchQuery])
 
-  const groupPatternHint = selection.kind === 'rule' ? selection.group.pattern : undefined
-  const selectedDefs = filtered.filter((d) => selectedIds.has(d.id))
-  const allChecked = filtered.length > 0 && filtered.every((d) => selectedIds.has(d.id))
-
-  const toggleOne = (id: string): void => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  const toggleAll = (): void => {
-    if (allChecked) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(filtered.map((d) => d.id)))
-    }
-  }
+  // Pre-fill the dialog's `group` field when adding inside a named group.
+  const defaultGroupForAdd = selection.kind === 'group' ? selection.displayName : undefined
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Header row */}
+      <CatalogSyncBanner />
+      {/* Header row: search + Add Model */}
       <div className="flex items-center gap-2 border-b px-3 py-2">
-        <Checkbox checked={allChecked} onCheckedChange={toggleAll} aria-label="Select all" />
-        <span className="text-muted-foreground text-xs">
-          {selectedIds.size} / {filtered.length}
-        </span>
-        <div className="ml-auto">
-          <Button size="sm" onClick={() => setShowAddDialog(true)} className="h-7 gap-1 text-xs">
-            <Plus className="h-3 w-3" />
-            {t('modelLibrary.addDefinition')}
-          </Button>
+        <div className="relative w-56">
+          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 h-3.5 w-3.5 -translate-y-1/2" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('modelLibrary.searchPlaceholder')}
+            className="h-7 pl-7 text-xs"
+          />
         </div>
-      </div>
-
-      {/* Batch toolbar (always visible; buttons disabled when nothing selected) */}
-      <div className="border-b px-3 py-2">
-        <BatchToolbar
-          selected={selectedDefs}
-          onUpdateCapabilities={(id, caps) => update(id, { capabilities: caps })}
-          onDelete={(id) => remove(id)}
-          onBatchDone={() => setSelectedIds(new Set())}
-        />
+        <Button
+          size="sm"
+          onClick={() => setShowAddDialog(true)}
+          className="ml-auto h-7 gap-1 text-xs">
+          <Plus className="h-3 w-3" />
+          {t('modelLibrary.addDefinition')}
+        </Button>
       </div>
 
       {/* List */}
@@ -129,27 +99,16 @@ export const ModelDefinitionsPanel = forwardRef<
         ) : (
           <div className="divide-y border-b">
             {filtered.map((def) => {
-              const isSelected = selectedIds.has(def.id)
-              const isHighlighted = highlightId === def.id
               return (
                 <div
                   key={def.id}
-                  ref={(el) => {
-                    if (el) rowRefs.current.set(def.id, el)
-                    else rowRefs.current.delete(def.id)
-                  }}
-                  className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
-                    isSelected ? 'bg-accent/50' : 'hover:bg-accent/30'
-                  } ${isHighlighted ? 'ring-primary/60 ring-2 ring-inset' : ''}`}>
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => toggleOne(def.id)}
-                    aria-label={`Select ${def.name}`}
-                  />
+                  className="group flex items-center gap-2 px-3 py-2 transition-colors hover:bg-accent/30">
                   <span className="min-w-0 flex-1 truncate text-sm">{def.name}</span>
                   {def.contextWindow != null && (
-                    <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-                      {def.contextWindow.toLocaleString()}
+                    <span className="bg-muted text-muted-foreground shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium tabular-nums">
+                      {t('modelLibrary.contextBadge', {
+                        value: formatContextWindow(def.contextWindow),
+                      })}
                     </span>
                   )}
 
@@ -192,7 +151,7 @@ export const ModelDefinitionsPanel = forwardRef<
       <ModelDefinitionDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}
-        groupPatternHint={groupPatternHint}
+        defaultGroup={defaultGroupForAdd}
         onSave={async (data) => {
           await add(data)
           setShowAddDialog(false)
@@ -244,4 +203,4 @@ export const ModelDefinitionsPanel = forwardRef<
       </AlertDialog>
     </div>
   )
-})
+}
