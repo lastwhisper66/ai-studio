@@ -211,4 +211,8 @@ export const IpcChannels = {
   // Builtins (preset library: assistant templates / quick & selection actions)
   BUILTINS_GET_UPDATES_STATUS: 'builtins:get-updates-status',
   BUILTINS_APPLY_UPDATE: 'builtins:apply-update',
+  // Catalog Sync (model definitions / groups from OpenRouter)
+  CATALOG_SYNC_NOW: 'catalog:sync-now',
+  CATALOG_GET_STATUS: 'catalog:get-status',
+  CATALOG_STATUS_CHANGED: 'catalog:status-changed',
 } as const

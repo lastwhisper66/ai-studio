@@ -96,11 +96,7 @@ export function BatchToolbar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2 py-1.5">
-      <span className="text-muted-foreground text-xs">
-        {t('modelManage.batch.selected', { count: selected.length })}
-      </span>
-
+    <>
       <CapPopover
         triggerLabel={t('modelManage.batch.addCap')}
         triggerIcon={<Plus className="h-3 w-3" />}
@@ -116,13 +112,12 @@ export function BatchToolbar({
         onConfirm={removeCaps}
         disabled={busy || noSelection || capsInUse.length === 0}
       />
-
       <Button
         size="sm"
         variant="destructive"
         disabled={busy || noSelection}
         onClick={() => setConfirmDelete(true)}
-        className="ml-auto h-7 gap-1 text-xs">
+        className="h-7 gap-1 text-xs">
         <Trash2 className="h-3 w-3" />
         {t('modelManage.batch.delete')}
       </Button>
@@ -143,7 +138,7 @@ export function BatchToolbar({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   )
 }
 

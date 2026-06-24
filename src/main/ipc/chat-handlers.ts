@@ -91,6 +91,30 @@ function estimateContextTokenUsage(args: {
   }
 }
 
+/**
+ * After streaming finishes, fold the assistant's reply (and the just-sent user
+ * message, which used to live in `draft`) into `history`. The resulting usage
+ * reflects the conversation state right after the stream ends — i.e. what the
+ * next request would consume if the user were to type nothing further. The
+ * renderer caches this value and uses it to keep the context ring in sync when
+ * the input is empty; otherwise it would still show the pre-reply numbers
+ * until the user types something.
+ */
+function finalizeContextTokens(
+  contextTokens: ContextTokenUsage | null,
+  assistantContent: string,
+  model: string,
+): ContextTokenUsage | null {
+  if (!contextTokens) return null
+  const assistantTokens = countTokens(assistantContent, model)
+  return {
+    systemPrompt: contextTokens.systemPrompt,
+    history: contextTokens.history + contextTokens.draft + assistantTokens,
+    draft: 0,
+    webSearch: contextTokens.webSearch,
+  }
+}
+
 export function registerChatHandlers(): void {
   ipcMain.handle(
     IpcChannels.CHAT_SEND_MESSAGE,
@@ -105,6 +129,9 @@ export function registerChatHandlers(): void {
       let webSearchSources: WebSearchResult[] | null = null
       let webSearchContextContent: string | null = null
       let contextTokens: ContextTokenUsage | null = null
+      // Hoisted out of try so the abort/error branch can still tokenize the
+      // partial assistant reply when finalizing context tokens.
+      let resolvedModelName = ''
 
       try {
         const allMessages = listMessages(conversationId)
@@ -131,6 +158,7 @@ export function registerChatHandlers(): void {
         // Model resolution: assistant-level only
         const effectiveProviderId = assistant?.providerId ?? null
         const modelName = assistant?.model ?? ''
+        resolvedModelName = modelName
 
         if (!effectiveProviderId) {
           return {
@@ -344,7 +372,7 @@ export function registerChatHandlers(): void {
           sender.send(IpcChannels.CHAT_STREAM_END, {
             conversationId,
             message: savedMessage,
-            contextTokens,
+            contextTokens: finalizeContextTokens(contextTokens, fullContent, settings.model),
           })
         }
 
@@ -388,7 +416,7 @@ export function registerChatHandlers(): void {
             sender.send(IpcChannels.CHAT_STREAM_END, {
               conversationId,
               message: savedMessage,
-              contextTokens,
+              contextTokens: finalizeContextTokens(contextTokens, fullContent, resolvedModelName),
             })
           }
           return { success: true }

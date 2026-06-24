@@ -169,6 +169,7 @@ function createTables(): void {
       group_name TEXT NOT NULL DEFAULT '',
       capabilities TEXT NOT NULL DEFAULT '[]',
       context_window INTEGER,
+      reasoning_efforts TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );

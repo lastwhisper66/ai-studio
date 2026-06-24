@@ -366,7 +366,9 @@
         "title": "内置模板",
         "description": "重置或恢复随应用一起发布的内置助手模板。",
         "success": "操作完成。",
-        "errors": { "failed": "操作失败" },
+        "errors": {
+          "failed": "操作失败"
+        },
         "overwrite": {
           "title": "覆盖已修改的内置模板",
           "description": "将所有内置模板恢复为出厂内容；你对内置模板的修改将丢失。",
@@ -856,34 +858,24 @@
       "all": "全部",
       "reasoning": "推理",
       "vision": "视觉",
-      "web": "联网",
       "tools": "工具"
     },
     "cap": {
       "reasoning": "推理",
       "vision": "视觉",
-      "web": "联网",
       "tools": "工具"
     },
     "allModels": "全部模型",
     "unmatched": "未匹配模型",
     "newGroup": "新建分组",
+    "searchGroupPlaceholder": "搜索分组",
     "deleteRuleImpact": "{{count}} 个模型将变为未匹配状态。",
-    "preview": {
-      "placeholder": "输入模型名预览匹配",
-      "matchedDef": "命中定义",
-      "matchedRule": "命中规则",
-      "fallback": "未命中规则，推断为 \"{{name}}\"",
-      "noDefMatch": "未命中模型定义"
-    },
     "batch": {
-      "selected": "已选 {{count}}",
       "addCap": "+ 能力",
       "removeCap": "− 能力",
       "delete": "删除选中",
       "confirmDelete": "确定要删除选中的 {{count}} 个模型定义？"
-    },
-    "newDefinitionGroupHint": "新建的模型若名字不与 \"{{pattern}}\" 前缀匹配，会出现在「未匹配模型」中。"
+    }
   },
   "addModel": {
     "title": "添加模型",
@@ -908,12 +900,41 @@
     "empty": "模型库为空，点击上方按钮添加模型定义",
     "noResults": "没有匹配的模型",
     "modelName": "模型名称",
+    "group": "分组",
+    "groupPlaceholder": "例如 OpenAI、我的分组 — 留空则归到「未分组」",
+    "groupHint": "模型按该字段归组。可以选已有分组名，也可以输入一个新名字；留空则归到「未分组」。",
+    "noGroupMatch": "无匹配分组",
     "capabilities": "能力标签",
     "contextWindow": "上下文窗口",
     "contextWindowPlaceholder": "例如 128000",
     "contextWindowHint": "不知道模型上下文窗口时可留空。",
     "contextWindowInvalid": "请输入正整数，或留空。",
-    "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。"
+    "reasoningEfforts": "推理力度选项",
+    "reasoningEffortsHint": "OpenRouter 视角下该模型支持的推理力度(逗号分隔);仅供未来 UI 选择器使用",
+    "confirmDelete": "确定要删除「{{name}}」吗？此操作不可撤销。",
+    "searchPlaceholder": "搜索模型",
+    "contextBadge": "上下文: {{value}}"
+  },
+  "catalog": {
+    "banner": {
+      "syncing": "同步中...",
+      "okPrefix": "上次同步:",
+      "errorPrefix": "上次同步失败:",
+      "neverSynced": "尚未同步,点击拉取最新模型目录",
+      "syncNow": "立即同步",
+      "retry": "重试"
+    },
+    "error": {
+      "network": "网络错误",
+      "parse": "数据格式异常",
+      "unknown": "未知错误"
+    },
+    "time": {
+      "justNow": "刚刚",
+      "minutesAgo": "{{n}} 分钟前",
+      "hoursAgo": "{{n}} 小时前",
+      "daysAgo": "{{n}} 天前"
+    }
   },
   "modelGroup": {
     "addGroup": "添加分组",
