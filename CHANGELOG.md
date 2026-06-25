@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/lastwhisper66/ai-studio/compare/v1.11.0...v1.11.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* exclude .codegraph directory from build files ([f54fa95](https://github.com/lastwhisper66/ai-studio/commit/f54fa95511802c64ccff367d5aef79a2d2e095c7))
+
 ## [1.11.0](https://github.com/lastwhisper66/ai-studio/compare/v1.10.0...v1.11.0) (2026-06-24)
 
 
