@@ -10,6 +10,7 @@ files:
     update.yml,CHANGELOG.md,README.md}"
   - '!{.env,.env.*,.npmrc,package-lock.json}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!.codegraph${/*}'
 asarUnpack:
   - resources/**
   - node_modules/better-sqlite3/**
