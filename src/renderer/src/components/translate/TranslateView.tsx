@@ -558,7 +558,7 @@ export function TranslateView(): React.JSX.Element {
           <ScrollArea className="min-h-0 flex-1" viewportRef={sourceViewportRef}>
             <textarea
               ref={textareaRef}
-              className="block min-h-full w-full resize-none overflow-hidden bg-transparent p-4 pr-10 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
+              className="block min-h-full w-full resize-none overflow-hidden bg-transparent p-4 pr-12 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
               placeholder={t('translate.inputPlaceholder')}
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
@@ -594,7 +594,7 @@ export function TranslateView(): React.JSX.Element {
 
           <ScrollArea className="flex-1" scrollbars="both">
             <div
-              className={`p-4 ${
+              className={`p-4 pr-12 ${
                 translateSettings.wordWrap
                   ? 'min-w-0 translate-result-wrap'
                   : 'w-max min-w-full translate-result-nowrap'
@@ -659,7 +659,7 @@ export function TranslateView(): React.JSX.Element {
                 <p className="text-sm text-muted-foreground">{t('translate.history.empty')}</p>
               </div>
             ) : (
-              <div className="flex flex-col">
+              <div className="flex flex-col pr-2.5">
                 {history.map((item) => (
                   <button
                     key={item.id}
