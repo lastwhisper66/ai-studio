@@ -8,7 +8,6 @@ import {
   Eraser,
   Settings2,
   ChevronDown,
-  X,
   Trash2,
   WrapText,
   FileText,
@@ -543,22 +542,21 @@ export function TranslateView(): React.JSX.Element {
       <div className="flex flex-1 overflow-hidden">
         {/* Source panel */}
         <div className="relative flex min-w-0 flex-1 flex-col border-r">
-          {sourceText && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="absolute right-5 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  onClick={handleClearInput}>
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{t('translate.history.clearInput')}</TooltipContent>
-            </Tooltip>
-          )}
+          <div className="flex items-center justify-end border-b px-2 py-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+              onClick={handleClearInput}
+              disabled={!sourceText}>
+              <Eraser className="h-3.5 w-3.5" />
+              {t('translate.history.clearInput')}
+            </Button>
+          </div>
           <ScrollArea className="min-h-0 flex-1" viewportRef={sourceViewportRef}>
             <textarea
               ref={textareaRef}
-              className="block min-h-full w-full resize-none overflow-hidden bg-transparent p-4 pr-12 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
+              className="block min-h-full w-full resize-none overflow-hidden bg-transparent p-4 text-sm leading-relaxed outline-none placeholder:text-muted-foreground"
               placeholder={t('translate.inputPlaceholder')}
               value={sourceText}
               onChange={(e) => setSourceText(e.target.value)}
@@ -573,28 +571,25 @@ export function TranslateView(): React.JSX.Element {
 
         {/* Result panel */}
         <div className="relative flex min-w-0 flex-1 flex-col bg-muted/30">
-          {translatedText && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  className="absolute right-5 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  onClick={handleCopy}>
-                  {copied ? (
-                    <Check className="h-3.5 w-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {copied ? t('translate.copied') : t('translate.copyTranslation')}
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <div className="flex items-center justify-end border-b px-2 py-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+              onClick={handleCopy}
+              disabled={!translatedText}>
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {copied ? t('translate.copied') : t('translate.copyTranslation')}
+            </Button>
+          </div>
 
           <ScrollArea className="flex-1" scrollbars="both">
             <div
-              className={`p-4 pr-12 ${
+              className={`p-4 ${
                 translateSettings.wordWrap
                   ? 'min-w-0 translate-result-wrap'
                   : 'w-max min-w-full translate-result-nowrap'
@@ -623,43 +618,41 @@ export function TranslateView(): React.JSX.Element {
 
         {/* History panel */}
         <div className="relative flex w-64 flex-col border-l">
-          {history.length > 0 && (
-            <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <DialogTrigger asChild>
-                    <button className="absolute right-5 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </DialogTrigger>
-                </TooltipTrigger>
-                <TooltipContent>{t('translate.history.clearHistory')}</TooltipContent>
-              </Tooltip>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{t('translate.history.clearHistory')}</DialogTitle>
-                  <DialogDescription>
-                    {t('translate.history.clearHistoryConfirm')}
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setClearHistoryOpen(false)}>
-                    {t('common.cancel')}
-                  </Button>
-                  <Button variant="destructive" onClick={handleClearHistory}>
-                    {t('common.confirm')}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
+          <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
+            <div className="flex items-center justify-end border-b px-2 py-1">
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                  disabled={history.length === 0}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {t('translate.history.clearHistory')}
+                </Button>
+              </DialogTrigger>
+            </div>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{t('translate.history.clearHistory')}</DialogTitle>
+                <DialogDescription>{t('translate.history.clearHistoryConfirm')}</DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setClearHistoryOpen(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button variant="destructive" onClick={handleClearHistory}>
+                  {t('common.confirm')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <ScrollArea className="flex-1">
             {history.length === 0 ? (
               <div className="flex h-full items-center justify-center p-4">
                 <p className="text-sm text-muted-foreground">{t('translate.history.empty')}</p>
               </div>
             ) : (
-              <div className="flex flex-col pr-2.5">
+              <div className="flex flex-col">
                 {history.map((item) => (
                   <button
                     key={item.id}
