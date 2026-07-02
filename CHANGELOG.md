@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.11.2](https://github.com/lastwhisper66/ai-studio/compare/v1.11.1...v1.11.2) (2026-07-02)
+
+
+### Bug Fixes
+
+* adjust translate view padding to prevent content overlap ([b09031f](https://github.com/lastwhisper66/ai-studio/commit/b09031f2a4e65346628b34e387ae24269f19c750))
+
+
+### Code Refactoring
+
+* **translate:** move panel actions into dedicated header rows ([d7f3684](https://github.com/lastwhisper66/ai-studio/commit/d7f368478679f3e3b822d2b0eb885a73200d921c))
+* **translate:** move panel actions into dedicated header rows ([5bfbb62](https://github.com/lastwhisper66/ai-studio/commit/5bfbb62cbc0134da158ab96dbd5ea0a4dd482144))
+
 ## [1.11.1](https://github.com/lastwhisper66/ai-studio/compare/v1.11.0...v1.11.1) (2026-06-25)
 
 ### Bug Fixes
