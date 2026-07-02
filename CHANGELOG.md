@@ -2,23 +2,20 @@
 
 ## [1.11.1](https://github.com/lastwhisper66/ai-studio/compare/v1.11.0...v1.11.1) (2026-06-25)
 
-
 ### Bug Fixes
 
-* exclude .codegraph directory from build files ([f54fa95](https://github.com/lastwhisper66/ai-studio/commit/f54fa95511802c64ccff367d5aef79a2d2e095c7))
+- exclude .codegraph directory from build files ([f54fa95](https://github.com/lastwhisper66/ai-studio/commit/f54fa95511802c64ccff367d5aef79a2d2e095c7))
 
 ## [1.11.0](https://github.com/lastwhisper66/ai-studio/compare/v1.10.0...v1.11.0) (2026-06-24)
 
-
 ### Features
 
-* **model-library:** sync model catalog from OpenRouter ([b70add9](https://github.com/lastwhisper66/ai-studio/commit/b70add976288a7ab0854512c99694bf54e4efe75))
-* **model-library:** sync model catalog from OpenRouter ([9fa5658](https://github.com/lastwhisper66/ai-studio/commit/9fa5658ddc7478f7198f5aab0d76b41cfaf06998))
-
+- **model-library:** sync model catalog from OpenRouter ([b70add9](https://github.com/lastwhisper66/ai-studio/commit/b70add976288a7ab0854512c99694bf54e4efe75))
+- **model-library:** sync model catalog from OpenRouter ([9fa5658](https://github.com/lastwhisper66/ai-studio/commit/9fa5658ddc7478f7198f5aab0d76b41cfaf06998))
 
 ### Bug Fixes
 
-* code review issues - improve error classification and remove unused BatchToolbar ([3ccd228](https://github.com/lastwhisper66/ai-studio/commit/3ccd22898d71e08c5d526620786a01676ae33d97))
+- code review issues - improve error classification and remove unused BatchToolbar ([3ccd228](https://github.com/lastwhisper66/ai-studio/commit/3ccd22898d71e08c5d526620786a01676ae33d97))
 
 ## [1.10.0](https://github.com/lastwhisper66/ai-studio/compare/v1.9.0...v1.10.0) (2026-06-20)
 
