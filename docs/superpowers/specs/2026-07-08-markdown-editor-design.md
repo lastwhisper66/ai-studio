@@ -13,6 +13,7 @@
 - 新增顶层「编辑器」页面，入口与聊天/翻译同级。
 - 打开单个 `.md` / `.markdown` 文件进行所见即所得编辑。
 - 打开文件夹作为工作区，侧栏显示文件树，支持完整文件管理（浏览 + 新建 / 重命名 / 删除）。
+- 支持将文件或文件夹从 OS 文件管理器**直接拖入编辑区或文件侧栏**以快速打开，与弹窗选择等效。
 - 干净集成 Milkdown（Crepe 成品编辑器）：表格、代码高亮、数学公式、图片、斜杠命令、浮动工具栏、拖拽块等其默认能力全部启用。
 - 保存为标准 Markdown（与 Typora 兼容）。
 - 尽量少打扰的自动保存策略。
@@ -76,16 +77,24 @@ Milkdown v7 官方提供的成品编辑器 **Crepe**，定位即「inspired by T
 
 - 文件侧栏可折叠（复用 `AssistantSidebar` 的折叠模式 + `localStorage` 记忆键套路）。
 - 侧栏顶部两个入口：打开文件（单文件）/ 打开文件夹（工作区，展示文件树）。
+- **拖拽打开**：整个 `EditorView`（包含文件侧栏和编辑区）均为拖放目标——将文件或文件夹从 OS 拖入此区域，行为与弹窗选择完全等效（文件 → 打开该文件编辑；文件夹 → 作为工作区打开）。
 - 未打开任何文件时，编辑区显示欢迎 / 空状态。
 
 ### 数据流
 
 ```
-选文件/文件夹 → editor-handlers 读磁盘 → 返回 UTF-8 文本
+选文件/文件夹（弹窗 or 拖拽） → editor-handlers 读磁盘 → 返回 UTF-8 文本
    → editorStore 记录 { currentPath, isDirty } → Crepe 载入 defaultValue
 用户编辑 → Crepe markdownUpdated → 置 isDirty=true
 Ctrl+S / 自动保存触发 → crepe.getMarkdown() → editor:save-file(path, md) → isDirty=false
 ```
+
+**拖拽打开路径**：`EditorView` 的 `dragover` 事件 `preventDefault()`（阻止 Electron 默认导航）；`drop` 事件从 `event.dataTransfer.files` 读取第一个 `File` 对象的 `.path` 属性（Electron 对 Web File API 的扩展，仅 Electron 环境可用），再由渲染层自行判断类型后调用现有 IPC：
+
+- 拖入**文件** → 同 `editor:open-file-dialog` 返回后的处理路径，调用 `editor:read-file(path)` 读内容后载入编辑器并记录最近列表。
+- 拖入**文件夹** → 同 `editor:open-folder-dialog` 返回后的处理路径，调用 `editor:list-dir(path)` 建文件树并记录最近列表。
+
+无需新增 IPC 通道；路径合法性校验与弹窗选择完全一致（仅接受 `.md`/`.markdown` 文件，文件夹则进工作区模式）。
 
 ## 4. 主进程 / IPC 设计
 
@@ -178,7 +187,8 @@ CREATE INDEX IF NOT EXISTS idx_editor_recent_files_opened_at
 ### 安全边界
 
 - 打开文件夹后，所有读写路径必须落在 `workspaceRoot` 之内——复用 `attachments.ts` 中 `resolve + startsWith(baseDir + sep)` 的成熟越界校验写法。
-- 单文件模式以用户 dialog 显式选中的路径为准。
+- 单文件模式以用户 dialog 显式选中的路径为准；**拖拽打开与弹窗选择同等可信**（均为用户主动操作），路径合法性校验标准相同（扩展名过滤 + 体积上限），无需额外降级处理。
+- 拖入多个对象时只取第一个（`event.dataTransfer.files[0]`），其余忽略。
 - 仅允许 `.md` / `.markdown` 扩展名；非文本文件不在范围内。
 - 文件体积上限默认 2 MB（可在设置中改写，见 §7）；超限时拒绝打开并给本地化提示，不崩溃。
 
@@ -188,12 +198,12 @@ CREATE INDEX IF NOT EXISTS idx_editor_recent_files_opened_at
 
 ```
 editor/
-├── EditorView.tsx        # 顶层：左侧文件栏 + 右侧编辑区（AppLayout 懒加载它）
+├── EditorView.tsx        # 顶层：左侧文件栏 + 右侧编辑区（AppLayout 懒加载它）；同时作为全区 dragover/drop 目标处理拖拽打开
 ├── FileSidebar.tsx       # 打开文件/文件夹按钮、文件树、最近列表、右键菜单(增删改)
 ├── FileTree.tsx          # 递归文件树节点（懒加载子目录）
 ├── CrepeEditor.tsx       # 封装 MilkdownProvider + Crepe 实例
 ├── EditorToolbar.tsx     # 顶部：文件名、保存状态圆点、另存为等
-└── WelcomeState.tsx      # 未打开文件时的空状态
+└── WelcomeState.tsx      # 未打开文件时的空状态（亦说明可拖拽打开）
 ```
 
 ### Crepe 配置
@@ -268,7 +278,7 @@ Crepe 默认不含。二期可挂 `@milkdown/plugin-diagram` 或复用现有 `Me
 
 - `nav.editor`（导航项文案）
 - 按钮：打开文件 / 打开文件夹 / 保存 / 另存为 / 新建 / 重命名 / 删除
-- 空状态文案
+- 空状态文案（含拖拽提示，如「将 .md 文件或文件夹拖入此处，或点击上方按钮打开」）
 - 外部改动确认弹窗文案（保留我的 / 放弃并重载）
 - 错误提示
 - 设置分区文案（`settings.sections.markdownEditor` 等）
@@ -322,3 +332,4 @@ Crepe 默认不含。二期可挂 `@milkdown/plugin-diagram` 或复用现有 `Me
   7. 设置分区修改最大体积 → 生效。
   8. 明暗主题切换，编辑器样式跟随。
   9. 表格 / 代码高亮 / 公式在编辑器内实时渲染。
+  10. 拖拽打开：将 `.md` 文件从 OS 文件管理器拖入编辑区 → 文件正常打开；拖入文件夹 → 作为工作区打开，侧栏显示文件树；拖入非 `.md` 文件 → 静默忽略或给出类型不支持提示；拖入多个对象 → 只取第一个。
