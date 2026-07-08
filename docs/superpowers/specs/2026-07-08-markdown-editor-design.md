@@ -126,6 +126,12 @@ export interface TreeEntry {
   isDirectory: boolean
   children?: TreeEntry[] // 目录懒加载：未展开时省略，展开后由 editor:list-dir 填充
 }
+
+export interface RecentEntry {
+  path: string // 绝对路径（文件或文件夹）
+  kind: 'file' | 'folder'
+  openedAt: string // ISO 时间戳
+}
 ```
 
 仅列出 `.md` / `.markdown` 文件与目录；其它文件类型不进树。
@@ -138,11 +144,36 @@ export interface TreeEntry {
 - `workspaceRoot: string \| null` — 打开的文件夹根路径（单文件模式为 null）
 - `fileTree: TreeEntry[]` — 文件树
 - `isDirty: boolean` — 是否有未保存改动
-- `recentFiles / recentWorkspaces` — 最近打开列表
+- `recent: RecentEntry[]` — 最近打开列表（文件 + 文件夹，来自 `editor_recent_files` 表）
 
-### 持久化
+### 持久化（独立 DB 表）
 
-最近打开的文件与文件夹持久化到 `settings` 表（如 `editor.recentFiles` / `editor.lastWorkspace`），沿用现成 settings IPC，**不改 DB schema**。重启后可快速恢复。
+最近打开的文件与文件夹持久化到**新建的 `editor_recent_files` 表**（不复用 settings 表）。重启后可快速恢复最近列表。
+
+表结构（进 `database.ts` 的 `createTables()`，新装库直接拿到最终形态）：
+
+```sql
+CREATE TABLE IF NOT EXISTS editor_recent_files (
+  path       TEXT PRIMARY KEY,        -- 绝对路径（文件或文件夹），天然去重
+  kind       TEXT NOT NULL CHECK (kind IN ('file', 'folder')),
+  opened_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_editor_recent_files_opened_at
+  ON editor_recent_files(opened_at);
+```
+
+- 新建 db 模块 `src/main/db/editor-recent.ts`（`listRecent` / `addRecent`(UPSERT 更新 `opened_at`) / `removeRecent` / `clearRecent`），仿 `db/phrases.ts` 写法。
+- 列表按 `opened_at DESC` 排序、限制条数（如各 20 条）。
+- 因为要在**已发布的老库**上补这张表，需新增一个迁移文件 `src/main/migrate/008-editor-recent-files.ts`（`up()` 内 `CREATE TABLE IF NOT EXISTS ...`），并在 `migrate/index.ts` 的 `MIGRATIONS` 数组按序 push。新装库由 `createTables()` 直接建好、迁移框架跳过历史迁移，两条路径最终一致。
+
+对应 IPC 通道：
+
+| 通道                   | 入参         | 返回            | 用途              |
+| ---------------------- | ------------ | --------------- | ----------------- |
+| `editor:list-recent`   | —            | `RecentEntry[]` | 读最近打开列表    |
+| `editor:add-recent`    | `path, kind` | `boolean`       | 打开时写入 / 置顶 |
+| `editor:remove-recent` | `path`       | `boolean`       | 从列表移除单项    |
+| `editor:clear-recent`  | —            | `boolean`       | 清空最近列表      |
 
 ### 安全边界
 
@@ -190,7 +221,9 @@ Crepe 默认不含。二期可挂 `@milkdown/plugin-diagram` 或复用现有 `Me
 
 ### 外部改动（对齐 VS Code / Typora）
 
-主进程用 `fs.watch` 监听当前文件（工作区模式下监听工作区），去抖后经 `editor:file-changed` 推送。渲染层规则：
+**监听范围：仅监听「当前正在编辑的那个文件」**，不做工作区级递归 `fs.watch`。理由：未打开文件的内容变化无需提前捕获——用户点开它时现读现取即为最新版；递归监听整个工作区只会带来性能开销而无实际收益。
+
+主进程用 `fs.watch` 监听当前文件，去抖后经 `editor:file-changed` 推送。切换当前文件时，旧的 watcher 关闭、对新文件重建 watcher（同一时刻至多一个 watcher）。渲染层规则：
 
 - **无未保存改动（`isDirty === false`）→ 静默自动重载**，无感刷新。
 - **有未保存改动 → 不自动覆盖**，弹窗提示「磁盘上的文件已变化：保留我的版本 / 放弃并重载」，由用户手动确认。
@@ -198,6 +231,14 @@ Crepe 默认不含。二期可挂 `@milkdown/plugin-diagram` 或复用现有 `Me
 这是本设计中**唯一**需要用户手动确认的弹窗。
 
 > 实现注意：自动保存写盘本身会触发 `fs.watch`。需抑制「自我触发」的 watch 事件（例如写盘时打时间戳 / 忽略窗口），避免自动保存被误判为外部改动而弹窗。
+
+### 文件树的时效性（不靠 watcher，按需刷新）
+
+文件树只反映「上次列目录时」的结构。若外部对工作区**新增 / 删除 / 重命名**了文件（如 git 切分支、其他程序生成文件），树会显示过时。这**不需要**工作区级 `fs.watch`，改用轻量的按需重列：
+
+- 侧栏提供**手动刷新**按钮。
+- **展开某目录节点**时重新 `editor:list-dir` 拿该层最新状态。
+- （可选）窗口重新获得焦点时刷新当前已展开的层。
 
 ### 边界情况
 
@@ -239,6 +280,8 @@ Crepe 默认不含。二期可挂 `@milkdown/plugin-diagram` 或复用现有 `Me
 ### 新增文件
 
 - `src/main/ipc/editor-handlers.ts`
+- `src/main/db/editor-recent.ts`（`editor_recent_files` 表的 CRUD，仿 `db/phrases.ts`）
+- `src/main/migrate/008-editor-recent-files.ts`（老库补建 `editor_recent_files` 表）
 - `src/renderer/src/stores/editorStore.ts`
 - `src/renderer/src/components/editor/{EditorView,FileSidebar,FileTree,CrepeEditor,EditorToolbar,WelcomeState}.tsx`
 - `src/renderer/src/components/editor/index.ts`（聚合导出）
@@ -251,6 +294,9 @@ Crepe 默认不含。二期可挂 `@milkdown/plugin-diagram` 或复用现有 `Me
 - `src/shared/errors.ts` — 新增 `EDITOR_*` 错误码
 - `src/preload/index.ts` — 包装 `editor:*` 方法
 - `src/main/ipc/index.ts` — 注册 `registerEditorHandlers`
+- `src/main/db/database.ts` — `createTables()` 增加 `editor_recent_files` 表
+- `src/main/db/index.ts` — 重新导出 `editor-recent.ts` 模块
+- `src/main/migrate/index.ts` — `MIGRATIONS` 数组按序 push 迁移 008
 - `src/renderer/src/stores/settingsStore.ts` — `ActiveView` 加 `'editor'`
 - `src/renderer/src/components/layout/PrimaryNav.tsx` — 加导航图标
 - `src/renderer/src/components/layout/AppLayout.tsx` — 加 `editor` 懒加载分支
