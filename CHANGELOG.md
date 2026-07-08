@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.3](https://github.com/lastwhisper66/ai-studio/compare/v1.11.2...v1.11.3) (2026-07-08)
+
+
+### Bug Fixes
+
+* **chat:** stop auto-scroll fighting and follow the reasoning stream ([55e3d2a](https://github.com/lastwhisper66/ai-studio/commit/55e3d2afdaf33f6b704c7ebdb3cd231951b88f20))
+* **chat:** stop auto-scroll fighting and follow the reasoning stream ([9a2d479](https://github.com/lastwhisper66/ai-studio/commit/9a2d47987f5be11c6e7df109a0aa6a013fd64146))
+
 ## [1.11.2](https://github.com/lastwhisper66/ai-studio/compare/v1.11.1...v1.11.2) (2026-07-02)
 
 
