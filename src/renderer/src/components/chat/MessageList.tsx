@@ -55,6 +55,10 @@ export function MessageList({
   const { scrollRef, sentinelRef, isAtBottom, scrollToBottom } = useAutoScroll([
     messages,
     throttledContent,
+    // Reasoning streams before the formal content — it must trigger auto-scroll
+    // too, otherwise the view won't follow (and the "scroll to bottom" button
+    // arms follow with no trigger to act on) during the thinking phase.
+    throttledReasoning,
   ])
 
   // Unified resend handler — stable reference for both user and assistant messages
