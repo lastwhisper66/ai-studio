@@ -88,6 +88,15 @@ export const ERROR_CODES = {
   WEB_SEARCH_REWRITE_FAILED: 'errors.webSearch.rewriteFailed',
   UTILITY_MODEL_NOT_CONFIGURED: 'errors.utilityModel.notConfigured',
 
+  // Markdown 编辑器错误码
+  EDITOR_FILE_TOO_LARGE: 'errors.editor.fileTooLarge',
+  EDITOR_READ_FAILED: 'errors.editor.readFailed',
+  EDITOR_WRITE_FAILED: 'errors.editor.writeFailed',
+  EDITOR_PATH_OUTSIDE_WORKSPACE: 'errors.editor.pathOutsideWorkspace',
+  EDITOR_FILE_NOT_FOUND: 'errors.editor.fileNotFound',
+  EDITOR_INVALID_EXTENSION: 'errors.editor.invalidExtension',
+  EDITOR_DELETE_FAILED: 'errors.editor.deleteFailed',
+
   // fallback
   INTERNAL: 'errors.internal',
 } as const

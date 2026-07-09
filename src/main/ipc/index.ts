@@ -24,6 +24,7 @@ import { registerUpdaterHandlers } from './updater-handlers'
 import { registerBackupHandlers } from './backup-handlers'
 import { registerBuiltinsHandlers } from './builtins-handlers'
 import { registerWebSearchHandlers } from './web-search-handlers'
+import { registerEditorHandlers } from './editor-handlers'
 import { installDirtyTracker } from '../backup/dirty-tracker'
 
 export function registerAllIpcHandlers(): void {
@@ -55,4 +56,5 @@ export function registerAllIpcHandlers(): void {
   registerUserHandlers()
   registerUpdaterHandlers()
   registerBackupHandlers()
+  registerEditorHandlers()
 }

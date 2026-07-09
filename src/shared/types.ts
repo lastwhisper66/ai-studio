@@ -763,3 +763,17 @@ export interface CatalogSyncStatus {
   lastSyncError: CatalogSyncErrorCode | null
   isInFlight: boolean
 }
+
+// Markdown 编辑器相关类型
+export interface TreeEntry {
+  name: string
+  path: string
+  isDirectory: boolean
+  children?: TreeEntry[]
+}
+
+export interface RecentEntry {
+  path: string
+  kind: 'file' | 'folder'
+  openedAt: string
+}

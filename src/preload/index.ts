@@ -67,6 +67,8 @@ import type {
   WebSearchTestPayload,
   CatalogSyncResult,
   CatalogSyncStatus,
+  TreeEntry,
+  RecentEntry,
 } from '@shared/types'
 
 // Custom APIs for renderer — typed IPC wrappers
@@ -774,6 +776,36 @@ const api = {
     ipcRenderer.on(IpcChannels.UPDATER_STATE_CHANGED, handler)
     return () => ipcRenderer.removeListener(IpcChannels.UPDATER_STATE_CHANGED, handler)
   },
+
+  // Markdown 编辑器
+  openEditorFileDialog: (): Promise<IpcResult<{ path: string; content: string } | null>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_OPEN_FILE_DIALOG),
+  openEditorFolderDialog: (): Promise<IpcResult<{ root: string; tree: TreeEntry[] } | null>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_OPEN_FOLDER_DIALOG),
+  readEditorFile: (filePath: string): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_READ_FILE, filePath),
+  saveEditorFile: (filePath: string, content: string): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_SAVE_FILE, filePath, content),
+  saveEditorFileAs: (content: string, defaultPath?: string): Promise<IpcResult<string | null>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_SAVE_FILE_AS, content, defaultPath),
+  listEditorDir: (dirPath: string): Promise<IpcResult<TreeEntry[]>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_LIST_DIR, dirPath),
+  createEditorFile: (dirPath: string, name: string): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_CREATE_FILE, dirPath, name),
+  renameEditorEntry: (oldPath: string, newName: string): Promise<IpcResult<string>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_RENAME, oldPath, newName),
+  deleteEditorEntry: (filePath: string): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_DELETE, filePath),
+  listEditorRecent: (): Promise<IpcResult<RecentEntry[]>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_LIST_RECENT),
+  addEditorRecent: (filePath: string, kind: 'file' | 'folder'): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_ADD_RECENT, filePath, kind),
+  removeEditorRecent: (filePath: string): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_REMOVE_RECENT, filePath),
+  clearEditorRecent: (): Promise<IpcResult<boolean>> =>
+    ipcRenderer.invoke(IpcChannels.EDITOR_CLEAR_RECENT),
+  onEditorFileChanged: (callback: (data: { path: string; type: 'modified' | 'removed' }) => void) =>
+    ipcRenderer.on(IpcChannels.EDITOR_FILE_CHANGED, (_, data) => callback(data)),
 
   // Catalog (OpenRouter model catalog sync)
   catalog: {

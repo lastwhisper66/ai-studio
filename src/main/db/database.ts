@@ -224,6 +224,17 @@ function createTables(): void {
       ON selection_actions(sort_order);
   `)
 
+  database.exec(`
+    -- Markdown 编辑器最近打开列表
+    CREATE TABLE IF NOT EXISTS editor_recent_files (
+      path       TEXT PRIMARY KEY,
+      kind       TEXT NOT NULL CHECK (kind IN ('file', 'folder')),
+      opened_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_editor_recent_files_opened_at
+      ON editor_recent_files(opened_at);
+  `)
+
   // Seed built-in defaults after all tables exist.
   seedDatabaseDefaults()
 }
