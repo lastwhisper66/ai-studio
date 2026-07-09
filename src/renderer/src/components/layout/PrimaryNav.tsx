@@ -1,4 +1,13 @@
-import { MessageSquare, Languages, Library, Settings, Sun, Moon, Monitor } from 'lucide-react'
+import {
+  MessageSquare,
+  Languages,
+  Library,
+  FilePen,
+  Settings,
+  Sun,
+  Moon,
+  Monitor,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { type Theme } from '@renderer/components/theme/ThemeContext'
 import { Button } from '@renderer/components/ui/button'
@@ -75,6 +84,19 @@ export function PrimaryNav(): React.JSX.Element {
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">{t('nav.library')}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('h-9 w-9', activeView === 'editor' && 'text-nav-active')}
+              onClick={() => setActiveView('editor')}>
+              <FilePen className="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{t('nav.editor')}</TooltipContent>
         </Tooltip>
       </div>
 

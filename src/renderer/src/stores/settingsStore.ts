@@ -3,7 +3,7 @@ import type { SettingsSection } from '@renderer/components/settings/SettingsSide
 import type { LocalizedError } from '@shared/errors'
 import { fallbackLocalizedError } from '@shared/errors'
 
-type ActiveView = 'chat' | 'settings' | 'translate' | 'library'
+type ActiveView = 'chat' | 'settings' | 'translate' | 'library' | 'editor'
 
 interface SettingsState {
   settings: Record<string, string>

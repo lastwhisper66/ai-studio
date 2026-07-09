@@ -45,6 +45,7 @@
     "chat": "Chat",
     "translate": "Translate",
     "library": "Library",
+    "editor": "Editor",
     "settings": "Settings",
     "theme": "Theme"
   },
@@ -217,6 +218,7 @@
       "quickAssistant": "Quick Assistant",
       "selectionAssistant": "Selection Assistant",
       "webSearch": "Web Search",
+      "markdownEditor": "Markdown Editor",
       "about": "About"
     },
     "provider": {
@@ -803,6 +805,10 @@
         "searchRewriteName": "Search query rewriting",
         "searchRewriteHint": "Collapses multi-turn conversation context into a single web search query before calling the search backend."
       }
+    },
+    "markdownEditor": {
+      "maxFileSize": "Max File Size (MB)",
+      "maxFileSizeDesc": "Files larger than this size cannot be opened in the editor"
     }
   },
   "translate": {
@@ -839,6 +845,34 @@
       "clearHistoryConfirm": "Are you sure you want to clear all translation history? This cannot be undone.",
       "empty": "No translation history",
       "clearInput": "Clear input"
+    }
+  },
+  "editor": {
+    "openFile": "Open File",
+    "openFolder": "Open Folder",
+    "save": "Save",
+    "saveAs": "Save As",
+    "newFile": "New File",
+    "rename": "Rename",
+    "delete": "Delete",
+    "fileTree": "Files",
+    "recent": "Recent",
+    "noWorkspace": "No workspace open",
+    "noRecent": "No recent items",
+    "saved": "Saved",
+    "unsaved": "Unsaved",
+    "saveFailed": "Save failed",
+    "unsavedConfirm": "The current file has unsaved changes. Save first?",
+    "fileGone": "File no longer exists",
+    "welcome": {
+      "title": "Welcome to Markdown Editor",
+      "description": "Open a file or folder with the buttons above, or drag a .md file here"
+    },
+    "fileChanged": {
+      "title": "File Changed Externally",
+      "message": "The file changed on disk. Reload?",
+      "keepMine": "Keep My Version",
+      "reload": "Discard and Reload"
     }
   },
   "modelPicker": {

@@ -45,6 +45,7 @@
     "chat": "聊天",
     "translate": "翻译",
     "library": "助手库",
+    "editor": "编辑器",
     "settings": "设置",
     "theme": "主题"
   },
@@ -217,6 +218,7 @@
       "quickAssistant": "快捷助手",
       "selectionAssistant": "划词助手",
       "webSearch": "网络搜索",
+      "markdownEditor": "Markdown 编辑器",
       "about": "关于"
     },
     "provider": {
@@ -803,6 +805,10 @@
         "searchRewriteName": "搜索查询改写",
         "searchRewriteHint": "把多轮对话上下文压缩为单条网络搜索查询,在调用搜索后端前执行。"
       }
+    },
+    "markdownEditor": {
+      "maxFileSize": "最大文件体积 (MB)",
+      "maxFileSizeDesc": "超过此大小的文件将无法在编辑器中打开"
     }
   },
   "translate": {
@@ -839,6 +845,34 @@
       "clearHistoryConfirm": "确定要清除所有翻译历史记录吗？此操作不可撤销。",
       "empty": "暂无翻译历史",
       "clearInput": "清空输入"
+    }
+  },
+  "editor": {
+    "openFile": "打开文件",
+    "openFolder": "打开文件夹",
+    "save": "保存",
+    "saveAs": "另存为",
+    "newFile": "新建文件",
+    "rename": "重命名",
+    "delete": "删除",
+    "fileTree": "文件树",
+    "recent": "最近",
+    "noWorkspace": "未打开工作区",
+    "noRecent": "暂无最近记录",
+    "saved": "已保存",
+    "unsaved": "未保存",
+    "saveFailed": "保存失败",
+    "unsavedConfirm": "当前文件有未保存的更改，是否先保存？",
+    "fileGone": "文件已不存在",
+    "welcome": {
+      "title": "欢迎使用 Markdown 编辑器",
+      "description": "点击上方按钮打开文件或文件夹，或将 .md 文件拖入此处"
+    },
+    "fileChanged": {
+      "title": "文件已在外部修改",
+      "message": "磁盘上的文件已变化，是否重新加载？",
+      "keepMine": "保留我的版本",
+      "reload": "放弃并重载"
     }
   },
   "modelPicker": {
