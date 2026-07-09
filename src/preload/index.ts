@@ -804,8 +804,14 @@ const api = {
     ipcRenderer.invoke(IpcChannels.EDITOR_REMOVE_RECENT, filePath),
   clearEditorRecent: (): Promise<IpcResult<boolean>> =>
     ipcRenderer.invoke(IpcChannels.EDITOR_CLEAR_RECENT),
-  onEditorFileChanged: (callback: (data: { path: string; type: 'modified' | 'removed' }) => void) =>
-    ipcRenderer.on(IpcChannels.EDITOR_FILE_CHANGED, (_, data) => callback(data)),
+  onEditorFileChanged: (
+    callback: (data: { path: string; type: 'modified' | 'removed' }) => void,
+  ): (() => void) => {
+    const handler = (_: unknown, data: { path: string; type: 'modified' | 'removed' }): void =>
+      callback(data)
+    ipcRenderer.on(IpcChannels.EDITOR_FILE_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.EDITOR_FILE_CHANGED, handler)
+  },
 
   // Catalog (OpenRouter model catalog sync)
   catalog: {
