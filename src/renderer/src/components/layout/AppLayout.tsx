@@ -24,6 +24,10 @@ const AssistantLibraryView = lazy(() =>
   })),
 )
 
+const EditorView = lazy(() =>
+  import('@renderer/components/editor').then((m) => ({ default: m.EditorView })),
+)
+
 const SIDEBAR_STORAGE_KEY = 'ai-studio-sidebar-collapsed'
 const TOPIC_STORAGE_KEY = 'ai-studio-topic-collapsed'
 
@@ -102,6 +106,10 @@ export function AppLayout(): React.JSX.Element {
         ) : activeView === 'library' ? (
           <Suspense fallback={null}>
             <AssistantLibraryView />
+          </Suspense>
+        ) : activeView === 'editor' ? (
+          <Suspense fallback={null}>
+            <EditorView />
           </Suspense>
         ) : (
           <Suspense fallback={null}>

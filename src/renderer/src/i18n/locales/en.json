@@ -1095,6 +1095,15 @@
       "invalidAttachmentPath": "Invalid attachment path",
       "attachmentNotFound": "Attachment not found: {{path}}"
     },
+    "editor": {
+      "fileTooLarge": "File size exceeds {{max}} MB",
+      "readFailed": "Failed to read file",
+      "writeFailed": "Failed to save file",
+      "pathOutsideWorkspace": "Path is outside workspace",
+      "fileNotFound": "File not found",
+      "invalidExtension": "Unsupported file type: {{ext}}",
+      "deleteFailed": "Failed to delete"
+    },
     "assistant": {
       "cannotDeleteDefault": "Cannot delete the default assistant"
     },

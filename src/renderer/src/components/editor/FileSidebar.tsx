@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@renderer/components/ui/button'
 import { FileTree } from './FileTree'
 import { useEditorStore } from '@renderer/stores/editorStore'
+import { useLocalizedError } from '@renderer/hooks/useLocalizedError'
 import { cn } from '@renderer/lib/utils'
 import type { RecentEntry } from '@shared/types'
 
@@ -13,6 +14,7 @@ interface FileSidebarProps {
 
 export function FileSidebar({ onFileOpen }: FileSidebarProps): React.JSX.Element {
   const { t } = useTranslation()
+  const getErrorMessage = useLocalizedError()
   const workspaceRoot = useEditorStore((s) => s.workspaceRoot)
   const fileTree = useEditorStore((s) => s.fileTree)
   const currentPath = useEditorStore((s) => s.currentPath)
@@ -36,7 +38,11 @@ export function FileSidebar({ onFileOpen }: FileSidebarProps): React.JSX.Element
 
   const handleOpenFile = async (): Promise<void> => {
     const result = await window.api.openEditorFileDialog()
-    if (result.success && result.data) {
+    if (!result.success) {
+      window.alert(getErrorMessage(result.error))
+      return
+    }
+    if (result.data) {
       const { path, content } = result.data
       await window.api.addEditorRecent(path, 'file')
       await loadRecent()
@@ -58,7 +64,11 @@ export function FileSidebar({ onFileOpen }: FileSidebarProps): React.JSX.Element
 
   const handleTreeSelect = async (path: string): Promise<void> => {
     const result = await window.api.readEditorFile(path)
-    if (result.success && result.data !== undefined) {
+    if (!result.success) {
+      window.alert(getErrorMessage(result.error))
+      return
+    }
+    if (result.data !== undefined) {
       await window.api.addEditorRecent(path, 'file')
       await loadRecent()
       onFileOpen(path, result.data)
@@ -68,7 +78,11 @@ export function FileSidebar({ onFileOpen }: FileSidebarProps): React.JSX.Element
   const handleRecentClick = async (entry: RecentEntry): Promise<void> => {
     if (entry.kind === 'file') {
       const result = await window.api.readEditorFile(entry.path)
-      if (result.success && result.data !== undefined) {
+      if (!result.success) {
+        window.alert(getErrorMessage(result.error))
+        return
+      }
+      if (result.data !== undefined) {
         await window.api.addEditorRecent(entry.path, 'file')
         await loadRecent()
         onFileOpen(entry.path, result.data)

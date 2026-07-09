@@ -12,6 +12,7 @@ import {
   Search,
   Wrench,
   Info,
+  FileText,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -30,6 +31,7 @@ export type SettingsSection =
   | 'quick-assistant'
   | 'selection-assistant'
   | 'web-search'
+  | 'markdown-editor'
   | 'about'
 
 interface SettingsSidebarProps {
@@ -63,6 +65,7 @@ const sectionGroups: SectionItem[][] = [
       icon: TextSelect,
     },
     { id: 'web-search', labelKey: 'settings.sections.webSearch', icon: Search },
+    { id: 'markdown-editor', labelKey: 'settings.sections.markdownEditor', icon: FileText },
   ],
   [{ id: 'about', labelKey: 'settings.sections.about', icon: Info }],
 ]

@@ -16,6 +16,7 @@ import { KeyboardShortcutsSection } from './KeyboardShortcutsSection'
 import { QuickAssistantSection } from './QuickAssistantSection'
 import { SelectionAssistantSection } from './SelectionAssistantSection'
 import { WebSearchSection } from './web-search/WebSearchSection'
+import { MarkdownEditorSection } from './MarkdownEditorSection'
 import { AboutSection } from './AboutSection'
 
 export function SettingsPage(): React.JSX.Element {
@@ -62,6 +63,7 @@ export function SettingsPage(): React.JSX.Element {
               {activeSection === 'keyboard-shortcuts' && <KeyboardShortcutsSection />}
               {activeSection === 'quick-assistant' && <QuickAssistantSection />}
               {activeSection === 'selection-assistant' && <SelectionAssistantSection />}
+              {activeSection === 'markdown-editor' && <MarkdownEditorSection />}
               {activeSection === 'about' && <AboutSection />}
             </div>
           </ScrollArea>

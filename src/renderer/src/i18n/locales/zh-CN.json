@@ -1095,6 +1095,15 @@
       "invalidAttachmentPath": "附件路径无效",
       "attachmentNotFound": "未找到附件：{{path}}"
     },
+    "editor": {
+      "fileTooLarge": "文件体积超过 {{max}} MB",
+      "readFailed": "读取文件失败",
+      "writeFailed": "保存文件失败",
+      "pathOutsideWorkspace": "路径超出工作区范围",
+      "fileNotFound": "文件不存在",
+      "invalidExtension": "不支持的文件类型：{{ext}}",
+      "deleteFailed": "删除失败"
+    },
     "assistant": {
       "cannotDeleteDefault": "无法删除默认助手"
     },
