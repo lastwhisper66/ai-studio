@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
+import { applyExtraParams } from './extra-params'
 import type { StreamChatOptions, StreamCallbacks } from './stream-chat'
 
 /** Stream chat using Google Gemini native SDK. */
@@ -36,16 +37,19 @@ export async function streamGeminiChat(
   const response = await ai.models.generateContentStream({
     model: settings.model,
     contents,
-    config: {
-      abortSignal: signal,
-      systemInstruction:
-        systemInstructions.length > 0 ? systemInstructions.join('\n\n') : undefined,
-      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
-      ...(settings.maxCompletionTokens !== undefined
-        ? { maxOutputTokens: settings.maxCompletionTokens }
-        : {}),
-      ...(settings.topP !== undefined ? { topP: settings.topP } : {}),
-    },
+    config: applyExtraParams(
+      {
+        abortSignal: signal,
+        systemInstruction:
+          systemInstructions.length > 0 ? systemInstructions.join('\n\n') : undefined,
+        ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+        ...(settings.maxCompletionTokens !== undefined
+          ? { maxOutputTokens: settings.maxCompletionTokens }
+          : {}),
+        ...(settings.topP !== undefined ? { topP: settings.topP } : {}),
+      } as unknown as Record<string, unknown>,
+      settings.extraParams,
+    ) as never,
   })
 
   for await (const chunk of response) {

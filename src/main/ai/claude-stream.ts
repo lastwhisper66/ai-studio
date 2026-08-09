@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { applyExtraParams } from './extra-params'
 import type { StreamChatOptions, StreamCallbacks } from './stream-chat'
 
 /** Stream chat using Anthropic Claude native SDK. */
@@ -28,15 +29,18 @@ export async function streamClaudeChat(
   }
 
   const stream = client.messages.stream(
-    {
-      model: settings.model,
-      // Anthropic requires max_tokens — fall back to 4096 when caller leaves it unset.
-      max_tokens: settings.maxCompletionTokens ?? 4096,
-      messages: claudeMessages,
-      ...(systemPrompts.length > 0 ? { system: systemPrompts.join('\n\n') } : {}),
-      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
-      ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
-    },
+    applyExtraParams(
+      {
+        model: settings.model,
+        // Anthropic requires max_tokens — fall back to 4096 when caller leaves it unset.
+        max_tokens: settings.maxCompletionTokens ?? 4096,
+        messages: claudeMessages,
+        ...(systemPrompts.length > 0 ? { system: systemPrompts.join('\n\n') } : {}),
+        ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+        ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
+      } as unknown as Record<string, unknown>,
+      settings.extraParams,
+    ) as never,
     { signal },
   )
 
