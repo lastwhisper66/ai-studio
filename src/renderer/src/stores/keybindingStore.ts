@@ -1,5 +1,9 @@
 import { create } from 'zustand'
-import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
+import {
+  ALL_SHORTCUTS_DISABLED_KEY,
+  DEFAULT_KEYBINDINGS,
+  type KeybindingActionId,
+} from '@shared/keybindings'
 import { useSettingsStore } from './settingsStore'
 
 const STORAGE_KEY = 'app.keybindings'
@@ -15,7 +19,9 @@ interface KeybindingState {
 
   init: () => void
   getAccelerator: (actionId: KeybindingActionId) => string
+  getBoundAccelerator: (actionId: KeybindingActionId) => string | null
   getEffectiveAccelerator: (actionId: KeybindingActionId) => string | null
+  findConflict: (actionId: KeybindingActionId, accelerator: string) => KeybindingActionId | null
   getAllEffective: () => Record<KeybindingActionId, string>
   isDisabled: (actionId: KeybindingActionId) => boolean
   isCleared: (actionId: KeybindingActionId) => boolean
@@ -109,6 +115,10 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     })
   },
 
+  // The configured value — override or default, '' if cleared. Deliberately
+  // ignores both the per-action disabled flag and the master switch, so it is
+  // NOT simply a less-resolved getBoundAccelerator: use it to show what a key
+  // is bound to (e.g. a shortcut recorder), never to decide what fires.
   getAccelerator: (actionId) => {
     const { overrides } = get()
     const val = overrides[actionId]
@@ -116,12 +126,37 @@ export const useKeybindingStore = create<KeybindingState>((set, get) => ({
     return val ?? DEFAULT_KEYBINDINGS[actionId].defaultAccelerator
   },
 
-  // Returns null when the action is disabled or has no binding (cleared)
-  getEffectiveAccelerator: (actionId) => {
+  // What this action is bound to: null when it's individually disabled or has
+  // no binding (cleared). Ignores the master switch on purpose — use this for
+  // conflict detection, which must keep working while shortcuts are suppressed.
+  getBoundAccelerator: (actionId) => {
     const { disabled } = get()
     if (disabled[actionId]) return null
     const accel = get().getAccelerator(actionId)
     return accel || null
+  },
+
+  // What will actually fire right now: getBoundAccelerator, plus the master
+  // switch. Use this for dispatch. Read straight from settingsStore rather than
+  // mirroring the flag into this store — settingsStore auto-subscribes to
+  // cross-window broadcasts at module load, and this runs per keydown, so it
+  // always observes the latest value (including tray-originated flips).
+  getEffectiveAccelerator: (actionId) => {
+    if (useSettingsStore.getState().settings[ALL_SHORTCUTS_DISABLED_KEY] === 'true') return null
+    return get().getBoundAccelerator(actionId)
+  },
+
+  // The action already bound to `accelerator`, or null if it's free. Compares
+  // against bound (not effective) accelerators so conflicts are still reported
+  // while the master switch suppresses everything.
+  findConflict: (actionId, accelerator) => {
+    const target = accelerator.toLowerCase()
+    for (const id of Object.keys(DEFAULT_KEYBINDINGS) as KeybindingActionId[]) {
+      if (id === actionId) continue
+      const accel = get().getBoundAccelerator(id)
+      if (accel && accel.toLowerCase() === target) return id
+    }
+    return null
   },
 
   getAllEffective: () => {

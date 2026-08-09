@@ -236,7 +236,7 @@ Pops up a floating toolbar next to any text selection in any Windows app; clicki
 
 ## Keyboard Shortcuts
 
-Registry: `DEFAULT_KEYBINDINGS` in `src/shared/keybindings.ts`. All are user-customizable from **Settings → Keyboard Shortcuts** (persisted in `app.keybindings` / `app.keybindingsDisabled`). In-app shortcuts are dispatched in `useKeyboardShortcuts`; the four globally-scoped accelerators are registered in the main process via `globalShortcut`.
+Registry: `DEFAULT_KEYBINDINGS` in `src/shared/keybindings.ts`. All are user-customizable from **Settings → Keyboard Shortcuts** (persisted in `app.keybindings` / `app.keybindingsDisabled`, plus `app.allShortcutsDisabled` for the master switch below). In-app shortcuts are dispatched in `useKeyboardShortcuts`; the four globally-scoped accelerators are registered in the main process via `globalShortcut`.
 
 | Action ID                    | Default            | Scope        | Effect                                          |
 | ---------------------------- | ------------------ | ------------ | ----------------------------------------------- |
@@ -249,6 +249,10 @@ Registry: `DEFAULT_KEYBINDINGS` in `src/shared/keybindings.ts`. All are user-cus
 | `toggle-quick-assistant`     | `Ctrl+Shift+Space` | Global       | Toggle the Quick Assistant popup                |
 | `screenshot-translate`       | `Alt+P`            | Global       | Start region screenshot → Quick Assistant       |
 | `toggle-selection-assistant` | `Alt+H`            | Global       | Enable/disable the Selection Assistant globally |
+
+A **master switch** (`ALL_SHORTCUTS_DISABLED_KEY` = `app.allShortcutsDisabled`, declared in `src/shared/keybindings.ts`) suppresses all nine at once — for when the app is idle in the tray and its accelerators get hit by accident. Toggled from the tray checkbox or Settings → Keyboard Shortcuts; per-action bindings are left untouched, so flipping it back restores everything. Two enforcement points, one per process: `getEffectiveGlobalAccelerator()` (`src/main/index.ts`) for the four `globalShortcut` accelerators, and `keybindingStore.getEffectiveAccelerator()` for the five in-app ones. The main process re-runs `reregisterGlobalShortcuts()` on the settings bus so it takes effect without a restart.
+
+Note the store's two-level split: `getBoundAccelerator()` answers "what is this action bound to" (ignores the master switch — conflict detection needs it while suppressed), `getEffectiveAccelerator()` answers "what fires right now" (applies it). Dispatch paths must use the latter.
 
 In addition, the main window intercepts `Ctrl+=` / `Ctrl+-` / `Ctrl+0` (and `Ctrl+Wheel`) for zoom (persisted in `display.zoomFactor`).
 
