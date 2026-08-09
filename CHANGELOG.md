@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.12.0](https://github.com/lastwhisper66/ai-studio/compare/v1.11.3...v1.12.0) (2026-08-09)
+
+
+### Features
+
+* **ai:** add applyExtraParams merge engine and wire all four SDKs ([2cbdd05](https://github.com/lastwhisper66/ai-studio/commit/2cbdd0540bc210b091890c6847e0517bf39923cf))
+* **ai:** pass model extra params through all inference paths ([5413f01](https://github.com/lastwhisper66/ai-studio/commit/5413f0177bb600010f98598c341fbef889aa7a3e))
+* **models:** add extra_params column with migration 008 ([fb750d3](https://github.com/lastwhisper66/ai-studio/commit/fb750d3fce8e11ddcae20c1f7571296f0c8c55a1))
+* **models:** per-model extra params for all providers ([721dd2b](https://github.com/lastwhisper66/ai-studio/commit/721dd2bc0e487e31fd6e9ba1fbc07048e8c2bd1d))
+* **provider:** apply model extra params in connection test ([2b9a0b2](https://github.com/lastwhisper66/ai-studio/commit/2b9a0b21fa7e8c1371a929c8774a9e377a0f479f))
+* **settings:** add ExtraParamsEditor component ([28af573](https://github.com/lastwhisper66/ai-studio/commit/28af573b739321740d6d472448b8d66002c571e5))
+* **settings:** wire extra params editor into EditModelDialog ([60f2ebb](https://github.com/lastwhisper66/ai-studio/commit/60f2ebb16974b93353a11fb652e75db0536c5fa6))
+
+
+### Bug Fixes
+
+* **ai:** apply extra params in title generation and lock abortSignal ([7ed1b6f](https://github.com/lastwhisper66/ai-studio/commit/7ed1b6f4be14c5b8b0d6cfe26c1f1b14df9151d6))
+
 ## [1.11.3](https://github.com/lastwhisper66/ai-studio/compare/v1.11.2...v1.11.3) (2026-07-08)
 
 
