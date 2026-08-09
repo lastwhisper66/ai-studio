@@ -4,7 +4,7 @@ import { AppError } from './errors'
 import { ERROR_CODES } from '@shared/errors'
 import { getSetting } from './db/settings'
 import { getProvider } from './db/providers'
-import { getDb } from './db/database'
+import { getModel } from './db/models'
 import { streamChat } from './ai'
 
 /** Tasks that have their own utility-model configuration slot. */
@@ -39,18 +39,17 @@ function loadUtilitySettings(task: UtilityTask): ResolvedUtilitySettings | null 
   const provider = getProvider(providerId)
   if (!provider || !provider.apiKey) return null
 
-  // modelId here is the row id in the models table. Look up the actual model name.
-  const row = getDb().prepare('SELECT name FROM models WHERE id = ?').get(modelId) as
-    | { name: string }
-    | undefined
-  if (!row) return null
+  // modelId here is the row id in the models table.
+  const model = getModel(modelId)
+  if (!model) return null
 
   const settings: ApiSettings = {
     provider: provider.type,
     apiKey: provider.apiKey,
     baseUrl: provider.baseUrl,
-    model: row.name,
+    model: model.name,
     systemPrompt: '',
+    extraParams: model.extraParams,
   }
   return { settings }
 }

@@ -58,6 +58,7 @@ function loadTranslateSettings(providerId?: string, modelId?: string): ApiSettin
     maxCompletionTokens: 4096,
     topP: 1,
     systemPrompt: '',
+    extraParams: model.extraParams,
   }
 }
 

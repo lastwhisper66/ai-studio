@@ -61,6 +61,7 @@ function loadQuickAssistantSettings(providerId?: string, modelId?: string): ApiS
     // model / provider SDK uses its own defaults. Quick Assistant is meant to
     // be a low-friction surface; advanced sampling lives in Assistant settings.
     systemPrompt: '',
+    extraParams: model.extraParams,
   }
 }
 
