@@ -9,6 +9,7 @@ interface ModelRow {
   name: string
   group_name: string
   capabilities: string
+  extra_params: string
   enabled: number
   sort_order: number
   created_at: string
@@ -21,12 +22,23 @@ function rowToModel(row: ModelRow): Model {
   } catch {
     capabilities = []
   }
+  let extraParams: Record<string, unknown> = {}
+  try {
+    const parsed = JSON.parse(row.extra_params)
+    // Guard against `null` and arrays — the column must hold a plain object.
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      extraParams = parsed as Record<string, unknown>
+    }
+  } catch {
+    extraParams = {}
+  }
   return {
     id: row.id,
     providerId: row.provider_id,
     name: row.name,
     group: row.group_name,
     capabilities,
+    extraParams,
     enabled: row.enabled === 1,
     sortOrder: row.sort_order,
     createdAt: row.created_at,
@@ -53,11 +65,29 @@ export function getModel(id: string): Model | undefined {
   return rowToModel(row)
 }
 
+/**
+ * Look up a model by provider + model name. The chat path only has the model
+ * name (assistants store the name, not the row id). `(provider_id, name)` has
+ * no unique constraint, so mirror `listModelsByProvider`'s ordering and take
+ * the first row.
+ */
+export function getModelByName(providerId: string, name: string): Model | undefined {
+  const row = getDb()
+    .prepare(
+      `SELECT * FROM models WHERE provider_id = ? AND name = ?
+       ORDER BY sort_order ASC, created_at ASC LIMIT 1`,
+    )
+    .get(providerId, name) as ModelRow | undefined
+  if (!row) return undefined
+  return rowToModel(row)
+}
+
 export interface CreateModelData {
   providerId: string
   name: string
   group?: string
   capabilities?: ModelCapability[]
+  extraParams?: Record<string, unknown>
   enabled?: boolean
   sortOrder?: number
 }
@@ -78,8 +108,8 @@ export function createModel(data: CreateModelData): Model {
 
   getDb()
     .prepare(
-      `INSERT INTO models (id, provider_id, name, group_name, capabilities, enabled, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO models (id, provider_id, name, group_name, capabilities, extra_params, enabled, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .run(
       id,
@@ -87,6 +117,7 @@ export function createModel(data: CreateModelData): Model {
       data.name,
       group,
       JSON.stringify(capabilities),
+      JSON.stringify(data.extraParams ?? {}),
       data.enabled !== false ? 1 : 0,
       data.sortOrder ?? 0,
     )
@@ -97,6 +128,7 @@ export interface UpdateModelData {
   name?: string
   group?: string
   capabilities?: ModelCapability[]
+  extraParams?: Record<string, unknown>
   enabled?: boolean
   sortOrder?: number
 }
@@ -116,6 +148,10 @@ export function updateModel(id: string, data: UpdateModelData): Model | undefine
   if (data.capabilities !== undefined) {
     fields.push('capabilities = ?')
     values.push(JSON.stringify(data.capabilities))
+  }
+  if (data.extraParams !== undefined) {
+    fields.push('extra_params = ?')
+    values.push(JSON.stringify(data.extraParams))
   }
   if (data.enabled !== undefined) {
     fields.push('enabled = ?')

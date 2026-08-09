@@ -16,6 +16,7 @@ import { migration004ContextWindow } from './004-context-window'
 import { migration005AddReasoningEfforts } from './005-add-reasoning-efforts'
 import { migration006StripWebCapability } from './006-strip-web-capability'
 import { migration007ResetModelDefinitionsEditFlag } from './007-reset-model-definitions-edit-flag'
+import { migration008ModelExtraParams } from './008-model-extra-params'
 
 interface Migration {
   version: number
@@ -31,6 +32,7 @@ const MIGRATIONS: Migration[] = [
   migration005AddReasoningEfforts,
   migration006StripWebCapability,
   migration007ResetModelDefinitionsEditFlag,
+  migration008ModelExtraParams,
 ]
 
 export function runMigrations(isNewDatabase: boolean = false): void {

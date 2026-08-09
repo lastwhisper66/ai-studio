@@ -259,13 +259,14 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
 
   // ---------- models ----------
   const upsertModel = db.prepare(`
-    INSERT INTO models (id, provider_id, name, group_name, capabilities, enabled, sort_order)
-    VALUES (@id, @provider_id, @name, @group_name, @capabilities, @enabled, @sort_order)
+    INSERT INTO models (id, provider_id, name, group_name, capabilities, extra_params, enabled, sort_order)
+    VALUES (@id, @provider_id, @name, @group_name, @capabilities, @extra_params, @enabled, @sort_order)
     ON CONFLICT(id) DO UPDATE SET
       provider_id = excluded.provider_id,
       name = excluded.name,
       group_name = excluded.group_name,
       capabilities = excluded.capabilities,
+      extra_params = excluded.extra_params,
       enabled = excluded.enabled,
       sort_order = excluded.sort_order
   `)
@@ -276,6 +277,7 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
       name: m.name,
       group_name: m.group ?? '',
       capabilities: JSON.stringify(m.capabilities ?? []),
+      extra_params: JSON.stringify(m.extraParams ?? {}),
       enabled: m.enabled ? 1 : 0,
       sort_order: m.sortOrder,
     })

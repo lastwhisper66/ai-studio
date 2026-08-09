@@ -178,6 +178,8 @@ export interface ProviderConnectionTestPayload {
   apiKey: string
   baseUrl: string
   modelName: string
+  /** Extra params of the model row being tested, when it exists in the DB. */
+  extraParams?: Record<string, unknown>
 }
 
 export interface RemoteModelFetchPayload {
@@ -194,6 +196,8 @@ export interface Model {
   name: string
   group: string
   capabilities: ModelCapability[]
+  /** Extra request params merged into the API call. Always an object; `{}` when unset. */
+  extraParams: Record<string, unknown>
   enabled: boolean
   sortOrder: number
   createdAt: string
@@ -235,6 +239,8 @@ export interface ApiSettings {
   maxCompletionTokens?: number
   /** When omitted, the provider SDK's / model's default is used. */
   topP?: number
+  /** Model-level extra request params. Merged last, overrides the fields above. */
+  extraParams?: Record<string, unknown>
   systemPrompt: string
 }
 

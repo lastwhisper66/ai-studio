@@ -69,6 +69,7 @@ function loadSelectionSettings(providerId?: string, modelId?: string): ApiSettin
     // Selection Assistant defers sampling to the model's defaults — the UI
     // doesn't expose temperature/max_tokens/top_p knobs here.
     systemPrompt: '',
+    extraParams: model.extraParams,
   }
 }
 

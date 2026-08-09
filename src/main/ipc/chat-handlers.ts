@@ -22,6 +22,7 @@ import { loadAttachmentBase64 } from '../db/attachments'
 import { getConversation, updateConversation } from '../db/conversations'
 import { getAssistant } from '../db/assistants'
 import { getProvider } from '../db/providers'
+import { getModelByName } from '../db/models'
 import { streamChat, generateTitle, applySslSetting } from '../ai'
 import { showCompletionNotification } from '../utils/notification'
 import {
@@ -203,6 +204,8 @@ export function registerChatHandlers(): void {
         const topP = assistant?.topP ? parseFloat(assistant.topP) : 1
         const systemPrompt = assistant?.systemPrompt || ''
 
+        const modelRow = getModelByName(effectiveProviderId, modelName)
+
         const settings: ApiSettings = {
           provider: provider.type,
           apiKey: provider.apiKey,
@@ -212,6 +215,7 @@ export function registerChatHandlers(): void {
           maxCompletionTokens,
           topP,
           systemPrompt,
+          extraParams: modelRow?.extraParams,
         }
 
         // Build API messages array — content may be string or multipart array for vision

@@ -32,7 +32,12 @@ interface ProviderStore {
   ) => Promise<Model | undefined>
   updateModel: (
     id: string,
-    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+    data: {
+      name?: string
+      group?: string
+      capabilities?: ModelCapability[]
+      extraParams?: Record<string, unknown>
+    },
   ) => Promise<void>
   removeModel: (id: string) => Promise<void>
   removeAllModels: (providerId: string) => Promise<void>

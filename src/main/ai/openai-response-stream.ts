@@ -1,5 +1,7 @@
 import { createOpenAIClient } from './openai-client'
+import { applyExtraParams } from './extra-params'
 import type { StreamChatOptions, StreamCallbacks } from './stream-chat'
+import type { ResponseCreateParamsStreaming } from 'openai/resources/responses/responses'
 
 /** Stream chat using OpenAI Responses API (client.responses.create). */
 export async function streamOpenAIResponse(
@@ -16,16 +18,19 @@ export async function streamOpenAIResponse(
   }))
 
   const stream = await client.responses.create(
-    {
-      model: settings.model,
-      input,
-      stream: true,
-      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
-      ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
-      ...(settings.maxCompletionTokens !== undefined
-        ? { max_output_tokens: settings.maxCompletionTokens }
-        : {}),
-    },
+    applyExtraParams(
+      {
+        model: settings.model,
+        input,
+        stream: true,
+        ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+        ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
+        ...(settings.maxCompletionTokens !== undefined
+          ? { max_output_tokens: settings.maxCompletionTokens }
+          : {}),
+      } as unknown as Record<string, unknown>,
+      settings.extraParams,
+    ) as unknown as ResponseCreateParamsStreaming,
     { signal },
   )
 

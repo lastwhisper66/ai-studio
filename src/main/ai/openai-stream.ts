@@ -1,4 +1,5 @@
 import { createOpenAIClient } from './openai-client'
+import { applyExtraParams } from './extra-params'
 import type { StreamChatOptions, StreamCallbacks } from './stream-chat'
 import type {
   ChatCompletionCreateParamsStreaming,
@@ -13,19 +14,22 @@ export async function streamOpenAIChat(
   const { settings, messages, signal, reasoningEffort } = options
   const client = createOpenAIClient(settings)
 
-  const createParams: ChatCompletionCreateParamsStreaming = {
-    model: settings.model,
-    messages,
-    stream: true,
-    ...(settings.maxCompletionTokens !== undefined
-      ? { max_completion_tokens: settings.maxCompletionTokens }
-      : {}),
-    ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
-    ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
-    ...(reasoningEffort
-      ? { reasoning_effort: reasoningEffort as ChatCompletionReasoningEffort }
-      : {}),
-  }
+  const createParams = applyExtraParams(
+    {
+      model: settings.model,
+      messages,
+      stream: true,
+      ...(settings.maxCompletionTokens !== undefined
+        ? { max_completion_tokens: settings.maxCompletionTokens }
+        : {}),
+      ...(settings.temperature !== undefined ? { temperature: settings.temperature } : {}),
+      ...(settings.topP !== undefined ? { top_p: settings.topP } : {}),
+      ...(reasoningEffort
+        ? { reasoning_effort: reasoningEffort as ChatCompletionReasoningEffort }
+        : {}),
+    } as unknown as Record<string, unknown>,
+    settings.extraParams,
+  ) as unknown as ChatCompletionCreateParamsStreaming
 
   const stream = await client.chat.completions.create(createParams, { signal })
 

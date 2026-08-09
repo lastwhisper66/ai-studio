@@ -891,7 +891,16 @@
   },
   "editModel": {
     "title": "Edit Model",
-    "save": "Save"
+    "save": "Save",
+    "extraParams": {
+      "label": "Extra request params",
+      "hint": "Merged into this model's requests. Values are parsed as JSON: 4096 is a number, false a boolean, {\"a\":1} an object, null means don't send the field. Quote it to send a numeric string, e.g. \"4096\".",
+      "keyPlaceholder": "Param name, e.g. max_tokens",
+      "valuePlaceholder": "Value, e.g. 4096",
+      "add": "Add param",
+      "duplicate": "Duplicate param name",
+      "locked": "Managed by the app — won't be sent"
+    }
   },
   "modelLibrary": {
     "description": "Define model capabilities for auto-matching when adding models",
