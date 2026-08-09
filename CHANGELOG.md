@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.0](https://github.com/lastwhisper66/ai-studio/compare/v1.12.0...v1.13.0) (2026-08-09)
+
+
+### Features
+
+* **keybindings:** add master switch to suppress all shortcuts ([40e1513](https://github.com/lastwhisper66/ai-studio/commit/40e1513ad8a94c9a82ea92e6cdc4c663e1f5dce6))
+* **keybindings:** add master switch to suppress all shortcuts ([bcb5df0](https://github.com/lastwhisper66/ai-studio/commit/bcb5df075b1ced79b0697bfddbba87c2b174c056))
+
 ## [1.12.0](https://github.com/lastwhisper66/ai-studio/compare/v1.11.3...v1.12.0) (2026-08-09)
 
 
