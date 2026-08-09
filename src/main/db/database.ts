@@ -104,6 +104,7 @@ function createTables(): void {
       name TEXT NOT NULL,
       group_name TEXT NOT NULL DEFAULT '',
       capabilities TEXT NOT NULL DEFAULT '[]',
+      extra_params TEXT NOT NULL DEFAULT '{}',
       enabled INTEGER NOT NULL DEFAULT 1,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
