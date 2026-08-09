@@ -18,6 +18,17 @@ export interface KeybindingDef {
   readOnly?: boolean
 }
 
+/**
+ * Settings key for the master switch that suppresses every shortcut at once.
+ * Read by the main process (global accelerators, tray menu) and the renderer
+ * (in-app accelerators, settings UI), hence its home here.
+ *
+ * Distinct from `app.keybindingsDisabled`, which disables individual actions:
+ * this one leaves per-action bindings untouched and is meant to be flipped on
+ * and off frequently from the tray.
+ */
+export const ALL_SHORTCUTS_DISABLED_KEY = 'app.allShortcutsDisabled'
+
 export const DEFAULT_KEYBINDINGS: Record<KeybindingActionId, KeybindingDef> = {
   'new-conversation': {
     defaultAccelerator: 'Ctrl+N',

@@ -16,6 +16,7 @@ import { getSetting } from './db'
 import { getDataDir } from './utils/paths'
 import { startScreenshot } from './screenshot'
 import { checkForUpdates } from './auto-updater'
+import { ALL_SHORTCUTS_DISABLED_KEY } from '@shared/keybindings'
 import { onSettingsChanged, writeSettingFromMain } from './settings-bus'
 import { getSelectionAssistantEnabled } from './app-state'
 import { toggleSelectionAssistant, refreshSelectionFilterConfig } from './selection-service'
@@ -37,6 +38,7 @@ const TRAY_RELEVANT_KEYS = new Set([
   'app.autoLaunch',
   'app.closeToTray',
   'app.startMinimized',
+  ALL_SHORTCUTS_DISABLED_KEY,
   'selection.enabled',
 ])
 
@@ -57,6 +59,13 @@ function buildMenuTemplate(): MenuItemConstructorOptions[] {
   const closeToTrayOn = getSetting('app.closeToTray') !== 'false' // 与 initCloseToTray 一致：默认 true
   const startMinimizedOn = isFlagTrue('app.startMinimized', false)
   const selectionOn = getSelectionAssistantEnabled()
+  const allShortcutsDisabled = isFlagTrue(ALL_SHORTCUTS_DISABLED_KEY, false)
+
+  // These are plain text hints appended to the label, not Electron's
+  // `accelerator` field — the menu items stay clickable either way. Drop them
+  // while the master switch is on so the menu doesn't advertise a dead key.
+  const hint = (label: string, accel: string): string =>
+    allShortcutsDisabled ? label : `${label}\t${accel}`
 
   return [
     {
@@ -64,7 +73,7 @@ function buildMenuTemplate(): MenuItemConstructorOptions[] {
       click: () => deps?.showWindow(deps.ensureMainWindow()),
     },
     {
-      label: `${t('tray.newConversation')}\tCtrl+N`,
+      label: hint(t('tray.newConversation'), 'Ctrl+N'),
       click: () => {
         const w = deps?.ensureMainWindow()
         if (!w) return
@@ -73,12 +82,12 @@ function buildMenuTemplate(): MenuItemConstructorOptions[] {
       },
     },
     {
-      label: `${t('tray.screenshotTranslate')}\tAlt+P`,
+      label: hint(t('tray.screenshotTranslate'), 'Alt+P'),
       click: () => startScreenshot(),
     },
     { type: 'separator' },
     {
-      label: `${t('tray.enableSelectionAssistant')}\tAlt+H`,
+      label: hint(t('tray.enableSelectionAssistant'), 'Alt+H'),
       type: 'checkbox',
       checked: selectionOn,
       click: () => {
@@ -123,9 +132,16 @@ function buildMenuTemplate(): MenuItemConstructorOptions[] {
       checked: startMinimizedOn,
       click: () => writeSettingFromMain('app.startMinimized', startMinimizedOn ? 'false' : 'true'),
     },
+    {
+      label: t('tray.disableAllShortcuts'),
+      type: 'checkbox',
+      checked: allShortcutsDisabled,
+      click: () =>
+        writeSettingFromMain(ALL_SHORTCUTS_DISABLED_KEY, allShortcutsDisabled ? 'false' : 'true'),
+    },
     { type: 'separator' },
     {
-      label: `${t('tray.openSettings')}\tCtrl+,`,
+      label: hint(t('tray.openSettings'), 'Ctrl+,'),
       click: () => {
         const w = deps?.ensureMainWindow()
         if (!w) return

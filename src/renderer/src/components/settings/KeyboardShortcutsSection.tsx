@@ -1,10 +1,16 @@
 import { useCallback, useState } from 'react'
 import { RotateCcw, Lock, BrushCleaning } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
+import {
+  ALL_SHORTCUTS_DISABLED_KEY,
+  DEFAULT_KEYBINDINGS,
+  type KeybindingActionId,
+} from '@shared/keybindings'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
+import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { ShortcutRecorder, ShortcutDisplay } from './ShortcutRecorder'
 import { Button } from '@renderer/components/ui/button'
+import { Label } from '@renderer/components/ui/label'
 import { Switch } from '@renderer/components/ui/switch'
 import {
   AlertDialog,
@@ -29,7 +35,7 @@ export function KeyboardShortcutsSection(): React.JSX.Element {
   const { t } = useTranslation()
   const overrides = useKeybindingStore((s) => s.overrides)
   const disabled = useKeybindingStore((s) => s.disabled)
-  const getEffectiveAccelerator = useKeybindingStore((s) => s.getEffectiveAccelerator)
+  const findConflict = useKeybindingStore((s) => s.findConflict)
   const setOverride = useKeybindingStore((s) => s.setOverride)
   const clearAction = useKeybindingStore((s) => s.clearAction)
   const resetAction = useKeybindingStore((s) => s.resetAction)
@@ -37,19 +43,24 @@ export function KeyboardShortcutsSection(): React.JSX.Element {
   const toggleDisabled = useKeybindingStore((s) => s.toggleDisabled)
   const [conflict, setConflict] = useState<ConflictInfo | null>(null)
 
+  // Master switch lives in settings (not keybindingStore) so the tray and this
+  // page observe the same value through the existing broadcast — no extra sync.
+  const allDisabled = useSettingsStore((s) => s.settings[ALL_SHORTCUTS_DISABLED_KEY] === 'true')
+  const saveSettings = useSettingsStore((s) => s.saveSettings)
+  const handleAllDisabledToggle = (checked: boolean): void => {
+    saveSettings({ [ALL_SHORTCUTS_DISABLED_KEY]: String(checked) })
+  }
+
   const handleChange = useCallback(
     (actionId: KeybindingActionId, accelerator: string) => {
-      for (const id of Object.keys(DEFAULT_KEYBINDINGS) as KeybindingActionId[]) {
-        if (id === actionId) continue
-        const accel = getEffectiveAccelerator(id)
-        if (accel && accel.toLowerCase() === accelerator.toLowerCase()) {
-          setConflict({ targetActionId: actionId, conflictActionId: id, accelerator })
-          return
-        }
+      const conflictActionId = findConflict(actionId, accelerator)
+      if (conflictActionId) {
+        setConflict({ targetActionId: actionId, conflictActionId, accelerator })
+        return
       }
       setOverride(actionId, accelerator)
     },
-    [getEffectiveAccelerator, setOverride],
+    [findConflict, setOverride],
   )
 
   const handleConflictConfirm = useCallback(async () => {
@@ -95,6 +106,15 @@ export function KeyboardShortcutsSection(): React.JSX.Element {
             <RotateCcw className="mr-1.5 size-3.5" />
             {t('keybindings.resetAll')}
           </Button>
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-4 border-t pt-4">
+          <div>
+            <Label className="text-sm font-medium">{t('keybindings.disableAllLabel')}</Label>
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              {t('keybindings.disableAllHint')}
+            </p>
+          </div>
+          <Switch checked={allDisabled} onCheckedChange={handleAllDisabledToggle} />
         </div>
       </div>
 

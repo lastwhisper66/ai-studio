@@ -13,7 +13,11 @@ import { backupSyncService } from './backup/sync-service'
 import { runMigrations } from './migrate'
 import { cancelSync, scheduleCatalogSync } from './catalog-sync'
 import { cleanupStaleAvatarStaging } from './backup/snapshot'
-import { DEFAULT_KEYBINDINGS, type KeybindingActionId } from '@shared/keybindings'
+import {
+  ALL_SHORTCUTS_DISABLED_KEY,
+  DEFAULT_KEYBINDINGS,
+  type KeybindingActionId,
+} from '@shared/keybindings'
 import {
   initCloseToTray,
   getCloseToTray,
@@ -46,6 +50,7 @@ import {
   toggleSelectionAssistant,
 } from './selection-service'
 import { createTray, updateTrayMenu, destroyTray } from './tray'
+import { onSettingsChanged } from './settings-bus'
 
 // ── Window state persistence ────────────────────────────────────
 
@@ -126,6 +131,10 @@ function toElectronAccelerator(accel: string): string {
 }
 
 function getEffectiveGlobalAccelerator(actionId: KeybindingActionId): string | null {
+  // Master switch (tray / Settings → Keyboard Shortcuts): suppress every
+  // accelerator without touching the user's per-action bindings.
+  if (getSetting(ALL_SHORTCUTS_DISABLED_KEY) === 'true') return null
+
   const rawDisabled = getSetting('app.keybindingsDisabled')
   if (rawDisabled) {
     try {
@@ -223,6 +232,12 @@ function registerScreenshotShortcut(): void {
 
 let currentSelectionToggleShortcut: string | null = null
 
+/**
+ * Returns false only when the OS refused the accelerator (another app owns it).
+ * The renderer surfaces that as a "shortcut unavailable" warning, so having no
+ * accelerator to register — cleared, individually disabled, or suppressed by the
+ * master switch — must report success: nothing failed, there was nothing to do.
+ */
 function registerSelectionToggleShortcut(): boolean {
   if (currentSelectionToggleShortcut) {
     globalShortcut.unregister(currentSelectionToggleShortcut)
@@ -230,7 +245,7 @@ function registerSelectionToggleShortcut(): boolean {
   }
 
   const accel = getEffectiveGlobalAccelerator('toggle-selection-assistant')
-  if (!accel) return false
+  if (!accel) return true
 
   const electronAccel = toElectronAccelerator(accel)
   const ok = globalShortcut.register(electronAccel, () => {
@@ -247,6 +262,19 @@ function registerSelectionToggleShortcut(): boolean {
     console.warn(`Failed to register global shortcut ${electronAccel} — may already be in use`)
   }
   return ok
+}
+
+/**
+ * (Re-)evaluate all four global accelerators — used both at boot and whenever
+ * the master switch flips. Each register* call unregisters its previous binding
+ * first, then re-reads getEffectiveGlobalAccelerator(), so this drops the
+ * accelerators when the switch goes on and restores them when it goes off.
+ */
+function reregisterGlobalShortcuts(): void {
+  registerSummonWindowShortcut()
+  registerQuickAssistantShortcut()
+  registerScreenshotShortcut()
+  registerSelectionToggleShortcut()
 }
 
 function changeZoom(win: BrowserWindow, delta: number): void {
@@ -533,17 +561,19 @@ if (!gotTheLock) {
     // Start the selection-hook (if enabled) only after the two windows exist
     initSelectionService()
 
-    // Global shortcut: summon the main window (user-configurable, default Alt+A)
-    registerSummonWindowShortcut()
+    // Global shortcuts, all user-configurable via Settings → Keyboard Shortcuts:
+    // summon window (Alt+A), Quick Assistant (Ctrl+Shift+Space), screenshot
+    // translate (Alt+P), Selection Assistant (Alt+H).
+    reregisterGlobalShortcuts()
 
-    // Global shortcut: Ctrl+Shift+Space to toggle Quick Assistant (user-configurable)
-    registerQuickAssistantShortcut()
-
-    // Global shortcut: Alt+P to trigger screenshot translate (user-configurable)
-    registerScreenshotShortcut()
-
-    // Global shortcut: Alt+H to toggle Selection Assistant (user-configurable)
-    registerSelectionToggleShortcut()
+    // Master switch flipped (from the tray or Settings → Keyboard Shortcuts):
+    // drop or restore the global accelerators without a restart. Subscribing
+    // here — rather than adding an entry to settings-side-effects.ts — keeps the
+    // dependency direction intact, since the register* functions are private to
+    // this module. Mirrors how tray.ts observes the same bus.
+    onSettingsChanged((entries) => {
+      if (ALL_SHORTCUTS_DISABLED_KEY in entries) reregisterGlobalShortcuts()
+    })
 
     // Kick off auto-updater (delayed check inside; respects app.autoUpdateEnabled)
     initAutoUpdater()
