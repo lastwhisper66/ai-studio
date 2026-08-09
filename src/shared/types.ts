@@ -178,6 +178,8 @@ export interface ProviderConnectionTestPayload {
   apiKey: string
   baseUrl: string
   modelName: string
+  /** Extra params of the model row being tested, when it exists in the DB. */
+  extraParams?: Record<string, unknown>
 }
 
 export interface RemoteModelFetchPayload {

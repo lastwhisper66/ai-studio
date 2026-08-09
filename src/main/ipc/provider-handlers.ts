@@ -13,6 +13,8 @@ import {
 } from '../db'
 import type { CreateProviderData, UpdateProviderData } from '../db/providers'
 import { createAIClient } from '../ai'
+import { applyExtraParams } from '../ai/extra-params'
+import type { ChatCompletionCreateParamsStreaming } from 'openai/resources/chat/completions'
 
 export function registerProviderHandlers(): void {
   ipcMain.handle(IpcChannels.PROVIDER_LIST, (): IpcResult<Provider[]> => {
@@ -112,19 +114,24 @@ async function doTestConnection(
       maxCompletionTokens: 1,
       topP: 1,
       systemPrompt: '',
+      extraParams: payload.extraParams,
     }
 
     const client = createAIClient(settings)
 
-    const stream = await client.chat.completions.create(
+    const createParams = applyExtraParams(
       {
         model: payload.modelName,
         messages: [{ role: 'user', content: 'Hi' }],
         max_completion_tokens: 1,
         stream: true,
-      },
-      { signal: controller.signal },
-    )
+      } as unknown as Record<string, unknown>,
+      payload.extraParams,
+    ) as unknown as ChatCompletionCreateParamsStreaming
+
+    const stream = await client.chat.completions.create(createParams, {
+      signal: controller.signal,
+    })
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars

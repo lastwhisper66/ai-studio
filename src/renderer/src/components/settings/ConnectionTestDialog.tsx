@@ -11,6 +11,7 @@ import {
 } from '@renderer/components/ui/dialog'
 import { ScrollArea } from '@renderer/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/components/ui/tooltip'
+import { useProviderStore } from '@renderer/stores/providerStore'
 import type { Provider, ProviderConnectionTestPayload } from '@shared/types'
 
 type TestStatus = 'idle' | 'testing' | 'success' | 'error'
@@ -41,6 +42,7 @@ export function ConnectionTestDialog({
   models,
 }: ConnectionTestDialogProps): React.JSX.Element {
   const { t } = useTranslation()
+  const storeModels = useProviderStore((s) => s.models)
   const [testStates, setTestStates] = useState<Record<string, ModelTestState>>({})
   const [isTestingAll, setIsTestingAll] = useState(false)
 
@@ -57,6 +59,7 @@ export function ConnectionTestDialog({
           apiKey: provider.apiKey,
           baseUrl: provider.baseUrl,
           modelName,
+          extraParams: storeModels.find((m) => m.id === modelId)?.extraParams,
         }
         const res = await window.api.testProviderConnection(payload)
         if (res.success) {
@@ -79,7 +82,7 @@ export function ConnectionTestDialog({
         })
       }
     },
-    [provider, updateModelState, t],
+    [provider, storeModels, updateModelState, t],
   )
 
   const testAll = useCallback(async () => {
