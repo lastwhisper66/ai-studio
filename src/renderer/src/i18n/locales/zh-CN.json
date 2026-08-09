@@ -891,7 +891,16 @@
   },
   "editModel": {
     "title": "编辑模型",
-    "save": "保存"
+    "save": "保存",
+    "extraParams": {
+      "label": "额外请求参数",
+      "hint": "附加到该模型的请求里。值按 JSON 解析：4096 是数字，false 是布尔，{\"a\":1} 是对象，null 表示不发送该字段。想传字符串形式的数字要加引号，如 \"4096\"。",
+      "keyPlaceholder": "参数名，如 max_tokens",
+      "valuePlaceholder": "值，如 4096",
+      "add": "添加参数",
+      "duplicate": "参数名重复",
+      "locked": "该参数由应用管理，不会发送"
+    }
   },
   "modelLibrary": {
     "description": "定义模型的能力标签，添加模型时自动匹配",

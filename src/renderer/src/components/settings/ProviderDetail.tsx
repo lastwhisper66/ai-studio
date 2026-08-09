@@ -112,6 +112,7 @@ interface ProviderFormProps {
     group: string
     enabled: boolean
     capabilities: ModelCapability[]
+    extraParams: Record<string, unknown>
   }[]
   onUpdate: (id: string, data: Partial<Provider>) => Promise<void>
   onDelete: (id: string) => Promise<void>
@@ -123,7 +124,12 @@ interface ProviderFormProps {
   ) => Promise<unknown>
   onUpdateModel: (
     id: string,
-    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+    data: {
+      name?: string
+      group?: string
+      capabilities?: ModelCapability[]
+      extraParams?: Record<string, unknown>
+    },
   ) => Promise<void>
   onRemoveModel: (id: string) => Promise<void>
   onRemoveAllModels: (providerId: string) => Promise<void>
@@ -182,6 +188,7 @@ function ProviderForm({
     name: string
     group: string
     capabilities: ModelCapability[]
+    extraParams: Record<string, unknown>
   } | null>(null)
 
   const template = getTemplateByType(provider.type)

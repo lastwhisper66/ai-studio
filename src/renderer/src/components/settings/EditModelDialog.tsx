@@ -6,14 +6,27 @@ import { Label } from '@renderer/components/ui/label'
 import { Button } from '@renderer/components/ui/button'
 import type { ModelCapability } from '@shared/types'
 import { CAPABILITY_CONFIG, FULL_CAPABILITIES } from './capability-config'
+import { ExtraParamsEditor } from './ExtraParamsEditor'
+import { rowsFromParams, paramsFromRows, duplicateKeys, type ParamRow } from './extra-params-rows'
 
 interface EditModelDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  model: { id: string; name: string; group: string; capabilities: ModelCapability[] }
+  model: {
+    id: string
+    name: string
+    group: string
+    capabilities: ModelCapability[]
+    extraParams: Record<string, unknown>
+  }
   onSave: (
     id: string,
-    data: { name?: string; group?: string; capabilities?: ModelCapability[] },
+    data: {
+      name?: string
+      group?: string
+      capabilities?: ModelCapability[]
+      extraParams?: Record<string, unknown>
+    },
   ) => Promise<void>
 }
 
@@ -27,6 +40,7 @@ export function EditModelDialog({
   const [name, setName] = useState(model.name)
   const [group, setGroup] = useState(model.group)
   const [selectedCaps, setSelectedCaps] = useState<ModelCapability[]>(model.capabilities)
+  const [paramRows, setParamRows] = useState<ParamRow[]>(() => rowsFromParams(model.extraParams))
 
   useEffect(() => {
     if (open) {
@@ -34,10 +48,12 @@ export function EditModelDialog({
       setName(model.name)
       setGroup(model.group)
       setSelectedCaps([...model.capabilities])
+      setParamRows(rowsFromParams(model.extraParams))
     }
   }, [open, model])
 
-  const canSubmit = name.trim().length > 0
+  const hasDuplicates = duplicateKeys(paramRows).size > 0
+  const canSubmit = name.trim().length > 0 && !hasDuplicates
 
   const handleSubmit = async (): Promise<void> => {
     if (!canSubmit) return
@@ -45,6 +61,7 @@ export function EditModelDialog({
       name: name.trim(),
       group: group.trim(),
       capabilities: selectedCaps,
+      extraParams: paramsFromRows(paramRows),
     })
     onOpenChange(false)
   }
@@ -62,7 +79,7 @@ export function EditModelDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t('editModel.title')}</DialogTitle>
         </DialogHeader>
@@ -116,6 +133,8 @@ export function EditModelDialog({
               })}
             </div>
           </div>
+
+          <ExtraParamsEditor rows={paramRows} onChange={setParamRows} />
         </div>
 
         {/* Submit */}
