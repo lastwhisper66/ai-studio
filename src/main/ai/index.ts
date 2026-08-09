@@ -1,9 +1,13 @@
 import OpenAI from 'openai'
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions'
+import type {
+  ChatCompletionMessageParam,
+  ChatCompletionCreateParamsNonStreaming,
+} from 'openai/resources/chat/completions'
 import type { ApiSettings } from '@shared/types'
 import { getSetting } from '../db/settings'
 import { createOpenAIClient } from './openai-client'
 import { streamChat, OPENAI_COMPATIBLE_TYPES } from './stream-chat'
+import { applyExtraParams } from './extra-params'
 
 export { streamChat, OPENAI_COMPATIBLE_TYPES }
 export type { StreamCallbacks, StreamChatOptions } from './stream-chat'
@@ -69,12 +73,17 @@ export async function generateTitle(
   try {
     if (OPENAI_COMPATIBLE_TYPES.has(settings.provider)) {
       const client = createOpenAIClient(settings)
-      const response = await client.chat.completions.create({
-        model: settings.model,
-        messages: titleMessages,
-        max_completion_tokens: 50,
-        temperature: 0.5,
-      })
+      const response = await client.chat.completions.create(
+        applyExtraParams(
+          {
+            model: settings.model,
+            messages: titleMessages,
+            max_completion_tokens: 50,
+            temperature: 0.5,
+          } as unknown as Record<string, unknown>,
+          settings.extraParams,
+        ) as unknown as ChatCompletionCreateParamsNonStreaming,
+      )
       const title = cleanTitle(response.choices[0]?.message?.content ?? '')
       if (title) return title
     } else {
