@@ -150,6 +150,63 @@ body {
   overflow: hidden;
 }
 
+/* ── Scrollbars ──
+   Chromium's native scrollbar (code blocks, textareas, plain overflow
+   containers) looks nothing like the Radix ScrollArea used elsewhere, so we
+   restyle it to match: 10px track, transparent gutter, rounded thumb.
+
+   `--scrollbar-thumb` is derived from the active theme rather than hardcoded,
+   and is shared with the Radix thumb (ui/scroll-area.tsx) so both kinds of
+   scrollbar are visually identical. It can't just be `--border`: in dark mode
+   `--border` equals `--muted`, which is the code block background, so the
+   thumb would be invisible there. Mixing in `--muted-foreground` keeps it
+   readable on every surface in both modes.
+
+   Do NOT add `scrollbar-width` / `scrollbar-color` here — since Chromium 121
+   the standard properties take precedence over the ::-webkit-scrollbar
+   pseudo-elements, which would silently discard everything below. */
+:root {
+  --scrollbar-thumb: color-mix(in oklab, var(--muted-foreground) 40%, var(--border));
+  --scrollbar-thumb-hover: color-mix(in oklab, var(--muted-foreground) 70%, var(--border));
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* 2px transparent border + padding-box clipping leaves a 6px thumb inside the
+   10px track, mirroring the Radix thumb's inset. */
+::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-color: var(--scrollbar-thumb);
+  background-clip: padding-box;
+  transition: background-color 0.15s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+/* Keep the thumb grabbable when the scrollable content is very long. */
+::-webkit-scrollbar-thumb:vertical {
+  min-height: 32px;
+}
+
+::-webkit-scrollbar-thumb:horizontal {
+  min-width: 32px;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
 /* ── Shiki code block overrides ── */
 pre.shiki,
 pre.shiki code {

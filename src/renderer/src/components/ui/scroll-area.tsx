@@ -47,9 +47,11 @@ function ScrollBar({
         className,
       )}
       {...props}>
+      {/* Shares --scrollbar-thumb with the native ::-webkit-scrollbar rules in
+          main.css so custom and native scrollbars look identical. */}
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 rounded-full bg-border"
+        className="relative flex-1 rounded-full bg-(--scrollbar-thumb) transition-colors hover:bg-(--scrollbar-thumb-hover)"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   )
