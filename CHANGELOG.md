@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.1](https://github.com/lastwhisper66/ai-studio/compare/v1.13.0...v1.13.1) (2026-08-21)
+
+
+### Bug Fixes
+
+* **ui:** unify native scrollbar styling with app theme ([9c0644e](https://github.com/lastwhisper66/ai-studio/commit/9c0644ea6fc17a9eb7fc59c419a704abbc29024f))
+* **ui:** unify native scrollbar styling with Radix ScrollArea ([940f3e3](https://github.com/lastwhisper66/ai-studio/commit/940f3e37e0e08e971abd242b66f7e19604086bc5))
+
 ## [1.13.0](https://github.com/lastwhisper66/ai-studio/compare/v1.12.0...v1.13.0) (2026-08-09)
 
 
