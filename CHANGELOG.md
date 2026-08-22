@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.2](https://github.com/lastwhisper66/ai-studio/compare/v1.13.1...v1.13.2) (2026-08-22)
+
+
+### Code Refactoring
+
+* **chat:** drop MathJax engine in favor of KaTeX only ([820b28b](https://github.com/lastwhisper66/ai-studio/commit/820b28ba39806babeab083d6c22f6f5d8924d847))
+* **chat:** drop MathJax engine in favor of KaTeX only ([0119ed4](https://github.com/lastwhisper66/ai-studio/commit/0119ed497cee4501b46856d80026aeb8571dd29e))
+
 ## [1.13.1](https://github.com/lastwhisper66/ai-studio/compare/v1.13.0...v1.13.1) (2026-08-21)
 
 
