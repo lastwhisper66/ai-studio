@@ -118,7 +118,6 @@
     "math": {
       "error": "公式渲染失败",
       "copyCode": "复制 LaTeX",
-      "copyImage": "复制图像",
       "fullscreen": "放大查看",
       "zoomIn": "放大",
       "zoomOut": "缩小",
@@ -480,10 +479,6 @@
       "fontFamilyHint": "设置应用程序的默认显示字体。",
       "codeFontFamily": "代码字体",
       "codeFontFamilyHint": "设置代码块的显示字体。",
-      "mathEngine": "数学公式引擎",
-      "mathEngineHint": "选择用于渲染数学公式的引擎。KaTeX 更快更轻量，MathJax 功能更全面。",
-      "mathEngineKatex": "KaTeX",
-      "mathEngineMathjax": "MathJax",
       "fontDefault": "系统默认",
       "fontNotFound": "未找到字体。"
     },
