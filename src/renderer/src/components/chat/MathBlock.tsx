@@ -1,51 +1,14 @@
-import { useState, useEffect, useRef, useCallback, memo } from 'react'
-import { Copy, Check, Image, Maximize2, AlertTriangle } from 'lucide-react'
+import { useState, useEffect, memo } from 'react'
+import { Copy, Check, Maximize2, AlertTriangle } from 'lucide-react'
 import katex, { type TrustContext } from 'katex'
 import { useTranslation } from 'react-i18next'
-import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useCopyToClipboard } from '@renderer/hooks/useCopyToClipboard'
-import { copySvgAsImage, sanitizeSvgMarkup } from '@renderer/lib/canvas'
 import { BlockToolbarBtn } from './BlockToolbarBtn'
 import { ZoomablePreviewDialog } from './ZoomablePreviewDialog'
 
 interface MathBlockProps {
   value: string
   displayMode: boolean
-}
-
-let mathjaxDocPromise: Promise<MathJaxDoc> | null = null
-
-interface MathJaxDoc {
-  convert(tex: string, options: { display: boolean }): unknown
-  adaptor: { outerHTML(node: unknown): string }
-}
-
-function getMathJaxDoc(): Promise<MathJaxDoc> {
-  if (!mathjaxDocPromise) {
-    mathjaxDocPromise = (async () => {
-      const { mathjax } = await import('mathjax-full/js/mathjax.js')
-      const { TeX } = await import('mathjax-full/js/input/tex.js')
-      const { SVG } = await import('mathjax-full/js/output/svg.js')
-      const { liteAdaptor } = await import('mathjax-full/js/adaptors/liteAdaptor.js')
-      const { RegisterHTMLHandler } = await import('mathjax-full/js/handlers/html.js')
-      const { AllPackages } = await import('mathjax-full/js/input/tex/AllPackages.js')
-
-      const adaptor = liteAdaptor()
-      RegisterHTMLHandler(adaptor)
-
-      const tex = new TeX({ packages: AllPackages })
-      const svg = new SVG({ fontCache: 'none' })
-      const doc = mathjax.document('', { InputJax: tex, OutputJax: svg })
-
-      return {
-        convert: (t: string, opts: { display: boolean }) => doc.convert(t, opts),
-        adaptor: {
-          outerHTML: (node: unknown) => adaptor.outerHTML(node as never),
-        },
-      }
-    })()
-  }
-  return mathjaxDocPromise
 }
 
 const SAFE_URL_PROTOCOLS = new Set(['http', 'https', 'mailto'])
@@ -99,73 +62,28 @@ function sanitizeMathMarkup(markup: string): string {
   return template.innerHTML
 }
 
-async function renderMathSvg(value: string, displayMode: boolean): Promise<string> {
-  const doc = await getMathJaxDoc()
-  const node = doc.convert(value, { display: displayMode })
-  return sanitizeSvgMarkup(doc.adaptor.outerHTML(node))
-}
-
 export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlockProps) {
   const { t } = useTranslation()
-  const engine = useSettingsStore((s) => s.settings['display.mathEngine'] || 'katex')
   const [html, setHtml] = useState('')
   const [error, setError] = useState('')
   const [showFullscreen, setShowFullscreen] = useState(false)
-  const [imgCopied, setImgCopied] = useState(false)
-  const containerRef = useRef<HTMLSpanElement>(null)
   const { copied: codeCopied, copy: copyCode } = useCopyToClipboard()
 
   useEffect(() => {
-    let cancelled = false
-
-    if (engine === 'mathjax') {
-      getMathJaxDoc()
-        .then((doc) => {
-          const node = doc.convert(value, { display: displayMode })
-          if (!cancelled) {
-            setHtml(sanitizeMathMarkup(doc.adaptor.outerHTML(node)))
-            setError('')
-          }
-        })
-        .catch((err) => {
-          if (!cancelled) {
-            setError(String(err?.message || err))
-            setHtml('')
-          }
-        })
-    } else {
-      try {
-        const rendered = katex.renderToString(value, {
-          displayMode,
-          throwOnError: false,
-          output: 'htmlAndMathml',
-          trust: shouldTrustFormulaCommand,
-        })
-        setHtml(sanitizeMathMarkup(rendered))
-        setError('')
-      } catch (err) {
-        setError(String((err as Error)?.message || err))
-        setHtml('')
-      }
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [value, displayMode, engine])
-
-  const copyImage = useCallback(async () => {
     try {
-      await copySvgAsImage(await renderMathSvg(value, displayMode), {
-        text: value,
-        alt: value,
+      const rendered = katex.renderToString(value, {
+        displayMode,
+        throwOnError: false,
+        output: 'htmlAndMathml',
+        trust: shouldTrustFormulaCommand,
       })
-      setImgCopied(true)
-      setTimeout(() => setImgCopied(false), 2000)
+      setHtml(sanitizeMathMarkup(rendered))
+      setError('')
     } catch (err) {
-      console.warn('Copy math image failed:', err)
+      setError(String((err as Error)?.message || err))
+      setHtml('')
     }
-  }, [displayMode, value])
+  }, [value, displayMode])
 
   if (error) {
     if (!displayMode) {
@@ -199,9 +117,7 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
   }
 
   if (!displayMode) {
-    return (
-      <span ref={containerRef} className="math-inline" dangerouslySetInnerHTML={{ __html: html }} />
-    )
+    return <span className="math-inline" dangerouslySetInnerHTML={{ __html: html }} />
   }
 
   return (
@@ -216,11 +132,6 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
               onClick={() => copyCode(value)}
             />
             <BlockToolbarBtn
-              icon={imgCopied ? Check : Image}
-              tooltip={t('chat.math.copyImage')}
-              onClick={copyImage}
-            />
-            <BlockToolbarBtn
               icon={Maximize2}
               tooltip={t('chat.math.fullscreen')}
               onClick={() => setShowFullscreen(true)}
@@ -228,11 +139,7 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
           </div>
         </div>
         <div className="overflow-x-auto p-4">
-          <span
-            ref={containerRef}
-            className="math-display"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
+          <span className="math-display" dangerouslySetInnerHTML={{ __html: html }} />
         </div>
       </div>
 

@@ -118,7 +118,6 @@
     "math": {
       "error": "Formula render failed",
       "copyCode": "Copy LaTeX",
-      "copyImage": "Copy image",
       "fullscreen": "Zoom in",
       "zoomIn": "Zoom in",
       "zoomOut": "Zoom out",
@@ -480,10 +479,6 @@
       "fontFamilyHint": "Set the default display font for the application.",
       "codeFontFamily": "Code Font",
       "codeFontFamilyHint": "Set the display font for code blocks.",
-      "mathEngine": "Math Engine",
-      "mathEngineHint": "Choose the engine for rendering math formulas. KaTeX is faster and lighter, MathJax is more comprehensive.",
-      "mathEngineKatex": "KaTeX",
-      "mathEngineMathjax": "MathJax",
       "fontDefault": "System Default",
       "fontNotFound": "No fonts found."
     },
