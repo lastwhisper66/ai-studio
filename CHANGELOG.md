@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.13.3](https://github.com/lastwhisper66/ai-studio/compare/v1.13.2...v1.13.3) (2026-08-22)
+
+
+### Performance Improvements
+
+* **chat:** render math synchronously via useMemo ([5bf4016](https://github.com/lastwhisper66/ai-studio/commit/5bf4016074a6c499e878a894545cd5ab1c6a10fe))
+* **chat:** render math synchronously via useMemo ([a13411e](https://github.com/lastwhisper66/ai-studio/commit/a13411e03809556bbea3967385c4d37a6741d81b))
+
 ## [1.13.2](https://github.com/lastwhisper66/ai-studio/compare/v1.13.1...v1.13.2) (2026-08-22)
 
 
