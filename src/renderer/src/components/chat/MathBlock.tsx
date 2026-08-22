@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from 'react'
+import { useState, useMemo, memo } from 'react'
 import { Copy, Check, Maximize2, AlertTriangle } from 'lucide-react'
 import katex, { type TrustContext } from 'katex'
 import { useTranslation } from 'react-i18next'
@@ -64,12 +64,10 @@ function sanitizeMathMarkup(markup: string): string {
 
 export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlockProps) {
   const { t } = useTranslation()
-  const [html, setHtml] = useState('')
-  const [error, setError] = useState('')
   const [showFullscreen, setShowFullscreen] = useState(false)
   const { copied: codeCopied, copy: copyCode } = useCopyToClipboard()
 
-  useEffect(() => {
+  const { html, error } = useMemo(() => {
     try {
       const rendered = katex.renderToString(value, {
         displayMode,
@@ -77,11 +75,9 @@ export const MathBlock = memo(function MathBlock({ value, displayMode }: MathBlo
         output: 'htmlAndMathml',
         trust: shouldTrustFormulaCommand,
       })
-      setHtml(sanitizeMathMarkup(rendered))
-      setError('')
+      return { html: sanitizeMathMarkup(rendered), error: '' }
     } catch (err) {
-      setError(String((err as Error)?.message || err))
-      setHtml('')
+      return { html: '', error: String((err as Error)?.message || err) }
     }
   }, [value, displayMode])
 
