@@ -9,6 +9,7 @@ import { useModelDefinitionStore } from '@renderer/stores/modelDefinitionStore'
 import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { CAPABILITY_CONFIG } from './capability-config'
 import { ProviderIcon } from './ProviderIcon'
+import { inferModelIcon } from '@renderer/lib/inferModelIcon'
 
 import type { ModelCapability, ProviderType } from '@shared/types'
 
@@ -235,12 +236,13 @@ export function RemoteModelDialog({
                               className={`flex items-center gap-2.5 border-t border-border/40 px-3 py-2 pl-8 ${
                                 isAdded ? 'bg-primary/5' : ''
                               }`}>
-                              {/* Provider icon */}
+                              {/* Model's own vendor icon, falling back to the provider's */}
                               <ProviderIcon
                                 type={providerType}
-                                name={providerName}
+                                name={model.id}
                                 color={providerColor}
                                 size="md"
+                                icon={inferModelIcon(model.id)}
                               />
 
                               {/* Model name */}

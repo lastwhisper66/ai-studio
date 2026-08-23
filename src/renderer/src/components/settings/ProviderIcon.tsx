@@ -1,6 +1,6 @@
 import { cn } from '@renderer/lib/utils'
 import type { ProviderType } from '@shared/types'
-import { PROVIDER_ICON_MAP } from './provider-icons'
+import { PROVIDER_ICON_MAP, type BrandIcon } from './provider-icons'
 
 interface ProviderIconProps {
   type: ProviderType
@@ -8,12 +8,17 @@ interface ProviderIconProps {
   color: string
   size?: 'sm' | 'md' | 'lg'
   className?: string
+  /**
+   * Overrides the provider's own icon. Model rows pass a model-derived brand
+   * here, since a provider often serves other vendors' models.
+   */
+  icon?: BrandIcon
 }
 
 const SIZE_CONFIG = {
-  sm: { container: 'h-4 w-4', img: 'h-3 w-3' },
-  md: { container: 'h-5 w-5', img: 'h-4 w-4' },
-  lg: { container: 'h-7 w-7', img: 'h-5 w-5' },
+  sm: { container: 'h-4 w-4', px: 12 },
+  md: { container: 'h-5 w-5', px: 16 },
+  lg: { container: 'h-7 w-7', px: 20 },
 } as const
 
 /**
@@ -26,19 +31,17 @@ export function ProviderIcon({
   color,
   size = 'md',
   className,
+  icon,
 }: ProviderIconProps): React.JSX.Element {
-  const iconSrc = PROVIDER_ICON_MAP[type]
-  const { container, img } = SIZE_CONFIG[size]
+  const Icon = icon ?? PROVIDER_ICON_MAP[type]
+  const { container, px } = SIZE_CONFIG[size]
 
-  if (iconSrc) {
+  if (Icon) {
     return (
       <span
-        className={cn(
-          'flex shrink-0 items-center justify-center overflow-hidden rounded-full',
-          container,
-          className,
-        )}>
-        <img src={iconSrc} alt={name} className={cn(img, 'object-cover')} draggable={false} />
+        className={cn('flex shrink-0 items-center justify-center', container, className)}
+        title={name}>
+        <Icon size={px} />
       </span>
     )
   }

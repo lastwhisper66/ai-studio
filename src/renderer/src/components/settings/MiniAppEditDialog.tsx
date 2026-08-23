@@ -156,7 +156,7 @@ function MiniAppForm({
             />
           </div>
           <MiniAppIcon
-            app={{ name: name || '?', icon: previewGlyph, color }}
+            app={{ name: name || '?', icon: previewGlyph, color, url }}
             size="lg"
             className="mb-0.5"
           />
