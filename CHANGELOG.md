@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.14.0](https://github.com/lastwhisper66/ai-studio/compare/v1.13.3...v1.14.0) (2026-08-23)
+
+
+### Features
+
+* **mini-apps:** embed vendor web services in isolated partitions ([d24fb2b](https://github.com/lastwhisper66/ai-studio/commit/d24fb2b260b6747c31157b389226510f50b67302))
+* **mini-apps:** embed vendor web services in isolated partitions ([c3fe8b3](https://github.com/lastwhisper66/ai-studio/commit/c3fe8b350b4ab419604617ba8654d28849c22357))
+
 ## [1.13.3](https://github.com/lastwhisper66/ai-studio/compare/v1.13.2...v1.13.3) (2026-08-22)
 
 
