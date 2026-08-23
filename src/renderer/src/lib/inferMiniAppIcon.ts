@@ -15,7 +15,9 @@ import Kimi from '@lobehub/icons/es/Kimi/components/Mono'
 import Moonshot from '@lobehub/icons/es/Moonshot/components/Mono'
 import Qwen from '@lobehub/icons/es/Qwen/components/Color'
 import Doubao from '@lobehub/icons/es/Doubao/components/Color'
-import ZhiPu from '@lobehub/icons/es/ZhiPu/components/Color'
+// Directory is `Zhipu`, not `ZhiPu` — the deep path is case-sensitive on Linux
+// (CI) even though Windows/macOS resolve either spelling.
+import ZhiPu from '@lobehub/icons/es/Zhipu/components/Color'
 import Yuanbao from '@lobehub/icons/es/Yuanbao/components/Mono'
 import Grok from '@lobehub/icons/es/Grok/components/Mono'
 import Perplexity from '@lobehub/icons/es/Perplexity/components/Color'
