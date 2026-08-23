@@ -6,12 +6,14 @@ import {
   BUILTIN_TEMPLATES_VERSION,
   BUILTIN_QUICK_ACTIONS_VERSION,
   BUILTIN_SELECTION_ACTIONS_VERSION,
+  BUILTIN_MINI_APPS_VERSION,
 } from '../builtins'
 import { getSetting, setSetting } from '../db/settings'
 import { applyDefaultAssistantUpdate } from '../db/assistants'
 import { applyBuiltinTemplatesUpdate } from '../db/templates'
 import { applyBuiltinQuickActionsUpdate } from '../db/quick-actions'
 import { applyBuiltinSelectionActionsUpdate } from '../db/selection-actions'
+import { applyBuiltinMiniAppsUpdate } from '../db/mini-apps'
 
 function readAppliedVersion(key: string, fallback: number): number {
   const v = getSetting(key)
@@ -33,6 +35,7 @@ function computeStatus(): BuiltinUpdatesStatus {
     'builtins.selectionActions.appliedVersion',
     BUILTIN_SELECTION_ACTIONS_VERSION,
   )
+  const mApplied = readAppliedVersion('builtins.miniApps.appliedVersion', BUILTIN_MINI_APPS_VERSION)
   return {
     templates: {
       hasUpdate: BUILTIN_TEMPLATES_VERSION > tApplied,
@@ -48,6 +51,11 @@ function computeStatus(): BuiltinUpdatesStatus {
       hasUpdate: BUILTIN_SELECTION_ACTIONS_VERSION > sApplied,
       currentVersion: BUILTIN_SELECTION_ACTIONS_VERSION,
       appliedVersion: sApplied,
+    },
+    miniApps: {
+      hasUpdate: BUILTIN_MINI_APPS_VERSION > mApplied,
+      currentVersion: BUILTIN_MINI_APPS_VERSION,
+      appliedVersion: mApplied,
     },
   }
 }
@@ -84,6 +92,10 @@ export function registerBuiltinsHandlers(): void {
               'builtins.selectionActions.appliedVersion',
               String(BUILTIN_SELECTION_ACTIONS_VERSION),
             )
+            break
+          case 'miniApps':
+            applyBuiltinMiniAppsUpdate()
+            setSetting('builtins.miniApps.appliedVersion', String(BUILTIN_MINI_APPS_VERSION))
             break
         }
         return { success: true }

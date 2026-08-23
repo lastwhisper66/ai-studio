@@ -18,6 +18,7 @@ import {
   listModelGroups,
   listQuickActions,
   listSelectionActions,
+  listMiniApps,
   listAllModels,
 } from '../db'
 import { encrypt as encryptSetting, getAllSettings, setSettingsBatch } from '../db/settings'
@@ -53,6 +54,7 @@ export function collectSnapshot(): BackupSnapshot {
   const phrases = listPhrases()
   const quickActions = listQuickActions()
   const selectionActions = listSelectionActions()
+  const miniApps = listMiniApps()
   const avatars = readAllAvatars()
 
   return buildSnapshotEnvelope({
@@ -65,6 +67,7 @@ export function collectSnapshot(): BackupSnapshot {
     phrases,
     quickActions,
     selectionActions,
+    miniApps,
     avatars,
   })
 }
@@ -454,6 +457,37 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
     })
   }
 
+  // ---------- mini_apps ----------
+  // Optional: snapshots written before Mini Apps shipped have no such key.
+  const upsertMA = db.prepare(`
+    INSERT INTO mini_apps
+      (id, name, url, icon, color, user_agent, is_builtin, sort_order, enabled)
+    VALUES (@id, @name, @url, @icon, @color, @user_agent, @is_builtin, @sort_order, @enabled)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      url = excluded.url,
+      icon = excluded.icon,
+      color = excluded.color,
+      user_agent = excluded.user_agent,
+      is_builtin = excluded.is_builtin,
+      sort_order = excluded.sort_order,
+      enabled = excluded.enabled,
+      updated_at = datetime('now')
+  `)
+  for (const m of snapshot.miniApps ?? []) {
+    upsertMA.run({
+      id: m.id,
+      name: m.name,
+      url: m.url,
+      icon: m.icon ?? '',
+      color: m.color ?? '#6366f1',
+      user_agent: m.userAgent ?? '',
+      is_builtin: m.isBuiltin ? 1 : 0,
+      sort_order: m.sortOrder,
+      enabled: m.enabled ? 1 : 0,
+    })
+  }
+
   // ---------- settings (encrypted via setSettingsBatch's SENSITIVE_KEYS routing) ----------
   setSettingsBatch(snapshot.settings)
 
@@ -464,6 +498,7 @@ function applyTablesAndSettings(snapshot: BackupSnapshot, mode: BackupImportMode
     phrases: snapshot.phrases.length,
     quickActions: snapshot.quickActions.length,
     selectionActions: snapshot.selectionActions.length,
+    miniApps: (snapshot.miniApps ?? []).length,
     modelDefinitions: snapshot.modelDefinitions.length,
     modelGroups: snapshot.modelGroups.length,
     settings: Object.keys(snapshot.settings).length,

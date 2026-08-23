@@ -12,6 +12,7 @@ import {
   Search,
   Wrench,
   Info,
+  LayoutGrid,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@renderer/lib/utils'
@@ -29,6 +30,7 @@ export type SettingsSection =
   | 'keyboard-shortcuts'
   | 'quick-assistant'
   | 'selection-assistant'
+  | 'mini-apps'
   | 'web-search'
   | 'about'
 
@@ -62,6 +64,7 @@ const sectionGroups: SectionItem[][] = [
       labelKey: 'settings.sections.selectionAssistant',
       icon: TextSelect,
     },
+    { id: 'mini-apps', labelKey: 'settings.sections.miniApps', icon: LayoutGrid },
     { id: 'web-search', labelKey: 'settings.sections.webSearch', icon: Search },
   ],
   [{ id: 'about', labelKey: 'settings.sections.about', icon: Info }],

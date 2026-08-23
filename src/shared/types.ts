@@ -330,6 +330,39 @@ export interface TranslateErrorData {
 
 // ── Quick Assistant ─────────────────────────────────────────────
 
+/**
+ * A vendor web service embedded in the Mini Apps view. Each app gets its own
+ * persistent Chromium partition (`persist:miniapp-<id>`) so logins survive
+ * restarts and cookies never leak between vendors.
+ */
+export interface MiniApp {
+  id: string
+  name: string
+  url: string
+  /** Single glyph shown on the `color` background. */
+  icon: string
+  /** Hex background color for the icon tile. */
+  color: string
+  /** Per-app User-Agent override. Empty means use the shared Chrome-like UA. */
+  userAgent: string
+  isBuiltin: boolean
+  sortOrder: number
+  enabled: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/**
+ * Webview attributes for one mini app, resolved in the main process. The
+ * renderer cannot derive these itself: the partition name is an internal
+ * convention and the masked User-Agent is computed from `app.userAgentFallback`.
+ */
+export interface MiniAppRuntime {
+  id: string
+  partition: string
+  userAgent: string
+}
+
 export interface QuickAction {
   id: string
   name: string
@@ -589,6 +622,8 @@ export interface BackupSnapshot {
   phrases: Phrase[]
   quickActions: QuickAction[]
   selectionActions: SelectionAction[]
+  /** Optional — snapshots written before Mini Apps shipped omit this key. */
+  miniApps?: MiniApp[]
   avatars: BackupAvatar[]
 }
 
@@ -606,6 +641,7 @@ export interface BackupSummary {
   phrases: number
   quickActions: number
   selectionActions: number
+  miniApps: number
   modelDefinitions: number
   modelGroups: number
   settings: number
@@ -739,7 +775,7 @@ export interface BackupProgress {
 }
 
 // ── Builtin presets (assistant templates / quick & selection actions) ────────
-export type BuiltinCategory = 'templates' | 'quickActions' | 'selectionActions'
+export type BuiltinCategory = 'templates' | 'quickActions' | 'selectionActions' | 'miniApps'
 
 export interface BuiltinCategoryStatus {
   hasUpdate: boolean
@@ -751,6 +787,7 @@ export interface BuiltinUpdatesStatus {
   templates: BuiltinCategoryStatus
   quickActions: BuiltinCategoryStatus
   selectionActions: BuiltinCategoryStatus
+  miniApps: BuiltinCategoryStatus
 }
 
 export interface CatalogSyncResult {

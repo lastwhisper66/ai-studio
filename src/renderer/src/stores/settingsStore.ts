@@ -3,7 +3,7 @@ import type { SettingsSection } from '@renderer/components/settings/SettingsSide
 import type { LocalizedError } from '@shared/errors'
 import { fallbackLocalizedError } from '@shared/errors'
 
-type ActiveView = 'chat' | 'settings' | 'translate' | 'library'
+type ActiveView = 'chat' | 'settings' | 'translate' | 'library' | 'mini-apps'
 
 interface SettingsState {
   settings: Record<string, string>
@@ -11,6 +11,13 @@ interface SettingsState {
   isSaving: boolean
   error: LocalizedError | null
   activeView: ActiveView
+  /**
+   * True once the Mini Apps view has been opened at least once this session.
+   * `AppLayout` keeps that view mounted from then on, because unmounting it
+   * would destroy its <webview> guests. Latched here rather than in a component
+   * so it survives re-renders without an effect or a render-time ref.
+   */
+  miniAppsVisited: boolean
   pendingSettingsSection: SettingsSection | null
 
   loadSettings: () => Promise<void>
@@ -28,10 +35,12 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   isSaving: false,
   error: null,
   activeView: 'chat',
+  miniAppsVisited: false,
   pendingSettingsSection: null,
 
   clearError: () => set({ error: null }),
-  setActiveView: (view: ActiveView) => set({ activeView: view }),
+  setActiveView: (view: ActiveView) =>
+    set(view === 'mini-apps' ? { activeView: view, miniAppsVisited: true } : { activeView: view }),
   navigateToSettings: (section) => set({ activeView: 'settings', pendingSettingsSection: section }),
   consumePendingSection: () => {
     const section = get().pendingSettingsSection

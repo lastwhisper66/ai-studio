@@ -45,6 +45,7 @@
     "chat": "聊天",
     "translate": "翻译",
     "library": "助手库",
+    "miniApps": "小程序",
     "settings": "设置",
     "theme": "主题"
   },
@@ -215,6 +216,7 @@
       "phrases": "快捷短语",
       "quickAssistant": "快捷助手",
       "selectionAssistant": "划词助手",
+      "miniApps": "小程序",
       "webSearch": "网络搜索",
       "about": "关于"
     },
@@ -758,6 +760,43 @@
       "confirmDescription": "此操作会用最新版本覆盖所有内置项；您对内置项做过的任何修改都将丢失，且不可恢复。",
       "confirmAction": "覆盖并同步"
     },
+    "miniApps": {
+      "title": "小程序",
+      "description": "在应用内直接打开各厂商的网页版 AI 服务。",
+      "appList": "小程序列表",
+      "addApp": "添加小程序",
+      "builtin": "内置",
+      "emptyList": "还没有小程序。",
+      "toggleEnabled": "启用/停用",
+      "logout": "清除登录数据",
+      "logoutAll": "清除全部登录",
+      "logoutTitle": "清除登录数据",
+      "logoutDescription": "将清除「{{name}}」的 Cookie 和本地存储，下次打开需要重新登录。此操作不可撤销。",
+      "logoutSuccess": "已清除「{{name}}」的登录数据。",
+      "logoutFailed": "清除「{{name}}」的登录数据失败。",
+      "logoutAllTitle": "清除全部登录数据",
+      "logoutAllDescription": "将清除所有小程序的 Cookie 和本地存储，下次打开都需要重新登录。此操作不可撤销。",
+      "logoutAllSuccess": "已清除 {{count}} 个小程序的登录数据。",
+      "logoutAllPartial": "有 {{failed}} 个小程序清除失败。",
+      "deleteTitle": "删除小程序",
+      "deleteDescription": "将删除「{{name}}」。其登录数据不会一并清除，如需清除请先使用「清除登录数据」。",
+      "addTitle": "添加小程序",
+      "editTitle": "编辑小程序",
+      "editDescription": "配置名称、网址和图标。修改网址或 User-Agent 会重新加载该小程序的页面。",
+      "privacyNote": "小程序在应用内嵌的浏览器中打开第三方网站，登录凭据由对应站点管理。这些页面无法访问本应用的数据或 API 密钥。",
+      "field": {
+        "name": "名称",
+        "namePlaceholder": "例如 ChatGPT",
+        "url": "网址",
+        "urlInvalid": "请输入以 http:// 或 https:// 开头的网址。",
+        "icon": "图标字符",
+        "iconPlaceholder": "留空则用首字母",
+        "color": "颜色",
+        "userAgent": "User-Agent（可选）",
+        "userAgentPlaceholder": "留空使用默认值",
+        "userAgentHint": "默认已隐藏 Electron 标识以兼容第三方登录。仅当站点显示异常时才需要自定义。"
+      }
+    },
     "webSearch": {
       "title": "网络搜索",
       "description": "聊天时一键开启网络搜索,将搜索结果作为上下文交给模型,并在回复中显示引用来源。",
@@ -1129,6 +1168,29 @@
       "http": "GitHub 返回了 {{statusCode}} 响应。可能是网络或代理问题，请稍后再试。",
       "network": "无法连接到 GitHub，请检查网络或代理设置。",
       "parse": "无法解析 GitHub 返回的数据。"
+    }
+  },
+  "miniApps": {
+    "showAll": "全部应用",
+    "closeTab": "关闭标签",
+    "searchPlaceholder": "搜索小程序...",
+    "count": "{{count}} 个应用",
+    "manage": "管理",
+    "loading": "加载中...",
+    "loadFailed": "页面加载失败，请检查网络后重试。",
+    "retry": "重试",
+    "empty": {
+      "noApps": "还没有启用的小程序，点击「管理」添加。",
+      "noResults": "没有匹配的小程序。"
+    },
+    "toolbar": {
+      "back": "后退",
+      "forward": "前进",
+      "reload": "刷新",
+      "home": "回到首页",
+      "copyUrl": "复制链接",
+      "copied": "已复制",
+      "openExternal": "在浏览器中打开"
     }
   },
   "library": {

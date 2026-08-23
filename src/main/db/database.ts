@@ -225,6 +225,24 @@ function createTables(): void {
       ON selection_actions(sort_order);
   `)
 
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS mini_apps (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      url         TEXT NOT NULL,
+      icon        TEXT NOT NULL DEFAULT '',
+      color       TEXT NOT NULL DEFAULT '#6366f1',
+      user_agent  TEXT NOT NULL DEFAULT '',
+      is_builtin  INTEGER NOT NULL DEFAULT 0,
+      sort_order  INTEGER NOT NULL DEFAULT 0,
+      enabled     INTEGER NOT NULL DEFAULT 1,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_mini_apps_sort_order
+      ON mini_apps(sort_order);
+  `)
+
   // Seed built-in defaults after all tables exist.
   seedDatabaseDefaults()
 }

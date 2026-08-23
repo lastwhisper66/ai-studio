@@ -12,6 +12,8 @@ import { fetchLatestReleaseFromGitHub, PROJECT_PAGE_URL, RELEASES_PAGE_URL } fro
 import { markResetting } from '../index'
 import { backupSyncService } from '../backup/sync-service'
 import { cleanupSelectionService } from '../selection-service'
+import { listMiniApps } from '../db/mini-apps'
+import { clearAllMiniAppSessions } from '../mini-app-session'
 import { abortAllChatStreams } from './chat-handlers'
 import { abortActiveTranslate } from './translate-handlers'
 import { abortActiveQuickAssistantStream } from './quick-assistant-handlers'
@@ -28,6 +30,7 @@ const SETTINGS_TABLES = [
   'assistants',
   'quick_actions',
   'selection_actions',
+  'mini_apps',
   'model_definitions',
   'model_groups',
 ] as const
@@ -123,6 +126,15 @@ export function registerAppHandlers(): void {
             'shadercache',
           ],
         })
+      } catch {
+        // best-effort — continue even if this fails
+      }
+
+      // Mini app logins live in their own `persist:` partitions, which the
+      // defaultSession wipe above does not touch. Read the ids before the DB
+      // closes — a partition is only reachable once its id is known.
+      try {
+        await clearAllMiniAppSessions(listMiniApps().map((a) => a.id))
       } catch {
         // best-effort — continue even if this fails
       }

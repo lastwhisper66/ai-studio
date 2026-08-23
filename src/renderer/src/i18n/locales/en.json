@@ -45,6 +45,7 @@
     "chat": "Chat",
     "translate": "Translate",
     "library": "Library",
+    "miniApps": "Mini Apps",
     "settings": "Settings",
     "theme": "Theme"
   },
@@ -215,6 +216,7 @@
       "phrases": "Quick Phrases",
       "quickAssistant": "Quick Assistant",
       "selectionAssistant": "Selection Assistant",
+      "miniApps": "Mini Apps",
       "webSearch": "Web Search",
       "about": "About"
     },
@@ -758,6 +760,43 @@
       "confirmDescription": "This will overwrite all built-in items with the latest version; any edits you made to built-ins will be lost and cannot be recovered.",
       "confirmAction": "Overwrite and sync"
     },
+    "miniApps": {
+      "title": "Mini Apps",
+      "description": "Open vendors' web AI services directly inside the app.",
+      "appList": "Mini app list",
+      "addApp": "Add mini app",
+      "builtin": "Built-in",
+      "emptyList": "No mini apps yet.",
+      "toggleEnabled": "Enable / disable",
+      "logout": "Clear login data",
+      "logoutAll": "Clear all logins",
+      "logoutTitle": "Clear login data",
+      "logoutDescription": "This clears cookies and local storage for \"{{name}}\". You will need to sign in again next time. This cannot be undone.",
+      "logoutSuccess": "Cleared login data for \"{{name}}\".",
+      "logoutFailed": "Failed to clear login data for \"{{name}}\".",
+      "logoutAllTitle": "Clear all login data",
+      "logoutAllDescription": "This clears cookies and local storage for every mini app. You will need to sign in to each one again. This cannot be undone.",
+      "logoutAllSuccess": "Cleared login data for {{count}} mini apps.",
+      "logoutAllPartial": "{{failed}} mini apps could not be cleared.",
+      "deleteTitle": "Delete mini app",
+      "deleteDescription": "This deletes \"{{name}}\". Its stored login data is not removed — use Clear login data first if you want that gone too.",
+      "addTitle": "Add mini app",
+      "editTitle": "Edit mini app",
+      "editDescription": "Configure the name, URL, and icon. Changing the URL or User-Agent reloads that mini app's page.",
+      "privacyNote": "Mini apps open third-party sites in an embedded browser. Credentials are handled by those sites. These pages cannot reach this app's data or API keys.",
+      "field": {
+        "name": "Name",
+        "namePlaceholder": "e.g. ChatGPT",
+        "url": "URL",
+        "urlInvalid": "Enter a URL starting with http:// or https://.",
+        "icon": "Icon glyph",
+        "iconPlaceholder": "Defaults to first letter",
+        "color": "Color",
+        "userAgent": "User-Agent (optional)",
+        "userAgentPlaceholder": "Leave empty for the default",
+        "userAgentHint": "The default already hides the Electron identifier for third-party sign-in compatibility. Only override this if a site renders incorrectly."
+      }
+    },
     "webSearch": {
       "title": "Web Search",
       "description": "Toggle web search per chat. Search results are injected as context, and the assistant cites sources in its reply.",
@@ -1129,6 +1168,29 @@
       "http": "GitHub responded with {{statusCode}}. This may be a network or proxy issue — please try again later.",
       "network": "Could not reach GitHub. Please check your network or proxy settings.",
       "parse": "Could not parse the response from GitHub."
+    }
+  },
+  "miniApps": {
+    "showAll": "All apps",
+    "closeTab": "Close tab",
+    "searchPlaceholder": "Search mini apps...",
+    "count": "{{count}} apps",
+    "manage": "Manage",
+    "loading": "Loading...",
+    "loadFailed": "The page failed to load. Check your connection and retry.",
+    "retry": "Retry",
+    "empty": {
+      "noApps": "No mini apps enabled yet. Click Manage to add one.",
+      "noResults": "No matching mini apps."
+    },
+    "toolbar": {
+      "back": "Back",
+      "forward": "Forward",
+      "reload": "Reload",
+      "home": "Home",
+      "copyUrl": "Copy link",
+      "copied": "Copied",
+      "openExternal": "Open in browser"
     }
   },
   "library": {

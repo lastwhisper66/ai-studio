@@ -24,6 +24,12 @@ const AssistantLibraryView = lazy(() =>
   })),
 )
 
+const MiniAppView = lazy(() =>
+  import('@renderer/components/mini-app').then((m) => ({
+    default: m.MiniAppView,
+  })),
+)
+
 const SIDEBAR_STORAGE_KEY = 'ai-studio-sidebar-collapsed'
 const TOPIC_STORAGE_KEY = 'ai-studio-topic-collapsed'
 
@@ -37,6 +43,14 @@ export function AppLayout(): React.JSX.Element {
   })
 
   const activeView = useSettingsStore((s) => s.activeView)
+
+  // Mini Apps must not be unmounted when the user switches views: its <webview>
+  // guests would be destroyed, losing scroll position and any half-typed prompt
+  // (the login session itself survives — that lives in a persistent partition).
+  // So once visited it stays mounted, hidden with CSS. The latch lives in the
+  // store, which already owns view transitions.
+  const miniAppsActive = activeView === 'mini-apps'
+  const miniAppsVisited = useSettingsStore((s) => s.miniAppsVisited)
 
   const toggleSidebar = useCallback(() => {
     setSidebarCollapsed((prev) => {
@@ -103,10 +117,19 @@ export function AppLayout(): React.JSX.Element {
           <Suspense fallback={null}>
             <AssistantLibraryView />
           </Suspense>
-        ) : (
+        ) : activeView === 'settings' ? (
           <Suspense fallback={null}>
             <SettingsPage />
           </Suspense>
+        ) : null}
+
+        {/* Kept mounted across view switches — see miniAppsVisited above. */}
+        {miniAppsVisited && (
+          <div className={miniAppsActive ? 'flex min-w-0 flex-1' : 'hidden'}>
+            <Suspense fallback={null}>
+              <MiniAppView />
+            </Suspense>
+          </div>
         )}
       </div>
     </div>
