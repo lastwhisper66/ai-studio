@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.1](https://github.com/lastwhisper66/ai-studio/compare/v1.15.0...v1.15.1) (2026-08-23)
+
+
+### Bug Fixes
+
+* **icons:** correct ZhiPu deep-import path casing ([919bce1](https://github.com/lastwhisper66/ai-studio/commit/919bce1c2979cd572bc67a5d676f1446087e8e86))
+* **icons:** correct ZhiPu deep-import path casing ([06b74de](https://github.com/lastwhisper66/ai-studio/commit/06b74de126a01dbd704c7191855de846509b5e14))
+
 ## [1.15.0](https://github.com/lastwhisper66/ai-studio/compare/v1.14.0...v1.15.0) (2026-08-23)
 
 
