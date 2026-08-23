@@ -62,6 +62,7 @@ import { EditModelDialog } from './EditModelDialog'
 import { ConnectionTestDialog } from './ConnectionTestDialog'
 import { RemoteModelDialog, type RemoteModel } from './RemoteModelDialog'
 import { ProviderIcon } from './ProviderIcon'
+import { inferModelIcon } from '@renderer/lib/inferModelIcon'
 
 export function ProviderDetail(): React.JSX.Element {
   const { t } = useTranslation()
@@ -542,9 +543,10 @@ function ProviderForm({
                               handleIconSize="h-3.5 w-3.5">
                               <ProviderIcon
                                 type={provider.type}
-                                name={provider.name}
+                                name={model.name}
                                 color={template?.color ?? '#6b7280'}
                                 size="md"
+                                icon={inferModelIcon(model.name)}
                               />
                               <span className="min-w-0 flex-1 truncate text-sm">{model.name}</span>
                               {model.capabilities.length > 0 && (

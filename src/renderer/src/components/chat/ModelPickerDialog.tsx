@@ -14,6 +14,7 @@ import {
 } from '@renderer/components/settings/capability-config'
 import type { ModelCapability, ProviderType } from '@shared/types'
 import { ProviderIcon } from '@renderer/components/settings/ProviderIcon'
+import { inferModelIcon } from '@renderer/lib/inferModelIcon'
 
 interface ModelPickerDialogProps {
   open: boolean
@@ -162,12 +163,13 @@ export function ModelPickerDialog({
                         className={`flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-accent ${
                           isSelected ? 'bg-accent/60' : ''
                         }`}>
-                        {/* Provider icon */}
+                        {/* Model's own vendor icon, falling back to the provider's */}
                         <ProviderIcon
                           type={group.providerType}
-                          name={group.providerName}
+                          name={model.name}
                           color={group.color}
                           size="md"
+                          icon={inferModelIcon(model.name)}
                         />
 
                         {/* Model name */}
