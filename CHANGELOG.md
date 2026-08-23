@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.15.0](https://github.com/lastwhisper66/ai-studio/compare/v1.14.0...v1.15.0) (2026-08-23)
+
+
+### Features
+
+* **icons:** resolve brand icons from model IDs and app hosts ([ec7111c](https://github.com/lastwhisper66/ai-studio/commit/ec7111c42bb1c25359102cffe3c68b4b82012461))
+* **icons:** resolve brand icons from model IDs and app hosts ([af86223](https://github.com/lastwhisper66/ai-studio/commit/af86223bd08dbb5632224c4929122071037b7e04))
+
 ## [1.14.0](https://github.com/lastwhisper66/ai-studio/compare/v1.13.3...v1.14.0) (2026-08-23)
 
 
