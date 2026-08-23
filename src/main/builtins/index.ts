@@ -2,6 +2,7 @@ export { DEFAULT_ASSISTANT, type BuiltinDefaultAssistant } from './default-assis
 export { ASSISTANT_TEMPLATES, type BuiltinAssistantTemplate } from './assistant-templates'
 export { QUICK_ACTIONS, type BuiltinQuickAction } from './quick-actions'
 export { SELECTION_ACTIONS, type BuiltinSelectionAction } from './selection-actions'
+export { MINI_APPS, type BuiltinMiniApp } from './mini-apps'
 
 /**
  * Each builtin category has its own version. Bump the relevant one ONLY when
@@ -18,3 +19,4 @@ export { SELECTION_ACTIONS, type BuiltinSelectionAction } from './selection-acti
 export const BUILTIN_TEMPLATES_VERSION = 1
 export const BUILTIN_QUICK_ACTIONS_VERSION = 1
 export const BUILTIN_SELECTION_ACTIONS_VERSION = 1
+export const BUILTIN_MINI_APPS_VERSION = 1

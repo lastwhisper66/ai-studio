@@ -14,6 +14,7 @@ import { useModelGroupStore } from '@renderer/stores/modelGroupStore'
 import { useKeybindingStore } from '@renderer/stores/keybindingStore'
 import { initBackupStore } from '@renderer/stores/backupStore'
 import { useBuiltinUpdateStore } from '@renderer/stores/builtinUpdateStore'
+import { useMiniAppStore } from '@renderer/stores/miniAppStore'
 import { useKeyboardShortcuts } from '@renderer/hooks/useKeyboardShortcuts'
 import { useFontSettings } from '@renderer/hooks/useFontSettings'
 import { ZOOM_STEP, clampZoom } from '@shared/zoom'
@@ -30,6 +31,7 @@ const TRAY_SETTINGS_SECTIONS: ReadonlySet<SettingsSection> = new Set([
   'keyboard-shortcuts',
   'quick-assistant',
   'selection-assistant',
+  'mini-apps',
   'about',
 ])
 
@@ -58,6 +60,7 @@ function App(): React.JSX.Element {
   const loadModelGroups = useModelGroupStore((s) => s.load)
   const initKeybindings = useKeybindingStore((s) => s.init)
   const loadBuiltinStatus = useBuiltinUpdateStore((s) => s.loadStatus)
+  const loadMiniApps = useMiniAppStore((s) => s.loadApps)
   const settingsLoaded = useSettingsStore((s) => s.isLoaded)
 
   useEffect(() => {
@@ -70,6 +73,7 @@ function App(): React.JSX.Element {
     loadModelDefinitions()
     loadModelGroups()
     loadBuiltinStatus()
+    loadMiniApps()
     initBackupStore()
   }, [
     loadConversations,
@@ -81,6 +85,7 @@ function App(): React.JSX.Element {
     loadModelDefinitions,
     loadModelGroups,
     loadBuiltinStatus,
+    loadMiniApps,
   ])
 
   // Refresh settings when the main window regains focus so that changes made
@@ -113,6 +118,27 @@ function App(): React.JSX.Element {
       offNewConv()
       offNavSettings()
     }
+  }, [])
+
+  // Ctrl+W → close the open Mini App page, not the app.
+  //
+  // The main process intercepts the keystroke (Electron's default menu binds
+  // Ctrl+W to Window → Close, which outranks any renderer listener) and hands it
+  // here because tab state lives in the renderer. `appId` is set when the
+  // keystroke came from inside a guest page; otherwise the active tab is the
+  // target. With no tab to close, this stays the ordinary window-close shortcut.
+  useEffect(() => {
+    return window.api.onMiniAppCloseTabShortcut(({ appId }) => {
+      const { tabs, activeTabId, closeTab } = useMiniAppStore.getState()
+      const inMiniApps = useSettingsStore.getState().activeView === 'mini-apps'
+      const target = appId ?? (inMiniApps ? activeTabId : null)
+
+      if (target && tabs.some((t) => t.appId === target)) {
+        closeTab(target)
+        return
+      }
+      window.api.windowClose()
+    })
   }, [])
 
   // Reconcile i18n with the persisted `general.language` setting exactly once

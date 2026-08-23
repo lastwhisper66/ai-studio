@@ -45,6 +45,8 @@ import type {
   SelectionToolbarPayload,
   SelectionBubblePayload,
   SelectionAction,
+  MiniApp,
+  MiniAppRuntime,
   SelectionRequestPayload,
   SelectionChunkData,
   SelectionEndData,
@@ -684,6 +686,44 @@ const api = {
 
   reorderSelectionActions: (ids: string[]): Promise<IpcResult<void>> =>
     ipcRenderer.invoke(IpcChannels.SELECTION_ACTION_REORDER, ids),
+
+  // Mini Apps — embedded vendor web services
+  listMiniApps: (): Promise<IpcResult<MiniApp[]>> => ipcRenderer.invoke(IpcChannels.MINI_APP_LIST),
+
+  createMiniApp: (data: {
+    name: string
+    url: string
+    icon?: string
+    color?: string
+    userAgent?: string
+  }): Promise<IpcResult<MiniApp>> => ipcRenderer.invoke(IpcChannels.MINI_APP_CREATE, data),
+
+  updateMiniApp: (
+    id: string,
+    data: Partial<Pick<MiniApp, 'name' | 'url' | 'icon' | 'color' | 'userAgent' | 'enabled'>>,
+  ): Promise<IpcResult<MiniApp | undefined>> =>
+    ipcRenderer.invoke(IpcChannels.MINI_APP_UPDATE, id, data),
+
+  deleteMiniApp: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MINI_APP_DELETE, id),
+
+  reorderMiniApps: (ids: string[]): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MINI_APP_REORDER, ids),
+
+  getMiniAppRuntime: (id: string): Promise<IpcResult<MiniAppRuntime>> =>
+    ipcRenderer.invoke(IpcChannels.MINI_APP_GET_RUNTIME, id),
+
+  clearMiniAppSession: (id: string): Promise<IpcResult<void>> =>
+    ipcRenderer.invoke(IpcChannels.MINI_APP_CLEAR_SESSION, id),
+
+  onMiniAppCloseTabShortcut: (
+    callback: (payload: { appId: string | null }) => void,
+  ): (() => void) => {
+    const handler = (_e: Electron.IpcRendererEvent, payload: { appId: string | null }): void =>
+      callback(payload ?? { appId: null })
+    ipcRenderer.on(IpcChannels.MINI_APP_CLOSE_TAB_SHORTCUT, handler)
+    return () => ipcRenderer.removeListener(IpcChannels.MINI_APP_CLOSE_TAB_SHORTCUT, handler)
+  },
 
   // Selection Assistant — streaming AI
   selectionRequest: (payload: SelectionRequestPayload): Promise<IpcResult<void>> =>

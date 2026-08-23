@@ -18,6 +18,7 @@ import { registerAppHandlers } from './app-handlers'
 import { registerQuickActionHandlers } from './quick-action-handlers'
 import { registerQuickAssistantHandlers } from './quick-assistant-handlers'
 import { registerSelectionActionHandlers } from './selection-action-handlers'
+import { registerMiniAppHandlers } from './mini-app-handlers'
 import { registerSelectionHandlers } from './selection-handlers'
 import { registerUserHandlers } from './user-handlers'
 import { registerUpdaterHandlers } from './updater-handlers'
@@ -51,6 +52,7 @@ export function registerAllIpcHandlers(): void {
   registerQuickActionHandlers()
   registerQuickAssistantHandlers()
   registerSelectionActionHandlers()
+  registerMiniAppHandlers()
   registerSelectionHandlers()
   registerUserHandlers()
   registerUpdaterHandlers()

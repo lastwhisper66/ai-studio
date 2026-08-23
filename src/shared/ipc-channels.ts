@@ -211,6 +211,21 @@ export const IpcChannels = {
   // Builtins (preset library: assistant templates / quick & selection actions)
   BUILTINS_GET_UPDATES_STATUS: 'builtins:get-updates-status',
   BUILTINS_APPLY_UPDATE: 'builtins:apply-update',
+  // Mini Apps (embedded vendor web services)
+  MINI_APP_LIST: 'mini-app:list',
+  MINI_APP_CREATE: 'mini-app:create',
+  MINI_APP_UPDATE: 'mini-app:update',
+  MINI_APP_DELETE: 'mini-app:delete',
+  MINI_APP_REORDER: 'mini-app:reorder',
+  MINI_APP_GET_RUNTIME: 'mini-app:get-runtime',
+  MINI_APP_CLEAR_SESSION: 'mini-app:clear-session',
+  /**
+   * Main → renderer: the user pressed the close-tab shortcut (Ctrl+W).
+   * Payload `appId` is set when the keystroke came from inside a guest page,
+   * null when it came from the host UI. The renderer decides whether a tab is
+   * open to close, and falls back to closing the window if not.
+   */
+  MINI_APP_CLOSE_TAB_SHORTCUT: 'mini-app:close-tab-shortcut',
   // Catalog Sync (model definitions / groups from OpenRouter)
   CATALOG_SYNC_NOW: 'catalog:sync-now',
   CATALOG_GET_STATUS: 'catalog:get-status',

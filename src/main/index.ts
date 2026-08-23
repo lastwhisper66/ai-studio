@@ -13,6 +13,7 @@ import { backupSyncService } from './backup/sync-service'
 import { runMigrations } from './migrate'
 import { cancelSync, scheduleCatalogSync } from './catalog-sync'
 import { cleanupStaleAvatarStaging } from './backup/snapshot'
+import { registerMiniAppWebContentsHook } from './mini-app-webview'
 import {
   ALL_SHORTCUTS_DISABLED_KEY,
   DEFAULT_KEYBINDINGS,
@@ -333,6 +334,10 @@ function createWindow(): void {
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
+      // Required by the Mini Apps view, which embeds vendor sites in <webview>.
+      // Guest contents get no preload and no Node access; see
+      // registerMiniAppWebContentsHook() for the hardening applied to each guest.
+      webviewTag: true,
     },
   })
   mainWindow = win
@@ -437,6 +442,27 @@ function createWindow(): void {
         resetZoom(win)
         return
       }
+    }
+
+    // Ctrl+W: close the active Mini App tab instead of the window.
+    //
+    // Ctrl+W is bound by Electron's default application menu (Window → Close),
+    // and that accelerator fires before any renderer keydown listener — so this
+    // has to be intercepted here. Handling is delegated to the renderer, which
+    // owns the tab state: it closes the active tab if there is one, and falls
+    // back to `window:close` (the same path as the titlebar X) if there is not.
+    // `keyDown` only — the paired `keyUp` would otherwise close a second tab.
+    if (
+      input.type === 'keyDown' &&
+      input.control &&
+      !input.shift &&
+      !input.alt &&
+      !input.meta &&
+      key === 'w'
+    ) {
+      event.preventDefault()
+      win.webContents.send(IpcChannels.MINI_APP_CLOSE_TAB_SHORTCUT, { appId: null })
+      return
     }
 
     // Block DevTools and refresh shortcuts in production
@@ -550,6 +576,10 @@ if (!gotTheLock) {
     app.on('browser-window-created', (_, window) => {
       optimizer.watchWindowShortcuts(window)
     })
+
+    // Must be installed before any window exists, so no Mini App guest can
+    // attach without its popup routing and permission policy in place.
+    registerMiniAppWebContentsHook()
 
     createWindow()
 

@@ -3,6 +3,7 @@ import { seedAssistantTemplates } from '../templates'
 import { seedDefaultProviders } from '../providers'
 import { seedQuickActions } from '../quick-actions'
 import { seedSelectionActions } from '../selection-actions'
+import { seedMiniApps } from '../mini-apps'
 
 export function seedDatabaseDefaults(): void {
   seedDefaultAssistant()
@@ -10,4 +11,5 @@ export function seedDatabaseDefaults(): void {
   seedDefaultProviders()
   seedQuickActions()
   seedSelectionActions()
+  seedMiniApps()
 }
